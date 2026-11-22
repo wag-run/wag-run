@@ -25,9 +25,10 @@ return new class extends Migration
         Schema::create('workflow_versions', function (Blueprint $table) {
             $table->id();
             $table->foreignUuid('workflow_id')->constrained()->cascadeOnDelete();
-            $table->unsignedInteger('number');
+            $table->unsignedInteger('number')->nullable();
+            $table->boolean('is_draft')->default(false);
             $table->json('graph');
-            $table->foreignUuid('published_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->string('note')->nullable();
             $table->timestamp('created_at')->useCurrent();
 
@@ -49,6 +50,7 @@ return new class extends Migration
             $table->foreignUuid('cancelled_by')->nullable()->constrained('users')->nullOnDelete();
             $table->unsignedBigInteger('parent_step_id')->nullable()->index();
             $table->unsignedSmallInteger('chain_depth')->default(1);
+            $table->boolean('is_test')->default(false);
             $table->timestamp('started_at')->nullable();
             $table->timestamp('finished_at')->nullable();
             $table->timestamps();

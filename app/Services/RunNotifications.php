@@ -18,7 +18,7 @@ class RunNotifications
      */
     public function notifyOwnerIfFailed(Execution $execution): void
     {
-        if ($execution->status !== ExecutionStatus::Failed) {
+        if ($execution->status !== ExecutionStatus::Failed || $execution->is_test) {
             return;
         }
 

@@ -100,7 +100,10 @@ new class extends Component {
                     </flux:table.cell>
                     <flux:table.cell>
                         {{ $execution->workflow->name }}
-                        <span class="text-xs text-zinc-500">{{ __('common.version_short', ['n' => $execution->version->number]) }}</span>
+                        <span class="text-xs text-zinc-500">{{ $execution->version->shortLabel() }}</span>
+                        @if ($execution->is_test)
+                            <flux:badge size="sm" color="violet" class="ms-1" data-test="test-run-badge">{{ __('runs.test') }}</flux:badge>
+                        @endif
                     </flux:table.cell>
                     <flux:table.cell><flux:badge size="sm" :color="$execution->status->color()">{{ $execution->status->label() }}</flux:badge></flux:table.cell>
                     <flux:table.cell>

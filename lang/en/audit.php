@@ -53,6 +53,7 @@ return [
             'created' => 'Workflow created',
             'imported' => 'Workflow imported',
             'published' => 'Workflow published',
+            'draft_discarded' => 'Workflow draft discarded',
             'rolled_back' => 'Workflow rolled back',
             'settings_updated' => 'Workflow settings updated',
             'deleted' => 'Workflow deleted',

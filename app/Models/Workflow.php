@@ -89,11 +89,23 @@ class Workflow extends Model
     }
 
     /**
+     * Published versions. Draft snapshots taken for test runs are left out.
+     *
      * @return HasMany<WorkflowVersion, $this>
      */
     public function versions(): HasMany
     {
-        return $this->hasMany(WorkflowVersion::class);
+        return $this->hasMany(WorkflowVersion::class)->where('is_draft', false);
+    }
+
+    /**
+     * Snapshots of the draft that test runs are pinned to.
+     *
+     * @return HasMany<WorkflowVersion, $this>
+     */
+    public function draftSnapshots(): HasMany
+    {
+        return $this->hasMany(WorkflowVersion::class)->where('is_draft', true);
     }
 
     /**

@@ -73,6 +73,25 @@ new class extends Component {
     public array $runValues = [];
 
     /**
+     * Values for the draft's Manual trigger, asked for before a test run.
+     *
+     * @var array<string, mixed>
+     */
+    public array $testValues = [];
+
+    /**
+     * Sample data, as JSON, for a test run of a draft without a Manual trigger.
+     */
+    public string $testPayload = '';
+
+    /**
+     * Why the draft cannot be test-run yet.
+     *
+     * @var list<string>
+     */
+    public array $testErrors = [];
+
+    /**
      * Whether the session clipboard holds copied nodes, for the Paste menu items.
      */
     public bool $hasClipboard = false;
@@ -165,6 +184,113 @@ new class extends Component {
         $this->redirectRoute('workspaces.executions.show', [$this->workspace, $execution], navigate: true);
     }
 
+    /**
+     * Whether the person can test-run the draft: they need to be able to edit
+     * the workflow as well as run it.
+     */
+    #[Computed]
+    public function canTest(): bool
+    {
+        return Auth::user()->can('edit-workflows', $this->workspace) && Auth::user()->can('run-workflows', $this->workspace);
+    }
+
+    /**
+     * The inputs the draft's Manual trigger asks for.
+     *
+     * @return list<array<string, mixed>>
+     */
+    #[Computed]
+    public function testFields(): array
+    {
+        return app(ManualRuns::class)->fields($this->workflow, $this->graph);
+    }
+
+    /**
+     * The trigger a test run starts at, when the draft has no Manual trigger:
+     * it receives the sample data given as JSON.
+     */
+    #[Computed]
+    public function testTriggerName(): ?string
+    {
+        $trigger = app(ManualRuns::class)->testTrigger($this->workflow);
+
+        return $trigger && $trigger->type !== \App\Engine\Nodes\Triggers\ManualTrigger::type() ? $trigger->name : null;
+    }
+
+    /**
+     * Test-run the draft, first asking for its Manual trigger's inputs, or for
+     * sample data when it starts with another trigger.
+     */
+    public function startTestRun(ManualRuns $runs): void
+    {
+        $this->authorize('edit-workflows', $this->workspace);
+        $this->authorize('run-workflows', $this->workspace);
+        $this->resetValidation();
+        $this->testErrors = [];
+
+        if ($this->testFields === [] && $this->testTriggerName === null) {
+            $this->runTest($runs);
+
+            return;
+        }
+
+        $this->testValues = [];
+
+        foreach ($this->testFields as $field) {
+            $this->testValues[$field['name']] = ($field['type'] ?? 'text') === 'checkbox' ? false : null;
+        }
+
+        if ($this->testTriggerName !== null && trim($this->testPayload) === '') {
+            $this->testPayload = $this->samplePayload();
+        }
+
+        Flux::modal('test-run')->show();
+    }
+
+    public function runTest(ManualRuns $runs): void
+    {
+        $this->authorize('edit-workflows', $this->workspace);
+        $this->authorize('run-workflows', $this->workspace);
+        $this->resetValidation();
+
+        try {
+            $execution = $runs->startTest($this->workflow->refresh(), Auth::user(), $this->testValues, $this->testPayload);
+        } catch (ValidationException $exception) {
+            $errors = $exception->errors();
+
+            if (isset($errors['graph'])) {
+                $this->testErrors = $errors['graph'];
+                Flux::modal('test-run')->close();
+
+                return;
+            }
+
+            throw ValidationException::withMessages(collect($errors)
+                ->mapWithKeys(fn (array $messages, string $key) => [$key === 'payload' ? 'testPayload' : "testValues.{$key}" => $messages])
+                ->all());
+        }
+
+        $this->redirectRoute('workspaces.executions.show', [$this->workspace, $execution], navigate: true);
+    }
+
+    /**
+     * A starting point for the sample data, shaped like what the trigger
+     * normally receives.
+     */
+    protected function samplePayload(): string
+    {
+        $trigger = app(ManualRuns::class)->testTrigger($this->workflow);
+
+        $sample = match ($trigger?->type) {
+            'core.webhook_trigger' => ['method' => 'POST', 'headers' => (object) [], 'query' => (object) [], 'body' => (object) []],
+            'core.form_trigger' => ['values' => (object) collect((array) ($trigger->config['fields'] ?? []))->filter(fn ($field) => is_array($field) && filled($field['name'] ?? null))->mapWithKeys(fn ($field) => [$field['name'] => ''])->all()],
+            'core.schedule_trigger' => ['scheduled_at' => now()->toIso8601String()],
+            default => (object) [],
+        };
+
+        return (string) json_encode($sample, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    }
+
     #[Computed]
     public function canPublish(): bool
     {
@@ -238,7 +364,7 @@ new class extends Component {
     #[Computed]
     public function versions()
     {
-        return $this->workflow->versions()->with('publisher')->orderByDesc('number')->get();
+        return $this->workflow->versions()->with('creator')->orderByDesc('number')->get();
     }
 
     public function selectedNode(): ?GraphNode
@@ -633,6 +759,37 @@ new class extends Component {
         Flux::toast(variant: 'success', text: __('workflows.edit.published_version_n_new_runs', ['n' => $version->number]));
     }
 
+    /**
+     * Put the draft back to the published version. The discarded draft goes
+     * on the undo history, so Undo brings it back.
+     */
+    public function discardDraft(Workflows $workflows): void
+    {
+        $this->authorize('edit-workflows', $this->workspace);
+
+        if (! $this->workflow->publishedVersion || ! $this->workflow->hasUnpublishedChanges()) {
+            return;
+        }
+
+        $this->pushHistory('undo', $this->graph->toArray());
+        session()->forget($this->historyKey('redo'));
+
+        $workflows->discardDraft($this->workflow);
+        $this->workflow->refresh();
+        unset($this->graph, $this->canvas);
+        $this->refreshHistoryState();
+        $this->reloadCanvas();
+        $this->publishErrors = [];
+
+        if ($this->selected && $this->graph->has($this->selected)) {
+            $this->selectNode($this->selected);
+        } else {
+            $this->deselect();
+        }
+
+        Flux::toast(variant: 'success', text: __('workflows.edit.draft_discarded', ['n' => $this->workflow->publishedVersion->number]));
+    }
+
     public function rollback(int $versionId, Workflows $workflows): void
     {
         $this->authorize('publish-workflows', $this->workspace);
@@ -831,11 +988,16 @@ new class extends Component {
         @endif
         @if ($workflow->hasUnpublishedChanges())
             <flux:badge size="sm" color="amber" data-test="draft-badge">{{ __('workflows.edit.unpublished_draft') }}</flux:badge>
+            @if ($workflow->publishedVersion && $this->canEdit)
+                <flux:button size="xs" variant="ghost" icon="arrow-uturn-left" wire:click="discardDraft"
+                    wire:confirm="{{ __('workflows.edit.discard_your_changes_and_go_back', ['n' => $workflow->publishedVersion->number]) }}"
+                    data-test="discard-draft">{{ __('workflows.edit.discard_draft') }}</flux:button>
+            @endif
         @endif
-        <flux:text class="text-xs" wire:loading.remove wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,errorPath,addNode,undo,redo,cutNodes,pasteNodes">
+        <flux:text class="text-xs" wire:loading.remove wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,errorPath,addNode,undo,redo,cutNodes,pasteNodes,discardDraft">
             {{ $workflow->draft_updated_at ? __('workflows.edit.draft_saved_time', ['time' => $workflow->draft_updated_at->diffForHumans()]) : '' }}
         </flux:text>
-        <flux:text class="text-xs" wire:loading wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,errorPath,addNode,undo,redo,cutNodes,pasteNodes">{{ __('workflows.edit.saving') }}</flux:text>
+        <flux:text class="text-xs" wire:loading wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,errorPath,addNode,undo,redo,cutNodes,pasteNodes,discardDraft">{{ __('workflows.edit.saving') }}</flux:text>
 
         <flux:spacer />
 
@@ -850,18 +1012,43 @@ new class extends Component {
             <flux:button size="sm" icon="clock">{{ __('workflows.edit.versions') }}</flux:button>
         </flux:modal.trigger>
         <flux:button size="sm" icon="arrow-down-tray" :href="route('workspaces.workflows.export', [$workspace, $workflow])">{{ __('workflows.edit.export') }}</flux:button>
-        @if ($this->canRun && $workflow->hasUnpublishedChanges())
-            <flux:tooltip :content="__('workflows.edit.runs_the_published_version_not')">
-                <flux:button size="sm" icon="play" wire:click="startRun" data-test="run-button">{{ __('common.run') }}</flux:button>
-            </flux:tooltip>
-        @elseif ($this->canRun)
-            <flux:button size="sm" icon="play" wire:click="startRun" data-test="run-button">{{ __('common.run') }}</flux:button>
+        @if ($this->canRun)
+            <flux:button.group>
+                @if ($workflow->hasUnpublishedChanges())
+                    <flux:tooltip :content="__('workflows.edit.runs_the_published_version_not')">
+                        <flux:button size="sm" icon="play" wire:click="startRun" data-test="run-button">{{ __('common.run') }}</flux:button>
+                    </flux:tooltip>
+                @else
+                    <flux:button size="sm" icon="play" wire:click="startRun" data-test="run-button">{{ __('common.run') }}</flux:button>
+                @endif
+                @if ($this->canTest)
+                    <flux:dropdown position="bottom" align="end">
+                        <flux:button size="sm" icon="chevron-down" :aria-label="__('workflows.edit.more_ways_to_run')" data-test="run-menu" />
+                        <flux:menu>
+                            <flux:menu.item icon="play" wire:click="startRun">{{ __('workflows.edit.run_published_version', ['n' => $workflow->publishedVersion->number]) }}</flux:menu.item>
+                            <flux:menu.item icon="beaker" wire:click="startTestRun" data-test="test-draft">{{ __('workflows.edit.test_draft') }}</flux:menu.item>
+                        </flux:menu>
+                    </flux:dropdown>
+                @endif
+            </flux:button.group>
+        @elseif ($this->canTest)
+            <flux:button size="sm" icon="beaker" wire:click="startTestRun" data-test="test-draft">{{ __('workflows.edit.test_draft') }}</flux:button>
         @endif
         @if ($this->canPublish)
             <flux:button size="sm" variant="primary" icon="rocket-launch" wire:click="publish" data-test="publish-button">{{ __('workflows.edit.publish') }}</flux:button>
         @endif
     </div>
     <flux:error name="run" class="mx-4 mt-2" />
+
+    @if ($testErrors)
+        <flux:callout variant="danger" icon="exclamation-triangle" class="m-3" :heading="__('workflows.edit.fix_these_before_testing')" data-test="test-errors">
+            <ul class="list-disc ps-5 text-sm">
+                @foreach ($testErrors as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </flux:callout>
+    @endif
 
     @if ($publishErrors)
         <flux:callout variant="danger" icon="exclamation-triangle" class="m-3" :heading="__('workflows.edit.fix_these_before_publishing')">
@@ -1117,6 +1304,28 @@ new class extends Component {
         </form>
     </flux:modal>
 
+    <flux:modal name="test-run" class="md:w-xl">
+        <form wire:submit="runTest" class="space-y-6">
+            <div>
+                <flux:heading size="lg">{{ __('workflows.edit.test_the_draft_of_name', ['name' => $workflow->name]) }}</flux:heading>
+                <flux:text class="mt-1">{{ __('workflows.edit.a_test_run_uses_the_draft') }}</flux:text>
+            </div>
+            @if ($this->testTriggerName !== null)
+                <flux:textarea wire:model="testPayload" rows="10" class="font-mono" data-test="test-payload"
+                    :label="__('workflows.edit.sample_data_for_name', ['name' => $this->testTriggerName])"
+                    :description="__('workflows.edit.what_the_trigger_receives')" />
+            @else
+                @include('partials.form-fields', ['fields' => $this->testFields, 'model' => 'testValues'])
+            @endif
+            <div class="flex justify-end gap-2">
+                <flux:modal.close>
+                    <flux:button variant="ghost">{{ __('common.cancel') }}</flux:button>
+                </flux:modal.close>
+                <flux:button type="submit" variant="primary" icon="beaker" data-test="start-test-button">{{ __('workflows.edit.start_test_run') }}</flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
     <flux:modal name="versions" class="md:w-xl">
         <flux:heading size="lg">{{ __('workflows.edit.version_history') }}</flux:heading>
         <flux:text class="mb-4">{{ __('workflows.edit.each_publish_is_a_version') }}</flux:text>
@@ -1131,7 +1340,7 @@ new class extends Component {
                             @endif
                         </div>
                         <flux:text class="text-xs">
-                            {{ $version->publisher?->name ?? __('workflows.edit.unknown') }} · {{ $version->created_at->diffForHumans() }}
+                            {{ $version->creator?->name ?? __('workflows.edit.unknown') }} · {{ $version->created_at->diffForHumans() }}
                             @if ($version->note) · {{ $version->note }} @endif
                         </flux:text>
                     </div>

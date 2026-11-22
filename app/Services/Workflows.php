@@ -89,6 +89,51 @@ class Workflows
         });
     }
 
+    /**
+     * Throw away unpublished edits: the draft goes back to the published
+     * version. Nothing happens to a workflow that was never published.
+     */
+    public function discardDraft(Workflow $workflow): void
+    {
+        $published = $workflow->publishedVersion;
+
+        if (! $published) {
+            return;
+        }
+
+        $workflow->forceFill(['draft_graph' => $published->graph, 'draft_updated_at' => now()])->save();
+
+        Audit::record('workflow.draft_discarded', $workflow, $workflow->workspace, ['version' => $published->number]);
+    }
+
+    /**
+     * A frozen copy of the draft for a test run to pin to. The latest copy is
+     * reused while the draft has not changed since.
+     *
+     * @throws ValidationException when the draft cannot run
+     */
+    public function draftSnapshot(Workflow $workflow, ?User $user = null): WorkflowVersion
+    {
+        $graph = $workflow->draft();
+        $errors = $this->validator->validate($graph);
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages(['graph' => $errors]);
+        }
+
+        $latest = $workflow->draftSnapshots()->latest('id')->first();
+
+        if ($latest && $latest->graph == $graph->toArray()) {
+            return $latest;
+        }
+
+        return $workflow->draftSnapshots()->create([
+            'is_draft' => true,
+            'graph' => $graph->toArray(),
+            'created_by' => $user?->id,
+        ]);
+    }
+
     public function delete(Workflow $workflow): void
     {
         Audit::record('workflow.deleted', $workflow, $workflow->workspace, label: $workflow->name);
@@ -103,7 +148,7 @@ class Workflows
         $version = $workflow->versions()->create([
             'number' => $number,
             'graph' => $graph->toArray(),
-            'published_by' => $publisher?->id,
+            'created_by' => $publisher?->id,
             'note' => $note,
         ]);
 

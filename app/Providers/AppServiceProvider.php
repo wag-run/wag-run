@@ -11,6 +11,7 @@ use App\Enums\WorkspacePermission;
 use App\Models\User;
 use App\Models\Workspace;
 use Carbon\CarbonImmutable;
+use Illuminate\Foundation\DevCommands;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -44,6 +45,18 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureAuthorization();
+        $this->configureDevCommands();
+    }
+
+    /**
+     * `composer run dev` (php artisan dev): workflow steps run on their own
+     * "workflows" queue, and waits, schedule triggers and log cleanup need
+     * the scheduler, so listen on both queues and run the scheduler too.
+     */
+    protected function configureDevCommands(): void
+    {
+        DevCommands::artisan('queue:listen --queue=workflows,default --tries=1 --timeout=0', 'queue');
+        DevCommands::artisan('schedule:work', 'scheduler');
     }
 
     /**

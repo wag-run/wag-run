@@ -193,7 +193,7 @@ class ApprovalAndTaskTest extends TestCase
             ['start->approve'],
         )));
         $this->runWorkflow($this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'check' => ['core.task', ['assignee' => $notEmailed->id, 'title' => 'Check stock']]],
+            ['start' => 'core.manual_trigger', 'check' => ['core.task', ['assignee' => $notEmailed->id, 'title' => 'Check stock', 'email' => false]]],
             ['start->check'],
         )));
 

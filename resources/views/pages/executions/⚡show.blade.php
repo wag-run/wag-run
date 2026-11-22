@@ -174,7 +174,7 @@ new class extends Component {
         <div class="min-w-0">
             <flux:heading class="truncate">{{ __('common.run_id', ['id' => \App\Models\Execution::reference($execution->id)]) }} · {{ $execution->workflow->name }}</flux:heading>
             <flux:text class="text-xs">
-                {{ __('common.version_n', ['n' => $execution->version->number]) }}
+                {{ $execution->version->label() }}
                 · {{ __('runs.trigger_types.'.$execution->trigger_type) }}
                 @if ($execution->triggeredBy) · {{ __('runs.show.by_name', ['name' => $execution->triggeredBy->name]) }} @endif
                 · {{ $execution->started_at?->toDayDateTimeString() }}
@@ -182,6 +182,9 @@ new class extends Component {
             </flux:text>
         </div>
         <flux:badge size="sm" :color="$execution->status->color()" data-test="run-status">{{ $execution->status->label() }}</flux:badge>
+        @if ($execution->is_test)
+            <flux:badge size="sm" color="violet" icon="beaker" data-test="test-run-badge">{{ __('runs.test_run') }}</flux:badge>
+        @endif
         @if ($execution->parentStep)
             <flux:link class="text-sm" :href="route('workspaces.executions.show', [$workspace, $execution->parentStep->execution_id])" wire:navigate>
                 {{ __('runs.show.started_by_run_id', ['id' => \App\Models\Execution::reference($execution->parentStep->execution_id)]) }}

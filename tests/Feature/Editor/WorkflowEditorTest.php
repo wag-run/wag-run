@@ -318,6 +318,35 @@ class WorkflowEditorTest extends TestCase
             ->assertSee('Runs the published version, not the draft.');
     }
 
+    public function test_discarding_the_draft_returns_to_the_published_version_and_can_be_undone(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor();
+        app(Workflows::class)->saveDraft($workflow, $workflow->draft());
+        app(Workflows::class)->publish($workflow, $user);
+        $editor = $this->editor($workspace, $workflow, $user)->call('addNode', 'core.compose');
+        $this->assertTrue($workflow->refresh()->hasUnpublishedChanges());
+
+        $editor->assertSeeHtml('data-test="discard-draft"')->call('discardDraft');
+
+        $this->assertFalse($workflow->refresh()->hasUnpublishedChanges());
+        $this->assertFalse($workflow->draft()->has('compose'));
+        $this->assertDatabaseHas('audit_logs', ['action' => 'workflow.draft_discarded']);
+
+        $editor->call('undo');
+        $this->assertTrue($workflow->refresh()->draft()->has('compose'));
+    }
+
+    public function test_viewers_cannot_discard_the_draft(): void
+    {
+        [$workspace, $workflow] = $this->setUpEditor();
+        $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
+
+        $this->editor($workspace, $workflow, $viewer)
+            ->assertDontSeeHtml('data-test="discard-draft"')
+            ->call('discardDraft')
+            ->assertForbidden();
+    }
+
     public function test_publish_reports_problems_or_creates_a_version(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(['start' => 'core.manual_trigger', 'fetch' => 'core.http_request'], ['start->fetch']));

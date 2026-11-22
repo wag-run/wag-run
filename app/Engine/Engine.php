@@ -14,6 +14,7 @@ use App\Models\ExecutionStep;
 use App\Models\Organization;
 use App\Models\User;
 use App\Models\Workflow;
+use App\Models\WorkflowVersion;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
@@ -35,6 +36,10 @@ class Engine
      * started manually; without a trigger node id, the run starts at its
      * first trigger with $input as that trigger's payload.
      *
+     * With $version, the run is pinned to that version instead; a draft
+     * snapshot makes it a test run, which ignores the workflow's concurrency
+     * setting so testing never skips or cancels live runs.
+     *
      * A run another run started, waiting on it ($parentStep) or not
      * ($startedBy), is one level deeper in the chain. Past the organization's
      * maximum chain depth the run is created already cancelled, which stops
@@ -50,9 +55,11 @@ class Engine
         ?string $triggerNodeId = null,
         ?ExecutionStep $parentStep = null,
         ?Execution $startedBy = null,
+        ?WorkflowVersion $version = null,
     ): Execution {
-        $version = $workflow->publishedVersion
+        $version ??= $workflow->publishedVersion
             ?? throw new RuntimeException(__('engine.workflow_name_has_no_published', ['name' => $workflow->name]));
+        $isTest = $version->is_draft;
 
         $graph = $version->toGraph();
         $triggerNodeId ??= $this->firstTrigger($graph->nodes);
@@ -63,10 +70,10 @@ class Engine
 
         $chainDepth = (($parentStep?->execution ?? $startedBy)?->chain_depth ?? 0) + 1;
 
-        return DB::transaction(function () use ($workflow, $version, $input, $user, $triggerType, $triggerNodeId, $parentStep, $chainDepth) {
+        return DB::transaction(function () use ($workflow, $version, $isTest, $input, $user, $triggerType, $triggerNodeId, $parentStep, $chainDepth) {
             Workflow::query()->lockForUpdate()->find($workflow->id);
 
-            $inProgress = $workflow->executions()->whereIn('status', ExecutionStatus::inProgress())->get();
+            $inProgress = $workflow->executions()->where('is_test', false)->whereIn('status', ExecutionStatus::inProgress())->get();
 
             $attributes = [
                 'workspace_id' => $workflow->workspace_id,
@@ -78,6 +85,7 @@ class Engine
                 'triggered_by' => $user?->id,
                 'parent_step_id' => $parentStep?->id,
                 'chain_depth' => $chainDepth,
+                'is_test' => $isTest,
                 'started_at' => now(),
             ];
 
@@ -94,7 +102,7 @@ class Engine
                 return $stopped;
             }
 
-            if ($inProgress->isNotEmpty() && $workflow->concurrency === ConcurrencyPolicy::SkipIfRunning) {
+            if (! $isTest && $inProgress->isNotEmpty() && $workflow->concurrency === ConcurrencyPolicy::SkipIfRunning) {
                 $skipped = Execution::create([...$attributes, 'status' => ExecutionStatus::Skipped, 'finished_at' => now()]);
 
                 DB::afterCommit(fn () => event(new ExecutionFinished($skipped)));
@@ -103,7 +111,7 @@ class Engine
                 return $skipped;
             }
 
-            if ($workflow->concurrency === ConcurrencyPolicy::CancelPrevious) {
+            if (! $isTest && $workflow->concurrency === ConcurrencyPolicy::CancelPrevious) {
                 foreach ($inProgress as $previous) {
                     $this->coordinator->locked($previous->id, fn (Execution $locked) => $this->coordinator->finish($locked, ExecutionStatus::Cancelled));
                 }

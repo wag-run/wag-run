@@ -2,6 +2,7 @@
 
 return [
     '1s' => '<1s',
+    'draft' => 'Draft',
     'index' => [
         'any_status' => 'Any status',
         'duration' => 'Duration',
@@ -41,4 +42,6 @@ return [
         'form' => 'Form',
         'workflow' => 'Another workflow',
     ],
+    'test' => 'Test',
+    'test_run' => 'Test run',
 ];
