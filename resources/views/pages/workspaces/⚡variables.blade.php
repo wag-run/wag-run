@@ -128,8 +128,7 @@ new class extends Component {
                     <flux:table.cell align="end">
                         @if ($this->canManage)
                             <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit({{ $variable->id }})" :aria-label="__('common.edit')" />
-                            <flux:button size="sm" variant="ghost" icon="trash" wire:click="delete({{ $variable->id }})"
-                                wire:confirm="{{ __('workspaces.variables.delete_this_variable_workflows_that') }}" :aria-label="__('common.delete')" />
+                            <flux:button size="sm" variant="ghost" icon="trash" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('workspaces.variables.delete_variable'), 'message' => __('workspaces.variables.delete_this_variable_workflows_that'), 'confirm' => __('common.delete')]) }}).then((ok) => ok && $wire.delete({{ $variable->id }}))" :aria-label="__('common.delete')" />
                         @endif
                     </flux:table.cell>
                 </flux:table.row>

@@ -200,8 +200,7 @@ new class extends Component {
                     <flux:table.cell align="end">
                         <flux:button size="sm" variant="ghost" icon="signal" wire:click="test('{{ $provider->id }}')" :tooltip="__('admin.sign_in_providers.check_discovery')" :aria-label="__('admin.sign_in_providers.check_discovery')" />
                         <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit('{{ $provider->id }}')" :aria-label="__('common.edit')" />
-                        <flux:button size="sm" variant="ghost" icon="trash" wire:click="delete('{{ $provider->id }}')"
-                            wire:confirm="{{ __('admin.sign_in_providers.delete_name_people_who_signed', ['name' => $provider->name]) }}"
+                        <flux:button size="sm" variant="ghost" icon="trash" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('admin.sign_in_providers.delete_sign_in_provider'), 'message' => __('admin.sign_in_providers.delete_name_people_who_signed', ['name' => $provider->name]), 'confirm' => __('common.delete')]) }}).then((ok) => ok && $wire.delete('{{ $provider->id }}'))"
                             :aria-label="__('common.delete')" />
                     </flux:table.cell>
                 </flux:table.row>

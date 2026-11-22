@@ -5,6 +5,8 @@ return [
     'rollback_to_version_number' => 'Rollback to version :number',
     'that_version_belongs_to_another' => 'That version belongs to another workflow.',
     'edit' => [
+        'roll_back_to_version_n' => 'Roll back to version :n?',
+        'discard_draft_question' => 'Discard draft?',
         'a_test_run_uses_the_draft' => 'A test run uses the draft without publishing it. It does everything a real run does, including sending emails and calling other services. Webhooks, forms and schedules keep using the published version.',
         'back_to_workflows' => 'Back to workflows',
         'backoff_s' => 'Backoff (s)',
@@ -128,6 +130,7 @@ return [
         'workflow_name' => 'Workflow name',
     ],
     'index' => [
+        'delete_workflow' => 'Delete workflow?',
         'build_workflows_from_triggers_and' => 'Build workflows from triggers and actions. Edits stay in a draft until you publish.',
         'choose_a_workflow_json_file' => 'Choose a .workflow.json file exported from this app. It is imported as a new draft; secrets and authentication settings it references must exist in this workspace.',
         'create_and_open' => 'Create and open',

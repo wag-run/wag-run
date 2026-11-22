@@ -149,8 +149,7 @@ new class extends Component {
                     </flux:table.cell>
                     <flux:table.cell align="end">
                         @if ($this->canManage)
-                            <flux:button size="sm" variant="ghost" icon="trash" wire:click="remove('{{ $member->id }}')"
-                                wire:confirm="{{ __('workspaces.members.remove_name_from_this_workspace', ['name' => $member->name]) }}" :aria-label="__('common.remove')" />
+                            <flux:button size="sm" variant="ghost" icon="trash" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('workspaces.members.remove_member'), 'message' => __('workspaces.members.remove_name_from_this_workspace', ['name' => $member->name]), 'confirm' => __('common.remove')]) }}).then((ok) => ok && $wire.remove('{{ $member->id }}'))" :aria-label="__('common.remove')" />
                         @endif
                     </flux:table.cell>
                 </flux:table.row>

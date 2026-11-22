@@ -73,6 +73,8 @@
 
         {{ $slot }}
 
+        @include('partials.confirm-dialog')
+
         @persist('toast')
             <flux:toast.group>
                 <flux:toast />

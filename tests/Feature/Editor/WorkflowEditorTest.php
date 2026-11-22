@@ -326,7 +326,7 @@ class WorkflowEditorTest extends TestCase
         $editor = $this->editor($workspace, $workflow, $user)->call('addNode', 'core.compose');
         $this->assertTrue($workflow->refresh()->hasUnpublishedChanges());
 
-        $editor->assertSeeHtml('data-test="discard-draft"')->call('discardDraft');
+        $editor->assertSeeHtml('data-test="discard-draft"')->assertSeeHtml('ok && $wire.discardDraft()')->call('discardDraft');
 
         $this->assertFalse($workflow->refresh()->hasUnpublishedChanges());
         $this->assertFalse($workflow->draft()->has('compose'));

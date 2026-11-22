@@ -12,6 +12,7 @@ return [
     'audit_log' => 'Audit log',
     'authentication' => 'Authentication',
     'body' => 'Body',
+    'are_you_sure' => 'Are you sure?',
     'cancel' => 'Cancel',
     'cancelled' => 'Cancelled',
     'choose' => 'Choose…',

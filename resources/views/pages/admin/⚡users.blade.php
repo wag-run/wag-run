@@ -175,8 +175,7 @@ new class extends Component {
                                 @if ($membership->deactivated_at)
                                     <flux:menu.item wire:click="reactivate('{{ $listedUser->id }}')">{{ __('admin.users.reactivate') }}</flux:menu.item>
                                 @else
-                                    <flux:menu.item variant="danger" wire:click="deactivate('{{ $listedUser->id }}')"
-                                        wire:confirm="{{ __('admin.users.deactivate_name_they_are_signed', ['name' => $listedUser->name]) }}">
+                                    <flux:menu.item variant="danger" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('admin.users.deactivate_user'), 'message' => __('admin.users.deactivate_name_they_are_signed', ['name' => $listedUser->name]), 'confirm' => __('admin.users.deactivate')]) }}).then((ok) => ok && $wire.deactivate('{{ $listedUser->id }}'))">
                                         {{ __('admin.users.deactivate') }}
                                     </flux:menu.item>
                                 @endif

@@ -163,8 +163,7 @@ new class extends Component {
                     <flux:table.cell align="end">
                         @if ($this->canManage)
                             <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit({{ $secret->id }})" :aria-label="__('common.edit')" />
-                            <flux:button size="sm" variant="ghost" icon="trash" wire:click="delete({{ $secret->id }})"
-                                wire:confirm="{{ __('workspaces.secrets.delete_this_secret_workflows_that') }}" :aria-label="__('common.delete')" />
+                            <flux:button size="sm" variant="ghost" icon="trash" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('workspaces.secrets.delete_secret'), 'message' => __('workspaces.secrets.delete_this_secret_workflows_that'), 'confirm' => __('common.delete')]) }}).then((ok) => ok && $wire.delete({{ $secret->id }}))" :aria-label="__('common.delete')" />
                         @endif
                     </flux:table.cell>
                 </flux:table.row>

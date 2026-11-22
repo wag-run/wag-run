@@ -5,6 +5,7 @@ return [
         'changes_to_this_workspace_s' => 'Changes to this workspace\'s workflows, secrets, authentication and membership, and every secret reveal.',
     ],
     'credentials' => [
+        'delete_authentication_setting' => 'Delete authentication setting?',
         'add_authentication' => 'Add authentication',
         'authentication_setting_deleted' => 'Authentication setting deleted.',
         'authentication_setting_saved' => 'Authentication setting saved.',
@@ -14,6 +15,7 @@ return [
         'reusable_credentials_this_workspace_s' => 'Reusable credentials this workspace\'s workflows use to call other systems.',
     ],
     'members' => [
+        'remove_member' => 'Remove member?',
         'add_or_invite_by_email' => 'Add or invite by email',
         'invitation_sent_to_email' => 'Invitation sent to :email.',
         'member_removed' => 'Member removed.',
@@ -30,6 +32,7 @@ return [
         'your_approvals_and_tasks' => 'Your approvals and tasks',
     ],
     'secrets' => [
+        'delete_secret' => 'Delete secret?',
         'add_secret' => 'Add secret',
         'delete_this_secret_workflows_that' => 'Delete this secret? Workflows that reference it will fail until it is replaced.',
         'edit_secret' => 'Edit secret',
@@ -52,6 +55,7 @@ return [
         'workspace_settings_saved' => 'Workspace settings saved.',
     ],
     'variables' => [
+        'delete_variable' => 'Delete variable?',
         'add_variable' => 'Add variable',
         'delete_this_variable_workflows_that' => 'Delete this variable? Workflows that reference it will get an empty value.',
         'edit_variable' => 'Edit variable',

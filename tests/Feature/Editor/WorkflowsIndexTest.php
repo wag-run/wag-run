@@ -119,7 +119,8 @@ class WorkflowsIndexTest extends TestCase
         $workflow = Workflow::factory()->for($workspace)->create(['name' => 'Old flow']);
 
         Livewire::actingAs($admin)->test('pages::workflows.index', ['workspace' => $workspace])
-            ->assertSeeHtml("wire:click=\"delete('{$workflow->id}')\"")
+            ->assertSeeHtml("ok && \$wire.delete('{$workflow->id}')")
+            ->assertSeeHtml('Delete workflow?')
             ->call('delete', $workflow->id);
 
         $this->assertModelMissing($workflow);

@@ -110,8 +110,7 @@ new class extends Component {
                     <flux:table.cell>{{ $workspace->credentials_count }}</flux:table.cell>
                     <flux:table.cell align="end">
                         <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit({{ $workspace->id }})" :aria-label="__('admin.workspaces.rename')" />
-                        <flux:button size="sm" variant="ghost" icon="trash" wire:click="delete({{ $workspace->id }})"
-                            wire:confirm="{{ __('admin.workspaces.delete_name_its_workflows_execution', ['name' => $workspace->name]) }}"
+                        <flux:button size="sm" variant="ghost" icon="trash" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('admin.workspaces.delete_workspace'), 'message' => __('admin.workspaces.delete_name_its_workflows_execution', ['name' => $workspace->name]), 'confirm' => __('common.delete')]) }}).then((ok) => ok && $wire.delete({{ $workspace->id }}))"
                             :aria-label="__('common.delete')" />
                     </flux:table.cell>
                 </flux:table.row>

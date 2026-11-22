@@ -989,8 +989,7 @@ new class extends Component {
         @if ($workflow->hasUnpublishedChanges())
             <flux:badge size="sm" color="amber" data-test="draft-badge">{{ __('workflows.edit.unpublished_draft') }}</flux:badge>
             @if ($workflow->publishedVersion && $this->canEdit)
-                <flux:button size="xs" variant="ghost" icon="arrow-uturn-left" wire:click="discardDraft"
-                    wire:confirm="{{ __('workflows.edit.discard_your_changes_and_go_back', ['n' => $workflow->publishedVersion->number]) }}"
+                <flux:button size="xs" variant="ghost" icon="arrow-uturn-left" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('workflows.edit.discard_draft_question'), 'message' => __('workflows.edit.discard_your_changes_and_go_back', ['n' => $workflow->publishedVersion->number]), 'confirm' => __('workflows.edit.discard_draft')]) }}).then((ok) => ok && $wire.discardDraft())"
                     data-test="discard-draft">{{ __('workflows.edit.discard_draft') }}</flux:button>
             @endif
         @endif
@@ -1345,7 +1344,7 @@ new class extends Component {
                         </flux:text>
                     </div>
                     @if ($this->canPublish && $version->id !== $workflow->published_version_id)
-                        <flux:button size="sm" wire:click="rollback({{ $version->id }})" wire:confirm="{{ __('workflows.edit.publish_version_n_again_as', ['n' => $version->number]) }}">
+                        <flux:button size="sm" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('workflows.edit.roll_back_to_version_n', ['n' => $version->number]), 'message' => __('workflows.edit.publish_version_n_again_as', ['n' => $version->number]), 'confirm' => __('workflows.edit.roll_back'), 'danger' => false]) }}).then((ok) => ok && $wire.rollback({{ $version->id }}))">
                             {{ __('workflows.edit.roll_back') }}
                         </flux:button>
                     @endif

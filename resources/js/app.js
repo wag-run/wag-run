@@ -160,3 +160,39 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 });
+
+/**
+ * $confirm({ title, message, confirm, danger }) opens the app's confirmation
+ * modal (partials/confirm-dialog) and resolves to true when the person
+ * confirms, false when they cancel or close it. Use it instead of
+ * wire:confirm, which shows the browser's native dialog:
+ *
+ *     x-on:click="$confirm({ title: '…', message: '…' }).then((ok) => ok && $wire.delete(id))"
+ */
+document.addEventListener('alpine:init', () => {
+    window.Alpine.store('confirmDialog', {
+        title: '',
+        message: '',
+        confirmLabel: '',
+        danger: true,
+        resolver: null,
+
+        ask({ title = '', message = '', confirm = '', danger = true } = {}) {
+            this.settle(false);
+            Object.assign(this, { title, message, confirmLabel: confirm, danger });
+
+            return new Promise((resolve) => {
+                this.resolver = resolve;
+                window.Flux.modal('confirm-dialog').show();
+            });
+        },
+
+        settle(answer) {
+            const resolve = this.resolver;
+            this.resolver = null;
+            resolve?.(answer);
+        },
+    });
+
+    window.Alpine.magic('confirm', () => (options) => window.Alpine.store('confirmDialog').ask(options));
+});

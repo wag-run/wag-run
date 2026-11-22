@@ -159,8 +159,7 @@ new class extends Component {
                                 <flux:menu.item icon="arrow-down-tray" :href="route('workspaces.workflows.export', [$workspace, $workflow])">{{ __('workflows.index.export_json') }}</flux:menu.item>
                                 @if ($this->canEdit)
                                     <flux:menu.separator />
-                                    <flux:menu.item variant="danger" icon="trash" wire:click="delete('{{ $workflow->id }}')"
-                                        wire:confirm="{{ __('workflows.index.delete_name_with_its_versions', ['name' => $workflow->name]) }}">
+                                    <flux:menu.item variant="danger" icon="trash" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('workflows.index.delete_workflow'), 'message' => __('workflows.index.delete_name_with_its_versions', ['name' => $workflow->name]), 'confirm' => __('common.delete')]) }}).then((ok) => ok && $wire.delete('{{ $workflow->id }}'))">
                                         {{ __('common.delete') }}
                                     </flux:menu.item>
                                 @endif

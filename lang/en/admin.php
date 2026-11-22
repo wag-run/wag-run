@@ -40,6 +40,7 @@ return [
         'workflow_chains' => 'Workflow chains',
     ],
     'sign_in_providers' => [
+        'delete_sign_in_provider' => 'Delete sign-in provider?',
         'add_provider' => 'Add provider',
         'add_sign_in_provider' => 'Add sign-in provider',
         'another_provider_already_uses_this' => 'Another provider already uses this name.',
@@ -74,6 +75,7 @@ return [
         'title' => 'Sign-in providers',
     ],
     'users' => [
+        'deactivate_user' => 'Deactivate user?',
         'active' => 'Active',
         'deactivate' => 'Deactivate',
         'deactivate_name_they_are_signed' => 'Deactivate :name? They are signed out and cannot sign in until reactivated.',
@@ -96,6 +98,7 @@ return [
         'title' => 'Users',
     ],
     'workspaces' => [
+        'delete_workspace' => 'Delete workspace?',
         'delete_name_its_workflows_execution' => 'Delete :name? Its workflows, execution logs, variables, secrets and authentication settings are deleted too. This cannot be undone.',
         'each_workspace_keeps_its_own' => 'Each workspace keeps its own workflows, variables, secrets, authentication settings and members.',
         'new_workspace' => 'New workspace',

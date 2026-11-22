@@ -236,8 +236,7 @@ new class extends Component {
                     <flux:table.cell align="end">
                         @if ($this->canManage)
                             <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit({{ $credential->id }})" :aria-label="__('common.edit')" />
-                            <flux:button size="sm" variant="ghost" icon="trash" wire:click="delete({{ $credential->id }})"
-                                wire:confirm="{{ __('workspaces.credentials.delete_this_authentication_setting_workflows') }}" :aria-label="__('common.delete')" />
+                            <flux:button size="sm" variant="ghost" icon="trash" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('workspaces.credentials.delete_authentication_setting'), 'message' => __('workspaces.credentials.delete_this_authentication_setting_workflows'), 'confirm' => __('common.delete')]) }}).then((ok) => ok && $wire.delete({{ $credential->id }}))" :aria-label="__('common.delete')" />
                         @endif
                     </flux:table.cell>
                 </flux:table.row>
