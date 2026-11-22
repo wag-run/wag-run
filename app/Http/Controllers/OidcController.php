@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use RuntimeException;
 
 /**
- * Signs people in with an OIDC provider configured under Install settings.
+ * Signs people in with an OIDC provider configured under Organization settings.
  */
 class OidcController extends Controller
 {

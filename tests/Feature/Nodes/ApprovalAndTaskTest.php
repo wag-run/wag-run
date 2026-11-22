@@ -125,7 +125,7 @@ class ApprovalAndTaskTest extends TestCase
 
         $execution = $this->runWorkflow($this->approvalWorkflow($approver));
 
-        $this->assertSame('The approver does not have an active account on this install.', $this->stepFor($execution, 'escalate')->output['value']);
+        $this->assertSame('The approver does not have an active account in this organization.', $this->stepFor($execution, 'escalate')->output['value']);
         $this->assertSame(0, Assignment::count());
     }
 

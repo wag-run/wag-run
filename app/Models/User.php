@@ -133,7 +133,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
-     * The user's effective role in a workspace. Install admins act as Admin in
+     * The user's effective role in a workspace. Organization admins act as Admin in
      * every workspace of their organization without being added as a member.
      */
     public function roleIn(Workspace $workspace): ?WorkspaceRole

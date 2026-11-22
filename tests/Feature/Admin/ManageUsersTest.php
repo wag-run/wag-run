@@ -37,7 +37,7 @@ class ManageUsersTest extends TestCase
         Livewire::actingAs($admin)
             ->test('pages::admin.users')
             ->call('demote', $admin->id)
-            ->assertHasErrors(['user' => 'The last install admin cannot be demoted.']);
+            ->assertHasErrors(['user' => 'The last organization admin cannot be demoted.']);
 
         $this->assertTrue($admin->isInstallAdmin());
     }
@@ -59,7 +59,7 @@ class ManageUsersTest extends TestCase
         Livewire::actingAs($admin)
             ->test('pages::admin.users')
             ->call('demote', $admin->id)
-            ->assertHasErrors(['user' => 'The last install admin cannot be demoted.']);
+            ->assertHasErrors(['user' => 'The last organization admin cannot be demoted.']);
     }
 
     public function test_admin_cannot_deactivate_themselves(): void

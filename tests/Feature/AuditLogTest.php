@@ -52,7 +52,7 @@ class AuditLogTest extends TestCase
         $user = User::factory()->installAdmin()->create();
         $this->actingAs($user);
 
-        $entry = Audit::record('install.settings_updated');
+        $entry = Audit::record('organization.settings_updated');
 
         $this->assertSame($user->id, $entry->user_id);
         $this->assertSame('127.0.0.1', $entry->ip_address);

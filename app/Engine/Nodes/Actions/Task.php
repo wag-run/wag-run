@@ -111,7 +111,7 @@ class Task extends Node
         $assignee = $this->assignments->activeUser($context->input('assignee'));
 
         if (! $assignee) {
-            return NodeResult::fail(__('The assignee does not have an active account on this install.'), retryable: false);
+            return NodeResult::fail(__('The assignee does not have an active account in this organization.'), retryable: false);
         }
 
         $dueAt = now()->addHours(max(1, (int) $context->input('timeout_hours', 48)));

@@ -26,7 +26,7 @@ class InstallSettingsTest extends TestCase
         $organization = Organization::current();
         $this->assertTrue($organization->registration_open);
         $this->assertNull($organization->default_retention_days);
-        $this->assertDatabaseHas('audit_logs', ['action' => 'install.settings_updated']);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'organization.settings_updated']);
     }
 
     public function test_requires_a_retention_period_unless_kept_forever(): void

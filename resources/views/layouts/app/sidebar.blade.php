@@ -107,7 +107,7 @@
                 @endif
 
                 @if ($isInstallAdmin)
-                    <flux:sidebar.group :heading="__('Install')" class="grid">
+                    <flux:sidebar.group :heading="__('Organization')" class="grid">
                         <flux:sidebar.item icon="squares-2x2" :href="route('admin.workspaces')" :current="request()->routeIs('admin.workspaces')" wire:navigate>
                             {{ __('Workspaces') }}
                         </flux:sidebar.item>

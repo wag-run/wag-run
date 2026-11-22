@@ -63,14 +63,14 @@ new #[Title('Users')] class extends Component {
     {
         $this->authorize('install-admin');
         $directory->promote($this->findUser($userId));
-        Flux::toast(text: __('User promoted to install admin.'));
+        Flux::toast(text: __('User promoted to organization admin.'));
     }
 
     public function demote(int $userId, UserDirectory $directory): void
     {
         $this->authorize('install-admin');
         $directory->demote($this->findUser($userId));
-        Flux::toast(text: __('User is now an install member.'));
+        Flux::toast(text: __('User is now an organization member.'));
     }
 
     public function deactivate(int $userId, UserDirectory $directory): void
@@ -103,7 +103,7 @@ new #[Title('Users')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <x-page-heading :heading="__('Users')" :subheading="__('Everyone with an account on this install. Members get their powers from their workspace roles.')" />
+    <x-page-heading :heading="__('Users')" :subheading="__('Everyone with an account in this organization. Members get their powers from their workspace roles.')" />
 
     <flux:error name="user" class="mb-4" />
 
@@ -111,7 +111,7 @@ new #[Title('Users')] class extends Component {
         <div class="min-w-64 flex-1">
             <flux:input wire:model="email" type="email" :label="__('Invite by email')" placeholder="name@example.com" required />
         </div>
-        <flux:select wire:model="installRole" :label="__('Install role')" class="w-44">
+        <flux:select wire:model="installRole" :label="__('Organization role')" class="w-44">
             @foreach (InstallRole::cases() as $option)
                 <flux:select.option :value="$option->value">{{ $option->label() }}</flux:select.option>
             @endforeach
@@ -137,7 +137,7 @@ new #[Title('Users')] class extends Component {
         <flux:table.columns>
             <flux:table.column>{{ __('Name') }}</flux:table.column>
             <flux:table.column>{{ __('Email') }}</flux:table.column>
-            <flux:table.column>{{ __('Install role') }}</flux:table.column>
+            <flux:table.column>{{ __('Organization role') }}</flux:table.column>
             <flux:table.column>{{ __('Status') }}</flux:table.column>
             <flux:table.column></flux:table.column>
         </flux:table.columns>
@@ -164,7 +164,7 @@ new #[Title('Users')] class extends Component {
                                 @if ($membership->role === InstallRole::Admin)
                                     <flux:menu.item wire:click="demote({{ $listedUser->id }})">{{ __('Demote to member') }}</flux:menu.item>
                                 @else
-                                    <flux:menu.item wire:click="promote({{ $listedUser->id }})">{{ __('Promote to install admin') }}</flux:menu.item>
+                                    <flux:menu.item wire:click="promote({{ $listedUser->id }})">{{ __('Promote to organization admin') }}</flux:menu.item>
                                 @endif
                                 <flux:menu.item icon="key" wire:click="generateResetLink({{ $listedUser->id }})">{{ __('Generate password-reset link') }}</flux:menu.item>
                                 <flux:menu.separator />
@@ -189,7 +189,7 @@ new #[Title('Users')] class extends Component {
         <flux:table>
             <flux:table.columns>
                 <flux:table.column>{{ __('Email') }}</flux:table.column>
-                <flux:table.column>{{ __('Install role') }}</flux:table.column>
+                <flux:table.column>{{ __('Organization role') }}</flux:table.column>
                 <flux:table.column>{{ __('Expires') }}</flux:table.column>
                 <flux:table.column></flux:table.column>
             </flux:table.columns>

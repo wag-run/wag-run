@@ -20,7 +20,7 @@ new class extends Component {
             'password' => $this->currentPasswordRules(),
         ]);
 
-        $directory->ensureNotLastAdmin(Auth::user(), __('You are the last install admin. Promote another admin before deleting your account.'));
+        $directory->ensureNotLastAdmin(Auth::user(), __('You are the last organization admin. Promote another admin before deleting your account.'));
 
         tap(Auth::user(), $logout(...))->delete();
 

@@ -7,7 +7,7 @@
 
         @unless ($registrationOpen ?? true)
             <flux:callout icon="envelope" variant="secondary" :heading="__('Registration is by invitation only')">
-                {{ __('Ask an admin of this install to invite you. The invitation email has a link to create your account.') }}
+                {{ __('Ask an admin of this organization to invite you. The invitation email has a link to create your account.') }}
             </flux:callout>
         @else
         <form method="POST" action="{{ route('register.store') }}" class="flex flex-col gap-6">

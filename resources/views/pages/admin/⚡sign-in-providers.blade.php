@@ -229,7 +229,7 @@ new #[Title('Sign-in providers')] class extends Component {
 
             <flux:switch wire:model="enabled" :label="__('Show on the sign-in page')" />
             <flux:switch wire:model="allowRegistration" :label="__('Create accounts for new people')"
-                :description="__('New people join as install Members with no workspace access. When off, only people who already have an account can sign in this way.')" />
+                :description="__('New people join as organization Members with no workspace access. When off, only people who already have an account can sign in this way.')" />
             <flux:switch wire:model="trustEmail" :label="__('Trust email addresses from this provider')"
                 :description="__('Link sign-ins to existing accounts by email even when the provider does not mark the email verified. Turn on only for a provider your organization controls.')" />
 

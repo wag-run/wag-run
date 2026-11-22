@@ -101,7 +101,7 @@ new class extends Component {
 }; ?>
 
 <section class="w-full">
-    <x-page-heading :heading="__('Members')" :subheading="__('Who can use this workspace. Install admins act as Admin in every workspace without being listed here.')" />
+    <x-page-heading :heading="__('Members')" :subheading="__('Who can use this workspace. Organization admins act as Admin in every workspace without being listed here.')" />
 
     @if ($this->canManage)
         <form wire:submit="add" class="mb-6 flex flex-wrap items-end gap-3">

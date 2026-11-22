@@ -32,11 +32,11 @@ new #[Title('Audit log')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <x-page-heading :heading="__('Audit log')" :subheading="__('Every audited change on the install, across all workspaces.')">
+    <x-page-heading :heading="__('Audit log')" :subheading="__('Every audited change in the organization, across all workspaces.')">
         <x-slot:actions>
             <flux:select wire:model.live="action" class="w-48">
                 <flux:select.option value="">{{ __('All actions') }}</flux:select.option>
-                @foreach (['workspace' => __('Workspaces'), 'member' => __('Membership'), 'invitation' => __('Invitations'), 'secret' => __('Secrets'), 'credential' => __('Authentication'), 'variable' => __('Variables'), 'user' => __('Users'), 'install' => __('Install settings')] as $prefix => $label)
+                @foreach (['workspace' => __('Workspaces'), 'member' => __('Membership'), 'invitation' => __('Invitations'), 'secret' => __('Secrets'), 'credential' => __('Authentication'), 'variable' => __('Variables'), 'user' => __('Users'), 'organization' => __('Organization settings')] as $prefix => $label)
                     <flux:select.option :value="$prefix">{{ $label }}</flux:select.option>
                 @endforeach
             </flux:select>

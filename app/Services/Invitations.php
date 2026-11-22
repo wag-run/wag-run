@@ -39,7 +39,7 @@ class Invitations
         $email = Str::lower(trim($email));
 
         if (User::query()->where('email', $email)->exists()) {
-            throw ValidationException::withMessages(['email' => __('That person already has an account on this install.')]);
+            throw ValidationException::withMessages(['email' => __('That person already has an account in this organization.')]);
         }
 
         return DB::transaction(function () use ($organization, $email, $inviter, $installRole, $workspace, $workspaceRole) {

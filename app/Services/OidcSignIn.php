@@ -39,7 +39,7 @@ class OidcSignIn
         $user = $identity->user ?? DB::transaction(fn () => $this->linkOrCreate($provider, $subject, $email, $emailTrusted, $claims));
 
         if (! $user->organizationMembership() || $user->isDeactivated()) {
-            throw new RuntimeException(__('This account has been deactivated. Ask an install admin to reactivate it.'));
+            throw new RuntimeException(__('This account has been deactivated. Ask an organization admin to reactivate it.'));
         }
 
         OidcIdentity::query()->updateOrCreate(

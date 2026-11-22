@@ -44,15 +44,15 @@ new #[Title('Sign-in & defaults')] class extends Component {
         if ($organization->isDirty()) {
             $changed = array_keys($organization->getDirty());
             $organization->save();
-            Audit::record('install.settings_updated', $organization, metadata: ['changed' => $changed]);
+            Audit::record('organization.settings_updated', $organization, metadata: ['changed' => $changed]);
         }
 
-        Flux::toast(variant: 'success', text: __('Install settings saved.'));
+        Flux::toast(variant: 'success', text: __('Organization settings saved.'));
     }
 }; ?>
 
 <section class="w-full">
-    <x-page-heading :heading="__('Sign-in & defaults')" :subheading="__('Install-wide settings. Workspaces and workflows can override the defaults.')" />
+    <x-page-heading :heading="__('Sign-in & defaults')" :subheading="__('Organization-wide settings. Workspaces and workflows can override the defaults.')" />
 
     <form wire:submit="save" class="max-w-2xl space-y-10">
         <flux:input wire:model="name" :label="__('Organization name')" required />
@@ -60,7 +60,7 @@ new #[Title('Sign-in & defaults')] class extends Component {
         <div class="space-y-3">
             <flux:heading>{{ __('Sign-in') }}</flux:heading>
             <flux:switch wire:model="registrationOpen" :label="__('Allow anyone to register')"
-                :description="__('When off, people join only by invitation. New accounts join as install Members with no workspace access.')" />
+                :description="__('When off, people join only by invitation. New accounts join as organization Members with no workspace access.')" />
             <flux:text class="text-sm">
                 {{ __('People can also sign in with an OpenID Connect provider.') }}
                 <flux:link :href="route('admin.sign-in-providers')" wire:navigate>{{ __('Manage sign-in providers') }}</flux:link>

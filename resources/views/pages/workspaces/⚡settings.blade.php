@@ -67,8 +67,8 @@ new class extends Component {
             @else
                 <flux:text class="text-sm">
                     {{ $workspace->organization->default_retention_days
-                        ? __('Using the install default: :days days.', ['days' => $workspace->organization->default_retention_days])
-                        : __('Using the install default: keep forever.') }}
+                        ? __('Using the organization default: :days days.', ['days' => $workspace->organization->default_retention_days])
+                        : __('Using the organization default: keep forever.') }}
                 </flux:text>
             @endif
         </div>
