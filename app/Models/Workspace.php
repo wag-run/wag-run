@@ -128,6 +128,14 @@ class Workspace extends Model
     }
 
     /**
+     * @return HasMany<Workflow, $this>
+     */
+    public function workflows(): HasMany
+    {
+        return $this->hasMany(Workflow::class);
+    }
+
+    /**
      * @return HasMany<Invitation, $this>
      */
     public function invitations(): HasMany

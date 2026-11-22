@@ -1,0 +1,144 @@
+<?php
+
+namespace App\Engine;
+
+use App\Engine\Definitions\Field;
+use App\Engine\Definitions\Output;
+use App\Enums\NodeKind;
+use App\Enums\ResumeReason;
+
+/**
+ * The contract every trigger and action implements, built-in or custom.
+ *
+ * A node declares the inputs it expects and the outputs it produces, so the
+ * editor and data picker treat every node the same way, and does its work in
+ * execute(). Register node classes with the NodeRegistry.
+ */
+abstract class Node
+{
+    /**
+     * A stable, unique identifier stored in workflow graphs, such as "core.http".
+     */
+    abstract public static function type(): string;
+
+    abstract public function label(): string;
+
+    abstract public function kind(): NodeKind;
+
+    abstract public function execute(NodeContext $context): NodeResult;
+
+    public function description(): string
+    {
+        return '';
+    }
+
+    /**
+     * Groups nodes in the editor's palette.
+     */
+    public function category(): string
+    {
+        return $this->kind() === NodeKind::Trigger ? 'Triggers' : 'Actions';
+    }
+
+    /**
+     * A Heroicon name for the editor.
+     */
+    public function icon(): string
+    {
+        return 'cube';
+    }
+
+    /**
+     * @return list<Field>
+     */
+    public function inputs(): array
+    {
+        return [];
+    }
+
+    /**
+     * The outputs this node produces with the given config. Most nodes ignore
+     * the config; an LLM call node with a structured schema does not.
+     *
+     * @param  array<string, mixed>  $config
+     * @return list<Output>
+     */
+    public function outputs(array $config = []): array
+    {
+        return [];
+    }
+
+    /**
+     * The named output ports edges can leave from, besides the error port.
+     *
+     * @param  array<string, mixed>  $config
+     * @return list<string>
+     */
+    public function ports(array $config = []): array
+    {
+        return ['main'];
+    }
+
+    /**
+     * Whether an action can be connected to this node's error output.
+     */
+    public function hasErrorPort(): bool
+    {
+        return $this->kind() === NodeKind::Action;
+    }
+
+    /**
+     * Whether this node waits for every incoming branch before running.
+     */
+    public function joinsBranches(): bool
+    {
+        return false;
+    }
+
+    public function defaultRetryPolicy(): RetryPolicy
+    {
+        return new RetryPolicy;
+    }
+
+    /**
+     * Seconds a single attempt may run before the sweep treats its worker as dead.
+     */
+    public function timeout(): int
+    {
+        return 300;
+    }
+
+    /**
+     * Continue a waiting step. The default handles timers and child workflows;
+     * nodes that wait for a response override this.
+     */
+    public function resume(NodeContext $context, Resumption $resumption): NodeResult
+    {
+        return match ($resumption->reason) {
+            ResumeReason::TimerElapsed => NodeResult::complete($context->state()['output'] ?? null),
+            ResumeReason::ChildCompleted => NodeResult::complete($resumption->payload['output'] ?? null),
+            ResumeReason::ChildFailed => NodeResult::fail($resumption->payload['message'] ?? __('The child workflow failed.')),
+            ResumeReason::External => NodeResult::complete($resumption->payload),
+        };
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function describe(): array
+    {
+        return [
+            'type' => static::type(),
+            'label' => $this->label(),
+            'description' => $this->description(),
+            'kind' => $this->kind()->value,
+            'category' => $this->category(),
+            'icon' => $this->icon(),
+            'inputs' => array_map(fn (Field $field) => $field->toArray(), $this->inputs()),
+            'outputs' => array_map(fn (Output $output) => $output->toArray(), $this->outputs()),
+            'ports' => $this->ports(),
+            'has_error_port' => $this->hasErrorPort(),
+            'joins_branches' => $this->joinsBranches(),
+        ];
+    }
+}
