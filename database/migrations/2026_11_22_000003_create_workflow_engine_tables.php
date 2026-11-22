@@ -48,6 +48,7 @@ return new class extends Migration
             $table->foreignId('triggered_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('cancelled_by')->nullable()->constrained('users')->nullOnDelete();
             $table->unsignedBigInteger('parent_step_id')->nullable()->index();
+            $table->unsignedSmallInteger('chain_depth')->default(1);
             $table->timestamp('started_at')->nullable();
             $table->timestamp('finished_at')->nullable();
             $table->timestamps();

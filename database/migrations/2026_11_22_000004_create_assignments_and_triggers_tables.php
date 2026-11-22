@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('workspace_id')->constrained()->cascadeOnDelete();
             $table->foreignId('execution_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('execution_step_id')->unique()->constrained()->cascadeOnDelete();
+            $table->foreignId('execution_step_id')->constrained()->cascadeOnDelete();
             $table->foreignId('assignee_id')->constrained('users')->cascadeOnDelete();
             $table->string('type', 20);
             $table->string('status', 20)->default('pending');
@@ -25,6 +25,7 @@ return new class extends Migration
             $table->timestamp('due_at')->nullable();
             $table->timestamps();
 
+            $table->unique(['execution_step_id', 'assignee_id']);
             $table->index(['assignee_id', 'status']);
         });
 
