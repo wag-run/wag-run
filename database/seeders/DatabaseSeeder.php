@@ -2,24 +2,37 @@
 
 namespace Database\Seeders;
 
+use App\Enums\InstallRole;
+use App\Enums\WorkspaceRole;
+use App\Models\Organization;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
-     * Seed the application's database.
+     * Seed a local install: an install admin and an editor, both signing in
+     * with the factory password ("password"), and a Default workspace.
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $organization = Organization::current() ?? Organization::factory()->create(['name' => config('app.name')]);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $workspace = $organization->workspaces()->firstOrCreate(['slug' => 'default'], ['name' => 'Default']);
+
+        $admin = User::query()->firstWhere('email', 'test@example.com')
+            ?? User::factory()->create(['name' => 'Test Admin', 'email' => 'test@example.com']);
+
+        $editor = User::query()->firstWhere('email', 'editor@example.com')
+            ?? User::factory()->create(['name' => 'Test Editor', 'email' => 'editor@example.com']);
+
+        $organization->users()->syncWithoutDetaching([
+            $admin->id => ['role' => InstallRole::Admin->value],
+            $editor->id => ['role' => InstallRole::Member->value],
+        ]);
+
+        $workspace->members()->syncWithoutDetaching([
+            $editor->id => ['role' => WorkspaceRole::Editor->value],
         ]);
     }
 }
