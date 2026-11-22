@@ -14,6 +14,8 @@ new class extends Component {
 
     public ?int $defaultRetentionDays = null;
 
+    public int|string $maxChainDepth = 10;
+
     public function mount(): void
     {
         $organization = Organization::current();
@@ -22,15 +24,17 @@ new class extends Component {
         $this->registrationOpen = $organization->registration_open;
         $this->keepForever = $organization->default_retention_days === null;
         $this->defaultRetentionDays = $organization->default_retention_days ?? 30;
+        $this->maxChainDepth = $organization->max_chain_depth;
     }
 
     public function save(): void
     {
-        $this->authorize('install-admin');
+        $this->authorize('org-admin');
 
         $this->validate([
             'name' => ['required', 'string', 'max:100'],
             'defaultRetentionDays' => [$this->keepForever ? 'nullable' : 'required', 'integer', 'min:1', 'max:3650'],
+            'maxChainDepth' => ['required', 'integer', 'min:1', 'max:100'],
         ]);
 
         $organization = Organization::current();
@@ -38,6 +42,7 @@ new class extends Component {
             'name' => $this->name,
             'registration_open' => $this->registrationOpen,
             'default_retention_days' => $this->keepForever ? null : $this->defaultRetentionDays,
+            'max_chain_depth' => (int) $this->maxChainDepth,
         ]);
 
         if ($organization->isDirty()) {
@@ -77,6 +82,12 @@ new class extends Component {
             @unless ($keepForever)
                 <flux:input wire:model="defaultRetentionDays" type="number" min="1" max="3650" :label="__('common.keep_logs_for_days')" class="max-w-48" />
             @endunless
+        </div>
+
+        <div class="space-y-3">
+            <flux:heading>{{ __('admin.settings.workflow_chains') }}</flux:heading>
+            <flux:input wire:model="maxChainDepth" type="number" min="1" max="100" :label="__('admin.settings.maximum_chain_depth')"
+                :description="__('admin.settings.how_many_runs_deep_a')" class="max-w-48" data-test="max-chain-depth" />
         </div>
 
         <flux:button type="submit" variant="primary">{{ __('common.save_settings') }}</flux:button>

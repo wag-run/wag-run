@@ -24,6 +24,32 @@ class ConfigFormTest extends TestCase
         $this->assertEquals($config, ConfigForm::toConfig($task, $form));
     }
 
+    public function test_fields_hidden_by_another_fields_value_are_not_saved(): void
+    {
+        $webhook = app(NodeRegistry::class)->make('core.webhook_trigger');
+        $task = app(NodeRegistry::class)->make('core.task');
+
+        $form = ConfigForm::toForm($webhook, ['verification' => 'token', 'secret' => 'hook_key', 'header' => 'X-Token']);
+        $form['verification'] = 'ip';
+        $form['allowed_ips'] = '10.0.0.0/8';
+
+        $this->assertSame(['method' => 'POST', 'verification' => 'ip', 'allowed_ips' => '10.0.0.0/8'], ConfigForm::toConfig($webhook, $form));
+
+        $form = ConfigForm::toForm($task, ['fields' => [['name' => 'size', 'label' => 'Size', 'type' => 'text', 'options' => ['s' => 'Small']]]]);
+        $this->assertArrayNotHasKey('options', ConfigForm::toConfig($task, $form)['fields'][0], 'choices only apply to choice fields');
+    }
+
+    public function test_user_lists_are_edited_as_strings_and_stored_as_unique_ids(): void
+    {
+        $approval = app(NodeRegistry::class)->make('core.approval');
+
+        $form = ConfigForm::toForm($approval, ['approvers' => [4, 9]]);
+        $this->assertSame(['4', '9'], $form['approvers']);
+
+        $form['approvers'] = ['9', '4', '9', ''];
+        $this->assertSame([9, 4], ConfigForm::toConfig($approval, $form)['approvers']);
+    }
+
     public function test_key_value_rows_without_a_key_are_dropped_and_numbers_are_stored_as_numbers(): void
     {
         $http = app(NodeRegistry::class)->make('core.http_request');

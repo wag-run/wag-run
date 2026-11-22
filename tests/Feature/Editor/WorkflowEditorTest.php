@@ -90,6 +90,84 @@ class WorkflowEditorTest extends TestCase
         $this->assertTrue($graph->hasEdge('check', 'false', 'compose_2'), 'the second node takes the next free output');
     }
 
+    public function test_a_node_dropped_on_the_canvas_lands_where_it_was_dropped_without_connecting(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor();
+
+        $this->editor($workspace, $workflow, $user)
+            ->call('selectNode', 'check')
+            ->call('addNode', 'core.compose', ['x' => 610.4, 'y' => 330])
+            ->assertSet('selected', 'compose');
+
+        $graph = $workflow->refresh()->draft();
+        $this->assertSame(['x' => 500.0, 'y' => 300.0], $graph->node('compose')->position);
+        $this->assertSame([], $graph->incoming('compose'));
+    }
+
+    public function test_undo_and_redo_step_through_draft_changes_and_a_new_change_clears_redo(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor();
+        $editor = $this->editor($workspace, $workflow, $user)->assertSet('canUndo', false);
+
+        $editor->call('addNode', 'core.compose')->call('moveNode', 'compose', ['x' => 900, 'y' => 40]);
+
+        $editor->call('undo')->assertSet('canRedo', true);
+        $this->assertSame(['x' => 300.0, 'y' => 160.0], $workflow->refresh()->draft()->node('compose')->position);
+
+        $editor->call('undo')->assertSet('canUndo', false)->assertSet('selected', null);
+        $this->assertFalse($workflow->refresh()->draft()->has('compose'));
+
+        $editor->call('redo');
+        $this->assertTrue($workflow->refresh()->draft()->has('compose'));
+
+        $editor->call('moveNode', 'fetch', ['x' => 5, 'y' => 5])->assertSet('canRedo', false);
+    }
+
+    public function test_copied_nodes_paste_with_new_ids_their_connections_and_an_offset(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor();
+        $editor = $this->editor($workspace, $workflow, $user);
+        $original = $workflow->draft();
+
+        $editor->call('copyNodes', ['fetch', 'check', 'missing'])->assertSet('hasClipboard', true);
+        $editor->call('pasteNodes');
+
+        $graph = $workflow->refresh()->draft();
+        $this->assertSame($graph->node('fetch')->config, $graph->node('fetch_2')->config);
+        $this->assertSame(['x' => $original->node('check')->position['x'] + 40, 'y' => $original->node('check')->position['y'] + 40], $graph->node('check_2')->position);
+        $this->assertTrue($graph->hasEdge('fetch_2', 'main', 'check_2'));
+        $this->assertSame([], $graph->incoming('fetch_2'), 'connections to nodes outside the copy are left out');
+
+        $editor->call('pasteNodes', ['x' => 1000, 'y' => 500]);
+
+        $graph = $workflow->refresh()->draft();
+        $this->assertSame(['x' => 1000.0, 'y' => 500.0], $graph->node('fetch_3')->position, 'the copy starts at the position given');
+    }
+
+    public function test_cut_removes_the_nodes_and_keeps_them_for_pasting(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor();
+        $editor = $this->editor($workspace, $workflow, $user)->call('selectNode', 'check');
+
+        $editor->call('cutNodes', ['check'])->assertSet('selected', null);
+        $this->assertFalse($workflow->refresh()->draft()->has('check'));
+
+        $editor->call('pasteNodes');
+        $this->assertTrue($workflow->refresh()->draft()->has('check'));
+    }
+
+    public function test_viewers_can_copy_but_cannot_paste_or_undo(): void
+    {
+        [$workspace, $workflow] = $this->setUpEditor();
+        $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
+        $editor = $this->editor($workspace, $workflow, $viewer);
+
+        $editor->call('copyNodes', ['fetch'])->assertSet('hasClipboard', true);
+        $editor->call('pasteNodes')->assertForbidden();
+        $this->editor($workspace, $workflow, $viewer)->call('undo')->assertForbidden();
+        $this->assertFalse($workflow->refresh()->draft()->has('fetch_2'));
+    }
+
     /**
      * @return array<string, array{string, string, string, string}>
      */
@@ -182,6 +260,33 @@ class WorkflowEditorTest extends TestCase
 
         $editor->set('errorPath', true);
         $this->assertTrue($workflow->refresh()->draft()->node('fetch')->errorPath);
+    }
+
+    public function test_removing_a_switch_case_drops_its_connections_and_moves_later_ones_up(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
+            ['start' => 'core.manual_trigger', 'route' => ['core.switch', ['value' => 'x', 'cases' => [['value' => 'free'], ['value' => 'pro'], ['value' => 'team']]]],
+                'a' => 'core.compose', 'b' => 'core.compose', 'c' => 'core.compose', 'other' => 'core.compose'],
+            ['start->route', 'route:case_1->a', 'route:case_2->b', 'route:case_3->c', 'route:default->other'],
+        ));
+        $editor = $this->editor($workspace, $workflow, $user);
+
+        $editor->call('selectNode', 'route')->call('removeRow', 'cases', 0);
+
+        $graph = $workflow->refresh()->draft();
+        $this->assertSame([['value' => 'pro'], ['value' => 'team']], $graph->node('route')->config['cases']);
+        $connections = array_map(fn ($edge) => "{$edge->sourcePort}->{$edge->target}", $graph->outgoing('route'));
+        sort($connections);
+        $this->assertSame(['case_1->b', 'case_2->c', 'default->other'], $connections);
+        $this->assertSame(['= pro', '= team', 'default'], array_column(collect($editor->get('canvas')['nodes'])->firstWhere('id', 'route')['data']['ports'], 'label'));
+    }
+
+    public function test_trigger_other_workflow_does_not_offer_the_workflow_itself(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor();
+        $other = Workflow::factory()->for($workspace)->create(['name' => 'Billing']);
+
+        $this->editor($workspace, $workflow, $user)->assertSet('choices.workflows', [$other->id => 'Billing']);
     }
 
     public function test_publish_reports_problems_or_creates_a_version(): void

@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Enums\InstallRole;
+use App\Enums\OrgRole;
 use App\Enums\WorkspacePermission;
 use App\Enums\WorkspaceRole;
 use Database\Factories\UserFactory;
@@ -105,7 +105,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
-     * The user's own membership of a workspace, ignoring install-admin powers.
+     * The user's own membership of a workspace, ignoring organization-admin powers.
      */
     public function workspaceMembership(Workspace $workspace): ?WorkspaceMembership
     {
@@ -115,16 +115,16 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             ->first();
     }
 
-    public function installRole(): ?InstallRole
+    public function orgRole(): ?OrgRole
     {
         return $this->organizationMembership()?->role;
     }
 
-    public function isInstallAdmin(): bool
+    public function isOrgAdmin(): bool
     {
         $membership = $this->organizationMembership();
 
-        return $membership?->role === InstallRole::Admin && $membership->deactivated_at === null;
+        return $membership?->role === OrgRole::Admin && $membership->deactivated_at === null;
     }
 
     public function isDeactivated(): bool
@@ -138,7 +138,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
      */
     public function roleIn(Workspace $workspace): ?WorkspaceRole
     {
-        if ($this->isInstallAdmin() && $this->organizationMembership()?->organization_id === $workspace->organization_id) {
+        if ($this->isOrgAdmin() && $this->organizationMembership()?->organization_id === $workspace->organization_id) {
             return WorkspaceRole::Admin;
         }
 
@@ -151,14 +151,14 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
-     * Workspaces the user can move between: every workspace for install
+     * Workspaces the user can move between: every workspace for organization
      * admins, else the ones they are a member of (any role, Guest included).
      *
      * @return Collection<int, Workspace>
      */
     public function accessibleWorkspaces(): Collection
     {
-        if ($this->isInstallAdmin()) {
+        if ($this->isOrgAdmin()) {
             return Workspace::query()
                 ->where('organization_id', $this->organizationMembership()?->organization_id)
                 ->orderBy('name')

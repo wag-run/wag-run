@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Enums\InstallRole;
+use App\Enums\OrgRole;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Carbon;
 
@@ -10,7 +10,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $organization_id
  * @property int $user_id
- * @property InstallRole $role
+ * @property OrgRole $role
  * @property Carbon|null $deactivated_at
  */
 class OrganizationMembership extends Pivot
@@ -22,7 +22,7 @@ class OrganizationMembership extends Pivot
     protected function casts(): array
     {
         return [
-            'role' => InstallRole::class,
+            'role' => OrgRole::class,
             'deactivated_at' => 'datetime',
         ];
     }

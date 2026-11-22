@@ -68,18 +68,18 @@ class SecretsTest extends TestCase
         ]);
     }
 
-    public function test_install_admin_reveal_is_audited_against_the_workspace(): void
+    public function test_org_admin_reveal_is_audited_against_the_workspace(): void
     {
         $workspace = Workspace::factory()->create();
         $secret = Secret::factory()->for($workspace)->create();
-        $installAdmin = User::factory()->installAdmin()->create();
+        $orgAdmin = User::factory()->orgAdmin()->create();
 
-        Livewire::actingAs($installAdmin)
+        Livewire::actingAs($orgAdmin)
             ->test('pages::workspaces.secrets', ['workspace' => $workspace])
             ->call('reveal', $secret->id)
             ->assertReturned($secret->value);
 
-        $this->assertDatabaseHas('audit_logs', ['workspace_id' => $workspace->id, 'user_id' => $installAdmin->id, 'action' => 'secret.revealed']);
+        $this->assertDatabaseHas('audit_logs', ['workspace_id' => $workspace->id, 'user_id' => $orgAdmin->id, 'action' => 'secret.revealed']);
     }
 
     public function test_editor_cannot_reveal_or_manage_secrets(): void

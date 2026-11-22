@@ -66,23 +66,23 @@ class WorkspaceAccessTest extends TestCase
     public function test_forbids_users_who_are_not_members(): void
     {
         $workspace = Workspace::factory()->create();
-        $outsider = User::factory()->installMember()->create();
+        $outsider = User::factory()->orgMember()->create();
 
         $this->actingAs($outsider)->get(route('workspaces.show', $workspace))->assertForbidden();
     }
 
-    public function test_install_admin_acts_as_admin_without_membership(): void
+    public function test_org_admin_acts_as_admin_without_membership(): void
     {
         $workspace = Workspace::factory()->create();
-        $admin = User::factory()->installAdmin()->create();
+        $admin = User::factory()->orgAdmin()->create();
 
         $this->actingAs($admin)->get(route('workspaces.settings', $workspace))->assertOk();
         $this->assertSame(WorkspaceRole::Admin, $admin->roleIn($workspace));
     }
 
-    public function test_install_admin_has_no_role_in_another_organizations_workspace(): void
+    public function test_org_admin_has_no_role_in_another_organizations_workspace(): void
     {
-        $admin = User::factory()->installAdmin()->create();
+        $admin = User::factory()->orgAdmin()->create();
         $foreign = Workspace::factory()->for(Organization::factory())->create();
 
         $this->actingAs($admin)->get(route('workspaces.show', $foreign))->assertForbidden();

@@ -144,9 +144,12 @@ new class extends Component {
         $this->drawnStatuses = $statuses;
     }
 
-    public function assignment(ExecutionStep $step): ?Assignment
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, Assignment>
+     */
+    public function assignments(ExecutionStep $step)
     {
-        return Assignment::query()->with('assignee')->where('execution_step_id', $step->id)->first();
+        return Assignment::query()->with('assignee')->where('execution_step_id', $step->id)->orderBy('id')->get();
     }
 
     public function json(mixed $value): string
@@ -254,11 +257,11 @@ new class extends Component {
                     @endif
                 </div>
 
-                @if ($assignment = $this->assignment($step))
-                    <flux:callout icon="user" class="mb-4" :heading="__('runs.show.type_for_name', ['type' => $assignment->type->label(), 'name' => $assignment->assignee->name])">
+                @foreach ($this->assignments($step) as $assignment)
+                    <flux:callout wire:key="assignment-{{ $assignment->id }}" icon="user" class="mb-2 last-of-type:mb-4" :heading="__('runs.show.type_for_name', ['type' => $assignment->type->label(), 'name' => $assignment->assignee->name])">
                         <flux:callout.text>{{ $assignment->status->label() }}@if ($assignment->due_at && $assignment->isPending()) · {{ __('common.due_time', ['time' => $assignment->due_at->diffForHumans()]) }}@endif</flux:callout.text>
                     </flux:callout>
-                @endif
+                @endforeach
 
                 @foreach ($step->childExecutions as $child)
                     <flux:link wire:key="child-{{ $child->id }}" class="mb-4 block text-sm" :href="route('workspaces.executions.show', [$workspace, $child])" wire:navigate>

@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Request;
 
 /**
- * Records who changed workflows, secrets, membership and install settings,
+ * Records who changed workflows, secrets, membership and organization settings,
  * and every secret reveal.
  */
 class Audit

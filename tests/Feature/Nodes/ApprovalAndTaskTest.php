@@ -24,7 +24,7 @@ class ApprovalAndTaskTest extends TestCase
     {
         return $this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger',
-                'approve' => ['core.approval', ['assignee' => $approver->id, 'title' => 'Refund {{ trigger.amount }}', 'message' => 'For {{ trigger.customer }}']],
+                'approve' => ['core.approval', ['approvers' => [$approver->id], 'title' => 'Refund {{ trigger.amount }}', 'message' => 'For {{ trigger.customer }}']],
                 'refund' => ['core.compose', ['template' => 'refunded']],
                 'decline' => ['core.compose', ['template' => 'declined']],
                 'escalate' => ['core.compose', ['template' => '{{ error.message }}']]],
@@ -35,7 +35,7 @@ class ApprovalAndTaskTest extends TestCase
     public function test_approval_waits_for_the_named_user_and_follows_their_decision(): void
     {
         $this->freezeSecond();
-        $approver = User::factory()->installMember()->create();
+        $approver = User::factory()->orgMember()->create();
         $workflow = $this->approvalWorkflow($approver);
 
         $execution = $this->runWorkflow($workflow, ['amount' => 120, 'customer' => 'Acme']);
@@ -51,13 +51,76 @@ class ApprovalAndTaskTest extends TestCase
         $execution->refresh();
         $this->assertSame(ExecutionStatus::Complete, $execution->status);
         $this->assertSame(['start', 'approve', 'refund'], $this->nodesRun($execution));
-        $this->assertSame(['decision' => 'approved', 'comment' => 'Looks fine', 'responded_by' => $approver->id, 'responded_by_name' => $approver->name], $this->stepFor($execution, 'approve')->output);
+        $this->assertSame([
+            'decision' => 'approved', 'comment' => 'Looks fine', 'responded_by' => $approver->id, 'responded_by_name' => $approver->name,
+            'approvals' => 1, 'rejections' => 0,
+            'responses' => [['user_id' => $approver->id, 'name' => $approver->name, 'decision' => 'approved', 'comment' => 'Looks fine']],
+        ], $this->stepFor($execution, 'approve')->output);
         $this->assertSame(AssignmentStatus::Approved, $assignment->refresh()->status);
+    }
+
+    /**
+     * @param  list<User>  $approvers
+     */
+    private function multiApprovalWorkflow(array $approvers, int $required): Workflow
+    {
+        return $this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger',
+                'approve' => ['core.approval', ['approvers' => array_map(fn (User $user) => $user->id, $approvers), 'required_approvals' => $required, 'title' => 'Budget']],
+                'go' => ['core.compose', ['template' => 'go']],
+                'stop' => ['core.compose', ['template' => 'stop']]],
+            ['start->approve', 'approve:approved->go', 'approve:rejected->stop'],
+        ));
+    }
+
+    public function test_with_two_of_three_approvals_needed_a_rejection_does_not_decide_while_two_approvals_can_still_happen(): void
+    {
+        [$ada, $grace, $linus] = User::factory()->orgMember()->count(3)->create();
+        $execution = $this->runWorkflow($this->multiApprovalWorkflow([$ada, $grace, $linus], 2));
+        $requests = Assignment::query()->orderBy('id')->get()->keyBy('assignee_id');
+        $this->assertCount(3, $requests);
+
+        app(Assignments::class)->approve($requests[$ada->id], $ada, 'Yes');
+        $this->assertSame(ExecutionStatus::Waiting, $execution->refresh()->status);
+
+        app(Assignments::class)->reject($requests[$linus->id], $linus, 'No');
+        $this->assertSame(ExecutionStatus::Waiting, $execution->refresh()->status, 'two approvals can still happen');
+
+        app(Assignments::class)->approve($requests[$grace->id], $grace);
+
+        $this->assertSame(['start', 'approve', 'go'], $this->nodesRun($execution));
+        $output = $this->stepFor($execution, 'approve')->output;
+        $this->assertSame(['approved', 2, 1, $grace->id], [$output['decision'], $output['approvals'], $output['rejections'], $output['responded_by']]);
+        $this->assertSame([$ada->id, $grace->id, $linus->id], array_column($output['responses'], 'user_id'), 'answers are listed in approver order');
+        $this->assertSame(AssignmentStatus::Approved, $requests[$grace->id]->refresh()->status);
+    }
+
+    public function test_approval_is_rejected_once_the_needed_approvals_can_no_longer_be_reached(): void
+    {
+        [$ada, $grace, $linus] = User::factory()->orgMember()->count(3)->create();
+        $execution = $this->runWorkflow($this->multiApprovalWorkflow([$ada, $grace, $linus], 2));
+        $requests = Assignment::query()->get()->keyBy('assignee_id');
+
+        app(Assignments::class)->reject($requests[$ada->id], $ada);
+        app(Assignments::class)->reject($requests[$grace->id], $grace);
+
+        $this->assertSame(['start', 'approve', 'stop'], $this->nodesRun($execution));
+        $this->assertSame(AssignmentStatus::Cancelled, $requests[$linus->id]->refresh()->status);
+    }
+
+    public function test_approval_fails_when_it_needs_more_approvals_than_active_approvers(): void
+    {
+        [$ada, $grace] = User::factory()->orgMember()->count(2)->create();
+
+        $execution = $this->runWorkflow($this->multiApprovalWorkflow([$ada, $grace], 3));
+
+        $this->assertSame('Needs 3 approvals, but only 2 approvers have an active account.', $execution->error['message']);
+        $this->assertSame(0, Assignment::count());
     }
 
     public function test_rejection_follows_the_rejected_path(): void
     {
-        $approver = User::factory()->installMember()->create();
+        $approver = User::factory()->orgMember()->create();
         $execution = $this->runWorkflow($this->approvalWorkflow($approver));
 
         app(Assignments::class)->reject(Assignment::sole(), $approver);
@@ -68,7 +131,7 @@ class ApprovalAndTaskTest extends TestCase
     public function test_assignee_outside_the_workspace_joins_as_a_guest(): void
     {
         $workspace = Workspace::factory()->create();
-        $outsider = User::factory()->installMember()->create();
+        $outsider = User::factory()->orgMember()->create();
 
         $this->runWorkflow($this->approvalWorkflow($outsider, $workspace));
 
@@ -77,8 +140,8 @@ class ApprovalAndTaskTest extends TestCase
 
     public function test_only_the_assignee_can_answer_and_only_once(): void
     {
-        $approver = User::factory()->installMember()->create();
-        $someoneElse = User::factory()->installMember()->create();
+        $approver = User::factory()->orgMember()->create();
+        $someoneElse = User::factory()->orgMember()->create();
         $this->runWorkflow($this->approvalWorkflow($approver));
         $assignment = Assignment::sole();
 
@@ -97,7 +160,7 @@ class ApprovalAndTaskTest extends TestCase
 
     public function test_unanswered_approval_times_out_into_the_error_output(): void
     {
-        $approver = User::factory()->installMember()->create();
+        $approver = User::factory()->orgMember()->create();
         $execution = $this->runWorkflow($this->approvalWorkflow($approver));
 
         $this->travel(49)->hours();
@@ -110,7 +173,7 @@ class ApprovalAndTaskTest extends TestCase
 
     public function test_cancelling_the_run_withdraws_open_assignments(): void
     {
-        $approver = User::factory()->installMember()->create();
+        $approver = User::factory()->orgMember()->create();
         $execution = $this->runWorkflow($this->approvalWorkflow($approver));
 
         app(Engine::class)->cancel($execution);
@@ -120,18 +183,18 @@ class ApprovalAndTaskTest extends TestCase
 
     public function test_deactivated_assignee_fails_the_step(): void
     {
-        User::factory()->installAdmin()->create();
+        User::factory()->orgAdmin()->create();
         $approver = User::factory()->deactivated()->create();
 
         $execution = $this->runWorkflow($this->approvalWorkflow($approver));
 
-        $this->assertSame('The approver does not have an active account in this organization.', $this->stepFor($execution, 'escalate')->output['value']);
+        $this->assertSame('None of the approvers has an active account in this organization.', $this->stepFor($execution, 'escalate')->output['value']);
         $this->assertSame(0, Assignment::count());
     }
 
     public function test_task_validates_the_form_and_returns_the_submitted_values(): void
     {
-        $assignee = User::factory()->installMember()->create();
+        $assignee = User::factory()->orgMember()->create();
         $workflow = $this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger',
                 'check' => ['core.task', ['assignee' => $assignee->id, 'title' => 'Check stock', 'fields' => [

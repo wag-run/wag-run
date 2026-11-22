@@ -82,8 +82,8 @@ class HttpRequest extends Node
             new Field('body_type', __('common.body'), Field::SELECT, default: 'none', options: [
                 'none' => __('nodes.http_request.none'), 'json' => __('nodes.http_request.json'), 'form' => __('common.form_fields'), 'raw' => __('nodes.http_request.raw_text'),
             ]),
-            new Field('body', __('nodes.http_request.json_or_raw_body'), Field::TEXTAREA, templated: true),
-            new Field('form', __('common.form_fields'), Field::KEY_VALUE, templated: true),
+            new Field('body', __('nodes.http_request.json_or_raw_body'), Field::TEXTAREA, templated: true, visibleWhen: ['body_type' => ['json', 'raw']]),
+            new Field('form', __('common.form_fields'), Field::KEY_VALUE, templated: true, visibleWhen: ['body_type' => 'form']),
             new Field('timeout', __('common.timeout_seconds'), Field::NUMBER, default: 30),
             new Field('follow_redirects', __('nodes.http_request.follow_redirects'), Field::BOOLEAN, default: true),
             new Field('fail_on_error', __('nodes.http_request.fail_on_an_error_status'), Field::BOOLEAN, default: true),

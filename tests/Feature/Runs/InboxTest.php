@@ -23,7 +23,7 @@ class InboxTest extends TestCase
     {
         $this->runWorkflow($this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger',
-                'approve' => ['core.approval', ['assignee' => $approver->id, 'title' => 'Refund order 42']],
+                'approve' => ['core.approval', ['approvers' => [$approver->id], 'title' => 'Refund order 42']],
                 'refund' => ['core.compose', ['template' => 'refunded']]],
             ['start->approve', 'approve:approved->refund'],
         ), $workspace));
@@ -35,7 +35,7 @@ class InboxTest extends TestCase
     {
         Notification::fake();
         $workspace = Workspace::factory()->create();
-        $approver = User::factory()->installMember()->create();
+        $approver = User::factory()->orgMember()->create();
 
         $assignment = $this->startApproval($workspace, $approver);
 
@@ -86,7 +86,7 @@ class InboxTest extends TestCase
     public function test_only_the_assignee_can_open_an_assignment_and_only_in_its_workspace(): void
     {
         $workspace = Workspace::factory()->create();
-        $approver = User::factory()->installMember()->create();
+        $approver = User::factory()->orgMember()->create();
         $assignment = $this->startApproval($workspace, $approver);
         $admin = User::factory()->memberOf($workspace, WorkspaceRole::Admin)->create();
         $otherWorkspace = Workspace::factory()->create();

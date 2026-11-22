@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * An OpenID Connect provider people can sign in with, configured by install
+ * An OpenID Connect provider people can sign in with, configured by organization
  * admins in the UI. The client secret is encrypted at rest.
  *
  * @property int $id

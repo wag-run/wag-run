@@ -120,12 +120,20 @@ select:focus[data-flux-control] {
     @apply flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-start text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-700;
 }
 
+.wag-menu-item:disabled {
+    @apply cursor-default opacity-40 hover:bg-transparent;
+}
+
+.wag-kbd {
+    @apply ms-4 font-sans text-xs text-zinc-400;
+}
+
 .wag-menu-item.is-danger {
     @apply text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10;
 }
 
 .wag-edge-bar {
-    @apply flex items-center gap-3 rounded-lg border border-zinc-200 bg-white py-1 ps-3 pe-1 shadow-md dark:border-zinc-700 dark:bg-zinc-800;
+    @apply absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 rounded-lg border border-zinc-200 bg-white py-1 ps-3 pe-1 shadow-md dark:border-zinc-700 dark:bg-zinc-800;
 }
 
 .wag-run-status {
@@ -168,4 +176,17 @@ select:focus[data-flux-control] {
 .flow-container .flow-node:has(.wag-node.run-running),
 .flow-container .flow-node:has(.wag-node.run-pending) {
     border-color: var(--color-sky-500);
+}
+
+/* Minimap show/hide button: sits above the minimap, or in its corner when hidden */
+.wag-minimap-toggle {
+    @apply absolute right-3 bottom-[172px] z-20 flex size-7 cursor-pointer items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 shadow-sm hover:text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100;
+}
+
+.wag-minimap-hidden .wag-minimap-toggle {
+    @apply bottom-3;
+}
+
+.wag-minimap-hidden .flow-minimap {
+    display: none;
 }

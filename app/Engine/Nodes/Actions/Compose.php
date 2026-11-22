@@ -10,8 +10,9 @@ use App\Engine\NodeResult;
 use App\Enums\NodeKind;
 
 /**
- * Builds a value from earlier outputs and workspace values with a Twig
- * template or an expression, and returns it for later nodes to use.
+ * Builds a value from earlier outputs and workspace values with text that
+ * has {{ }} placeholders, or with one expression, and returns it for later
+ * nodes to use.
  */
 class Compose extends Node
 {
@@ -48,9 +49,9 @@ class Compose extends Node
     public function inputs(): array
     {
         return [
-            new Field('mode', __('nodes.compose.build_with'), Field::SELECT, required: true, default: 'template', options: ['template' => __('nodes.compose.template_twig'), 'expression' => __('nodes.compose.expression')]),
-            new Field('template', __('nodes.compose.template'), Field::TEXTAREA, description: __('nodes.compose.twig_such_as_order_trigger')),
-            new Field('expression', __('nodes.compose.expression'), Field::TEXT, description: __('nodes.compose.such_as_item_price_item')),
+            new Field('mode', __('nodes.compose.build_with'), Field::SELECT, required: true, default: 'template', options: ['template' => __('nodes.compose.text_with_placeholders'), 'expression' => __('nodes.compose.expression')]),
+            new Field('template', __('nodes.compose.template'), Field::TEXTAREA, description: __('nodes.compose.text_such_as_order_trigger'), visibleWhen: ['mode' => 'template']),
+            new Field('expression', __('nodes.compose.expression'), Field::TEXT, description: __('nodes.compose.such_as_item_price_item'), visibleWhen: ['mode' => 'expression']),
             new Field('parse_json', __('nodes.compose.parse_the_result_as_json'), Field::BOOLEAN, default: false),
         ];
     }

@@ -63,12 +63,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::prefix('admin')
         ->name('admin.')
-        ->middleware('can:install-admin')
+        ->middleware('can:org-admin')
         ->group(function () {
             Route::livewire('workspaces', 'pages::admin.workspaces')->name('workspaces');
             Route::livewire('users', 'pages::admin.users')->name('users');
             Route::livewire('settings', 'pages::admin.settings')->name('settings');
             Route::livewire('sign-in-providers', 'pages::admin.sign-in-providers')->name('sign-in-providers');
+            Route::livewire('email', 'pages::admin.email')->name('email');
             Route::livewire('audit', 'pages::admin.audit')->name('audit');
         });
 });

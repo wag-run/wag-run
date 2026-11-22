@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Invitations;
 
-use App\Enums\InstallRole;
+use App\Enums\OrgRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Invitation;
 use App\Models\Organization;
@@ -22,13 +22,13 @@ class AcceptInvitationTest extends TestCase
     /**
      * @return array{0: Invitation, 1: string}
      */
-    private function invite(string $email, ?Workspace $workspace = null, InstallRole $installRole = InstallRole::Member): array
+    private function invite(string $email, ?Workspace $workspace = null, OrgRole $orgRole = OrgRole::Member): array
     {
         Notification::fake();
-        $inviter = User::factory()->installAdmin()->create();
+        $inviter = User::factory()->orgAdmin()->create();
         $workspace ??= Workspace::factory()->create();
 
-        return app(Invitations::class)->invite($workspace->organization, $email, $inviter, $installRole, $workspace, WorkspaceRole::Editor);
+        return app(Invitations::class)->invite($workspace->organization, $email, $inviter, $orgRole, $workspace, WorkspaceRole::Editor);
     }
 
     public function test_invitee_creates_an_account_and_joins_with_the_invited_role(): void
@@ -48,7 +48,7 @@ class AcceptInvitationTest extends TestCase
 
         $this->assertAuthenticatedAs($user);
         $this->assertTrue($user->hasVerifiedEmail());
-        $this->assertSame(InstallRole::Member, $user->installRole());
+        $this->assertSame(OrgRole::Member, $user->orgRole());
         $this->assertSame(WorkspaceRole::Editor, $user->roleIn($workspace));
         $this->assertNotNull(Invitation::findByToken($token)->accepted_at);
     }
@@ -69,9 +69,9 @@ class AcceptInvitationTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'closed@example.com']);
     }
 
-    public function test_install_admin_invitation_makes_an_install_admin(): void
+    public function test_org_admin_invitation_makes_an_org_admin(): void
     {
-        [, $token] = $this->invite('second-admin@example.com', installRole: InstallRole::Admin);
+        [, $token] = $this->invite('second-admin@example.com', orgRole: OrgRole::Admin);
 
         Livewire::test('pages::invitations.show', ['token' => $token])
             ->set('name', 'Second Admin')
@@ -79,7 +79,7 @@ class AcceptInvitationTest extends TestCase
             ->set('password_confirmation', 'password')
             ->call('register');
 
-        $this->assertTrue(User::firstWhere('email', 'second-admin@example.com')->isInstallAdmin());
+        $this->assertTrue(User::firstWhere('email', 'second-admin@example.com')->isOrgAdmin());
     }
 
     public function test_expired_invitation_is_unavailable(): void
@@ -102,7 +102,7 @@ class AcceptInvitationTest extends TestCase
     public function test_signed_in_user_with_a_different_email_cannot_accept(): void
     {
         [$invitation, $token] = $this->invite('intended@example.com');
-        $someoneElse = User::factory()->installMember()->create();
+        $someoneElse = User::factory()->orgMember()->create();
 
         Livewire::actingAs($someoneElse)
             ->test('pages::invitations.show', ['token' => $token])
@@ -119,7 +119,7 @@ class AcceptInvitationTest extends TestCase
 
     public function test_inviting_an_existing_account_is_rejected(): void
     {
-        User::factory()->installMember()->create(['email' => 'exists@example.com']);
+        User::factory()->orgMember()->create(['email' => 'exists@example.com']);
 
         $this->expectException(ValidationException::class);
 

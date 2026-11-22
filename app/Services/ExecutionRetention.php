@@ -8,7 +8,7 @@ use App\Models\Workflow;
 
 /**
  * Removes execution logs once they pass their retention period: the
- * workflow's override, else its workspace's setting, else the install
+ * workflow's override, else its workspace's setting, else the organization
  * default. Failed, cancelled and skipped runs are removed the same way as
  * completed ones; runs still in progress are never removed.
  */

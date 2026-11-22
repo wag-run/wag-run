@@ -37,6 +37,22 @@ class CredentialFactory extends Factory
         ]);
     }
 
+    public function smtp(): static
+    {
+        return $this->state(fn () => [
+            'type' => 'smtp',
+            'config' => [
+                'host' => 'smtp.'.fake()->domainName(),
+                'port' => '587',
+                'encryption' => 'tls',
+                'username' => fake()->userName(),
+                'password' => fake()->password(12),
+                'from_address' => fake()->safeEmail(),
+                'from_name' => fake()->company(),
+            ],
+        ]);
+    }
+
     public function aiProvider(string $provider = 'anthropic'): static
     {
         return $this->state(fn () => [

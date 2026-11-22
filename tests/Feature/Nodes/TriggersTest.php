@@ -199,7 +199,7 @@ class TriggersTest extends TestCase
         $trigger = $this->form('members', $workspace);
 
         $this->get(route('forms.show', $trigger->key))->assertRedirect(route('login'));
-        $this->actingAs(User::factory()->installMember()->create())->get(route('forms.show', $trigger->key))->assertForbidden();
+        $this->actingAs(User::factory()->orgMember()->create())->get(route('forms.show', $trigger->key))->assertForbidden();
         $this->actingAs(User::factory()->memberOf($workspace, WorkspaceRole::Guest)->create())->get(route('forms.show', $trigger->key))->assertForbidden();
         $this->actingAs(User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create())->get(route('forms.show', $trigger->key))->assertOk();
     }

@@ -4,6 +4,7 @@ namespace Tests\Feature\Engine;
 
 use App\Engine\Templates\TemplateEngine;
 use App\Engine\Templates\TemplateError;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
@@ -27,11 +28,19 @@ class TemplateEngineTest extends TestCase
         return app(TemplateEngine::class);
     }
 
-    public function test_renders_twig_templates_with_filters(): void
+    public function test_fills_placeholders_in_text_with_expressions_and_helpers(): void
     {
         $this->assertSame(
-            'Hello Ada, 2 items in eu: 1,2',
-            $this->engine()->render("Hello {{ trigger.name|capitalize }}, {{ nodes.fetch.output.body.items|length }} items in {{ vars.region }}: {{ nodes.fetch.output.body.items|map(i => i.id)|join(',') }}", $this->data()),
+            'Hello Ada, 2 items in eu: 1,2 (VIP)',
+            $this->engine()->render("Hello {{ capitalize(trigger.name) }}, {{ length(nodes.fetch.output.body.items) }} items in {{ vars.region }}: {{ join(column(nodes.fetch.output.body.items, 'id'), ',') }} ({{ 'vip' in nodes.fetch.output.body.tags ? 'VIP' : 'standard' }})", $this->data()),
+        );
+    }
+
+    public function test_placeholders_in_text_print_null_as_nothing_booleans_as_words_and_data_as_json(): void
+    {
+        $this->assertSame(
+            '[] [true] [["vip","new"]] [none]',
+            $this->engine()->render("[{{ nodes.skipped.output.id }}] [{{ trigger.qty > 2 }}] [{{ nodes.fetch.output.body.tags }}] [{{ trigger.missing ?? 'none' }}]", $this->data()),
         );
     }
 
@@ -42,22 +51,52 @@ class TemplateEngineTest extends TestCase
         $this->assertNull($this->engine()->render('{{ nodes.missing.output }}', $this->data()));
     }
 
-    public function test_text_without_template_syntax_is_returned_untouched(): void
+    public function test_quotes_and_braces_inside_a_placeholder_do_not_end_it(): void
     {
-        $this->assertSame('plain {text}', $this->engine()->render('plain {text}', $this->data()));
+        $this->assertSame('a }} b {"x":1}', $this->engine()->render("a {{ '}}' }} b {{ {x: 1} }}", $this->data()));
     }
 
-    #[TestWith(['{{ include("x") }}'])]
-    #[TestWith(['{% include "x" %}'])]
-    #[TestWith(['{{ source("x") }}'])]
-    #[TestWith(['{% macro m() %}{% endmacro %}'])]
-    #[TestWith(['{{ ["system"]|map("passthru") }}'])]
-    #[TestWith(['{{ ["id"]|filter("system")|join }}'])]
-    public function test_sandbox_refuses_tags_functions_and_callables_outside_the_policy(string $template): void
+    public function test_text_without_placeholders_is_returned_untouched(): void
+    {
+        $this->assertSame('plain {text} {% if x %}', $this->engine()->render('plain {text} {% if x %}', $this->data()));
+    }
+
+    #[TestWith(['Hello {{ trigger.name'])]
+    #[TestWith(['{{ constant("PHP_VERSION") }}'])]
+    #[TestWith(['{{ trigger.name|upper }}'])]
+    public function test_refuses_unclosed_placeholders_and_expressions_it_cannot_run(string $template): void
     {
         $this->expectException(TemplateError::class);
 
         $this->engine()->render($template, $this->data());
+    }
+
+    /**
+     * @return array<string, array{string, mixed}>
+     */
+    public static function helpers(): array
+    {
+        return [
+            'title' => ["title('ada lovelace')", 'Ada Lovelace'],
+            'replace' => ["replace('a-b-c', '-', '+')", 'a+b+c'],
+            'split' => ["split('a,b', ',')", ['a', 'b']],
+            'first item' => ['first(nodes.fetch.output.body.items).id', 1],
+            'last item' => ['last(nodes.fetch.output.body.tags)', 'new'],
+            'slice' => ['slice(nodes.fetch.output.body.tags, 1)', ['new']],
+            'sum' => ["sum(column(nodes.fetch.output.body.items, 'id'))", 3],
+            'default for empty' => ["default('', 'n/a')", 'n/a'],
+            'date' => ["date('2026-11-22T10:00:00Z', 'j M Y')", '22 Nov 2026'],
+            'number format' => ['number_format(1234.5, 2)', '1,234.50'],
+            'format' => ["format('%s has %d', trigger.name, trigger.qty)", 'ada has 3'],
+            'url encode' => ["url_encode({q: 'a b', page: 2})", 'q=a%20b&page=2'],
+            'escape' => ["escape('<b>')", '&lt;b&gt;'],
+        ];
+    }
+
+    #[DataProvider('helpers')]
+    public function test_helper_functions(string $expression, mixed $expected): void
+    {
+        $this->assertSame($expected, $this->engine()->evaluate($expression, $this->data()));
     }
 
     public function test_evaluates_expressions_with_dot_and_bracket_access(): void

@@ -55,7 +55,7 @@ class RetentionTest extends TestCase
         $this->assertDatabaseMissing('execution_steps', ['execution_id' => $oldComplete->id]);
     }
 
-    public function test_a_workflow_override_wins_over_the_workspace_and_install_defaults(): void
+    public function test_a_workflow_override_wins_over_the_workspace_and_organization_defaults(): void
     {
         Organization::factory()->create(['default_retention_days' => 30]);
         $workspace = Workspace::factory()->create();

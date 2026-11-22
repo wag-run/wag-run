@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Enums\InstallRole;
+use App\Enums\OrgRole;
 use Database\Factories\OrganizationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,10 +20,12 @@ use Illuminate\Support\Carbon;
  * @property int|null $default_retention_days
  * @property bool $registration_open
  * @property array<string, mixed>|null $settings
+ * @property array{host?: string, port?: int, encryption?: string, username?: string|null, password?: string|null, from_address?: string, from_name?: string|null}|null $mail
+ * @property int $max_chain_depth
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'default_retention_days', 'registration_open', 'settings'])]
+#[Fillable(['name', 'default_retention_days', 'registration_open', 'settings', 'mail', 'max_chain_depth'])]
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */
@@ -35,6 +37,8 @@ class Organization extends Model
             'default_retention_days' => 'integer',
             'registration_open' => 'boolean',
             'settings' => 'array',
+            'mail' => 'encrypted:array',
+            'max_chain_depth' => 'integer',
         ];
     }
 
@@ -63,11 +67,11 @@ class Organization extends Model
      */
     public function admins(): BelongsToMany
     {
-        return $this->users()->wherePivot('role', InstallRole::Admin->value);
+        return $this->users()->wherePivot('role', OrgRole::Admin->value);
     }
 
     /**
-     * Install admins who can still sign in.
+     * Organization admins who can still sign in.
      */
     public function activeAdminCount(): int
     {

@@ -3,8 +3,8 @@
 namespace App\Engine\Templates;
 
 /**
- * Renders templated node inputs and evaluates expressions against a run's
- * data. Stage 3 binds a sandboxed Twig and ExpressionLanguage implementation.
+ * Renders templated node inputs ({{ expression }} placeholders in text) and
+ * evaluates expressions against a run's data.
  */
 interface TemplateEngine
 {

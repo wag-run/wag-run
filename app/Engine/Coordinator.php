@@ -144,7 +144,7 @@ class Coordinator
                 'execution_id' => $execution->id,
                 'message' => match ($execution->status) {
                     ExecutionStatus::Skipped => __('engine.child_workflow_was_skipped_because'),
-                    ExecutionStatus::Cancelled => __('engine.child_workflow_was_cancelled'),
+                    ExecutionStatus::Cancelled => $execution->error['message'] ?? __('engine.child_workflow_was_cancelled'),
                     default => $execution->error['message'] ?? __('engine.child_workflow_failed'),
                 },
             ]];

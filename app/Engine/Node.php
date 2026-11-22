@@ -80,6 +80,30 @@ abstract class Node
     }
 
     /**
+     * How the editor labels one of this node's output ports, or null for
+     * the default label.
+     *
+     * @param  array<string, mixed>  $config
+     */
+    public function portLabel(string $port, array $config = []): ?string
+    {
+        return null;
+    }
+
+    /**
+     * For nodes whose ports follow the rows of a list field: how ports move
+     * when row $index of $field is removed, as old port => new port (null
+     * when its connections should be dropped). Unlisted ports stay as they are.
+     *
+     * @param  array<string, mixed>  $config  the config before the removal
+     * @return array<string, string|null>
+     */
+    public function portsAfterRowRemoved(string $field, int $index, array $config = []): array
+    {
+        return [];
+    }
+
+    /**
      * Whether an action can be connected to this node's error output.
      */
     public function hasErrorPort(): bool

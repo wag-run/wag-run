@@ -4,7 +4,7 @@
 
     $pickable = $field->templated || $field->expression;
     $description = $field->description
-        ?? ($field->expression ? __('workflows.editor.expression') : ($field->templated ? __('workflows.editor.supports_twig_templates') : null));
+        ?? ($field->expression ? __('workflows.editor.expression') : ($field->templated ? __('workflows.editor.use_placeholders_to_insert_data') : null));
 @endphp
 
 @if ($field->type === Field::BOOLEAN)
@@ -33,6 +33,16 @@
     @if ($options === [] && $field->type === Field::CREDENTIAL)
         <flux:text class="text-xs">{{ __('workflows.editor.add_one_under_authentication_first') }}</flux:text>
     @endif
+@elseif ($field->type === Field::USERS)
+    <flux:checkbox.group wire:model.live="{{ $model }}" :label="$field->label" :description="$field->description">
+        <div class="max-h-48 space-y-2 overflow-y-auto rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
+            @forelse ($choices['users'] as $optionValue => $optionLabel)
+                <flux:checkbox :value="(string) $optionValue" :label="$optionLabel" />
+            @empty
+                <flux:text class="text-xs">{{ __('workflows.editor.no_people_to_choose') }}</flux:text>
+            @endforelse
+        </div>
+    </flux:checkbox.group>
 @elseif ($field->type === Field::KEY_VALUE)
     <flux:field>
         <flux:label>{{ $field->label }}</flux:label>
@@ -65,6 +75,7 @@
             @foreach ((array) $value as $index => $row)
                 <div class="space-y-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700" wire:key="{{ $model }}-{{ $index }}">
                     @foreach ($field->fields as $sub)
+                        @continue(! $sub->isVisible((array) $row, $field->fields))
                         @if ($sub->type === Field::KEY_VALUE)
                             <flux:textarea size="sm" rows="2" class="font-mono" wire:model.live.debounce.600ms="{{ $model }}.{{ $index }}.{{ $sub->name }}"
                                 :label="$sub->label" :description="__('workflows.editor.one_per_line_as_value')" />

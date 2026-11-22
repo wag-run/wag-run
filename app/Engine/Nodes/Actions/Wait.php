@@ -51,9 +51,9 @@ class Wait extends Node
     {
         return [
             new Field('mode', __('nodes.wait.wait'), Field::SELECT, required: true, default: 'duration', options: ['duration' => __('nodes.wait.for_a_duration'), 'until' => __('nodes.wait.until_a_time')]),
-            new Field('amount', __('nodes.wait.amount'), Field::NUMBER, default: 5, templated: true),
-            new Field('unit', __('nodes.wait.unit'), Field::SELECT, default: 'minutes', options: ['seconds' => __('nodes.wait.seconds'), 'minutes' => __('nodes.wait.minutes'), 'hours' => __('nodes.wait.hours'), 'days' => __('nodes.wait.days')]),
-            new Field('until', __('nodes.wait.until'), Field::TEXT, templated: true, description: __('nodes.wait.date_and_time_such_as')),
+            new Field('amount', __('nodes.wait.amount'), Field::NUMBER, default: 5, templated: true, visibleWhen: ['mode' => 'duration']),
+            new Field('unit', __('nodes.wait.unit'), Field::SELECT, default: 'minutes', options: ['seconds' => __('nodes.wait.seconds'), 'minutes' => __('nodes.wait.minutes'), 'hours' => __('nodes.wait.hours'), 'days' => __('nodes.wait.days')], visibleWhen: ['mode' => 'duration']),
+            new Field('until', __('nodes.wait.until'), Field::TEXT, required: true, templated: true, description: __('nodes.wait.date_and_time_such_as'), visibleWhen: ['mode' => 'until']),
         ];
     }
 

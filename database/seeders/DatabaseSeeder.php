@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Enums\InstallRole;
+use App\Enums\OrgRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Organization;
 use App\Models\User;
@@ -11,7 +11,7 @@ use Illuminate\Database\Seeder;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Seed a local install: an install admin and an editor, both signing in
+     * Seed a local install: an organization admin and an editor, both signing in
      * with the factory password ("password"), and a Default workspace.
      */
     public function run(): void
@@ -27,8 +27,8 @@ class DatabaseSeeder extends Seeder
             ?? User::factory()->create(['name' => 'Test Editor', 'email' => 'editor@example.com']);
 
         $organization->users()->syncWithoutDetaching([
-            $admin->id => ['role' => InstallRole::Admin->value],
-            $editor->id => ['role' => InstallRole::Member->value],
+            $admin->id => ['role' => OrgRole::Admin->value],
+            $editor->id => ['role' => OrgRole::Member->value],
         ]);
 
         $workspace->members()->syncWithoutDetaching([

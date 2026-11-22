@@ -38,14 +38,14 @@ class AuditLog extends Model
     }
 
     /**
-     * Install admins see every entry; workspace admins see only entries for
+     * Organization admins see every entry; workspace admins see only entries for
      * the workspaces they administer.
      *
      * @param  Builder<AuditLog>  $query
      */
     public function scopeVisibleTo(Builder $query, User $user): void
     {
-        if ($user->isInstallAdmin()) {
+        if ($user->isOrgAdmin()) {
             return;
         }
 

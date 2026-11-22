@@ -29,6 +29,7 @@ return [
         ],
         'organization' => [
             'settings_updated' => 'Organization settings updated',
+            'mail_updated' => 'Email settings updated',
         ],
         'secret' => [
             'created' => 'Secret created',

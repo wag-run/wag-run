@@ -26,7 +26,7 @@ new class extends Component {
 
     public function create(): void
     {
-        $this->authorize('install-admin');
+        $this->authorize('org-admin');
         $this->reset('editingId', 'name');
         $this->resetValidation();
         Flux::modal('workspace-form')->show();
@@ -34,7 +34,7 @@ new class extends Component {
 
     public function edit(int $id): void
     {
-        $this->authorize('install-admin');
+        $this->authorize('org-admin');
 
         $workspace = $this->findWorkspace($id);
         $this->editingId = $workspace->id;
@@ -46,7 +46,7 @@ new class extends Component {
 
     public function save(WorkspaceManager $workspaces): void
     {
-        $this->authorize('install-admin');
+        $this->authorize('org-admin');
 
         $this->validate(['name' => ['required', 'string', 'max:100']]);
 
@@ -63,7 +63,7 @@ new class extends Component {
 
     public function delete(int $id, WorkspaceManager $workspaces): void
     {
-        $this->authorize('install-admin');
+        $this->authorize('org-admin');
 
         $workspaces->delete($this->findWorkspace($id));
 

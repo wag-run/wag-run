@@ -9,6 +9,7 @@ use App\Engine\Node;
  * Converts a node's saved config to the shape the editor's form edits, and
  * back. Key-value fields become rows in the form; inside list rows they
  * become "value=Label" lines. Plain number fields are stored as numbers.
+ * Fields hidden by another field's value are not saved.
  */
 class ConfigForm
 {
@@ -34,8 +35,13 @@ class ConfigForm
     public static function toConfig(Node $node, array $form): array
     {
         $config = [];
+        $inputs = $node->inputs();
 
-        foreach ($node->inputs() as $field) {
+        foreach ($inputs as $field) {
+            if (! $field->isVisible($form, $inputs)) {
+                continue;
+            }
+
             $value = static::valueToConfig($field, $form[$field->name] ?? null);
 
             if ($value !== null && $value !== '' && $value !== []) {
@@ -59,6 +65,7 @@ class ConfigForm
                 array_filter((array) $value, 'is_array'),
             )),
             Field::BOOLEAN => (bool) $value,
+            Field::USERS => array_values(array_map('strval', array_filter((array) $value, 'is_numeric'))),
             default => is_array($value) ? json_encode($value) : ($value === null ? '' : (string) $value),
         };
     }
@@ -77,6 +84,7 @@ class ConfigForm
             Field::BOOLEAN => (bool) $value,
             Field::NUMBER => $field->templated && ! is_numeric($value) ? (string) $value : (is_numeric($value) ? $value + 0 : null),
             Field::WORKFLOW, Field::USER => is_numeric($value) ? (int) $value : null,
+            Field::USERS => array_values(array_unique(array_map('intval', array_filter((array) $value, 'is_numeric')))),
             default => is_string($value) ? $value : null,
         };
     }
@@ -108,6 +116,10 @@ class ConfigForm
         $config = [];
 
         foreach ($field->fields as $sub) {
+            if (! $sub->isVisible($row, $field->fields)) {
+                continue;
+            }
+
             $value = $row[$sub->name] ?? null;
 
             if ($sub->type === Field::KEY_VALUE) {

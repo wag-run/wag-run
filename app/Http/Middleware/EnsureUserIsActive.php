@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Signs out a user whom an install admin has deactivated.
+ * Signs out a user whom an organization admin has deactivated.
  */
 class EnsureUserIsActive
 {

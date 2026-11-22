@@ -51,10 +51,12 @@ class GraphValidator
                 }
             }
 
-            foreach ($definition->inputs() as $field) {
+            $inputs = $definition->inputs();
+
+            foreach ($inputs as $field) {
                 $value = $node->config[$field->name] ?? $field->default;
 
-                if ($field->required && ($value === null || $value === '' || $value === [])) {
+                if ($field->required && $field->isVisible($node->config, $inputs) && ($value === null || $value === '' || $value === [])) {
                     $errors[] = __('workflows.editor.node_name_needs_a_value', ['name' => $node->name, 'field' => $field->label]);
                 }
             }

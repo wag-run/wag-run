@@ -20,7 +20,7 @@ class AuditLogTest extends TestCase
         $theirs = Workspace::factory()->create();
         Audit::record('variable.created', workspace: $mine, label: 'visible_entry');
         Audit::record('variable.created', workspace: $theirs, label: 'other_workspace_entry');
-        Audit::record('user.promoted', label: 'install_entry');
+        Audit::record('user.promoted', label: 'org_entry');
         $admin = User::factory()->memberOf($mine, WorkspaceRole::Admin)->create();
 
         $this->assertSame(['visible_entry'], AuditLog::visibleTo($admin)->pluck('subject_label')->all());
@@ -32,24 +32,24 @@ class AuditLogTest extends TestCase
             ->assertDontSee('other_workspace_entry');
     }
 
-    public function test_install_admins_see_every_entry(): void
+    public function test_org_admins_see_every_entry(): void
     {
         Audit::record('variable.created', workspace: Workspace::factory()->create(), label: 'workspace_entry');
-        Audit::record('user.promoted', label: 'install_entry');
-        $installAdmin = User::factory()->installAdmin()->create();
+        Audit::record('user.promoted', label: 'org_entry');
+        $orgAdmin = User::factory()->orgAdmin()->create();
 
-        $this->assertCount(2, AuditLog::visibleTo($installAdmin)->get());
+        $this->assertCount(2, AuditLog::visibleTo($orgAdmin)->get());
 
-        $this->actingAs($installAdmin)
+        $this->actingAs($orgAdmin)
             ->get(route('admin.audit'))
             ->assertOk()
             ->assertSee('workspace_entry')
-            ->assertSee('install_entry');
+            ->assertSee('org_entry');
     }
 
     public function test_records_the_acting_user_and_request_ip(): void
     {
-        $user = User::factory()->installAdmin()->create();
+        $user = User::factory()->orgAdmin()->create();
         $this->actingAs($user);
 
         $entry = Audit::record('organization.settings_updated');

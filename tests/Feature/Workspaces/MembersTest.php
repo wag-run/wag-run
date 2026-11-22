@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Workspaces;
 
-use App\Enums\InstallRole;
+use App\Enums\OrgRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Invitation;
 use App\Models\User;
@@ -22,7 +22,7 @@ class MembersTest extends TestCase
     {
         $workspace = Workspace::factory()->create();
         $admin = User::factory()->memberOf($workspace, WorkspaceRole::Admin)->create();
-        $colleague = User::factory()->installMember()->create(['email' => 'colleague@example.com']);
+        $colleague = User::factory()->orgMember()->create(['email' => 'colleague@example.com']);
 
         Livewire::actingAs($admin)
             ->test('pages::workspaces.members', ['workspace' => $workspace])
@@ -53,7 +53,7 @@ class MembersTest extends TestCase
 
         $this->assertSame($workspace->id, $invitation->workspace_id);
         $this->assertSame(WorkspaceRole::Viewer, $invitation->workspace_role);
-        $this->assertSame(InstallRole::Member, $invitation->install_role);
+        $this->assertSame(OrgRole::Member, $invitation->org_role);
         $this->assertStringStartsWith(url('invitations').'/', $page->get('inviteLink'));
         Notification::assertSentTo(new AnonymousNotifiable, InvitationNotification::class,
             fn ($notification, $channels, $notifiable) => $notifiable->routes['mail'] === 'new@example.com');
@@ -80,7 +80,7 @@ class MembersTest extends TestCase
     {
         $workspace = Workspace::factory()->create();
         $editor = User::factory()->memberOf($workspace, WorkspaceRole::Editor)->create();
-        $other = User::factory()->installMember()->create();
+        $other = User::factory()->orgMember()->create();
 
         Livewire::actingAs($editor)
             ->test('pages::workspaces.members', ['workspace' => $workspace])

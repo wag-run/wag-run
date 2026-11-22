@@ -72,8 +72,26 @@ new class extends Component {
      */
     public array $runValues = [];
 
+    /**
+     * Whether the session clipboard holds copied nodes, for the Paste menu items.
+     */
+    public bool $hasClipboard = false;
+
+    public bool $canUndo = false;
+
+    public bool $canRedo = false;
+
+    /**
+     * Draft states to step back to and forward again, newest last.
+     */
+    public const HISTORY_LIMIT = 50;
+
+    public const CLIPBOARD_KEY = 'workflow_editor.clipboard';
+
     public function mount(): void
     {
+        session()->forget([$this->historyKey('undo'), $this->historyKey('redo')]);
+        $this->hasClipboard = session()->has(self::CLIPBOARD_KEY);
         $this->name = $this->workflow->name;
         $this->description = (string) $this->workflow->description;
         $this->concurrency = $this->workflow->concurrency->value;
@@ -211,7 +229,7 @@ new class extends Component {
         return [
             'credentials' => $credentials->mapWithKeys(fn ($credential) => [$credential->key => $credential->type])->all(),
             'secrets' => $this->workspace->secrets()->orderBy('key')->pluck('key', 'key')->all(),
-            'workflows' => $this->workspace->workflows()->orderBy('name')->pluck('name', 'id')->all(),
+            'workflows' => $this->workspace->workflows()->whereKeyNot($this->workflow->id)->orderBy('name')->pluck('name', 'id')->all(),
             'users' => Organization::current()?->users()->wherePivotNull('deactivated_at')->orderBy('name')->get(['users.id', 'name', 'email'])
                 ->mapWithKeys(fn ($user) => [$user->id => "{$user->name} ({$user->email})"])->all() ?? [],
         ];
@@ -340,7 +358,14 @@ new class extends Component {
         }
     }
 
-    public function addNode(string $type): void
+    /**
+     * Add a node from the palette. Clicked, it goes after the selected node
+     * and connects to it; dropped on the canvas, it goes where it was dropped,
+     * unconnected.
+     *
+     * @param  array{x?: float|int, y?: float|int}|null  $droppedAt  flow coordinates of the drop
+     */
+    public function addNode(string $type, ?array $droppedAt = null): void
     {
         $this->authorize('edit-workflows', $this->workspace);
 
@@ -349,11 +374,13 @@ new class extends Component {
 
         $definition = $registry->make($type);
         $graph = $this->graph;
-        $anchor = $this->selectedNode();
+        $anchor = $droppedAt === null ? $this->selectedNode() : null;
         $siblings = $anchor ? count($graph->outgoing($anchor->id)) : 0;
-        $position = $anchor
-            ? ['x' => $anchor->position['x'] + 300, 'y' => $anchor->position['y'] + ($siblings * 140)]
-            : ['x' => (collect($graph->nodes)->max(fn ($node) => $node->position['x']) ?? -220) + 300, 'y' => 160];
+        $position = match (true) {
+            $droppedAt !== null => ['x' => round((float) ($droppedAt['x'] ?? 0)) - 110, 'y' => round((float) ($droppedAt['y'] ?? 0)) - 30],
+            $anchor !== null => ['x' => $anchor->position['x'] + 300, 'y' => $anchor->position['y'] + ($siblings * 140)],
+            default => ['x' => (collect($graph->nodes)->max(fn ($node) => $node->position['x']) ?? -220) + 300, 'y' => 160],
+        };
 
         $id = $graph->freeId(str($type)->afterLast('.')->replace('_trigger', '')->toString());
         $config = collect($definition->inputs())->filter(fn (Field $field) => $field->default !== null)->mapWithKeys(fn (Field $field) => [$field->name => $field->default])->all();
@@ -371,7 +398,132 @@ new class extends Component {
         $this->reloadCanvas();
         $this->selectNode($id);
         $this->flowSelectNodes([$id]);
-        $this->flowSetCenter($position['x'] + 110, $position['y'] + 40);
+
+        if ($droppedAt === null) {
+            $this->flowSetCenter($position['x'] + 110, $position['y'] + 40);
+        }
+    }
+
+    /**
+     * Step the draft back to before the last change.
+     */
+    public function undo(): void
+    {
+        $this->stepHistory('undo', 'redo');
+    }
+
+    /**
+     * Re-apply the last change undone.
+     */
+    public function redo(): void
+    {
+        $this->stepHistory('redo', 'undo');
+    }
+
+    /**
+     * Put nodes, and the connections between them, on the session clipboard.
+     *
+     * @param  list<string>  $nodeIds
+     */
+    public function copyNodes(array $nodeIds): void
+    {
+        $graph = $this->graph;
+        $ids = array_values(array_filter(array_map('strval', $nodeIds), fn (string $id) => $graph->has($id)));
+
+        if ($ids === []) {
+            return;
+        }
+
+        session()->put(self::CLIPBOARD_KEY, [
+            'nodes' => array_map(fn (string $id) => $graph->node($id)->toArray(), $ids),
+            'edges' => array_values(array_map(fn ($edge) => $edge->toArray(), array_filter(
+                $graph->edges,
+                fn ($edge) => in_array($edge->source, $ids, true) && in_array($edge->target, $ids, true),
+            ))),
+            'pasted' => 0,
+        ]);
+
+        $this->hasClipboard = true;
+        Flux::toast(text: trans_choice('workflows.edit.copied_n_nodes', count($ids), ['count' => count($ids)]));
+    }
+
+    /**
+     * @param  list<string>  $nodeIds
+     */
+    public function cutNodes(array $nodeIds): void
+    {
+        $this->authorize('edit-workflows', $this->workspace);
+        $this->copyNodes($nodeIds);
+
+        $graph = $this->graph;
+
+        foreach ($nodeIds as $id) {
+            $graph = $graph->withoutNode((string) $id);
+        }
+
+        if (in_array($this->selected, $nodeIds, true)) {
+            $this->deselect();
+        }
+
+        $this->save($graph);
+        $this->reloadCanvas();
+    }
+
+    /**
+     * Add copies of the clipboard's nodes with new ids. At a position (a
+     * right-click on the canvas), the copies start there; otherwise they sit
+     * a little below and right of the last paste.
+     *
+     * @param  array{x?: float|int, y?: float|int}|null  $at  flow coordinates
+     */
+    public function pasteNodes(?array $at = null): void
+    {
+        $this->authorize('edit-workflows', $this->workspace);
+
+        $clipboard = session(self::CLIPBOARD_KEY);
+
+        if (! is_array($clipboard) || ($clipboard['nodes'] ?? []) === []) {
+            return;
+        }
+
+        $nodes = array_map(fn (array $node) => GraphNode::fromArray($node), $clipboard['nodes']);
+        $pasted = (int) ($clipboard['pasted'] ?? 0) + 1;
+        [$dx, $dy] = $at !== null
+            ? [round((float) ($at['x'] ?? 0)) - min(array_map(fn ($node) => $node->position['x'], $nodes)), round((float) ($at['y'] ?? 0)) - min(array_map(fn ($node) => $node->position['y'], $nodes))]
+            : [40 * $pasted, 40 * $pasted];
+
+        $graph = $this->graph;
+        $newIds = [];
+
+        foreach ($nodes as $node) {
+            $id = $graph->freeId(preg_replace('/_\d+$/', '', $node->id) ?: $node->id);
+            $newIds[$node->id] = $id;
+            $graph = $graph->withNode(new GraphNode($id, $node->type, $node->name, $node->config, $node->retry, [
+                'x' => $node->position['x'] + $dx,
+                'y' => $node->position['y'] + $dy,
+            ], $node->errorPath));
+        }
+
+        foreach ($clipboard['edges'] ?? [] as $edge) {
+            $source = $newIds[$edge['source'] ?? ''] ?? null;
+            $target = $newIds[$edge['target'] ?? ''] ?? null;
+
+            if ($source && $target) {
+                $graph = app(ConnectionRules::class)->connect($graph, $source, (string) ($edge['source_port'] ?? 'main'), $target);
+            }
+        }
+
+        session()->put(self::CLIPBOARD_KEY, [...$clipboard, 'pasted' => $at === null ? $pasted : 0]);
+
+        $this->save($graph);
+        $this->reloadCanvas();
+        $this->flowSelectNodes(array_values($newIds));
+
+        if (count($newIds) === 1) {
+            $this->selectNode(array_values($newIds)[0]);
+        } else {
+            $this->deselect();
+        }
     }
 
     public function deleteSelected(): void
@@ -423,6 +575,13 @@ new class extends Component {
 
     public function removeRow(string $field, int $index): void
     {
+        $node = $this->selectedNode();
+        $moves = $node && $this->definition ? $this->definition->portsAfterRowRemoved($field, $index, $node->config) : [];
+
+        if ($this->canEdit && $moves !== []) {
+            $this->save($this->graphWithMovedPorts($node->id, $moves));
+        }
+
         unset($this->form[$field][$index]);
         $this->form[$field] = array_values($this->form[$field] ?? []);
 
@@ -517,6 +676,7 @@ new class extends Component {
         $updated = new GraphNode($node->id, $node->type, $this->nodeName, $config, $retry, $node->position, $errorPath);
 
         $graph = $this->graph->withNode($updated);
+        $relabelled = app(CanvasMapper::class)->node($node)['data']['ports'] !== app(CanvasMapper::class)->node($updated)['data']['ports'];
 
         if ($outputsChanged) {
             $graph = $graph->withoutEdgesFromPortsOtherThan($node->id, $errorPath ? [...$newPorts, 'error'] : $newPorts);
@@ -524,19 +684,99 @@ new class extends Component {
 
         $this->save($graph);
 
-        if ($outputsChanged) {
+        if ($outputsChanged || $relabelled) {
             $this->reloadCanvas();
         } else {
             $this->flowUpdateNode($node->id, ['data' => $this->withIcon(app(CanvasMapper::class)->node($updated))['data']]);
         }
     }
 
-    protected function save(WorkflowGraph $graph): void
+    /**
+     * Re-attach a node's connections after its ports moved.
+     *
+     * @param  array<string, string|null>  $moves  old port => new port, null to drop
+     */
+    protected function graphWithMovedPorts(string $nodeId, array $moves): WorkflowGraph
+    {
+        $graph = $this->graph;
+        $moved = array_values(array_filter($graph->outgoing($nodeId), fn ($edge) => array_key_exists($edge->sourcePort, $moves)));
+
+        foreach ($moved as $edge) {
+            $graph = $graph->withoutEdge($edge->source, $edge->sourcePort, $edge->target);
+        }
+
+        foreach ($moved as $edge) {
+            if ($moves[$edge->sourcePort] !== null) {
+                $graph = app(ConnectionRules::class)->connect($graph, $nodeId, $moves[$edge->sourcePort], $edge->target);
+            }
+        }
+
+        return $graph;
+    }
+
+    protected function save(WorkflowGraph $graph, bool $record = true): void
     {
         $this->authorize('edit-workflows', $this->workspace);
 
+        $current = $this->graph->toArray();
+
+        if ($record && $current !== $graph->toArray()) {
+            $this->pushHistory('undo', $current);
+            session()->forget($this->historyKey('redo'));
+        }
+
         app(Workflows::class)->saveDraft($this->workflow, $graph);
         unset($this->graph, $this->canvas);
+        $this->refreshHistoryState();
+    }
+
+    protected function refreshHistoryState(): void
+    {
+        $this->canUndo = session($this->historyKey('undo'), []) !== [];
+        $this->canRedo = session($this->historyKey('redo'), []) !== [];
+    }
+
+    protected function historyKey(string $stack): string
+    {
+        return "workflow_editor.{$this->workflow->id}.{$stack}";
+    }
+
+    /**
+     * @param  array<string, mixed>  $graph
+     */
+    protected function pushHistory(string $stack, array $graph): void
+    {
+        $entries = session($this->historyKey($stack), []);
+        $entries[] = $graph;
+
+        session()->put($this->historyKey($stack), array_slice($entries, -self::HISTORY_LIMIT));
+    }
+
+    /**
+     * Restore the newest draft on $from, keeping the current one on $to.
+     */
+    protected function stepHistory(string $from, string $to): void
+    {
+        $this->authorize('edit-workflows', $this->workspace);
+
+        $entries = session($this->historyKey($from), []);
+
+        if ($entries === []) {
+            return;
+        }
+
+        $restored = array_pop($entries);
+        session()->put($this->historyKey($from), $entries);
+        $this->pushHistory($to, $this->graph->toArray());
+
+        $this->save(WorkflowGraph::fromArray($restored), record: false);
+        $this->reloadCanvas();
+
+        if ($this->selected && $this->graph->has($this->selected)) {
+            $this->selectNode($this->selected);
+        } else {
+            $this->deselect();
+        }
     }
 
     protected function reloadCanvas(): void
@@ -579,7 +819,7 @@ new class extends Component {
     }
 }; ?>
 
-<div class="-m-6 flex h-screen flex-col lg:-m-8">
+<div class="-m-6 flex h-screen flex-col lg:-m-8" x-data="wagEditorShortcuts(@js($this->canEdit))" x-on:keydown.window="onKeydown($event)">
     {{-- Top bar --}}
     <div class="flex flex-wrap items-center gap-3 border-b border-zinc-200 bg-white px-4 py-2 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:button size="sm" variant="ghost" icon="arrow-left" :href="route('workspaces.workflows', $workspace)" wire:navigate :aria-label="__('workflows.edit.back_to_workflows')" />
@@ -592,13 +832,19 @@ new class extends Component {
         @if ($workflow->hasUnpublishedChanges())
             <flux:badge size="sm" color="amber" data-test="draft-badge">{{ __('workflows.edit.unpublished_draft') }}</flux:badge>
         @endif
-        <flux:text class="text-xs" wire:loading.remove wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,errorPath,addNode">
+        <flux:text class="text-xs" wire:loading.remove wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,errorPath,addNode,undo,redo,cutNodes,pasteNodes">
             {{ $workflow->draft_updated_at ? __('workflows.edit.draft_saved_time', ['time' => $workflow->draft_updated_at->diffForHumans()]) : '' }}
         </flux:text>
-        <flux:text class="text-xs" wire:loading wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,errorPath,addNode">{{ __('workflows.edit.saving') }}</flux:text>
+        <flux:text class="text-xs" wire:loading wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,errorPath,addNode,undo,redo,cutNodes,pasteNodes">{{ __('workflows.edit.saving') }}</flux:text>
 
         <flux:spacer />
 
+        @if ($this->canEdit)
+            <flux:button.group>
+                <flux:button size="sm" icon="arrow-uturn-left" wire:click="undo" :disabled="! $canUndo" :tooltip="__('workflows.edit.undo_shortcut')" :aria-label="__('workflows.edit.undo')" data-test="undo-button" />
+                <flux:button size="sm" icon="arrow-uturn-right" wire:click="redo" :disabled="! $canRedo" :tooltip="__('workflows.edit.redo_shortcut')" :aria-label="__('workflows.edit.redo')" data-test="redo-button" />
+            </flux:button.group>
+        @endif
         <flux:button size="sm" icon="play-circle" :href="route('workspaces.executions', [$workspace, 'workflow' => $workflow->id])" wire:navigate>{{ __('common.runs') }}</flux:button>
         <flux:modal.trigger name="versions">
             <flux:button size="sm" icon="clock">{{ __('workflows.edit.versions') }}</flux:button>
@@ -632,6 +878,7 @@ new class extends Component {
                     <flux:heading size="sm" class="mt-3 mb-1 first:mt-0 text-xs uppercase tracking-wide text-zinc-500">{{ $group }}</flux:heading>
                     @foreach ($items as $item)
                         <button type="button" wire:key="palette-{{ $item['type'] }}" wire:click="addNode('{{ $item['type'] }}')" title="{{ $item['description'] }}"
+                            x-flow-draggable="@js(['type' => $item['type']])"
                             class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-start text-sm hover:bg-zinc-200/70 dark:hover:bg-zinc-800"
                             data-test="palette-{{ $item['type'] }}">
                             <flux:icon :icon="$item['icon']" variant="mini" class="size-4 text-zinc-500" />
@@ -639,11 +886,20 @@ new class extends Component {
                         </button>
                     @endforeach
                 @endforeach
+                <flux:text class="mt-4 text-xs">{{ __('workflows.edit.click_or_drag_to_add') }}</flux:text>
             </aside>
         @endif
 
         {{-- Canvas --}}
-        <div class="relative min-w-0 flex-1">
+        <div class="relative min-w-0 flex-1" x-data="{ showMinimap: localStorage.getItem('wag.minimap') !== 'hidden' }"
+            x-init="$watch('showMinimap', value => localStorage.setItem('wag.minimap', value ? 'shown' : 'hidden'))"
+            :class="{ 'wag-minimap-hidden': ! showMinimap }">
+            <button type="button" class="wag-minimap-toggle" x-on:click="showMinimap = ! showMinimap" data-test="minimap-toggle"
+                :title="showMinimap ? @js(__('workflows.edit.hide_minimap')) : @js(__('workflows.edit.show_minimap'))"
+                :aria-label="showMinimap ? @js(__('workflows.edit.hide_minimap')) : @js(__('workflows.edit.show_minimap'))"
+                :aria-pressed="showMinimap.toString()">
+                <flux:icon.map variant="mini" class="size-4" />
+            </button>
             <x-flow
                 :nodes="$this->canvas['nodes']"
                 :edges="$this->canvas['edges']"
@@ -652,7 +908,11 @@ new class extends Component {
                 :minimap="true"
                 :fit-view-on-init="true"
                 :edges-reconnectable="false"
-                default-edge-type="smoothstep"
+                default-edge-type="bezier"
+                :config="$this->canEdit ? [
+                    'keyboardShortcuts' => ['copy' => null, 'paste' => null, 'cut' => null, 'undo' => null, 'redo' => null],
+                    'onDrop' => \ArtisanFlow\WireFlow\View\Components\WireFlow::js('(event) => { if (event.data?.type) { $wire.addNode(event.data.type, event.position) } }'),
+                ] : ['keyboardShortcuts' => ['copy' => null, 'paste' => null, 'cut' => null, 'undo' => null, 'redo' => null]]"
                 background="dots"
                 container-height="fill"
                 class="h-full"
@@ -669,19 +929,75 @@ new class extends Component {
                 </x-slot:node>
 
                 @if ($this->canEdit)
-                    <x-flow-context-menu scope="edge" class="wag-menu">
+                    <x-flow-context-menu scope="node" class="wag-menu" x-on:pointerdown.stop x-on:mousedown.stop>
+                        <button type="button" class="wag-menu-item" data-test="node-menu-copy"
+                            @click="$wire.copyNodes(selectedNodes.has(contextMenu.node.id) ? [...selectedNodes] : [contextMenu.node.id]); closeContextMenu()">
+                            <flux:icon.document-duplicate variant="micro" />
+                            <span class="flex-1">{{ __('workflows.edit.copy') }}</span>
+                            <kbd class="wag-kbd">{{ __('workflows.edit.copy_keys') }}</kbd>
+                        </button>
+                        <button type="button" class="wag-menu-item" data-test="node-menu-cut"
+                            @click="$wire.cutNodes(selectedNodes.has(contextMenu.node.id) ? [...selectedNodes] : [contextMenu.node.id]); closeContextMenu()">
+                            <flux:icon.scissors variant="micro" />
+                            <span class="flex-1">{{ __('workflows.edit.cut') }}</span>
+                            <kbd class="wag-kbd">{{ __('workflows.edit.cut_keys') }}</kbd>
+                        </button>
+                        <button type="button" class="wag-menu-item is-danger" data-test="node-menu-delete"
+                            @click="removeNodes(selectedNodes.has(contextMenu.node.id) ? [...selectedNodes] : [contextMenu.node.id]); closeContextMenu()">
+                            <flux:icon.trash variant="micro" />
+                            <span class="flex-1">{{ __('workflows.edit.delete') }}</span>
+                            <kbd class="wag-kbd">{{ __('workflows.edit.delete_keys') }}</kbd>
+                        </button>
+                    </x-flow-context-menu>
+
+                    <x-flow-context-menu scope="selection" class="wag-menu" x-on:pointerdown.stop x-on:mousedown.stop>
+                        <button type="button" class="wag-menu-item" @click="$wire.copyNodes([...selectedNodes]); closeContextMenu()">
+                            <flux:icon.document-duplicate variant="micro" />
+                            <span class="flex-1">{{ __('workflows.edit.copy') }}</span>
+                            <kbd class="wag-kbd">{{ __('workflows.edit.copy_keys') }}</kbd>
+                        </button>
+                        <button type="button" class="wag-menu-item" @click="$wire.cutNodes([...selectedNodes]); closeContextMenu()">
+                            <flux:icon.scissors variant="micro" />
+                            <span class="flex-1">{{ __('workflows.edit.cut') }}</span>
+                            <kbd class="wag-kbd">{{ __('workflows.edit.cut_keys') }}</kbd>
+                        </button>
+                        <button type="button" class="wag-menu-item is-danger" @click="removeNodes([...selectedNodes]); removeEdges([...selectedEdges]); closeContextMenu()">
+                            <flux:icon.trash variant="micro" />
+                            <span class="flex-1">{{ __('workflows.edit.delete') }}</span>
+                            <kbd class="wag-kbd">{{ __('workflows.edit.delete_keys') }}</kbd>
+                        </button>
+                    </x-flow-context-menu>
+
+                    <x-flow-context-menu scope="pane" class="wag-menu" x-on:pointerdown.stop x-on:mousedown.stop>
+                        <button type="button" class="wag-menu-item" data-test="pane-menu-paste" :disabled="! $wire.hasClipboard"
+                            @click="$wire.pasteNodes(contextMenu.position); closeContextMenu()">
+                            <flux:icon.clipboard-document variant="micro" />
+                            <span class="flex-1">{{ __('workflows.edit.paste_here') }}</span>
+                            <kbd class="wag-kbd">{{ __('workflows.edit.paste_keys') }}</kbd>
+                        </button>
+                        <button type="button" class="wag-menu-item" :disabled="! $wire.canUndo" @click="$wire.undo(); closeContextMenu()">
+                            <flux:icon.arrow-uturn-left variant="micro" />
+                            <span class="flex-1">{{ __('workflows.edit.undo') }}</span>
+                            <kbd class="wag-kbd">{{ __('workflows.edit.undo_keys') }}</kbd>
+                        </button>
+                        <button type="button" class="wag-menu-item" :disabled="! $wire.canRedo" @click="$wire.redo(); closeContextMenu()">
+                            <flux:icon.arrow-uturn-right variant="micro" />
+                            <span class="flex-1">{{ __('workflows.edit.redo') }}</span>
+                            <kbd class="wag-kbd">{{ __('workflows.edit.redo_keys') }}</kbd>
+                        </button>
+                    </x-flow-context-menu>
+
+                    <x-flow-context-menu scope="edge" class="wag-menu" x-on:pointerdown.stop x-on:mousedown.stop>
                         <button type="button" class="wag-menu-item is-danger" @click="removeEdges([contextMenu.edge.id]); closeContextMenu()" data-test="edge-menu-delete">
                             <flux:icon.trash variant="micro" />
                             {{ __('workflows.edit.delete_connection') }}
                         </button>
                     </x-flow-context-menu>
 
-                    <x-flow-panel position="bottom-center">
-                        <div x-show="selectedEdges.size > 0" x-cloak class="wag-edge-bar" data-test="edge-bar">
-                            <span class="text-xs text-zinc-500">{{ __('workflows.edit.connection') }}</span>
-                            <flux:button size="xs" variant="danger" icon="trash" x-on:click="removeEdges([...selectedEdges])">{{ __('workflows.edit.delete_connection') }}</flux:button>
-                        </div>
-                    </x-flow-panel>
+                    <div x-show="selectedEdges.size > 0" x-cloak class="wag-edge-bar" x-on:pointerdown.stop x-on:mousedown.stop data-test="edge-bar">
+                        <span class="text-xs text-zinc-500">{{ __('workflows.edit.connection') }}</span>
+                        <flux:button size="xs" variant="danger" icon="trash" x-on:click="removeEdges([...selectedEdges])">{{ __('workflows.edit.delete_connection') }}</flux:button>
+                    </div>
                 @endif
             </x-flow>
         </div>
@@ -705,6 +1021,7 @@ new class extends Component {
                     <flux:text class="text-xs">{{ __('workflows.edit.reference_its_output_as') }} <code class="rounded bg-zinc-100 px-1 dark:bg-zinc-800">nodes.{{ $selected }}.output</code></flux:text>
 
                     @foreach ($definition->inputs() as $field)
+                        @continue(! $field->isVisible($form, $definition->inputs()))
                         <div wire:key="field-{{ $selected }}-{{ $field->name }}">
                             @include('partials.workflow-field', ['field' => $field, 'model' => 'form.'.$field->name, 'value' => $form[$field->name] ?? null, 'choices' => $this->choices, 'picker' => $this->picker])
                         </div>

@@ -9,6 +9,7 @@ use App\Enums\AssignmentType;
 use App\Enums\WorkspaceRole;
 use App\Models\Assignment;
 use App\Models\Execution;
+use App\Models\ExecutionStep;
 use App\Models\User;
 use App\Notifications\AssignmentNotification;
 use Carbon\CarbonInterface;
@@ -29,7 +30,7 @@ class Assignments
 
     /**
      * The user an approval or task node is configured to assign, if they have
-     * an active account on the install.
+     * an active account in the organization.
      */
     public function activeUser(mixed $id): ?User
     {
@@ -45,9 +46,9 @@ class Assignments
      */
     public function expireFromState(array $state): void
     {
-        $id = $state['assignment_id'] ?? null;
+        $ids = array_filter([...(array) ($state['assignment_ids'] ?? []), $state['assignment_id'] ?? null], 'is_numeric');
 
-        if (is_numeric($id) && $assignment = Assignment::query()->find((int) $id)) {
+        foreach (Assignment::query()->whereKey(array_map('intval', $ids))->get() as $assignment) {
             $this->expire($assignment);
         }
     }
@@ -180,6 +181,60 @@ class Assignments
     }
 
     /**
+     * Whether an approval step's answers so far decide it: approved once the
+     * number needed have approved, rejected once so many have rejected that
+     * the number can no longer be reached. Pending requests of a decided step
+     * are withdrawn. Null while it is still open.
+     *
+     * @param  array<string, mixed>  $latest  the answer just given
+     * @return array<string, mixed>|null
+     */
+    protected function approvalOutcome(ExecutionStep $step, array $latest): ?array
+    {
+        $assignments = Assignment::query()
+            ->with('assignee:id,name')
+            ->where('execution_step_id', $step->id)
+            ->where('type', AssignmentType::Approval)
+            ->orderBy('id')
+            ->get();
+
+        $required = max(1, (int) ($step->state['required'] ?? 1));
+        $approvals = $assignments->where('status', AssignmentStatus::Approved)->count();
+        $rejections = $assignments->where('status', AssignmentStatus::Rejected)->count();
+
+        $decision = match (true) {
+            $approvals >= $required => 'approved',
+            $rejections > $assignments->count() - $required => 'rejected',
+            default => null,
+        };
+
+        if ($decision === null) {
+            return null;
+        }
+
+        Assignment::query()
+            ->whereKey($assignments->where('status', AssignmentStatus::Pending)->pluck('id'))
+            ->update(['status' => AssignmentStatus::Cancelled]);
+
+        return [
+            ...$latest,
+            'decision' => $decision,
+            'approvals' => $approvals,
+            'rejections' => $rejections,
+            'responses' => $assignments
+                ->filter(fn (Assignment $assignment) => in_array($assignment->status, [AssignmentStatus::Approved, AssignmentStatus::Rejected], true))
+                ->map(fn (Assignment $assignment) => [
+                    'user_id' => $assignment->assignee_id,
+                    'name' => $assignment->assignee?->name,
+                    'decision' => $assignment->response['decision'] ?? null,
+                    'comment' => $assignment->response['comment'] ?? null,
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /**
      * @param  array<string, mixed>  $response
      */
     protected function decide(Assignment $assignment, User $user, AssignmentStatus $status, array $response, AssignmentType $expected = AssignmentType::Approval): void
@@ -193,6 +248,8 @@ class Assignments
         }
 
         DB::transaction(function () use ($assignment, $user, $status, $response) {
+            $step = ExecutionStep::query()->lockForUpdate()->findOrFail($assignment->execution_step_id);
+
             $updated = $assignment->newQuery()
                 ->whereKey($assignment->id)
                 ->where('status', AssignmentStatus::Pending)
@@ -207,7 +264,15 @@ class Assignments
                 throw ValidationException::withMessages(['assignment' => __('inbox.this_has_already_been_answered')]);
             }
 
-            $this->engine->respond($assignment->step, [...$response, 'responded_by' => $user->id, 'responded_by_name' => $user->name]);
+            $payload = [...$response, 'responded_by' => $user->id, 'responded_by_name' => $user->name];
+
+            if ($assignment->type === AssignmentType::Approval) {
+                $payload = $this->approvalOutcome($step, $payload);
+            }
+
+            if ($payload !== null) {
+                $this->engine->respond($step, $payload);
+            }
         });
 
         $user->unreadNotifications()

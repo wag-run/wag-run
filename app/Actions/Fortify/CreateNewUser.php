@@ -4,7 +4,7 @@ namespace App\Actions\Fortify;
 
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
-use App\Enums\InstallRole;
+use App\Enums\OrgRole;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\WorkspaceManager;
@@ -22,7 +22,7 @@ class CreateNewUser implements CreatesNewUsers
 
     /**
      * Validate and create a newly registered user. The first user to register
-     * sets up the install's organization and becomes its install admin; later
+     * sets up the install's organization and becomes its organization admin; later
      * users can register only while open registration is on.
      *
      * @param  array<string, string>  $input
@@ -50,13 +50,13 @@ class CreateNewUser implements CreatesNewUsers
             ]);
 
             if ($organization) {
-                $user->organizations()->attach($organization, ['role' => InstallRole::Member->value]);
+                $user->organizations()->attach($organization, ['role' => OrgRole::Member->value]);
 
                 return $user;
             }
 
             $organization = Organization::create(['name' => config('app.name')]);
-            $user->organizations()->attach($organization, ['role' => InstallRole::Admin->value]);
+            $user->organizations()->attach($organization, ['role' => OrgRole::Admin->value]);
 
             $workspace = $this->workspaces->create($organization, __('auth.register.default'), $user);
             $user->forceFill(['current_workspace_id' => $workspace->id])->save();

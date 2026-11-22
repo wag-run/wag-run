@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\InstallRole;
+use App\Enums\OrgRole;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\Invitations;
@@ -14,7 +14,7 @@ use Livewire\Component;
 new class extends Component {
     public string $email = '';
 
-    public string $installRole = 'member';
+    public string $orgRole = 'member';
 
     public ?string $inviteLink = null;
 
@@ -36,23 +36,23 @@ new class extends Component {
 
     public function invite(Invitations $invitations): void
     {
-        $this->authorize('install-admin');
+        $this->authorize('org-admin');
 
         $this->validate([
             'email' => ['required', 'email', 'max:255'],
-            'installRole' => ['required', Rule::enum(InstallRole::class)],
+            'orgRole' => ['required', Rule::enum(OrgRole::class)],
         ]);
 
-        [, $token] = $invitations->invite(Organization::current(), $this->email, Auth::user(), InstallRole::from($this->installRole));
+        [, $token] = $invitations->invite(Organization::current(), $this->email, Auth::user(), OrgRole::from($this->orgRole));
 
         $this->inviteLink = route('invitations.show', $token);
-        $this->reset('email', 'installRole');
+        $this->reset('email', 'orgRole');
         Flux::toast(variant: 'success', text: __('admin.users.invitation_sent'));
     }
 
     public function revoke(int $invitationId, Invitations $invitations): void
     {
-        $this->authorize('install-admin');
+        $this->authorize('org-admin');
 
         $invitations->revoke(Organization::current()->invitations()->findOrFail($invitationId));
         Flux::toast(text: __('common.invitation_revoked'));
@@ -60,35 +60,35 @@ new class extends Component {
 
     public function promote(int $userId, UserDirectory $directory): void
     {
-        $this->authorize('install-admin');
+        $this->authorize('org-admin');
         $directory->promote($this->findUser($userId));
         Flux::toast(text: __('admin.users.user_promoted_to_organization_admin'));
     }
 
     public function demote(int $userId, UserDirectory $directory): void
     {
-        $this->authorize('install-admin');
+        $this->authorize('org-admin');
         $directory->demote($this->findUser($userId));
         Flux::toast(text: __('admin.users.user_is_now_an_organization'));
     }
 
     public function deactivate(int $userId, UserDirectory $directory): void
     {
-        $this->authorize('install-admin');
+        $this->authorize('org-admin');
         $directory->deactivate($this->findUser($userId), Auth::user());
         Flux::toast(text: __('admin.users.user_deactivated'));
     }
 
     public function reactivate(int $userId, UserDirectory $directory): void
     {
-        $this->authorize('install-admin');
+        $this->authorize('org-admin');
         $directory->reactivate($this->findUser($userId));
         Flux::toast(text: __('admin.users.user_reactivated'));
     }
 
     public function generateResetLink(int $userId, UserDirectory $directory): void
     {
-        $this->authorize('install-admin');
+        $this->authorize('org-admin');
 
         $user = $this->findUser($userId);
         $this->resetLink = $directory->passwordResetLink($user);
@@ -115,8 +115,8 @@ new class extends Component {
         <div class="min-w-64 flex-1">
             <flux:input wire:model="email" type="email" :label="__('admin.users.invite_by_email')" placeholder="name@example.com" required />
         </div>
-        <flux:select wire:model="installRole" :label="__('admin.users.organization_role')" class="w-44">
-            @foreach (InstallRole::cases() as $option)
+        <flux:select wire:model="orgRole" :label="__('admin.users.organization_role')" class="w-44">
+            @foreach (OrgRole::cases() as $option)
                 <flux:select.option :value="$option->value">{{ $option->label() }}</flux:select.option>
             @endforeach
         </flux:select>
@@ -152,7 +152,7 @@ new class extends Component {
                     <flux:table.cell>{{ $listedUser->name }}</flux:table.cell>
                     <flux:table.cell>{{ $listedUser->email }}</flux:table.cell>
                     <flux:table.cell>
-                        <flux:badge size="sm" :color="$membership->role === InstallRole::Admin ? 'indigo' : 'zinc'">{{ $membership->role->label() }}</flux:badge>
+                        <flux:badge size="sm" :color="$membership->role === OrgRole::Admin ? 'indigo' : 'zinc'">{{ $membership->role->label() }}</flux:badge>
                     </flux:table.cell>
                     <flux:table.cell>
                         @if ($membership->deactivated_at)
@@ -165,7 +165,7 @@ new class extends Component {
                         <flux:dropdown align="end">
                             <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" :aria-label="__('common.actions')" />
                             <flux:menu>
-                                @if ($membership->role === InstallRole::Admin)
+                                @if ($membership->role === OrgRole::Admin)
                                     <flux:menu.item wire:click="demote({{ $listedUser->id }})">{{ __('admin.users.demote_to_member') }}</flux:menu.item>
                                 @else
                                     <flux:menu.item wire:click="promote({{ $listedUser->id }})">{{ __('admin.users.promote_to_organization_admin') }}</flux:menu.item>
@@ -201,7 +201,7 @@ new class extends Component {
                 @foreach ($this->invitations as $invitation)
                     <flux:table.row :key="'invitation-'.$invitation->id">
                         <flux:table.cell>{{ $invitation->email }}</flux:table.cell>
-                        <flux:table.cell>{{ $invitation->install_role->label() }}</flux:table.cell>
+                        <flux:table.cell>{{ $invitation->org_role->label() }}</flux:table.cell>
                         <flux:table.cell>{{ $invitation->expires_at->diffForHumans() }}</flux:table.cell>
                         <flux:table.cell align="end">
                             <flux:button size="sm" variant="ghost" wire:click="revoke({{ $invitation->id }})">{{ __('common.revoke') }}</flux:button>

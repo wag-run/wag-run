@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Enums\InstallRole;
+use App\Enums\OrgRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Organization;
 use App\Models\User;
@@ -63,28 +63,28 @@ class UserFactory extends Factory
     }
 
     /**
-     * Make the user an install admin of the install's organization.
+     * Make the user an admin of the install's organization.
      */
-    public function installAdmin(): static
+    public function orgAdmin(): static
     {
-        return $this->afterCreating(fn (User $user) => static::joinOrganization($user, InstallRole::Admin));
+        return $this->afterCreating(fn (User $user) => static::joinOrganization($user, OrgRole::Admin));
     }
 
     /**
      * Make the user a member of the install's organization.
      */
-    public function installMember(): static
+    public function orgMember(): static
     {
-        return $this->afterCreating(fn (User $user) => static::joinOrganization($user, InstallRole::Member));
+        return $this->afterCreating(fn (User $user) => static::joinOrganization($user, OrgRole::Member));
     }
 
     /**
-     * Make the user an install member who has been deactivated.
+     * Make the user an organization member who has been deactivated.
      */
     public function deactivated(): static
     {
         return $this->afterCreating(function (User $user) {
-            static::joinOrganization($user, InstallRole::Member);
+            static::joinOrganization($user, OrgRole::Member);
             $user->organizations()->updateExistingPivot(Organization::current()->id, ['deactivated_at' => now()]);
         });
     }
@@ -95,12 +95,12 @@ class UserFactory extends Factory
     public function memberOf(Workspace $workspace, WorkspaceRole $role): static
     {
         return $this->afterCreating(function (User $user) use ($workspace, $role) {
-            static::joinOrganization($user, InstallRole::Member, $workspace->organization);
+            static::joinOrganization($user, OrgRole::Member, $workspace->organization);
             $user->workspaces()->attach($workspace, ['role' => $role->value]);
         });
     }
 
-    protected static function joinOrganization(User $user, InstallRole $role, ?Organization $organization = null): void
+    protected static function joinOrganization(User $user, OrgRole $role, ?Organization $organization = null): void
     {
         $organization ??= Organization::current() ?? Organization::factory()->create();
 

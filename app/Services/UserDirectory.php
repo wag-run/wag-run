@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Enums\InstallRole;
+use App\Enums\OrgRole;
 use App\Models\Organization;
 use App\Models\User;
 use App\Support\Audit;
@@ -11,21 +11,21 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Install-admin user management. The last active install admin can never be
+ * Organization-admin user management. The last active organization admin can never be
  * demoted, deactivated or deleted.
  */
 class UserDirectory
 {
     public function promote(User $user): void
     {
-        $this->setRole($user, InstallRole::Admin);
+        $this->setRole($user, OrgRole::Admin);
         Audit::record('user.promoted', $user);
     }
 
     public function demote(User $user): void
     {
         $this->ensureNotLastAdmin($user, __('members.last_organization_admin_cannot_be_2'));
-        $this->setRole($user, InstallRole::Member);
+        $this->setRole($user, OrgRole::Member);
         Audit::record('user.demoted', $user);
     }
 
@@ -51,7 +51,7 @@ class UserDirectory
     }
 
     /**
-     * A one-time password-reset link an install admin can hand to the user.
+     * A one-time password-reset link an organization admin can hand to the user.
      */
     public function passwordResetLink(User $user): string
     {
@@ -69,12 +69,12 @@ class UserDirectory
     {
         $organization = Organization::current();
 
-        if ($organization && $user->isInstallAdmin() && $organization->activeAdminCount() <= 1) {
+        if ($organization && $user->isOrgAdmin() && $organization->activeAdminCount() <= 1) {
             throw ValidationException::withMessages(['user' => $message]);
         }
     }
 
-    protected function setRole(User $user, InstallRole $role): void
+    protected function setRole(User $user, OrgRole $role): void
     {
         $organization = $this->organization();
 

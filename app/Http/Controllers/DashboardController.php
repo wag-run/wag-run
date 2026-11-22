@@ -25,6 +25,6 @@ class DashboardController extends Controller
             return redirect()->route('workspaces.show', $workspace);
         }
 
-        return view('dashboard', ['isInstallAdmin' => $user->isInstallAdmin()]);
+        return view('dashboard', ['isOrgAdmin' => $user->isOrgAdmin()]);
     }
 }

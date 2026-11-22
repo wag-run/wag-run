@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
-use App\Enums\InstallRole;
+use App\Enums\OrgRole;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,7 +20,7 @@ class FirstUserRegistrationTest extends TestCase
         return ['name' => 'Ada Lovelace', 'email' => $email, 'password' => 'password', 'password_confirmation' => 'password'];
     }
 
-    public function test_first_user_sets_up_the_organization_as_install_admin_with_a_default_workspace(): void
+    public function test_first_user_sets_up_the_organization_as_org_admin_with_a_default_workspace(): void
     {
         $this->post(route('register.store'), $this->registration('ada@example.com'))->assertSessionHasNoErrors();
 
@@ -28,7 +28,7 @@ class FirstUserRegistrationTest extends TestCase
         $organization = Organization::current();
 
         $this->assertNotNull($organization);
-        $this->assertSame(InstallRole::Admin, $user->installRole());
+        $this->assertSame(OrgRole::Admin, $user->orgRole());
         $this->assertSame(['Default'], $organization->workspaces()->pluck('name')->all());
         $this->assertSame($organization->workspaces()->first()->id, $user->current_workspace_id);
         $this->assertDatabaseHas('audit_logs', ['action' => 'workspace.created', 'user_id' => $user->id]);
@@ -55,7 +55,7 @@ class FirstUserRegistrationTest extends TestCase
             ->assertDontSee('data-test="register-user-button"', false);
     }
 
-    public function test_open_registration_creates_an_install_member_without_workspace_access(): void
+    public function test_open_registration_creates_an_org_member_without_workspace_access(): void
     {
         $organization = Organization::factory()->create(['registration_open' => true]);
         $organization->workspaces()->create(['name' => 'Ops']);
@@ -64,7 +64,7 @@ class FirstUserRegistrationTest extends TestCase
 
         $user = User::firstWhere('email', 'member@example.com');
 
-        $this->assertSame(InstallRole::Member, $user->installRole());
+        $this->assertSame(OrgRole::Member, $user->orgRole());
         $this->assertTrue($user->accessibleWorkspaces()->isEmpty());
     }
 }

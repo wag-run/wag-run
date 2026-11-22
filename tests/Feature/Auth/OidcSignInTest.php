@@ -104,7 +104,7 @@ class OidcSignInTest extends TestCase
 
     public function test_a_user_already_linked_to_the_subject_is_signed_in(): void
     {
-        $user = User::factory()->installMember()->create(['email' => 'someone-else@example.com']);
+        $user = User::factory()->orgMember()->create(['email' => 'someone-else@example.com']);
         OidcIdentity::create(['oidc_provider_id' => $this->provider->id, 'user_id' => $user->id, 'subject' => 'user-1']);
 
         $this->signInWith()->assertRedirect(route('dashboard'));
@@ -118,7 +118,7 @@ class OidcSignInTest extends TestCase
 
     public function test_a_verified_email_links_the_sign_in_to_the_existing_account(): void
     {
-        $user = User::factory()->installMember()->create(['email' => 'Ada@example.com']);
+        $user = User::factory()->orgMember()->create(['email' => 'Ada@example.com']);
 
         $this->signInWith()->assertRedirect(route('dashboard'));
 
@@ -129,7 +129,7 @@ class OidcSignInTest extends TestCase
 
     public function test_an_unverified_email_is_not_linked_to_an_existing_account_unless_the_provider_is_trusted(): void
     {
-        $user = User::factory()->installMember()->create(['email' => 'ada@example.com']);
+        $user = User::factory()->orgMember()->create(['email' => 'ada@example.com']);
 
         $this->signInWith(['email_verified' => false])->assertRedirect(route('login'))->assertSessionHasErrors('email');
         $this->assertGuest();
@@ -154,7 +154,7 @@ class OidcSignInTest extends TestCase
         $this->assertSame('ada@example.com', $user->email);
         $this->assertSame('From Userinfo', $user->name);
         $this->assertNotNull($user->email_verified_at);
-        $this->assertFalse($user->isInstallAdmin());
+        $this->assertFalse($user->isOrgAdmin());
         $this->assertTrue($user->accessibleWorkspaces()->isEmpty());
     }
 
@@ -183,7 +183,7 @@ class OidcSignInTest extends TestCase
     #[DataProvider('invalidTokens')]
     public function test_an_id_token_that_fails_a_check_is_refused(array $claims): void
     {
-        User::factory()->installMember()->create(['email' => 'ada@example.com']);
+        User::factory()->orgMember()->create(['email' => 'ada@example.com']);
 
         $this->signInWith($claims)->assertRedirect(route('login'))->assertSessionHasErrors('email');
 
@@ -192,7 +192,7 @@ class OidcSignInTest extends TestCase
 
     public function test_a_callback_whose_state_does_not_match_is_refused_without_calling_the_provider(): void
     {
-        User::factory()->installMember()->create(['email' => 'ada@example.com']);
+        User::factory()->orgMember()->create(['email' => 'ada@example.com']);
 
         $this->signInWith(callbackOverrides: ['state' => 'forged'])->assertRedirect(route('login'))->assertSessionHasErrors('email');
 

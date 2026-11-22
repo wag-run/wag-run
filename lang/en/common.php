@@ -54,6 +54,7 @@ return [
     'output' => 'Output',
     'password' => 'Password',
     'pending_invitations' => 'Pending invitations',
+    'messaging' => 'Messaging',
     'people' => 'People',
     'profile' => 'Profile',
     'provider' => 'Provider',

@@ -7,9 +7,11 @@ use App\Enums\ExecutionStatus;
 use App\Enums\NodeKind;
 use App\Enums\StepStatus;
 use App\Models\Execution;
+use App\Models\Organization;
 use App\Models\Workspace;
 use App\Providers\WorkflowServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\RunsWorkflows;
 use Tests\TestCase;
 
@@ -22,7 +24,7 @@ class FlowNodesTest extends TestCase
         $registry = app(NodeRegistry::class);
         $types = array_map(fn (string $class) => $class::type(), WorkflowServiceProvider::BUILT_IN_NODES);
 
-        $this->assertCount(15, array_unique($types));
+        $this->assertCount(18, array_unique($types));
         $this->assertSame(4, count($registry->ofKind(NodeKind::Trigger)));
 
         foreach ($types as $type) {
@@ -49,7 +51,7 @@ class FlowNodesTest extends TestCase
         $workflow = $this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger', 'each' => ['core.for_loop', ['items' => '{{ trigger.orders }}']],
                 'line' => ['core.compose', ['mode' => 'expression', 'expression' => 'item.qty * item.price']],
-                'total' => ['core.compose', ['template' => '{{ nodes.each.output.results|map(r => r.line.value)|reduce((a, b) => a + b) }}']]],
+                'total' => ['core.compose', ['template' => "{{ sum(column(column(nodes.each.output.results, 'line'), 'value')) }}"]]],
             ['start->each', 'each:item->line', 'each:done->total'],
         ));
 
@@ -88,6 +90,34 @@ class FlowNodesTest extends TestCase
         $this->assertSame(1, $execution->steps()->where('node_id', 'join')->count());
     }
 
+    /**
+     * @return array<string, array{string, bool, string}>
+     */
+    public static function switchValues(): array
+    {
+        return [
+            'first equal case wins' => ['pro', false, 'b'],
+            'case ignored' => ['PRO', true, 'b'],
+            'case matters by default' => ['PRO', false, 'other'],
+            'no case equals' => ['enterprise', false, 'other'],
+        ];
+    }
+
+    #[DataProvider('switchValues')]
+    public function test_switch_follows_the_first_case_equal_to_the_value_or_default(string $plan, bool $ignoreCase, string $expected): void
+    {
+        $workflow = $this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger',
+                'route' => ['core.switch', ['value' => '{{ trigger.plan }}', 'ignore_case' => $ignoreCase, 'cases' => [['value' => 'free'], ['value' => 'pro'], ['value' => 'pro']]]],
+                'a' => 'core.compose', 'b' => 'core.compose', 'c' => 'core.compose', 'other' => 'core.compose'],
+            ['start->route', 'route:case_1->a', 'route:case_2->b', 'route:case_3->c', 'route:default->other'],
+        ));
+
+        $execution = $this->runWorkflow($workflow, ['plan' => $plan]);
+
+        $this->assertSame(['start', 'route', $expected], $this->nodesRun($execution));
+    }
+
     public function test_wait_pauses_for_its_duration(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(
@@ -119,7 +149,7 @@ class FlowNodesTest extends TestCase
     {
         $workflow = $this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger',
-                'greeting' => ['core.compose', ['template' => 'Hi {{ trigger.name|title }} from {{ vars.team }}']],
+                'greeting' => ['core.compose', ['template' => 'Hi {{ title(trigger.name) }} from {{ vars.team }}']],
                 'math' => ['core.compose', ['mode' => 'expression', 'expression' => 'round(trigger.amount * 1.2, 2)']],
                 'json' => ['core.compose', ['template' => '{"id": {{ trigger.id }}, "ok": true}', 'parse_json' => true]]],
             ['start->greeting', 'greeting->math', 'math->json'],
@@ -136,14 +166,14 @@ class FlowNodesTest extends TestCase
     public function test_template_errors_fail_the_step_without_retrying(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'bad' => ['core.wait', ['mode' => 'until', 'until' => '{{ trigger.at|nope }}'], ['max_retries' => 3]]],
+            ['start' => 'core.manual_trigger', 'bad' => ['core.wait', ['mode' => 'until', 'until' => '{{ nope(trigger.at) }}'], ['max_retries' => 3]]],
             ['start->bad'],
         ));
 
         $execution = $this->runWorkflow($workflow);
 
         $this->assertSame(1, $execution->steps()->where('node_id', 'bad')->count());
-        $this->assertStringContainsString('Could not resolve inputs: Template error', $execution->error['message']);
+        $this->assertStringContainsString('Could not resolve inputs: Expression error', $execution->error['message']);
     }
 
     public function test_terminate_ends_the_run_with_its_status_and_output(): void
@@ -193,6 +223,46 @@ class FlowNodesTest extends TestCase
         $this->assertSame(ExecutionStatus::Waiting, $childRun->status);
         $this->assertNull($childRun->parent_step_id);
         $this->assertSame($childRun->id, $this->stepFor($execution, 'call')->output['execution_id']);
+    }
+
+    public function test_trigger_other_workflow_refuses_to_start_its_own_workflow(): void
+    {
+        $workflow = $this->publishedWorkflow($this->graph(['start' => 'core.manual_trigger']));
+        $workflow->publishedVersion->update(['graph' => $this->graph(
+            ['start' => 'core.manual_trigger', 'call' => ['core.run_workflow', ['workflow' => $workflow->id, 'mode' => 'async']]],
+            ['start->call'],
+        )]);
+
+        $execution = $this->runWorkflow($workflow->refresh());
+
+        $this->assertSame('A workflow cannot trigger itself.', $execution->error['message']);
+        $this->assertSame(1, $workflow->executions()->count());
+    }
+
+    public function test_workflows_starting_each_other_stop_at_the_maximum_chain_depth(): void
+    {
+        Organization::factory()->create(['max_chain_depth' => 3]);
+        $workspace = Workspace::factory()->create();
+        $first = $this->publishedWorkflow($this->graph(['start' => 'core.manual_trigger']), $workspace);
+        $second = $this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger', 'call' => ['core.run_workflow', ['workflow' => $first->id, 'mode' => 'async']]],
+            ['start->call'],
+        ), $workspace);
+        $first->publishedVersion->update(['graph' => $this->graph(
+            ['start' => 'core.manual_trigger', 'call' => ['core.run_workflow', ['workflow' => $second->id, 'mode' => 'sync']]],
+            ['start->call'],
+        )]);
+
+        $this->runWorkflow($first->refresh());
+
+        $runs = Execution::query()->orderBy('id')->get();
+        $message = 'Stopped: this run would be more than 3 levels deep in a chain of workflows starting workflows. Check for workflows that start each other.';
+        $this->assertSame([1, 2, 3, 4], $runs->pluck('chain_depth')->all());
+        $this->assertSame([$first->id, $second->id, $first->id, $second->id], $runs->pluck('workflow_id')->all());
+        $this->assertSame(ExecutionStatus::Cancelled, $runs[3]->status);
+        $this->assertSame($message, $runs[3]->error['message']);
+        $this->assertSame(ExecutionStatus::Failed, $runs[2]->status, 'the run waiting on the stopped one fails with its reason');
+        $this->assertSame($message, $runs[2]->error['message']);
     }
 
     public function test_trigger_other_workflow_refuses_a_workflow_from_another_workspace(): void

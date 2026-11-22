@@ -27,7 +27,7 @@ class CanvasMapper
     {
         return [
             'nodes' => array_values(array_map(fn (GraphNode $node) => $this->node($node), $graph->nodes)),
-            'edges' => array_map(fn (GraphEdge $edge) => $this->edge($edge), $graph->edges),
+            'edges' => array_map(fn (GraphEdge $edge) => $this->edge($edge, $graph->has($edge->source) ? $graph->node($edge->source) : null), $graph->edges),
         ];
     }
 
@@ -49,7 +49,7 @@ class CanvasMapper
                 'icon' => $definition?->icon() ?? 'question-mark-circle',
                 'category' => $definition?->category() ?? '',
                 'isTrigger' => $definition?->kind() === NodeKind::Trigger,
-                'ports' => $definition ? array_map(fn (string $port) => ['id' => $port, 'label' => $this->portLabel($port)], $definition->ports($node->config)) : [],
+                'ports' => $definition ? array_map(fn (string $port) => ['id' => $port, 'label' => $this->portLabel($port, $node)], $definition->ports($node->config)) : [],
                 'hasErrorPort' => $node->errorPath && (bool) $definition?->hasErrorPort(),
                 'unknown' => ! $known,
             ],
@@ -59,7 +59,7 @@ class CanvasMapper
     /**
      * @return array<string, mixed>
      */
-    public function edge(GraphEdge $edge): array
+    public function edge(GraphEdge $edge, ?GraphNode $source = null): array
     {
         return array_filter([
             'id' => $edge->id,
@@ -67,14 +67,22 @@ class CanvasMapper
             'sourceHandle' => $edge->sourcePort,
             'target' => $edge->target,
             'targetHandle' => self::TARGET_HANDLE,
-            'label' => in_array($edge->sourcePort, ['main'], true) ? null : $this->portLabel($edge->sourcePort),
+            'label' => in_array($edge->sourcePort, ['main'], true) ? null : $this->portLabel($edge->sourcePort, $source),
             'class' => $edge->sourcePort === 'error' ? 'wag-edge-error' : null,
             'animated' => false,
         ], fn ($value) => $value !== null);
     }
 
-    public function portLabel(string $port): string
+    public function portLabel(string $port, ?GraphNode $node = null): string
     {
+        if ($node && $port !== 'error' && $this->registry->has($node->type)) {
+            $label = $this->registry->make($node->type)->portLabel($port, $node->config);
+
+            if ($label !== null) {
+                return $label;
+            }
+        }
+
         return match (true) {
             $port === 'main' => '',
             $port === 'error' => __('workflows.editor.error'),

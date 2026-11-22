@@ -21,4 +21,17 @@ return [
         'username' => 'Username',
         'username_and_password_sent_with' => 'A username and password sent with HTTP Basic authentication.',
     ],
+    'smtp' => [
+        'an_smtp_server_send_email' => 'An SMTP server that Send email nodes can send through instead of the organization\'s mail settings.',
+        'encryption' => 'Encryption',
+        'from_address' => 'From address',
+        'from_name' => 'From name',
+        'host' => 'Host',
+        'none' => 'None',
+        'port' => 'Port',
+        'smtp_server' => 'SMTP server',
+        'ssl_tls' => 'SSL/TLS (usually port 465)',
+        'starttls' => 'STARTTLS (usually port 587)',
+        'username' => 'Username',
+    ],
 ];

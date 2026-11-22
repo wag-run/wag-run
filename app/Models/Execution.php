@@ -27,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $triggered_by
  * @property int|null $cancelled_by
  * @property int|null $parent_step_id
+ * @property int $chain_depth 1 for a run nothing else started; one more than its parent's for a run another workflow started
  * @property Carbon|null $started_at
  * @property Carbon|null $finished_at
  * @property-read Workflow $workflow
@@ -34,7 +35,7 @@ use Illuminate\Support\Carbon;
  * @property-read Workspace $workspace
  * @property-read ExecutionStep|null $parentStep
  */
-#[Fillable(['workspace_id', 'workflow_id', 'workflow_version_id', 'status', 'trigger_type', 'trigger_node_id', 'input', 'output', 'error', 'triggered_by', 'cancelled_by', 'parent_step_id', 'started_at', 'finished_at'])]
+#[Fillable(['workspace_id', 'workflow_id', 'workflow_version_id', 'status', 'trigger_type', 'trigger_node_id', 'input', 'output', 'error', 'triggered_by', 'cancelled_by', 'parent_step_id', 'chain_depth', 'started_at', 'finished_at'])]
 class Execution extends Model
 {
     protected function casts(): array
@@ -44,6 +45,7 @@ class Execution extends Model
             'input' => 'array',
             'output' => 'array',
             'error' => 'array',
+            'chain_depth' => 'integer',
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
         ];

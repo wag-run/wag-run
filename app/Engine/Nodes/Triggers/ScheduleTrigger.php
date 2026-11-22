@@ -47,9 +47,9 @@ class ScheduleTrigger extends Node
     {
         return [
             new Field('mode', __('common.run'), Field::SELECT, required: true, default: 'interval', options: ['interval' => __('nodes.schedule_trigger.every_n_minutes'), 'cron' => __('nodes.schedule_trigger.on_a_cron_schedule')]),
-            new Field('interval_minutes', __('nodes.schedule_trigger.every_minutes'), Field::NUMBER, default: 60),
-            new Field('cron', __('nodes.schedule_trigger.cron_expression'), Field::TEXT, description: __('nodes.schedule_trigger.such_as_0_9_1')),
-            new Field('timezone', __('nodes.schedule_trigger.time_zone'), Field::TEXT, default: 'UTC'),
+            new Field('interval_minutes', __('nodes.schedule_trigger.every_minutes'), Field::NUMBER, default: 60, visibleWhen: ['mode' => 'interval']),
+            new Field('cron', __('nodes.schedule_trigger.cron_expression'), Field::TEXT, required: true, description: __('nodes.schedule_trigger.such_as_0_9_1'), visibleWhen: ['mode' => 'cron']),
+            new Field('timezone', __('nodes.schedule_trigger.time_zone'), Field::TEXT, default: 'UTC', visibleWhen: ['mode' => 'cron']),
         ];
     }
 

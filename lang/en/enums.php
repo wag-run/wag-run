@@ -16,7 +16,7 @@ return [
     'execution_status' => [
         'skipped' => 'Skipped',
     ],
-    'install_role' => [
+    'org_role' => [
         'member' => 'Member',
         'organization_admin' => 'Organization admin',
     ],

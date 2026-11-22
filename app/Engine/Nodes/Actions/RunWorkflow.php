@@ -10,13 +10,15 @@ use App\Engine\NodeContext;
 use App\Engine\NodeResult;
 use App\Engine\ResultKind;
 use App\Engine\Resumption;
+use App\Enums\ExecutionStatus;
 use App\Enums\NodeKind;
 use App\Models\Workflow;
 
 /**
  * Starts another workflow in the same workspace. Sync mode waits for it and
  * returns its outputs; if it fails, this node fails. Async mode starts it and
- * moves on. Trigger loops between workflows are not detected.
+ * moves on. A workflow cannot start itself, and chains of runs starting runs
+ * stop at the organization's maximum chain depth.
  */
 class RunWorkflow extends Node
 {
@@ -80,6 +82,10 @@ class RunWorkflow extends Node
             return NodeResult::fail(__('nodes.run_workflow.workflow_to_trigger_does_not'), retryable: false);
         }
 
+        if ($workflow->id === $context->execution->workflow_id) {
+            return NodeResult::fail(__('nodes.run_workflow.a_workflow_cannot_trigger_itself'), retryable: false);
+        }
+
         if (! $workflow->published_version_id) {
             return NodeResult::fail(__('nodes.run_workflow.workflow_name_has_not_been', ['name' => $workflow->name]), retryable: false);
         }
@@ -87,7 +93,11 @@ class RunWorkflow extends Node
         $input = is_array($context->input('input')) ? $context->input('input') : [];
 
         if ($context->input('mode') === 'async') {
-            $execution = app(Engine::class)->start($workflow, $input, triggerType: 'workflow');
+            $execution = app(Engine::class)->start($workflow, $input, triggerType: 'workflow', startedBy: $context->execution);
+
+            if ($execution->status === ExecutionStatus::Cancelled) {
+                return NodeResult::fail((string) ($execution->error['message'] ?? __('engine.child_workflow_was_cancelled')), retryable: false);
+            }
 
             return NodeResult::complete(['execution_id' => $execution->id, 'status' => $execution->status->value]);
         }

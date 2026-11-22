@@ -11,6 +11,7 @@ use App\Enums\StepStatus;
 use App\Enums\WaitType;
 use App\Models\Execution;
 use App\Models\ExecutionStep;
+use App\Models\Organization;
 use App\Models\User;
 use App\Models\Workflow;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,8 @@ use RuntimeException;
  */
 class Engine
 {
+    public const DEFAULT_MAX_CHAIN_DEPTH = 10;
+
     public function __construct(
         protected Coordinator $coordinator,
         protected NodeRegistry $registry,
@@ -32,6 +35,11 @@ class Engine
      * started manually; without a trigger node id, the run starts at its
      * first trigger with $input as that trigger's payload.
      *
+     * A run another run started, waiting on it ($parentStep) or not
+     * ($startedBy), is one level deeper in the chain. Past the organization's
+     * maximum chain depth the run is created already cancelled, which stops
+     * loops such as A starting B starting A.
+     *
      * @param  array<string, mixed>  $input
      */
     public function start(
@@ -41,6 +49,7 @@ class Engine
         string $triggerType = 'manual',
         ?string $triggerNodeId = null,
         ?ExecutionStep $parentStep = null,
+        ?Execution $startedBy = null,
     ): Execution {
         $version = $workflow->publishedVersion
             ?? throw new RuntimeException(__('engine.workflow_name_has_no_published', ['name' => $workflow->name]));
@@ -52,7 +61,9 @@ class Engine
             throw new InvalidArgumentException(__('engine.workflow_name_has_no_trigger', ['name' => $workflow->name]));
         }
 
-        return DB::transaction(function () use ($workflow, $version, $input, $user, $triggerType, $triggerNodeId, $parentStep) {
+        $chainDepth = (($parentStep?->execution ?? $startedBy)?->chain_depth ?? 0) + 1;
+
+        return DB::transaction(function () use ($workflow, $version, $input, $user, $triggerType, $triggerNodeId, $parentStep, $chainDepth) {
             Workflow::query()->lockForUpdate()->find($workflow->id);
 
             $inProgress = $workflow->executions()->whereIn('status', ExecutionStatus::inProgress())->get();
@@ -66,8 +77,22 @@ class Engine
                 'input' => Redactor::forWorkspace($workflow->workspace)->mask($input),
                 'triggered_by' => $user?->id,
                 'parent_step_id' => $parentStep?->id,
+                'chain_depth' => $chainDepth,
                 'started_at' => now(),
             ];
+
+            $maxDepth = Organization::current()?->max_chain_depth ?? self::DEFAULT_MAX_CHAIN_DEPTH;
+
+            if ($chainDepth > $maxDepth) {
+                $stopped = Execution::create([...$attributes, 'status' => ExecutionStatus::Cancelled, 'finished_at' => now(), 'error' => [
+                    'message' => __('engine.chain_depth_limit_reached', ['max' => $maxDepth]),
+                ]]);
+
+                DB::afterCommit(fn () => event(new ExecutionFinished($stopped)));
+                $this->coordinator->notifyParent($stopped);
+
+                return $stopped;
+            }
 
             if ($inProgress->isNotEmpty() && $workflow->concurrency === ConcurrencyPolicy::SkipIfRunning) {
                 $skipped = Execution::create([...$attributes, 'status' => ExecutionStatus::Skipped, 'finished_at' => now()]);

@@ -13,9 +13,9 @@ class SignInProvidersTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_install_admins_add_a_provider_with_an_encrypted_secret(): void
+    public function test_org_admins_add_a_provider_with_an_encrypted_secret(): void
     {
-        $admin = User::factory()->installAdmin()->create();
+        $admin = User::factory()->orgAdmin()->create();
 
         Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')
             ->call('create')
@@ -36,7 +36,7 @@ class SignInProvidersTest extends TestCase
 
     public function test_the_issuer_must_be_https(): void
     {
-        $admin = User::factory()->installAdmin()->create();
+        $admin = User::factory()->orgAdmin()->create();
 
         Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')
             ->set('name', 'Plain')
@@ -51,7 +51,7 @@ class SignInProvidersTest extends TestCase
 
     public function test_editing_keeps_the_secret_and_the_redirect_uri_when_left_alone(): void
     {
-        $admin = User::factory()->installAdmin()->create();
+        $admin = User::factory()->orgAdmin()->create();
         $provider = OidcProvider::factory()->for(Organization::current())->create(['name' => 'Acme ID', 'slug' => 'acme-id', 'client_secret' => 'original']);
 
         Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')
@@ -69,7 +69,7 @@ class SignInProvidersTest extends TestCase
 
     public function test_members_cannot_manage_providers(): void
     {
-        $member = User::factory()->installMember()->create();
+        $member = User::factory()->orgMember()->create();
 
         $this->actingAs($member)->get(route('admin.sign-in-providers'))->assertForbidden();
     }

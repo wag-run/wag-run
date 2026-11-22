@@ -7,7 +7,7 @@ use App\Engine\Node;
 use App\Engine\NodeRegistry;
 use App\Engine\Nodes\Actions;
 use App\Engine\Nodes\Triggers;
-use App\Engine\Templates\SandboxedTemplateEngine;
+use App\Engine\Templates\ExpressionTemplateEngine;
 use App\Engine\Templates\TemplateEngine;
 use App\Services\Assignments;
 use App\Services\RunNotifications;
@@ -31,6 +31,7 @@ class WorkflowServiceProvider extends ServiceProvider
         Triggers\FormTrigger::class,
         Actions\HttpRequest::class,
         Actions\Conditional::class,
+        Actions\SwitchNode::class,
         Actions\ForLoop::class,
         Actions\RunWorkflow::class,
         Actions\Wait::class,
@@ -40,6 +41,8 @@ class WorkflowServiceProvider extends ServiceProvider
         Actions\Approval::class,
         Actions\Task::class,
         Actions\Terminate::class,
+        Actions\SendEmail::class,
+        Actions\SendNotification::class,
     ];
 
     public function register(): void
@@ -54,7 +57,7 @@ class WorkflowServiceProvider extends ServiceProvider
             return $registry;
         });
 
-        $this->app->bind(TemplateEngine::class, SandboxedTemplateEngine::class);
+        $this->app->bind(TemplateEngine::class, ExpressionTemplateEngine::class);
     }
 
     public function boot(): void

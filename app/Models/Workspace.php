@@ -68,7 +68,7 @@ class Workspace extends Model
 
     /**
      * Retention in days for this workspace's execution logs: its own setting,
-     * else the install default. Null means logs are kept forever.
+     * else the organization default. Null means logs are kept forever.
      */
     public function effectiveRetentionDays(): ?int
     {

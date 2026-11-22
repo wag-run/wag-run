@@ -45,7 +45,7 @@ new class extends Component {
 
     public function create(): void
     {
-        $this->authorize('install-admin');
+        $this->authorize('org-admin');
         $this->reset();
         $this->resetValidation();
         Flux::modal('provider-form')->show();
@@ -53,7 +53,7 @@ new class extends Component {
 
     public function edit(int $id): void
     {
-        $this->authorize('install-admin');
+        $this->authorize('org-admin');
 
         $provider = $this->findProvider($id);
         $this->editingId = $provider->id;
@@ -73,7 +73,7 @@ new class extends Component {
 
     public function save(): void
     {
-        $this->authorize('install-admin');
+        $this->authorize('org-admin');
 
         $organization = Organization::current();
 
@@ -130,7 +130,7 @@ new class extends Component {
 
     public function test(int $id, OidcClient $client): void
     {
-        $this->authorize('install-admin');
+        $this->authorize('org-admin');
 
         $provider = $this->findProvider($id);
 
@@ -144,7 +144,7 @@ new class extends Component {
 
     public function delete(int $id): void
     {
-        $this->authorize('install-admin');
+        $this->authorize('org-admin');
 
         $provider = $this->findProvider($id);
         $provider->delete();

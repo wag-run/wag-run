@@ -48,7 +48,7 @@ class WorkspaceSettingsTest extends TestCase
         $this->assertSame(['10.0.0.1'], $workspace->fresh()->internal_allowlist);
     }
 
-    public function test_retention_falls_back_to_the_install_default(): void
+    public function test_retention_falls_back_to_the_organization_default(): void
     {
         Organization::factory()->create(['default_retention_days' => 90]);
         $workspace = Workspace::factory()->create(['retention_days' => 14]);

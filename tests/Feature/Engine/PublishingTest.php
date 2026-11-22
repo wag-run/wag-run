@@ -65,6 +65,7 @@ class PublishingTest extends TestCase
             'error port on a trigger' => [['nodes' => [['id' => 's', 'type' => 'test.start', 'name' => 'Start'], ['id' => 'a', 'type' => 'test.emit']], 'edges' => [['id' => 'e1', 'source' => 's', 'source_port' => 'error', 'target' => 'a']]], 'Node "Start" has no error output.'],
             'cycle' => [['nodes' => [['id' => 's', 'type' => 'test.start'], ['id' => 'a', 'type' => 'test.emit'], ['id' => 'b', 'type' => 'test.emit']], 'edges' => [['id' => 'e1', 'source' => 's', 'target' => 'a'], ['id' => 'e2', 'source' => 'a', 'target' => 'b'], ['id' => 'e3', 'source' => 'b', 'target' => 'a']]], 'Connections cannot form a cycle. Use a For loop node to repeat steps.'],
             'node id unusable in templates' => [['nodes' => [['id' => 'my-node', 'type' => 'test.start']], 'edges' => []], 'Node id [my-node] must start with a letter or underscore and use only letters, numbers and underscores, so templates can reference it.'],
+            'secret missing for token verification' => [['nodes' => [['id' => 'hook', 'type' => 'core.webhook_trigger', 'name' => 'Hook', 'config' => ['verification' => 'token']]], 'edges' => []], 'Node "Hook" needs a value for "Token or signing secret".'],
             'edge into a trigger' => [['nodes' => [['id' => 's', 'type' => 'test.start', 'name' => 'Start'], ['id' => 'a', 'type' => 'test.emit']], 'edges' => [['id' => 'e1', 'source' => 'a', 'target' => 's']]], 'Trigger "Start" cannot have incoming connections.'],
         ];
     }
@@ -85,6 +86,15 @@ class PublishingTest extends TestCase
         }
 
         $this->assertNull($workflow->refresh()->published_version_id);
+    }
+
+    public function test_a_required_field_hidden_by_another_field_is_not_required(): void
+    {
+        $workflow = Workflow::factory()->create(['draft_graph' => ['nodes' => [
+            ['id' => 'hook', 'type' => 'core.webhook_trigger', 'name' => 'Hook', 'config' => ['verification' => 'none']],
+        ], 'edges' => []]]);
+
+        $this->assertSame(1, app(Workflows::class)->publish($workflow)->number);
     }
 
     public function test_cannot_start_a_workflow_that_was_never_published(): void

@@ -6,6 +6,7 @@ use App\Credentials\CredentialTypeRegistry;
 use App\Credentials\Types\AiProvider;
 use App\Credentials\Types\ApiToken;
 use App\Credentials\Types\HttpBasic;
+use App\Credentials\Types\Smtp;
 use App\Enums\WorkspacePermission;
 use App\Models\User;
 use App\Models\Workspace;
@@ -29,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
             $registry->register(new HttpBasic);
             $registry->register(new ApiToken);
             $registry->register(new AiProvider);
+            $registry->register(new Smtp);
 
             return $registry;
         });
@@ -45,13 +47,13 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Define the install-admin gate and one gate per workspace permission, so
+     * Define the org-admin gate and one gate per workspace permission, so
      * routes can use `can:manage-secrets,workspace` and components can call
      * `$this->authorize('manage-secrets', $workspace)`.
      */
     protected function configureAuthorization(): void
     {
-        Gate::define('install-admin', fn (User $user): bool => $user->isInstallAdmin());
+        Gate::define('org-admin', fn (User $user): bool => $user->isOrgAdmin());
 
         foreach (WorkspacePermission::cases() as $permission) {
             Gate::define(

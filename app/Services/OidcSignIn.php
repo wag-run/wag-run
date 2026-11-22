@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Enums\InstallRole;
+use App\Enums\OrgRole;
 use App\Models\OidcIdentity;
 use App\Models\OidcProvider;
 use App\Models\User;
@@ -18,7 +18,7 @@ use RuntimeException;
  * 2. Otherwise a user whose email matches is linked, but only when the
  *    provider marks the email verified or is trusted for emails, so nobody
  *    can take over an account by registering its address at the provider.
- * 3. Otherwise, when the provider allows registration, a new install Member
+ * 3. Otherwise, when the provider allows registration, a new organization Member
  *    is created with no workspace access.
  */
 class OidcSignIn
@@ -85,7 +85,7 @@ class OidcSignIn
             $user->forceFill(['email_verified_at' => now()])->save();
         }
 
-        $user->organizations()->attach($provider->organization_id, ['role' => InstallRole::Member->value]);
+        $user->organizations()->attach($provider->organization_id, ['role' => OrgRole::Member->value]);
 
         Audit::record('auth.oidc_registered', $user, metadata: ['provider' => $provider->name], label: $user->email, actor: $user);
 

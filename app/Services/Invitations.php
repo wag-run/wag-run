@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Enums\InstallRole;
+use App\Enums\OrgRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Invitation;
 use App\Models\Organization;
@@ -32,7 +32,7 @@ class Invitations
         Organization $organization,
         string $email,
         User $inviter,
-        InstallRole $installRole = InstallRole::Member,
+        OrgRole $orgRole = OrgRole::Member,
         ?Workspace $workspace = null,
         ?WorkspaceRole $workspaceRole = null,
     ): array {
@@ -42,7 +42,7 @@ class Invitations
             throw ValidationException::withMessages(['email' => __('invitations.that_person_already_has_an')]);
         }
 
-        return DB::transaction(function () use ($organization, $email, $inviter, $installRole, $workspace, $workspaceRole) {
+        return DB::transaction(function () use ($organization, $email, $inviter, $orgRole, $workspace, $workspaceRole) {
             $organization->invitations()
                 ->where('email', $email)
                 ->where('workspace_id', $workspace?->id)
@@ -55,14 +55,14 @@ class Invitations
                 'workspace_id' => $workspace?->id,
                 'invited_by' => $inviter->id,
                 'email' => $email,
-                'install_role' => $installRole,
+                'org_role' => $orgRole,
                 'workspace_role' => $workspace ? ($workspaceRole ?? WorkspaceRole::Viewer) : null,
                 'token_hash' => Invitation::hashToken($token),
                 'expires_at' => now()->addDays(self::EXPIRES_IN_DAYS),
             ]);
 
             Audit::record('invitation.sent', $invitation, $workspace, array_filter([
-                'install_role' => $installRole->value,
+                'org_role' => $orgRole->value,
                 'workspace_role' => $invitation->workspace_role?->value,
             ]), $email);
 
@@ -91,7 +91,7 @@ class Invitations
 
         DB::transaction(function () use ($invitation, $user) {
             if (! $user->organizations()->whereKey($invitation->organization_id)->exists()) {
-                $user->organizations()->attach($invitation->organization_id, ['role' => $invitation->install_role->value]);
+                $user->organizations()->attach($invitation->organization_id, ['role' => $invitation->org_role->value]);
             }
 
             if ($invitation->workspace) {

@@ -87,7 +87,7 @@ class LlmCall extends Node
                 new Field('type', __('common.type'), Field::SELECT, required: true, default: 'string', options: static::schemaTypes()),
                 new Field('description', __('common.description'), Field::TEXT),
                 new Field('required', __('common.required'), Field::BOOLEAN, default: true),
-            ]),
+            ], visibleWhen: ['output' => 'structured']),
             new Field('timeout', __('common.timeout_seconds'), Field::NUMBER, default: 120),
         ];
     }

@@ -17,7 +17,7 @@
                 $activeRole = $activeWorkspace ? $sidebarUser->roleIn($activeWorkspace) : null;
                 $activeWorkspace = $activeRole ? $activeWorkspace : null;
                 $switchableWorkspaces = $sidebarUser->accessibleWorkspaces();
-                $isInstallAdmin = $sidebarUser->isInstallAdmin();
+                $isOrgAdmin = $sidebarUser->isOrgAdmin();
             @endphp
 
             @if ($switchableWorkspaces->isNotEmpty())
@@ -38,7 +38,7 @@
                                 {{ $switchable->name }}
                             </flux:menu.item>
                         @endforeach
-                        @if ($isInstallAdmin)
+                        @if ($isOrgAdmin)
                             <flux:menu.separator />
                             <flux:menu.item :href="route('admin.workspaces')" icon="squares-plus" wire:navigate>
                                 {{ __('navigation.manage_workspaces') }}
@@ -106,7 +106,7 @@
                     </flux:sidebar.group>
                 @endif
 
-                @if ($isInstallAdmin)
+                @if ($isOrgAdmin)
                     <flux:sidebar.group :heading="__('navigation.organization')" class="grid">
                         <flux:sidebar.item icon="squares-2x2" :href="route('admin.workspaces')" :current="request()->routeIs('admin.workspaces')" wire:navigate>
                             {{ __('common.workspaces') }}
@@ -119,6 +119,9 @@
                         </flux:sidebar.item>
                         <flux:sidebar.item icon="finger-print" :href="route('admin.sign-in-providers')" :current="request()->routeIs('admin.sign-in-providers')" wire:navigate>
                             {{ __('common.sign_in_providers') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="envelope" :href="route('admin.email')" :current="request()->routeIs('admin.email')" wire:navigate>
+                            {{ __('admin.email.title') }}
                         </flux:sidebar.item>
                         <flux:sidebar.item icon="clipboard-document-list" :href="route('admin.audit')" :current="request()->routeIs('admin.audit')" wire:navigate>
                             {{ __('common.audit_log') }}

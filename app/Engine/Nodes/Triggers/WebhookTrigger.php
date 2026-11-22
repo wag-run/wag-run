@@ -51,9 +51,9 @@ class WebhookTrigger extends Node
                 'signature' => __('nodes.webhook_trigger.hmac_sha256_signature'),
                 'ip' => __('nodes.webhook_trigger.ip_allowlist'),
             ]),
-            new Field('secret', __('nodes.webhook_trigger.token_or_signing_secret'), Field::SECRET, description: __('nodes.webhook_trigger.secret_from_this_workspace')),
-            new Field('header', __('nodes.webhook_trigger.header'), Field::TEXT, description: __('nodes.webhook_trigger.where_the_token_or_signature')),
-            new Field('allowed_ips', __('nodes.webhook_trigger.allowed_ips'), Field::TEXTAREA, description: __('nodes.webhook_trigger.one_ip_address_or_cidr')),
+            new Field('secret', __('nodes.webhook_trigger.token_or_signing_secret'), Field::SECRET, required: true, description: __('nodes.webhook_trigger.secret_from_this_workspace'), visibleWhen: ['verification' => ['token', 'signature']]),
+            new Field('header', __('nodes.webhook_trigger.header'), Field::TEXT, description: __('nodes.webhook_trigger.where_the_token_or_signature'), visibleWhen: ['verification' => ['token', 'signature']]),
+            new Field('allowed_ips', __('nodes.webhook_trigger.allowed_ips'), Field::TEXTAREA, required: true, description: __('nodes.webhook_trigger.one_ip_address_or_cidr'), visibleWhen: ['verification' => 'ip']),
         ];
     }
 

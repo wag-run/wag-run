@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Enums\InstallRole;
+use App\Enums\OrgRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Organization;
 use App\Models\User;
@@ -46,13 +46,13 @@ class WorkspaceManager
 
     /**
      * Grant a user access to a workspace. Users who are not yet part of the
-     * organization join it as install Members.
+     * organization join it as organization Members.
      */
     public function addMember(Workspace $workspace, User $user, WorkspaceRole $role): void
     {
         DB::transaction(function () use ($workspace, $user, $role) {
             if (! $user->organizations()->whereKey($workspace->organization_id)->exists()) {
-                $user->organizations()->attach($workspace->organization_id, ['role' => InstallRole::Member->value]);
+                $user->organizations()->attach($workspace->organization_id, ['role' => OrgRole::Member->value]);
             }
 
             if ($workspace->members()->whereKey($user->id)->exists()) {

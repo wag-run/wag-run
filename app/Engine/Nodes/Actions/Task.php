@@ -92,7 +92,7 @@ class Task extends Node
             new Field('label', __('nodes.task.label'), Field::TEXT, required: true),
             new Field('type', __('common.type'), Field::SELECT, required: true, default: 'text', options: static::fieldTypes()),
             new Field('required', __('common.required'), Field::BOOLEAN, default: false),
-            new Field('options', __('nodes.task.choices'), Field::KEY_VALUE, description: __('nodes.task.for_choice_fields_value_and')),
+            new Field('options', __('nodes.task.choices'), Field::KEY_VALUE, description: __('nodes.task.for_choice_fields_value_and'), visibleWhen: ['type' => 'select']),
         ];
     }
 

@@ -3,7 +3,7 @@
         <flux:icon.squares-2x2 class="size-10 text-zinc-400" />
         <flux:heading size="lg">{{ __('dashboard.no_workspaces_yet') }}</flux:heading>
 
-        @if ($isInstallAdmin)
+        @if ($isOrgAdmin)
             <flux:text>{{ __('dashboard.create_a_workspace_to_start') }}</flux:text>
             <flux:button variant="primary" :href="route('admin.workspaces')" wire:navigate>{{ __('dashboard.create_a_workspace') }}</flux:button>
         @else

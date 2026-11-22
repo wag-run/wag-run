@@ -20,8 +20,9 @@ class ManageWorkspacesTest extends TestCase
     #[TestWith(['admin.workspaces'])]
     #[TestWith(['admin.users'])]
     #[TestWith(['admin.settings'])]
+    #[TestWith(['admin.email'])]
     #[TestWith(['admin.audit'])]
-    public function test_forbids_install_members_from_admin_pages(string $route): void
+    public function test_forbids_org_members_from_admin_pages(string $route): void
     {
         $workspace = Workspace::factory()->create();
         $workspaceAdmin = User::factory()->memberOf($workspace, WorkspaceRole::Admin)->create();
@@ -29,9 +30,9 @@ class ManageWorkspacesTest extends TestCase
         $this->actingAs($workspaceAdmin)->get(route($route))->assertForbidden();
     }
 
-    public function test_install_admin_creates_renames_and_deletes_a_workspace(): void
+    public function test_org_admin_creates_renames_and_deletes_a_workspace(): void
     {
-        $admin = User::factory()->installAdmin()->create();
+        $admin = User::factory()->orgAdmin()->create();
 
         $page = Livewire::actingAs($admin)->test('pages::admin.workspaces');
 

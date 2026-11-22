@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Enums\InstallRole;
+use App\Enums\OrgRole;
 use App\Enums\WorkspaceRole;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,7 +16,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $workspace_id
  * @property int|null $invited_by
  * @property string $email
- * @property InstallRole $install_role
+ * @property OrgRole $org_role
  * @property WorkspaceRole|null $workspace_role
  * @property string $token_hash
  * @property Carbon $expires_at
@@ -26,13 +26,13 @@ use Illuminate\Support\Carbon;
  * @property-read Organization $organization
  * @property-read User|null $inviter
  */
-#[Fillable(['organization_id', 'workspace_id', 'invited_by', 'email', 'install_role', 'workspace_role', 'token_hash', 'expires_at'])]
+#[Fillable(['organization_id', 'workspace_id', 'invited_by', 'email', 'org_role', 'workspace_role', 'token_hash', 'expires_at'])]
 class Invitation extends Model
 {
     protected function casts(): array
     {
         return [
-            'install_role' => InstallRole::class,
+            'org_role' => OrgRole::class,
             'workspace_role' => WorkspaceRole::class,
             'expires_at' => 'datetime',
             'accepted_at' => 'datetime',

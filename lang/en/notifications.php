@@ -20,4 +20,7 @@ return [
     'run_failed' => [
         'run_id_of_workflow_failed' => 'Run #:id of :workflow failed',
     ],
+    'workflow' => [
+        'open' => 'Open',
+    ],
 ];
