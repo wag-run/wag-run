@@ -25,12 +25,12 @@ class ForLoop extends Node
 
     public function label(): string
     {
-        return __('For loop');
+        return __('nodes.for_loop.for_loop');
     }
 
     public function description(): string
     {
-        return __('Repeats part of the flow for each item.');
+        return __('nodes.for_loop.repeats_part_of_the_flow');
     }
 
     public function kind(): NodeKind
@@ -40,7 +40,7 @@ class ForLoop extends Node
 
     public function category(): string
     {
-        return __('Flow');
+        return __('common.flow');
     }
 
     public function icon(): string
@@ -51,14 +51,14 @@ class ForLoop extends Node
     public function inputs(): array
     {
         return [
-            new Field('items', __('Items'), Field::TEXT, required: true, templated: true,
-                description: __('A list to loop over, such as {{ nodes.fetch.output.body.items }}')),
+            new Field('items', __('nodes.for_loop.items'), Field::TEXT, required: true, templated: true,
+                description: __('nodes.for_loop.list_to_loop_over_such')),
         ];
     }
 
     public function outputs(array $config = []): array
     {
-        return [new Output('results', __('Results'), 'array', __('What each iteration produced, keyed by the node that ended it.'))];
+        return [new Output('results', __('nodes.for_loop.results'), 'array', __('nodes.for_loop.what_each_iteration_produced_keyed'))];
     }
 
     public function ports(array $config = []): array
@@ -76,11 +76,11 @@ class ForLoop extends Node
         }
 
         if (! is_array($items)) {
-            return NodeResult::fail(__('Items must be a list.'), retryable: false);
+            return NodeResult::fail(__('nodes.for_loop.items_must_be_a_list'), retryable: false);
         }
 
         if (count($items) > self::MAX_ITEMS) {
-            return NodeResult::fail(__('A loop can run at most :max items.', ['max' => self::MAX_ITEMS]), retryable: false);
+            return NodeResult::fail(__('nodes.for_loop.loop_can_run_at_most', ['max' => self::MAX_ITEMS]), retryable: false);
         }
 
         return NodeResult::iterate(array_values($items));

@@ -27,12 +27,12 @@ class RunWorkflow extends Node
 
     public function label(): string
     {
-        return __('Trigger other workflow');
+        return __('nodes.run_workflow.trigger_other_workflow');
     }
 
     public function description(): string
     {
-        return __('Starts another workflow, and optionally waits for its outputs.');
+        return __('nodes.run_workflow.starts_another_workflow_and_optionally');
     }
 
     public function kind(): NodeKind
@@ -42,7 +42,7 @@ class RunWorkflow extends Node
 
     public function category(): string
     {
-        return __('Flow');
+        return __('common.flow');
     }
 
     public function icon(): string
@@ -53,20 +53,20 @@ class RunWorkflow extends Node
     public function inputs(): array
     {
         return [
-            new Field('workflow', __('Workflow'), Field::WORKFLOW, required: true),
-            new Field('mode', __('Mode'), Field::SELECT, required: true, default: 'sync', options: [
-                'sync' => __('Wait for it to finish'),
-                'async' => __('Start it and move on'),
+            new Field('workflow', __('common.workflow'), Field::WORKFLOW, required: true),
+            new Field('mode', __('nodes.run_workflow.mode'), Field::SELECT, required: true, default: 'sync', options: [
+                'sync' => __('nodes.run_workflow.wait_for_it_to_finish'),
+                'async' => __('nodes.run_workflow.start_it_and_move_on'),
             ]),
-            new Field('input', __('Input'), Field::KEY_VALUE, templated: true, description: __('Values passed to the workflow\'s trigger.')),
+            new Field('input', __('common.input'), Field::KEY_VALUE, templated: true, description: __('nodes.run_workflow.values_passed_to_the_workflow')),
         ];
     }
 
     public function outputs(array $config = []): array
     {
         return ($config['mode'] ?? 'sync') === 'async'
-            ? [new Output('execution_id', __('Execution id'), 'number'), new Output('status', __('Status'), 'string')]
-            : [new Output('output', __('Workflow output'), 'object', __('The output of the last node on each path, keyed by node id.'))];
+            ? [new Output('execution_id', __('common.execution_id'), 'number'), new Output('status', __('common.status'), 'string')]
+            : [new Output('output', __('nodes.run_workflow.workflow_output'), 'object', __('nodes.run_workflow.output_of_the_last_node'))];
     }
 
     public function execute(NodeContext $context): NodeResult
@@ -77,11 +77,11 @@ class RunWorkflow extends Node
             ->first();
 
         if (! $workflow) {
-            return NodeResult::fail(__('The workflow to trigger does not exist in this workspace.'), retryable: false);
+            return NodeResult::fail(__('nodes.run_workflow.workflow_to_trigger_does_not'), retryable: false);
         }
 
         if (! $workflow->published_version_id) {
-            return NodeResult::fail(__('Workflow ":name" has not been published.', ['name' => $workflow->name]), retryable: false);
+            return NodeResult::fail(__('nodes.run_workflow.workflow_name_has_not_been', ['name' => $workflow->name]), retryable: false);
         }
 
         $input = is_array($context->input('input')) ? $context->input('input') : [];

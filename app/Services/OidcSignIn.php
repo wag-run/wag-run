@@ -39,7 +39,7 @@ class OidcSignIn
         $user = $identity->user ?? DB::transaction(fn () => $this->linkOrCreate($provider, $subject, $email, $emailTrusted, $claims));
 
         if (! $user->organizationMembership() || $user->isDeactivated()) {
-            throw new RuntimeException(__('This account has been deactivated. Ask an organization admin to reactivate it.'));
+            throw new RuntimeException(__('oidc.this_account_has_been_deactivated'));
         }
 
         OidcIdentity::query()->updateOrCreate(
@@ -59,7 +59,7 @@ class OidcSignIn
 
         if ($existing) {
             if (! $emailTrusted) {
-                throw new RuntimeException(__(':name has not verified this email address, so it cannot be linked to the existing account. Sign in with your password instead.', ['name' => $provider->name]));
+                throw new RuntimeException(__('oidc.name_has_not_verified_this', ['name' => $provider->name]));
             }
 
             Audit::record('auth.oidc_linked', $existing, metadata: ['provider' => $provider->name], label: $existing->email, actor: $existing);
@@ -68,11 +68,11 @@ class OidcSignIn
         }
 
         if (! $provider->allow_registration) {
-            throw new RuntimeException(__('There is no account for this sign-in. Ask an admin to invite you.'));
+            throw new RuntimeException(__('oidc.there_is_no_account_for'));
         }
 
         if (! $email) {
-            throw new RuntimeException(__(':name did not share an email address, which is needed to create an account.', ['name' => $provider->name]));
+            throw new RuntimeException(__('oidc.name_did_not_share_an', ['name' => $provider->name]));
         }
 
         $user = User::create([

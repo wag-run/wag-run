@@ -14,12 +14,12 @@ enum ExecutionStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Running => __('Running'),
-            self::Waiting => __('Waiting'),
-            self::Complete => __('Complete'),
-            self::Failed => __('Failed'),
-            self::Cancelled => __('Cancelled'),
-            self::Skipped => __('Skipped'),
+            self::Running => __('common.running'),
+            self::Waiting => __('common.waiting'),
+            self::Complete => __('common.complete'),
+            self::Failed => __('common.failed'),
+            self::Cancelled => __('common.cancelled'),
+            self::Skipped => __('enums.execution_status.skipped'),
         };
     }
 

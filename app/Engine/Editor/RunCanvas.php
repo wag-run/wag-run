@@ -58,7 +58,7 @@ class RunCanvas
     {
         return [
             'status' => $status,
-            'statusLabel' => $status === self::NOT_RUN ? __('Not run') : StepStatus::from($status)->label(),
+            'statusLabel' => $status === self::NOT_RUN ? __('common.not_run') : StepStatus::from($status)->label(),
         ];
     }
 
@@ -74,6 +74,6 @@ class RunCanvas
         $segments = explode('/', $step->scope_key);
         $index = (int) substr((string) strrchr(end($segments), '.'), 1);
 
-        return __('Iteration :n', ['n' => $index + 1]);
+        return __('workflows.editor.iteration_n', ['n' => $index + 1]);
     }
 }

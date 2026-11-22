@@ -38,17 +38,17 @@ class OidcClient
             try {
                 $response = Http::timeout(10)->acceptJson()->get($provider->normalizedIssuer().'/.well-known/openid-configuration');
             } catch (ConnectionException) {
-                throw new RuntimeException(__('Could not reach :name.', ['name' => $provider->name]));
+                throw new RuntimeException(__('oidc.could_not_reach_name', ['name' => $provider->name]));
             }
 
             $document = $response->successful() ? $response->json() : null;
 
             if (! is_array($document) || ! isset($document['authorization_endpoint'], $document['token_endpoint'], $document['issuer'])) {
-                throw new RuntimeException(__(':name did not return a valid OpenID Connect discovery document.', ['name' => $provider->name]));
+                throw new RuntimeException(__('oidc.name_did_not_return_a', ['name' => $provider->name]));
             }
 
             if (rtrim((string) $document['issuer'], '/') !== $provider->normalizedIssuer()) {
-                throw new RuntimeException(__('The issuer in :name\'s discovery document does not match the configured issuer.', ['name' => $provider->name]));
+                throw new RuntimeException(__('oidc.issuer_in_name_s_discovery', ['name' => $provider->name]));
             }
 
             return $document;
@@ -112,13 +112,13 @@ class OidcClient
                     'code_verifier' => $verifier,
                 ]);
         } catch (ConnectionException) {
-            throw new RuntimeException(__('Could not reach :name.', ['name' => $provider->name]));
+            throw new RuntimeException(__('oidc.could_not_reach_name', ['name' => $provider->name]));
         }
 
         $tokens = $response->json();
 
         if (! $response->successful() || ! is_array($tokens) || ! is_string($tokens['id_token'] ?? null)) {
-            throw new RuntimeException(__(':name did not accept the sign-in. Try again.', ['name' => $provider->name]));
+            throw new RuntimeException(__('oidc.name_did_not_accept_the', ['name' => $provider->name]));
         }
 
         $claims = $this->validatedIdToken($provider, $tokens['id_token'], $nonce);
@@ -139,7 +139,7 @@ class OidcClient
         $claims = count($parts) === 3 ? json_decode(static::base64UrlDecode($parts[1]), true) : null;
 
         if (! is_array($claims) || ! is_string($claims['sub'] ?? null) || $claims['sub'] === '') {
-            throw new RuntimeException(__('The ID token from :name could not be read.', ['name' => $provider->name]));
+            throw new RuntimeException(__('oidc.id_token_from_name_could', ['name' => $provider->name]));
         }
 
         $audiences = (array) ($claims['aud'] ?? []);
@@ -156,7 +156,7 @@ class OidcClient
         };
 
         if ($problem) {
-            throw new RuntimeException(__('The ID token from :name failed its :check check.', ['name' => $provider->name, 'check' => $problem]));
+            throw new RuntimeException(__('oidc.id_token_from_name_failed', ['name' => $provider->name, 'check' => $problem]));
         }
 
         return $claims;
@@ -195,7 +195,7 @@ class OidcClient
             return;
         }
 
-        throw new RuntimeException(__('The issuer must be an https URL.'));
+        throw new RuntimeException(__('oidc.issuer_must_be_an_https'));
     }
 
     public static function base64UrlEncode(string $value): string

@@ -14,20 +14,20 @@ enum WorkspaceRole: string
     public function label(): string
     {
         return match ($this) {
-            self::Admin => __('Admin'),
-            self::Editor => __('Editor'),
-            self::Viewer => __('Viewer'),
-            self::Guest => __('Guest'),
+            self::Admin => __('enums.workspace_role.admin'),
+            self::Editor => __('enums.workspace_role.editor'),
+            self::Viewer => __('enums.workspace_role.viewer'),
+            self::Guest => __('enums.workspace_role.guest'),
         };
     }
 
     public function description(): string
     {
         return match ($this) {
-            self::Admin => __('Manages members, secrets, authentication and workspace settings.'),
-            self::Editor => __('Builds, publishes and runs workflows.'),
-            self::Viewer => __('Sees workflows and execution logs.'),
-            self::Guest => __('Sees only the approvals and tasks assigned to them.'),
+            self::Admin => __('enums.workspace_role.manages_members_secrets_authentication_and'),
+            self::Editor => __('enums.workspace_role.builds_publishes_and_runs_workflows'),
+            self::Viewer => __('enums.workspace_role.sees_workflows_and_execution_logs'),
+            self::Guest => __('enums.workspace_role.sees_only_the_approvals_and'),
         };
     }
 

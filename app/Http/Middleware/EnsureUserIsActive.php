@@ -26,8 +26,8 @@ class EnsureUserIsActive
             }
 
             return $request->expectsJson()
-                ? response()->json(['message' => __('This account has been deactivated.')], 403)
-                : redirect()->route('login')->withErrors(['email' => __('This account has been deactivated.')]);
+                ? response()->json(['message' => __('auth.session.this_account_has_been_deactivated')], 403)
+                : redirect()->route('login')->withErrors(['email' => __('auth.session.this_account_has_been_deactivated')]);
         }
 
         return $next($request);

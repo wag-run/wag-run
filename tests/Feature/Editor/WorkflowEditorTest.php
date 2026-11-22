@@ -98,7 +98,8 @@ class WorkflowEditorTest extends TestCase
         return [
             'cycle' => ['check', 'true', 'fetch', 'That would create a cycle. Use a For loop node to repeat steps.'],
             'duplicate' => ['start', 'main', 'fetch', 'These nodes are already connected.'],
-            'into a trigger' => ['fetch', 'error', 'start', 'Triggers start a workflow, so nothing can connect into them.'],
+            'into a trigger' => ['fetch', 'main', 'start', 'Triggers start a workflow, so nothing can connect into them.'],
+            'error path off' => ['fetch', 'error', 'check', 'Turn on the "on error" path for HTTP call in its settings to connect its errors.'],
             'unknown port' => ['fetch', 'sideways', 'check', 'HTTP call has no output named "sideways".'],
             'to itself' => ['fetch', 'main', 'fetch', 'A node cannot connect to itself.'],
         ];
@@ -122,7 +123,7 @@ class WorkflowEditorTest extends TestCase
     public function test_canvas_events_update_the_saved_draft(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor();
-        $editor = $this->editor($workspace, $workflow, $user);
+        $editor = $this->editor($workspace, $workflow, $user)->call('selectNode', 'fetch')->set('errorPath', true);
 
         $editor->call('canConnect', 'fetch', 'check', 'error', 'in')->assertReturned(true);
         $editor->call('onConnect', 'fetch', 'check', 'error', 'in');
@@ -161,18 +162,26 @@ class WorkflowEditorTest extends TestCase
         $this->assertSame(['max_retries' => 3, 'backoff_seconds' => 30], $node->retry);
     }
 
-    public function test_reducing_outputs_drops_connections_from_removed_outputs(): void
+    public function test_the_error_path_is_shown_only_when_turned_on_and_turning_it_off_drops_its_connections(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
-            ['start' => 'core.manual_trigger', 'split' => ['core.branch', ['branches' => 3]], 'a' => 'core.compose', 'b' => 'core.compose', 'c' => 'core.compose'],
-            ['start->split', 'split:branch_1->a', 'split:branch_2->b', 'split:branch_3->c'],
+            ['start' => 'core.manual_trigger', 'fetch' => ['core.http_request', ['url' => 'x']], 'check' => ['core.conditional', ['condition' => 'true']], 'compose' => 'core.compose'],
+            ['start->fetch', 'fetch->check', 'fetch:error->compose'],
         ));
+        $editor = $this->editor($workspace, $workflow, $user);
 
-        $this->editor($workspace, $workflow, $user)->call('selectNode', 'split')->set('form.branches', '2');
+        $this->assertTrue(collect($editor->get('canvas')['nodes'])->firstWhere('id', 'fetch')['data']['hasErrorPort'], 'a node with error connections keeps its error output');
+        $this->assertFalse(collect($editor->get('canvas')['nodes'])->firstWhere('id', 'check')['data']['hasErrorPort']);
+
+        $editor->call('selectNode', 'fetch')->assertSet('errorPath', true)->set('errorPath', false);
 
         $graph = $workflow->refresh()->draft();
-        $this->assertTrue($graph->hasEdge('split', 'branch_2', 'b'));
-        $this->assertFalse($graph->hasEdge('split', 'branch_3', 'c'));
+        $this->assertFalse($graph->node('fetch')->errorPath);
+        $this->assertFalse($graph->hasEdge('fetch', 'error', 'compose'));
+        $this->assertTrue($graph->hasEdge('fetch', 'main', 'check'));
+
+        $editor->set('errorPath', true);
+        $this->assertTrue($workflow->refresh()->draft()->node('fetch')->errorPath);
     }
 
     public function test_publish_reports_problems_or_creates_a_version(): void

@@ -45,12 +45,12 @@ class CanvasMapper
             'data' => [
                 'name' => $node->name,
                 'type' => $node->type,
-                'typeLabel' => $definition?->label() ?? __('Unknown type'),
+                'typeLabel' => $definition?->label() ?? __('workflows.editor.unknown_type'),
                 'icon' => $definition?->icon() ?? 'question-mark-circle',
                 'category' => $definition?->category() ?? '',
                 'isTrigger' => $definition?->kind() === NodeKind::Trigger,
                 'ports' => $definition ? array_map(fn (string $port) => ['id' => $port, 'label' => $this->portLabel($port)], $definition->ports($node->config)) : [],
-                'hasErrorPort' => (bool) $definition?->hasErrorPort(),
+                'hasErrorPort' => $node->errorPath && (bool) $definition?->hasErrorPort(),
                 'unknown' => ! $known,
             ],
         ];
@@ -77,9 +77,8 @@ class CanvasMapper
     {
         return match (true) {
             $port === 'main' => '',
-            $port === 'error' => __('error'),
-            $port === 'item' => __('each item'),
-            str_starts_with($port, 'branch_') => __('branch :n', ['n' => substr($port, 7)]),
+            $port === 'error' => __('workflows.editor.error'),
+            $port === 'item' => __('workflows.editor.each_item'),
             default => str_replace('_', ' ', $port),
         };
     }

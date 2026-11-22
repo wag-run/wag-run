@@ -23,12 +23,12 @@ class WebhookTrigger extends Node
 
     public function label(): string
     {
-        return __('Webhook');
+        return __('nodes.webhook_trigger.webhook');
     }
 
     public function description(): string
     {
-        return __('An inbound HTTP request arrives.');
+        return __('nodes.webhook_trigger.inbound_http_request_arrives');
     }
 
     public function kind(): NodeKind
@@ -44,27 +44,27 @@ class WebhookTrigger extends Node
     public function inputs(): array
     {
         return [
-            new Field('method', __('Method'), Field::SELECT, required: true, default: 'POST', options: ['POST' => 'POST', 'GET' => 'GET', 'PUT' => 'PUT', 'ANY' => __('Any method')]),
-            new Field('verification', __('Verify requests by'), Field::SELECT, required: true, default: 'none', options: [
-                'none' => __('Nothing (the URL is the secret)'),
-                'token' => __('Shared token'),
-                'signature' => __('HMAC-SHA256 signature'),
-                'ip' => __('IP allowlist'),
+            new Field('method', __('common.method'), Field::SELECT, required: true, default: 'POST', options: ['POST' => 'POST', 'GET' => 'GET', 'PUT' => 'PUT', 'ANY' => __('nodes.webhook_trigger.any_method')]),
+            new Field('verification', __('nodes.webhook_trigger.verify_requests_by'), Field::SELECT, required: true, default: 'none', options: [
+                'none' => __('nodes.webhook_trigger.nothing_the_url_is_the'),
+                'token' => __('nodes.webhook_trigger.shared_token'),
+                'signature' => __('nodes.webhook_trigger.hmac_sha256_signature'),
+                'ip' => __('nodes.webhook_trigger.ip_allowlist'),
             ]),
-            new Field('secret', __('Token or signing secret'), Field::SECRET, description: __('A secret from this workspace.')),
-            new Field('header', __('Header'), Field::TEXT, description: __('Where the token or signature is sent. Defaults to X-Webhook-Token or X-Signature.')),
-            new Field('allowed_ips', __('Allowed IPs'), Field::TEXTAREA, description: __('One IP address or CIDR range per line.')),
+            new Field('secret', __('nodes.webhook_trigger.token_or_signing_secret'), Field::SECRET, description: __('nodes.webhook_trigger.secret_from_this_workspace')),
+            new Field('header', __('nodes.webhook_trigger.header'), Field::TEXT, description: __('nodes.webhook_trigger.where_the_token_or_signature')),
+            new Field('allowed_ips', __('nodes.webhook_trigger.allowed_ips'), Field::TEXTAREA, description: __('nodes.webhook_trigger.one_ip_address_or_cidr')),
         ];
     }
 
     public function outputs(array $config = []): array
     {
         return [
-            new Output('method', __('Method'), 'string'),
-            new Output('headers', __('Headers'), 'object'),
-            new Output('query', __('Query parameters'), 'object'),
-            new Output('body', __('Body'), 'any', __('Decoded JSON or form fields, else the raw text.')),
-            new Output('ip', __('Caller IP'), 'string'),
+            new Output('method', __('common.method'), 'string'),
+            new Output('headers', __('common.headers'), 'object'),
+            new Output('query', __('common.query_parameters'), 'object'),
+            new Output('body', __('common.body'), 'any', __('nodes.webhook_trigger.decoded_json_or_form_fields')),
+            new Output('ip', __('nodes.webhook_trigger.caller_ip'), 'string'),
         ];
     }
 

@@ -21,22 +21,22 @@ class GraphValidator
         $triggers = 0;
 
         if ($graph->nodes === []) {
-            return [__('Add a trigger to start the workflow.')];
+            return [__('workflows.editor.add_a_trigger_to_start')];
         }
 
         foreach ($graph->nodes as $node) {
             if ($node->id === '') {
-                $errors[] = __('Every node needs an id.');
+                $errors[] = __('workflows.editor.every_node_needs_an_id');
 
                 continue;
             }
 
             if (! preg_match('/^[A-Za-z_][A-Za-z0-9_]{0,63}$/', $node->id)) {
-                $errors[] = __('Node id [:id] must start with a letter or underscore and use only letters, numbers and underscores, so templates can reference it.', ['id' => $node->id]);
+                $errors[] = __('workflows.editor.node_id_id_must_start', ['id' => $node->id]);
             }
 
             if (! $this->registry->has($node->type)) {
-                $errors[] = __('Node ":name" has an unknown type [:type].', ['name' => $node->name, 'type' => $node->type]);
+                $errors[] = __('workflows.editor.node_name_has_an_unknown', ['name' => $node->name, 'type' => $node->type]);
 
                 continue;
             }
@@ -47,7 +47,7 @@ class GraphValidator
                 $triggers++;
 
                 if ($graph->incoming($node->id) !== []) {
-                    $errors[] = __('Trigger ":name" cannot have incoming connections.', ['name' => $node->name]);
+                    $errors[] = __('workflows.editor.trigger_name_cannot_have_incoming', ['name' => $node->name]);
                 }
             }
 
@@ -55,24 +55,24 @@ class GraphValidator
                 $value = $node->config[$field->name] ?? $field->default;
 
                 if ($field->required && ($value === null || $value === '' || $value === [])) {
-                    $errors[] = __('Node ":name" needs a value for ":field".', ['name' => $node->name, 'field' => $field->label]);
+                    $errors[] = __('workflows.editor.node_name_needs_a_value', ['name' => $node->name, 'field' => $field->label]);
                 }
             }
         }
 
         if ($triggers === 0) {
-            $errors[] = __('Add a trigger to start the workflow.');
+            $errors[] = __('workflows.editor.add_a_trigger_to_start');
         }
 
         $ids = [];
         foreach ($graph->edges as $edge) {
             if (isset($ids[$edge->id])) {
-                $errors[] = __('Connection ids must be unique: [:id] is repeated.', ['id' => $edge->id]);
+                $errors[] = __('workflows.editor.connection_ids_must_be_unique', ['id' => $edge->id]);
             }
             $ids[$edge->id] = true;
 
             if (! $graph->has($edge->source) || ! $graph->has($edge->target)) {
-                $errors[] = __('Connection [:id] points to a node that does not exist.', ['id' => $edge->id]);
+                $errors[] = __('workflows.editor.connection_id_points_to_a', ['id' => $edge->id]);
 
                 continue;
             }
@@ -88,15 +88,15 @@ class GraphValidator
 
             if ($edge->sourcePort === 'error') {
                 if (! $definition->hasErrorPort()) {
-                    $errors[] = __('Node ":name" has no error output.', ['name' => $source->name]);
+                    $errors[] = __('workflows.editor.node_name_has_no_error', ['name' => $source->name]);
                 }
             } elseif (! in_array($edge->sourcePort, $ports, true)) {
-                $errors[] = __('Node ":name" has no output named ":port".', ['name' => $source->name, 'port' => $edge->sourcePort]);
+                $errors[] = __('workflows.editor.node_name_has_no_output', ['name' => $source->name, 'port' => $edge->sourcePort]);
             }
         }
 
         if ($graph->hasCycle()) {
-            $errors[] = __('Connections cannot form a cycle. Use a For loop node to repeat steps.');
+            $errors[] = __('workflows.editor.connections_cannot_form_a_cycle');
         }
 
         return array_values(array_unique($errors));

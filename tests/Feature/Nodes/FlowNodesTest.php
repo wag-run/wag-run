@@ -22,7 +22,7 @@ class FlowNodesTest extends TestCase
         $registry = app(NodeRegistry::class);
         $types = array_map(fn (string $class) => $class::type(), WorkflowServiceProvider::BUILT_IN_NODES);
 
-        $this->assertCount(16, array_unique($types));
+        $this->assertCount(15, array_unique($types));
         $this->assertSame(4, count($registry->ofKind(NodeKind::Trigger)));
 
         foreach ($types as $type) {
@@ -73,13 +73,13 @@ class FlowNodesTest extends TestCase
         $this->assertSame('Items must be a list.', $execution->error['message']);
     }
 
-    public function test_branch_runs_every_branch_and_merge_collects_their_outputs(): void
+    public function test_every_connection_from_one_output_runs_and_merge_collects_their_outputs(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'split' => ['core.branch', ['branches' => 3]],
+            ['start' => 'core.manual_trigger',
                 'a' => ['core.compose', ['template' => 'A']], 'b' => ['core.compose', ['template' => 'B']], 'c' => ['core.compose', ['template' => 'C']],
                 'join' => 'core.merge'],
-            ['start->split', 'split:branch_1->a', 'split:branch_2->b', 'split:branch_3->c', 'a->join', 'b->join', 'c->join'],
+            ['start->a', 'start->b', 'start->c', 'a->join', 'b->join', 'c->join'],
         ));
 
         $execution = $this->runWorkflow($workflow);

@@ -31,9 +31,9 @@ class AssignmentNotification extends Notification
 
         return [
             'title' => $approval
-                ? __('Approval requested: :title', ['title' => $this->assignment->title])
-                : __('Task assigned: :title', ['title' => $this->assignment->title]),
-            'body' => __(':workflow in :workspace', ['workflow' => $this->assignment->execution->workflow->name, 'workspace' => $this->assignment->workspace->name]),
+                ? __('notifications.assignment.approval_requested_title', ['title' => $this->assignment->title])
+                : __('notifications.assignment.task_assigned_title', ['title' => $this->assignment->title]),
+            'body' => __('notifications.assignment.workflow_in_workspace', ['workflow' => $this->assignment->execution->workflow->name, 'workspace' => $this->assignment->workspace->name]),
             'url' => route('workspaces.inbox.show', [$this->assignment->workspace, $this->assignment]),
             'icon' => $approval ? 'check-badge' : 'clipboard-document-check',
             'workspace_id' => $this->assignment->workspace_id,

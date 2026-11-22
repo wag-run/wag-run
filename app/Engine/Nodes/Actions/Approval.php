@@ -29,12 +29,12 @@ class Approval extends Node
 
     public function label(): string
     {
-        return __('Approval');
+        return __('common.approval');
     }
 
     public function description(): string
     {
-        return __('Pauses the flow until a named user approves or rejects.');
+        return __('nodes.approval.pauses_the_flow_until_a');
     }
 
     public function kind(): NodeKind
@@ -44,7 +44,7 @@ class Approval extends Node
 
     public function category(): string
     {
-        return __('People');
+        return __('common.people');
     }
 
     public function icon(): string
@@ -55,20 +55,20 @@ class Approval extends Node
     public function inputs(): array
     {
         return [
-            new Field('assignee', __('Approver'), Field::USER, required: true),
-            new Field('title', __('Title'), Field::TEXT, required: true, templated: true),
-            new Field('message', __('Details'), Field::TEXTAREA, templated: true),
-            new Field('timeout_hours', __('Timeout (hours)'), Field::NUMBER, default: 48),
+            new Field('assignee', __('nodes.approval.approver'), Field::USER, required: true),
+            new Field('title', __('common.title'), Field::TEXT, required: true, templated: true),
+            new Field('message', __('common.details'), Field::TEXTAREA, templated: true),
+            new Field('timeout_hours', __('common.timeout_hours'), Field::NUMBER, default: 48),
         ];
     }
 
     public function outputs(array $config = []): array
     {
         return [
-            new Output('decision', __('Decision'), 'string', __('approved or rejected')),
-            new Output('comment', __('Comment'), 'string'),
-            new Output('responded_by', __('Responded by (user id)'), 'number'),
-            new Output('responded_by_name', __('Responded by'), 'string'),
+            new Output('decision', __('nodes.approval.decision'), 'string', __('nodes.approval.approved_or_rejected')),
+            new Output('comment', __('nodes.approval.comment'), 'string'),
+            new Output('responded_by', __('nodes.approval.responded_by_user_id'), 'number'),
+            new Output('responded_by_name', __('nodes.approval.responded_by'), 'string'),
         ];
     }
 
@@ -82,7 +82,7 @@ class Approval extends Node
         $assignee = $this->assignments->activeUser($context->input('assignee'));
 
         if (! $assignee) {
-            return NodeResult::fail(__('The approver does not have an active account in this organization.'), retryable: false);
+            return NodeResult::fail(__('nodes.approval.approver_does_not_have_an'), retryable: false);
         }
 
         $dueAt = now()->addHours(max(1, (int) $context->input('timeout_hours', 48)));
@@ -100,7 +100,7 @@ class Approval extends Node
         if ($resumption->reason === ResumeReason::TimerElapsed) {
             $this->assignments->expireFromState($context->state());
 
-            return NodeResult::fail(__('No response before the approval timed out.'), retryable: false);
+            return NodeResult::fail(__('nodes.approval.no_response_before_the_approval'), retryable: false);
         }
 
         $decision = ($resumption->payload['decision'] ?? null) === 'approved' ? 'approved' : 'rejected';

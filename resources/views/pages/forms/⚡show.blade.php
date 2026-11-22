@@ -7,10 +7,9 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
-use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Layout('layouts::auth')] #[Title('Form')] class extends Component {
+new #[Layout('layouts::auth')] class extends Component {
     #[Locked]
     public string $key = '';
 
@@ -103,20 +102,25 @@ new #[Layout('layouts::auth')] #[Title('Form')] class extends Component {
 
         $this->submitted = true;
     }
+
+    public function render()
+    {
+        return $this->view()->title(__('forms.show.title'));
+    }
 }; ?>
 
 <div class="flex flex-col gap-6">
-    <x-auth-header :title="$this->config['title'] ?? __('Form')" :description="$this->config['description'] ?? ''" />
+    <x-auth-header :title="$this->config['title'] ?? __('forms.show.form')" :description="$this->config['description'] ?? ''" />
 
     @if ($submitted)
         <flux:callout icon="check-circle" variant="success">
-            {{ $this->config['success_message'] ?? __('Thanks, your response was submitted.') }}
+            {{ $this->config['success_message'] ?? __('forms.show.thanks_your_response_was_submitted') }}
         </flux:callout>
     @else
         <form wire:submit="submit" class="flex flex-col gap-6">
             @include('partials.form-fields', ['fields' => $this->fields, 'model' => 'values'])
 
-            <flux:button type="submit" variant="primary" class="w-full" data-test="submit-form-button">{{ __('Submit') }}</flux:button>
+            <flux:button type="submit" variant="primary" class="w-full" data-test="submit-form-button">{{ __('common.submit') }}</flux:button>
         </form>
     @endif
 </div>

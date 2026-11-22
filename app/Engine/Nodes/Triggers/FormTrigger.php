@@ -23,12 +23,12 @@ class FormTrigger extends Node
 
     public function label(): string
     {
-        return __('Form submitted');
+        return __('nodes.form_trigger.form_submitted');
     }
 
     public function description(): string
     {
-        return __('A form is submitted.');
+        return __('nodes.form_trigger.form_is_submitted');
     }
 
     public function kind(): NodeKind
@@ -44,23 +44,23 @@ class FormTrigger extends Node
     public function inputs(): array
     {
         return [
-            new Field('title', __('Form title'), Field::TEXT, required: true),
-            new Field('description', __('Description'), Field::TEXTAREA),
-            new Field('fields', __('Fields'), Field::LIST, required: true, fields: Task::formFieldDefinition()),
-            new Field('access', __('Who can submit'), Field::SELECT, required: true, default: 'public', options: [
-                'public' => __('Anyone with the link'),
-                'members' => __('Signed-in members of this workspace'),
+            new Field('title', __('nodes.form_trigger.form_title'), Field::TEXT, required: true),
+            new Field('description', __('common.description'), Field::TEXTAREA),
+            new Field('fields', __('nodes.form_trigger.fields'), Field::LIST, required: true, fields: Task::formFieldDefinition()),
+            new Field('access', __('nodes.form_trigger.who_can_submit'), Field::SELECT, required: true, default: 'public', options: [
+                'public' => __('nodes.form_trigger.anyone_with_the_link'),
+                'members' => __('nodes.form_trigger.signed_in_members_of_this'),
             ]),
-            new Field('success_message', __('Message after submitting'), Field::TEXT, default: 'Thanks, your response was submitted.'),
+            new Field('success_message', __('nodes.form_trigger.message_after_submitting'), Field::TEXT, default: 'Thanks, your response was submitted.'),
         ];
     }
 
     public function outputs(array $config = []): array
     {
         return [
-            new Output('values', __('Submitted values'), 'object', children: Task::outputsForFields($config['fields'] ?? [])),
-            new Output('submitted_at', __('Submitted at'), 'string'),
-            new Output('submitted_by', __('Submitted by (user id)'), 'number'),
+            new Output('values', __('common.submitted_values'), 'object', children: Task::outputsForFields($config['fields'] ?? [])),
+            new Output('submitted_at', __('nodes.form_trigger.submitted_at'), 'string'),
+            new Output('submitted_by', __('common.submitted_by_user_id'), 'number'),
         ];
     }
 

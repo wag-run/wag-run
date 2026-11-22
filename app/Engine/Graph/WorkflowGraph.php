@@ -11,7 +11,8 @@ use InvalidArgumentException;
  *     {
  *       "version": 1,
  *       "nodes": [{"id": "n1", "type": "core.manual_trigger", "name": "Start",
- *                  "config": {}, "retry": {"max_retries": 2}, "position": {"x": 0, "y": 0}}],
+ *                  "config": {}, "retry": {"max_retries": 2}, "position": {"x": 0, "y": 0},
+ *                  "error_path": true}],
  *       "edges": [{"id": "e1", "source": "n1", "source_port": "main", "target": "n2"}]
  *     }
  */
@@ -45,6 +46,14 @@ final readonly class WorkflowGraph
         foreach ($data['edges'] ?? [] as $edge) {
             if (is_array($edge)) {
                 $edges[] = GraphEdge::fromArray($edge);
+            }
+        }
+
+        // A node with error connections always shows its error output, so
+        // graphs saved before the setting existed keep their error paths.
+        foreach ($edges as $edge) {
+            if ($edge->sourcePort === 'error' && isset($nodes[$edge->source]) && ! $nodes[$edge->source]->errorPath) {
+                $nodes[$edge->source] = $nodes[$edge->source]->withErrorPath(true);
             }
         }
 

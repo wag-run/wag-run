@@ -59,7 +59,7 @@ new class extends Component {
         $this->authorize('edit-workflows', $this->workspace);
         $this->validate(['name' => ['required', 'string', 'max:255']]);
 
-        $graph = WorkflowGraph::empty()->withNode(new GraphNode('manual', ManualTrigger::type(), __('Run manually'), position: ['x' => 80, 'y' => 160]));
+        $graph = WorkflowGraph::empty()->withNode(new GraphNode('manual', ManualTrigger::type(), __('workflows.index.run_manually'), position: ['x' => 80, 'y' => 160]));
         $workflow = $workflows->create($this->workspace, $this->name, Auth::user(), $graph);
 
         $this->redirectRoute('workspaces.workflows.edit', [$this->workspace, $workflow], navigate: true);
@@ -89,24 +89,24 @@ new class extends Component {
         $this->authorize('edit-workflows', $this->workspace);
 
         $workflows->delete($this->workspace->workflows()->findOrFail($id));
-        Flux::toast(text: __('Workflow deleted.'));
+        Flux::toast(text: __('workflows.index.workflow_deleted'));
     }
 
     public function render()
     {
-        return $this->view()->title(__('Workflows').' · '.$this->workspace->name);
+        return $this->view()->title(__('common.workflows').' · '.$this->workspace->name);
     }
 }; ?>
 
 <section class="w-full">
-    <x-page-heading :heading="__('Workflows')" :subheading="__('Build workflows from triggers and actions. Edits stay in a draft until you publish.')">
+    <x-page-heading :heading="__('common.workflows')" :subheading="__('workflows.index.build_workflows_from_triggers_and')">
         @if ($this->canEdit)
             <x-slot:actions>
                 <flux:modal.trigger name="import-workflow">
-                    <flux:button icon="arrow-up-tray">{{ __('Import') }}</flux:button>
+                    <flux:button icon="arrow-up-tray">{{ __('workflows.index.import') }}</flux:button>
                 </flux:modal.trigger>
                 <flux:modal.trigger name="new-workflow">
-                    <flux:button variant="primary" icon="plus">{{ __('New workflow') }}</flux:button>
+                    <flux:button variant="primary" icon="plus">{{ __('workflows.index.new_workflow') }}</flux:button>
                 </flux:modal.trigger>
             </x-slot:actions>
         @endif
@@ -114,11 +114,11 @@ new class extends Component {
 
     <flux:table>
         <flux:table.columns>
-            <flux:table.column>{{ __('Name') }}</flux:table.column>
-            <flux:table.column>{{ __('Status') }}</flux:table.column>
-            <flux:table.column>{{ __('Triggers') }}</flux:table.column>
-            <flux:table.column>{{ __('Runs') }}</flux:table.column>
-            <flux:table.column>{{ __('Owner') }}</flux:table.column>
+            <flux:table.column>{{ __('common.name') }}</flux:table.column>
+            <flux:table.column>{{ __('common.status') }}</flux:table.column>
+            <flux:table.column>{{ __('common.triggers') }}</flux:table.column>
+            <flux:table.column>{{ __('common.runs') }}</flux:table.column>
+            <flux:table.column>{{ __('workflows.index.owner') }}</flux:table.column>
             <flux:table.column></flux:table.column>
         </flux:table.columns>
         <flux:table.rows>
@@ -132,12 +132,12 @@ new class extends Component {
                     </flux:table.cell>
                     <flux:table.cell>
                         @if ($workflow->publishedVersion)
-                            <flux:badge size="sm" color="green">{{ __('Published v:n', ['n' => $workflow->publishedVersion->number]) }}</flux:badge>
+                            <flux:badge size="sm" color="green">{{ __('common.published_vn', ['n' => $workflow->publishedVersion->number]) }}</flux:badge>
                             @if ($workflow->hasUnpublishedChanges())
-                                <flux:badge size="sm" color="amber">{{ __('Draft changes') }}</flux:badge>
+                                <flux:badge size="sm" color="amber">{{ __('workflows.index.draft_changes') }}</flux:badge>
                             @endif
                         @else
-                            <flux:badge size="sm">{{ __('Draft') }}</flux:badge>
+                            <flux:badge size="sm">{{ __('common.draft') }}</flux:badge>
                         @endif
                     </flux:table.cell>
                     <flux:table.cell class="text-sm text-zinc-500">
@@ -153,15 +153,15 @@ new class extends Component {
                     <flux:table.cell>{{ $workflow->owner?->name }}</flux:table.cell>
                     <flux:table.cell align="end">
                         <flux:dropdown align="end">
-                            <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" :aria-label="__('Actions')" />
+                            <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" :aria-label="__('common.actions')" />
                             <flux:menu>
-                                <flux:menu.item icon="pencil-square" :href="route('workspaces.workflows.edit', [$workspace, $workflow])" wire:navigate>{{ __('Open editor') }}</flux:menu.item>
-                                <flux:menu.item icon="arrow-down-tray" :href="route('workspaces.workflows.export', [$workspace, $workflow])">{{ __('Export JSON') }}</flux:menu.item>
+                                <flux:menu.item icon="pencil-square" :href="route('workspaces.workflows.edit', [$workspace, $workflow])" wire:navigate>{{ __('workflows.index.open_editor') }}</flux:menu.item>
+                                <flux:menu.item icon="arrow-down-tray" :href="route('workspaces.workflows.export', [$workspace, $workflow])">{{ __('workflows.index.export_json') }}</flux:menu.item>
                                 @if ($this->canEdit)
                                     <flux:menu.separator />
                                     <flux:menu.item variant="danger" icon="trash" wire:click="delete({{ $workflow->id }})"
-                                        wire:confirm="{{ __('Delete :name with its versions and execution history? This cannot be undone.', ['name' => $workflow->name]) }}">
-                                        {{ __('Delete') }}
+                                        wire:confirm="{{ __('workflows.index.delete_name_with_its_versions', ['name' => $workflow->name]) }}">
+                                        {{ __('common.delete') }}
                                     </flux:menu.item>
                                 @endif
                             </flux:menu>
@@ -170,7 +170,7 @@ new class extends Component {
                 </flux:table.row>
             @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="6" class="py-10 text-center text-zinc-500">{{ __('No workflows yet.') }}</flux:table.cell>
+                    <flux:table.cell colspan="6" class="py-10 text-center text-zinc-500">{{ __('workflows.index.no_workflows_yet') }}</flux:table.cell>
                 </flux:table.row>
             @endforelse
         </flux:table.rows>
@@ -178,11 +178,11 @@ new class extends Component {
 
     <flux:modal name="new-workflow" class="md:w-md">
         <form wire:submit="create" class="space-y-6">
-            <flux:heading size="lg">{{ __('New workflow') }}</flux:heading>
-            <flux:input wire:model="name" :label="__('Name')" required autofocus />
+            <flux:heading size="lg">{{ __('workflows.index.new_workflow') }}</flux:heading>
+            <flux:input wire:model="name" :label="__('common.name')" required autofocus />
             <div class="flex justify-end gap-2">
-                <flux:modal.close><flux:button variant="ghost">{{ __('Cancel') }}</flux:button></flux:modal.close>
-                <flux:button type="submit" variant="primary">{{ __('Create and open') }}</flux:button>
+                <flux:modal.close><flux:button variant="ghost">{{ __('common.cancel') }}</flux:button></flux:modal.close>
+                <flux:button type="submit" variant="primary">{{ __('workflows.index.create_and_open') }}</flux:button>
             </div>
         </form>
     </flux:modal>
@@ -190,14 +190,14 @@ new class extends Component {
     <flux:modal name="import-workflow" class="md:w-md">
         <form wire:submit="importFile" class="space-y-6">
             <div>
-                <flux:heading size="lg">{{ __('Import a workflow') }}</flux:heading>
-                <flux:text class="mt-1">{{ __('Choose a .workflow.json file exported from this app. It is imported as a new draft; secrets and authentication settings it references must exist in this workspace.') }}</flux:text>
+                <flux:heading size="lg">{{ __('workflows.index.import_a_workflow') }}</flux:heading>
+                <flux:text class="mt-1">{{ __('workflows.index.choose_a_workflow_json_file') }}</flux:text>
             </div>
             <flux:input type="file" wire:model="import" accept=".json,application/json" />
             <flux:error name="file" />
             <div class="flex justify-end gap-2">
-                <flux:modal.close><flux:button variant="ghost">{{ __('Cancel') }}</flux:button></flux:modal.close>
-                <flux:button type="submit" variant="primary">{{ __('Import') }}</flux:button>
+                <flux:modal.close><flux:button variant="ghost">{{ __('common.cancel') }}</flux:button></flux:modal.close>
+                <flux:button type="submit" variant="primary">{{ __('workflows.index.import') }}</flux:button>
             </div>
         </form>
     </flux:modal>

@@ -10,10 +10,9 @@ use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
-use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Layout('layouts::auth')] #[Title('Invitation')] class extends Component {
+new #[Layout('layouts::auth')] class extends Component {
     use PasswordValidationRules, ProfileValidationRules;
 
     #[Locked]
@@ -71,41 +70,46 @@ new #[Layout('layouts::auth')] #[Title('Invitation')] class extends Component {
 
         $this->redirectRoute('dashboard', navigate: true);
     }
+
+    public function render()
+    {
+        return $this->view()->title(__('invitations.show.title'));
+    }
 }; ?>
 
 <div class="flex flex-col gap-6">
     @php($invitation = $this->invitation)
 
     @if (! $invitation || ! $invitation->isPending())
-        <x-auth-header :title="__('Invitation unavailable')" :description="__('This invitation has expired, was revoked, or was already used. Ask an admin to send a new one.')" />
-        <flux:button :href="route('login')" variant="primary" wire:navigate>{{ __('Go to sign in') }}</flux:button>
+        <x-auth-header :title="__('invitations.show.invitation_unavailable')" :description="__('invitations.show.this_invitation_has_expired_was')" />
+        <flux:button :href="route('login')" variant="primary" wire:navigate>{{ __('invitations.show.go_to_sign_in') }}</flux:button>
     @else
         <x-auth-header
-            :title="__('Join :target', ['target' => $invitation->workspace?->name ?? $invitation->organization->name])"
-            :description="__(':inviter invited :email.', ['inviter' => $invitation->inviter?->name ?? __('An admin'), 'email' => $invitation->email])"
+            :title="__('invitations.show.join_target', ['target' => $invitation->workspace?->name ?? $invitation->organization->name])"
+            :description="__('invitations.show.inviter_invited_email', ['inviter' => $invitation->inviter?->name ?? __('common.admin'), 'email' => $invitation->email])"
         />
 
         <flux:error name="invitation" />
 
         @auth
             @if (Str::lower(auth()->user()->email) === $invitation->email)
-                <flux:button wire:click="accept" variant="primary" data-test="accept-invitation-button">{{ __('Accept invitation') }}</flux:button>
+                <flux:button wire:click="accept" variant="primary" data-test="accept-invitation-button">{{ __('common.accept_invitation') }}</flux:button>
             @else
                 <flux:callout variant="warning" icon="exclamation-triangle">
-                    {{ __('You are signed in as :email. Sign out and open this link again to accept as :invited.', ['email' => auth()->user()->email, 'invited' => $invitation->email]) }}
+                    {{ __('invitations.show.you_are_signed_in_as', ['email' => auth()->user()->email, 'invited' => $invitation->email]) }}
                 </flux:callout>
             @endif
         @else
             @if ($this->accountExists)
-                <flux:text class="text-center">{{ __('You already have an account. Sign in to accept.') }}</flux:text>
-                <flux:button :href="route('login')" variant="primary">{{ __('Sign in') }}</flux:button>
+                <flux:text class="text-center">{{ __('invitations.show.you_already_have_an_account') }}</flux:text>
+                <flux:button :href="route('login')" variant="primary">{{ __('invitations.show.sign_in') }}</flux:button>
             @else
                 <form wire:submit="register" class="flex flex-col gap-6">
-                    <flux:input :value="$invitation->email" :label="__('Email address')" disabled />
-                    <flux:input wire:model="name" :label="__('Name')" required autofocus autocomplete="name" />
-                    <flux:input wire:model="password" type="password" :label="__('Password')" required autocomplete="new-password" viewable />
-                    <flux:input wire:model="password_confirmation" type="password" :label="__('Confirm password')" required autocomplete="new-password" viewable />
-                    <flux:button type="submit" variant="primary" class="w-full" data-test="register-invitation-button">{{ __('Create account and join') }}</flux:button>
+                    <flux:input :value="$invitation->email" :label="__('common.email_address')" disabled />
+                    <flux:input wire:model="name" :label="__('common.name')" required autofocus autocomplete="name" />
+                    <flux:input wire:model="password" type="password" :label="__('common.password')" required autocomplete="new-password" viewable />
+                    <flux:input wire:model="password_confirmation" type="password" :label="__('common.confirm_password')" required autocomplete="new-password" viewable />
+                    <flux:button type="submit" variant="primary" class="w-full" data-test="register-invitation-button">{{ __('invitations.show.create_account_and_join') }}</flux:button>
                 </form>
             @endif
         @endauth

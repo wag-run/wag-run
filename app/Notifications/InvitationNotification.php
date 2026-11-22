@@ -21,13 +21,13 @@ class InvitationNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $inviter = $this->invitation->inviter->name ?? __('An admin');
+        $inviter = $this->invitation->inviter->name ?? __('common.admin');
         $target = $this->invitation->workspace->name ?? config('app.name');
 
         return (new MailMessage)
-            ->subject(__('You have been invited to :target', ['target' => $target]))
-            ->line(__(':inviter invited you to join :target.', ['inviter' => $inviter, 'target' => $target]))
-            ->action(__('Accept invitation'), route('invitations.show', $this->token))
-            ->line(__('This invitation expires in :days days.', ['days' => Invitations::EXPIRES_IN_DAYS]));
+            ->subject(__('notifications.invitation.you_have_been_invited_to', ['target' => $target]))
+            ->line(__('notifications.invitation.inviter_invited_you_to_join', ['inviter' => $inviter, 'target' => $target]))
+            ->action(__('common.accept_invitation'), route('invitations.show', $this->token))
+            ->line(__('notifications.invitation.this_invitation_expires_in_days', ['days' => Invitations::EXPIRES_IN_DAYS]));
     }
 }

@@ -22,12 +22,12 @@ class Terminate extends Node
 
     public function label(): string
     {
-        return __('Terminate');
+        return __('nodes.terminate.terminate');
     }
 
     public function description(): string
     {
-        return __('Ends the execution here with a chosen status.');
+        return __('nodes.terminate.ends_the_execution_here_with');
     }
 
     public function kind(): NodeKind
@@ -37,7 +37,7 @@ class Terminate extends Node
 
     public function category(): string
     {
-        return __('Flow');
+        return __('common.flow');
     }
 
     public function icon(): string
@@ -58,12 +58,12 @@ class Terminate extends Node
     public function inputs(): array
     {
         return [
-            new Field('status', __('End as'), Field::SELECT, required: true, default: 'complete', options: [
-                'complete' => __('Complete'),
-                'failed' => __('Failed'),
-                'cancelled' => __('Cancelled'),
+            new Field('status', __('nodes.terminate.end_as'), Field::SELECT, required: true, default: 'complete', options: [
+                'complete' => __('common.complete'),
+                'failed' => __('common.failed'),
+                'cancelled' => __('common.cancelled'),
             ]),
-            new Field('output', __('Output'), Field::TEXTAREA, templated: true, description: __('Optional. Becomes the execution\'s output.')),
+            new Field('output', __('common.output'), Field::TEXTAREA, templated: true, description: __('nodes.terminate.optional_becomes_the_execution_s')),
         ];
     }
 

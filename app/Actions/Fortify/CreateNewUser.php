@@ -39,7 +39,7 @@ class CreateNewUser implements CreatesNewUsers
 
             if ($organization && ! $organization->registration_open) {
                 throw ValidationException::withMessages([
-                    'email' => __('Registration is by invitation only. Ask an admin to invite you.'),
+                    'email' => __('auth.register.registration_is_by_invitation_only_2'),
                 ]);
             }
 
@@ -58,7 +58,7 @@ class CreateNewUser implements CreatesNewUsers
             $organization = Organization::create(['name' => config('app.name')]);
             $user->organizations()->attach($organization, ['role' => InstallRole::Admin->value]);
 
-            $workspace = $this->workspaces->create($organization, __('Default'), $user);
+            $workspace = $this->workspaces->create($organization, __('auth.register.default'), $user);
             $user->forceFill(['current_workspace_id' => $workspace->id])->save();
 
             return $user;

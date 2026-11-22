@@ -14,12 +14,12 @@ enum AssignmentStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Pending => __('Waiting on you'),
-            self::Approved => __('Approved'),
-            self::Rejected => __('Rejected'),
-            self::Submitted => __('Submitted'),
-            self::Expired => __('Expired'),
-            self::Cancelled => __('Withdrawn'),
+            self::Pending => __('common.waiting_on_you'),
+            self::Approved => __('enums.assignment_status.approved'),
+            self::Rejected => __('enums.assignment_status.rejected'),
+            self::Submitted => __('enums.assignment_status.submitted'),
+            self::Expired => __('enums.assignment_status.expired'),
+            self::Cancelled => __('enums.assignment_status.withdrawn'),
         };
     }
 

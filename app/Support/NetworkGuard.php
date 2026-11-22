@@ -37,19 +37,19 @@ class NetworkGuard
         $host = strtolower(trim($parts['host'] ?? '', '[]'));
 
         if (! in_array($scheme, ['http', 'https'], true) || $host === '') {
-            throw new RuntimeException(__('Only http and https URLs can be called.'));
+            throw new RuntimeException(__('network.only_http_and_https_urls'));
         }
 
         $port = (int) ($parts['port'] ?? ($scheme === 'https' ? 443 : 80));
         $addresses = $this->resolver->resolve($host);
 
         if ($addresses === []) {
-            throw new RuntimeException(__('Could not resolve :host.', ['host' => $host]));
+            throw new RuntimeException(__('network.could_not_resolve_host', ['host' => $host]));
         }
 
         foreach ($addresses as $ip) {
             if (static::isInternal($ip) && ! $allowlist->allows($host, $ip)) {
-                throw new RuntimeException(__(':host resolves to the internal address :ip, which is not on this workspace\'s internal-address allowlist.', ['host' => $host, 'ip' => $ip]));
+                throw new RuntimeException(__('network.host_resolves_to_the_internal', ['host' => $host, 'ip' => $ip]));
             }
         }
 

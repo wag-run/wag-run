@@ -117,7 +117,7 @@ abstract class Node
         return match ($resumption->reason) {
             ResumeReason::TimerElapsed => NodeResult::complete($context->state()['output'] ?? null),
             ResumeReason::ChildCompleted => NodeResult::complete($resumption->payload['output'] ?? null),
-            ResumeReason::ChildFailed => NodeResult::fail($resumption->payload['message'] ?? __('The child workflow failed.')),
+            ResumeReason::ChildFailed => NodeResult::fail($resumption->payload['message'] ?? __('engine.child_workflow_failed')),
             ResumeReason::External => NodeResult::complete($resumption->payload),
         };
     }

@@ -5,12 +5,11 @@ use App\Models\Execution;
 use App\Models\Workspace;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Runs')] class extends Component {
+new class extends Component {
     use WithPagination;
 
     public Workspace $workspace;
@@ -59,20 +58,25 @@ new #[Title('Runs')] class extends Component {
     {
         return $this->executions->getCollection()->contains(fn (Execution $execution) => $execution->isInProgress());
     }
+
+    public function render()
+    {
+        return $this->view()->title(__('runs.index.title'));
+    }
 }; ?>
 
 <section class="w-full" @if ($this->hasRunsInProgress) wire:poll.5s @endif>
-    <x-page-heading :heading="__('Runs')" :subheading="__('Every run of this workspace\'s workflows, newest first. Logs are removed once they pass the retention period.')" />
+    <x-page-heading :heading="__('common.runs')" :subheading="__('runs.index.every_run_of_this_workspace')" />
 
     <div class="mb-4 flex flex-wrap gap-3">
         <flux:select wire:model.live="workflow" class="max-w-64" data-test="workflow-filter">
-            <flux:select.option value="">{{ __('All workflows') }}</flux:select.option>
+            <flux:select.option value="">{{ __('common.all_workflows') }}</flux:select.option>
             @foreach ($this->workflows as $id => $name)
                 <flux:select.option :value="$id">{{ $name }}</flux:select.option>
             @endforeach
         </flux:select>
         <flux:select wire:model.live="status" class="max-w-48">
-            <flux:select.option value="">{{ __('Any status') }}</flux:select.option>
+            <flux:select.option value="">{{ __('runs.index.any_status') }}</flux:select.option>
             @foreach (ExecutionStatus::cases() as $case)
                 <flux:select.option :value="$case->value">{{ $case->label() }}</flux:select.option>
             @endforeach
@@ -81,12 +85,12 @@ new #[Title('Runs')] class extends Component {
 
     <flux:table :paginate="$this->executions">
         <flux:table.columns>
-            <flux:table.column>{{ __('Run') }}</flux:table.column>
-            <flux:table.column>{{ __('Workflow') }}</flux:table.column>
-            <flux:table.column>{{ __('Status') }}</flux:table.column>
-            <flux:table.column>{{ __('Trigger') }}</flux:table.column>
-            <flux:table.column>{{ __('Started') }}</flux:table.column>
-            <flux:table.column>{{ __('Duration') }}</flux:table.column>
+            <flux:table.column>{{ __('common.run') }}</flux:table.column>
+            <flux:table.column>{{ __('common.workflow') }}</flux:table.column>
+            <flux:table.column>{{ __('common.status') }}</flux:table.column>
+            <flux:table.column>{{ __('runs.index.trigger') }}</flux:table.column>
+            <flux:table.column>{{ __('runs.index.started') }}</flux:table.column>
+            <flux:table.column>{{ __('runs.index.duration') }}</flux:table.column>
         </flux:table.columns>
         <flux:table.rows>
             @forelse ($this->executions as $execution)
@@ -96,11 +100,11 @@ new #[Title('Runs')] class extends Component {
                     </flux:table.cell>
                     <flux:table.cell>
                         {{ $execution->workflow->name }}
-                        <span class="text-xs text-zinc-500">v{{ $execution->version->number }}</span>
+                        <span class="text-xs text-zinc-500">{{ __('common.version_short', ['n' => $execution->version->number]) }}</span>
                     </flux:table.cell>
                     <flux:table.cell><flux:badge size="sm" :color="$execution->status->color()">{{ $execution->status->label() }}</flux:badge></flux:table.cell>
                     <flux:table.cell>
-                        {{ ucfirst($execution->trigger_type) }}
+                        {{ __('runs.trigger_types.'.$execution->trigger_type) }}
                         @if ($execution->triggeredBy) <span class="text-xs text-zinc-500">· {{ $execution->triggeredBy->name }}</span> @endif
                     </flux:table.cell>
                     <flux:table.cell>{{ $execution->started_at?->diffForHumans() }}</flux:table.cell>
@@ -108,7 +112,7 @@ new #[Title('Runs')] class extends Component {
                 </flux:table.row>
             @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="6" class="text-center text-zinc-500">{{ __('No runs yet.') }}</flux:table.cell>
+                    <flux:table.cell colspan="6" class="text-center text-zinc-500">{{ __('runs.index.no_runs_yet') }}</flux:table.cell>
                 </flux:table.row>
             @endforelse
         </flux:table.rows>

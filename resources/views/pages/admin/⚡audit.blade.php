@@ -3,12 +3,11 @@
 use App\Models\AuditLog;
 use App\Models\Organization;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Audit log')] class extends Component {
+new class extends Component {
     use WithPagination;
 
     #[Url]
@@ -29,14 +28,19 @@ new #[Title('Audit log')] class extends Component {
     {
         $this->resetPage();
     }
+
+    public function render()
+    {
+        return $this->view()->title(__('admin.audit.title'));
+    }
 }; ?>
 
 <section class="w-full">
-    <x-page-heading :heading="__('Audit log')" :subheading="__('Every audited change in the organization, across all workspaces.')">
+    <x-page-heading :heading="__('common.audit_log')" :subheading="__('admin.audit.every_audited_change_in_the')">
         <x-slot:actions>
             <flux:select wire:model.live="action" class="w-48">
-                <flux:select.option value="">{{ __('All actions') }}</flux:select.option>
-                @foreach (['workspace' => __('Workspaces'), 'member' => __('Membership'), 'invitation' => __('Invitations'), 'secret' => __('Secrets'), 'credential' => __('Authentication'), 'variable' => __('Variables'), 'user' => __('Users'), 'organization' => __('Organization settings')] as $prefix => $label)
+                <flux:select.option value="">{{ __('admin.audit.all_actions') }}</flux:select.option>
+                @foreach (['workspace' => __('common.workspaces'), 'member' => __('admin.audit.membership'), 'invitation' => __('admin.audit.invitations'), 'secret' => __('common.secrets'), 'credential' => __('common.authentication'), 'variable' => __('common.variables'), 'user' => __('common.users'), 'organization' => __('admin.audit.organization_settings')] as $prefix => $label)
                     <flux:select.option :value="$prefix">{{ $label }}</flux:select.option>
                 @endforeach
             </flux:select>

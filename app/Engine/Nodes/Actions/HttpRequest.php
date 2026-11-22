@@ -40,12 +40,12 @@ class HttpRequest extends Node
 
     public function label(): string
     {
-        return __('HTTP call');
+        return __('nodes.http_request.http_call');
     }
 
     public function description(): string
     {
-        return __('Makes an HTTP request, optionally using a workspace authentication setting.');
+        return __('nodes.http_request.makes_an_http_request_optionally');
     }
 
     public function kind(): NodeKind
@@ -55,7 +55,7 @@ class HttpRequest extends Node
 
     public function category(): string
     {
-        return __('Integrations');
+        return __('nodes.http_request.integrations');
     }
 
     public function icon(): string
@@ -71,32 +71,32 @@ class HttpRequest extends Node
     public function inputs(): array
     {
         return [
-            new Field('method', __('Method'), Field::SELECT, required: true, default: 'GET', options: array_combine(
+            new Field('method', __('common.method'), Field::SELECT, required: true, default: 'GET', options: array_combine(
                 ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
                 ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
             )),
-            new Field('url', __('URL'), Field::TEXT, required: true, templated: true),
-            new Field('credential', __('Authentication'), Field::CREDENTIAL, credentialTypes: ['http_basic', 'api_token']),
-            new Field('query', __('Query parameters'), Field::KEY_VALUE, templated: true),
-            new Field('headers', __('Headers'), Field::KEY_VALUE, templated: true),
-            new Field('body_type', __('Body'), Field::SELECT, default: 'none', options: [
-                'none' => __('None'), 'json' => __('JSON'), 'form' => __('Form fields'), 'raw' => __('Raw text'),
+            new Field('url', __('nodes.http_request.url'), Field::TEXT, required: true, templated: true),
+            new Field('credential', __('common.authentication'), Field::CREDENTIAL, credentialTypes: ['http_basic', 'api_token']),
+            new Field('query', __('common.query_parameters'), Field::KEY_VALUE, templated: true),
+            new Field('headers', __('common.headers'), Field::KEY_VALUE, templated: true),
+            new Field('body_type', __('common.body'), Field::SELECT, default: 'none', options: [
+                'none' => __('nodes.http_request.none'), 'json' => __('nodes.http_request.json'), 'form' => __('common.form_fields'), 'raw' => __('nodes.http_request.raw_text'),
             ]),
-            new Field('body', __('JSON or raw body'), Field::TEXTAREA, templated: true),
-            new Field('form', __('Form fields'), Field::KEY_VALUE, templated: true),
-            new Field('timeout', __('Timeout (seconds)'), Field::NUMBER, default: 30),
-            new Field('follow_redirects', __('Follow redirects'), Field::BOOLEAN, default: true),
-            new Field('fail_on_error', __('Fail on an error status (4xx or 5xx)'), Field::BOOLEAN, default: true),
+            new Field('body', __('nodes.http_request.json_or_raw_body'), Field::TEXTAREA, templated: true),
+            new Field('form', __('common.form_fields'), Field::KEY_VALUE, templated: true),
+            new Field('timeout', __('common.timeout_seconds'), Field::NUMBER, default: 30),
+            new Field('follow_redirects', __('nodes.http_request.follow_redirects'), Field::BOOLEAN, default: true),
+            new Field('fail_on_error', __('nodes.http_request.fail_on_an_error_status'), Field::BOOLEAN, default: true),
         ];
     }
 
     public function outputs(array $config = []): array
     {
         return [
-            new Output('status', __('Status code'), 'number'),
-            new Output('ok', __('Succeeded (2xx)'), 'boolean'),
-            new Output('headers', __('Headers'), 'object'),
-            new Output('body', __('Body'), 'any', __('Decoded JSON when the response is JSON, else text.')),
+            new Output('status', __('nodes.http_request.status_code'), 'number'),
+            new Output('ok', __('nodes.http_request.succeeded_2xx'), 'boolean'),
+            new Output('headers', __('common.headers'), 'object'),
+            new Output('body', __('common.body'), 'any', __('nodes.http_request.decoded_json_when_the_response')),
         ];
     }
 
@@ -121,7 +121,7 @@ class HttpRequest extends Node
                 }
 
                 if ($hop >= self::MAX_REDIRECTS) {
-                    return NodeResult::fail(__('Too many redirects.'), retryable: false);
+                    return NodeResult::fail(__('nodes.http_request.too_many_redirects'), retryable: false);
                 }
 
                 $url = (string) UriResolver::resolve(new Uri($url), new Uri($response->header('Location')));
@@ -132,7 +132,7 @@ class HttpRequest extends Node
                 }
             }
         } catch (ConnectionException $e) {
-            return NodeResult::fail(__('Connection failed: :message', ['message' => $e->getMessage()]));
+            return NodeResult::fail(__('nodes.http_request.connection_failed_message', ['message' => $e->getMessage()]));
         } catch (RuntimeException $e) {
             return NodeResult::fail($e->getMessage(), retryable: false);
         }
@@ -141,7 +141,7 @@ class HttpRequest extends Node
 
         if ($context->input('fail_on_error', true) && $response->status() >= 400) {
             return NodeResult::fail(
-                __('HTTP :status :reason', ['status' => $response->status(), 'reason' => $response->reason()]),
+                __('nodes.http_request.http_status_reason', ['status' => $response->status(), 'reason' => $response->reason()]),
                 retryable: $response->status() >= 500 || $response->status() === 429,
                 output: $output,
             );
@@ -174,7 +174,7 @@ class HttpRequest extends Node
             $type = $credential->credentialType();
 
             if (! $type instanceof HttpAuthenticator) {
-                throw new RuntimeException(__('Authentication ":key" cannot be used for HTTP calls.', ['key' => $credential->key]));
+                throw new RuntimeException(__('nodes.http_request.authentication_key_cannot_be_used', ['key' => $credential->key]));
             }
 
             $request = $type->authenticate($request, $credential->config);
@@ -194,7 +194,7 @@ class HttpRequest extends Node
             $body = json_decode($body, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                return NodeResult::fail(__('The JSON body is not valid JSON: :error', ['error' => json_last_error_msg()]), retryable: false);
+                return NodeResult::fail(__('nodes.http_request.json_body_is_not_valid', ['error' => json_last_error_msg()]), retryable: false);
             }
         }
 

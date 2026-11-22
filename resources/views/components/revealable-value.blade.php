@@ -13,7 +13,7 @@
             variant="ghost"
             x-on:click="if (shown) { shown = false; value = null; return; } loading = true; value = await $wire.{{ $reveal }}; shown = true; loading = false"
             x-bind:disabled="loading"
-            :aria-label="__('Reveal value')"
+            :aria-label="__('ui.reveal_value')"
             data-test="reveal-button"
         >
             <flux:icon.eye variant="micro" x-show="! shown" />

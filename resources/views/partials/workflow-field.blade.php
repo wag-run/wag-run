@@ -4,7 +4,7 @@
 
     $pickable = $field->templated || $field->expression;
     $description = $field->description
-        ?? ($field->expression ? __('An expression.') : ($field->templated ? __('Supports Twig templates.') : null));
+        ?? ($field->expression ? __('workflows.editor.expression') : ($field->templated ? __('workflows.editor.supports_twig_templates') : null));
 @endphp
 
 @if ($field->type === Field::BOOLEAN)
@@ -25,13 +25,13 @@
         };
     @endphp
     <flux:select wire:model.live="{{ $model }}" :label="$field->label" :description="$field->description">
-        <flux:select.option value="">{{ __('Choose…') }}</flux:select.option>
+        <flux:select.option value="">{{ __('common.choose') }}</flux:select.option>
         @foreach ($options as $optionValue => $optionLabel)
             <flux:select.option :value="$optionValue">{{ $optionLabel }}</flux:select.option>
         @endforeach
     </flux:select>
     @if ($options === [] && $field->type === Field::CREDENTIAL)
-        <flux:text class="text-xs">{{ __('Add one under Authentication first.') }}</flux:text>
+        <flux:text class="text-xs">{{ __('workflows.editor.add_one_under_authentication_first') }}</flux:text>
     @endif
 @elseif ($field->type === Field::KEY_VALUE)
     <flux:field>
@@ -42,17 +42,17 @@
         <div class="space-y-2">
             @foreach ((array) $value as $index => $row)
                 <div class="flex items-start gap-2" wire:key="{{ $model }}-{{ $index }}">
-                    <flux:input size="sm" class="w-28 font-mono" wire:model.live.debounce.600ms="{{ $model }}.{{ $index }}.key" :placeholder="__('key')" />
+                    <flux:input size="sm" class="w-28 font-mono" wire:model.live.debounce.600ms="{{ $model }}.{{ $index }}.key" :placeholder="__('workflows.editor.key')" />
                     <div class="min-w-0 flex-1" x-data="wagInsert">
-                        <flux:input size="sm" class="font-mono" x-ref="input" wire:model.live.debounce.600ms="{{ $model }}.{{ $index }}.value" :placeholder="__('value')" />
+                        <flux:input size="sm" class="font-mono" x-ref="input" wire:model.live.debounce.600ms="{{ $model }}.{{ $index }}.value" :placeholder="__('workflows.editor.value')" />
                         @if ($pickable)
                             @include('partials.workflow-picker', ['picker' => $picker, 'expression' => $field->expression])
                         @endif
                     </div>
-                    <flux:button size="sm" variant="ghost" icon="x-mark" wire:click="removeRow('{{ $field->name }}', {{ $index }})" :aria-label="__('Remove')" />
+                    <flux:button size="sm" variant="ghost" icon="x-mark" wire:click="removeRow('{{ $field->name }}', {{ $index }})" :aria-label="__('common.remove')" />
                 </div>
             @endforeach
-            <flux:button size="sm" icon="plus" wire:click="addRow('{{ $field->name }}')">{{ __('Add') }}</flux:button>
+            <flux:button size="sm" icon="plus" wire:click="addRow('{{ $field->name }}')">{{ __('common.add') }}</flux:button>
         </div>
     </flux:field>
 @elseif (in_array($field->type, [Field::LIST, Field::SCHEMA], true))
@@ -67,7 +67,7 @@
                     @foreach ($field->fields as $sub)
                         @if ($sub->type === Field::KEY_VALUE)
                             <flux:textarea size="sm" rows="2" class="font-mono" wire:model.live.debounce.600ms="{{ $model }}.{{ $index }}.{{ $sub->name }}"
-                                :label="$sub->label" :description="__('One per line, as value=Label')" />
+                                :label="$sub->label" :description="__('workflows.editor.one_per_line_as_value')" />
                         @elseif ($sub->type === Field::BOOLEAN)
                             <flux:switch wire:model.live="{{ $model }}.{{ $index }}.{{ $sub->name }}" :label="$sub->label" />
                         @elseif ($sub->type === Field::SELECT)
@@ -80,10 +80,10 @@
                             <flux:input size="sm" wire:model.live.debounce.600ms="{{ $model }}.{{ $index }}.{{ $sub->name }}" :label="$sub->label" />
                         @endif
                     @endforeach
-                    <flux:button size="sm" variant="ghost" icon="trash" wire:click="removeRow('{{ $field->name }}', {{ $index }})">{{ __('Remove') }}</flux:button>
+                    <flux:button size="sm" variant="ghost" icon="trash" wire:click="removeRow('{{ $field->name }}', {{ $index }})">{{ __('common.remove') }}</flux:button>
                 </div>
             @endforeach
-            <flux:button size="sm" icon="plus" wire:click="addRow('{{ $field->name }}')">{{ __('Add') }}</flux:button>
+            <flux:button size="sm" icon="plus" wire:click="addRow('{{ $field->name }}')">{{ __('common.add') }}</flux:button>
         </div>
     </flux:field>
 @else

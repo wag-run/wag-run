@@ -65,7 +65,7 @@ class Execution extends Model
 
         $seconds = (int) $this->started_at->diffInSeconds($this->finished_at ?? now());
 
-        return $seconds < 1 ? __('<1s') : CarbonInterval::seconds($seconds)->cascade()->forHumans(short: true, parts: 2);
+        return $seconds < 1 ? __('runs.1s') : CarbonInterval::seconds($seconds)->cascade()->forHumans(short: true, parts: 2);
     }
 
     /**

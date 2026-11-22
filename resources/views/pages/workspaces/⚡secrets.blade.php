@@ -71,7 +71,7 @@ new class extends Component {
                 Rule::unique('secrets', 'key')->where('workspace_id', $this->workspace->id)->ignore($this->editingId)],
             'value' => [$this->editingId ? 'nullable' : 'required', 'string', 'max:65000'],
             'description' => ['nullable', 'string', 'max:255'],
-        ], ['key.regex' => __('Use letters, numbers and underscores, starting with a letter or underscore.')]);
+        ], ['key.regex' => __('common.use_letters_numbers_and_underscores')]);
 
         $secret = $this->editingId
             ? $this->workspace->secrets()->findOrFail($this->editingId)
@@ -92,7 +92,7 @@ new class extends Component {
             $this->editingId ? ['value_changed' => $valueChanged] : []);
 
         Flux::modal('secret-form')->close();
-        Flux::toast(variant: 'success', text: __('Secret saved.'));
+        Flux::toast(variant: 'success', text: __('workspaces.secrets.secret_saved'));
         $this->resetForm();
     }
 
@@ -119,7 +119,7 @@ new class extends Component {
         $secret->delete();
 
         Audit::record('secret.deleted', $secret, $this->workspace);
-        Flux::toast(text: __('Secret deleted.'));
+        Flux::toast(text: __('workspaces.secrets.secret_deleted'));
     }
 
     protected function resetForm(): void
@@ -130,25 +130,25 @@ new class extends Component {
 
     public function render()
     {
-        return $this->view()->title(__('Secrets').' · '.$this->workspace->name);
+        return $this->view()->title(__('common.secrets').' · '.$this->workspace->name);
     }
 }; ?>
 
 <section class="w-full">
-    <x-page-heading :heading="__('Secrets')" :subheading="__('Sensitive values for this workspace\'s workflows. Encrypted at rest and masked in execution logs.')">
+    <x-page-heading :heading="__('common.secrets')" :subheading="__('workspaces.secrets.sensitive_values_for_this_workspace')">
         @if ($this->canManage)
             <x-slot:actions>
-                <flux:button variant="primary" icon="plus" wire:click="create">{{ __('Add secret') }}</flux:button>
+                <flux:button variant="primary" icon="plus" wire:click="create">{{ __('workspaces.secrets.add_secret') }}</flux:button>
             </x-slot:actions>
         @endif
     </x-page-heading>
 
     <flux:table>
         <flux:table.columns>
-            <flux:table.column>{{ __('Key') }}</flux:table.column>
-            <flux:table.column>{{ __('Value') }}</flux:table.column>
-            <flux:table.column>{{ __('Description') }}</flux:table.column>
-            <flux:table.column>{{ __('Updated') }}</flux:table.column>
+            <flux:table.column>{{ __('common.key') }}</flux:table.column>
+            <flux:table.column>{{ __('common.value') }}</flux:table.column>
+            <flux:table.column>{{ __('common.description') }}</flux:table.column>
+            <flux:table.column>{{ __('workspaces.secrets.updated') }}</flux:table.column>
             <flux:table.column></flux:table.column>
         </flux:table.columns>
         <flux:table.rows>
@@ -162,15 +162,15 @@ new class extends Component {
                     <flux:table.cell class="whitespace-nowrap">{{ $secret->updated_at?->diffForHumans() }}</flux:table.cell>
                     <flux:table.cell align="end">
                         @if ($this->canManage)
-                            <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit({{ $secret->id }})" :aria-label="__('Edit')" />
+                            <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit({{ $secret->id }})" :aria-label="__('common.edit')" />
                             <flux:button size="sm" variant="ghost" icon="trash" wire:click="delete({{ $secret->id }})"
-                                wire:confirm="{{ __('Delete this secret? Workflows that reference it will fail until it is replaced.') }}" :aria-label="__('Delete')" />
+                                wire:confirm="{{ __('workspaces.secrets.delete_this_secret_workflows_that') }}" :aria-label="__('common.delete')" />
                         @endif
                     </flux:table.cell>
                 </flux:table.row>
             @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="5" class="text-center text-zinc-500">{{ __('No secrets yet.') }}</flux:table.cell>
+                    <flux:table.cell colspan="5" class="text-center text-zinc-500">{{ __('workspaces.secrets.no_secrets_yet') }}</flux:table.cell>
                 </flux:table.row>
             @endforelse
         </flux:table.rows>
@@ -178,14 +178,14 @@ new class extends Component {
 
     <flux:modal name="secret-form" class="md:w-lg">
         <form wire:submit="save" class="space-y-6">
-            <flux:heading size="lg">{{ $editingId ? __('Edit secret') : __('Add secret') }}</flux:heading>
-            <flux:input wire:model="key" :label="__('Key')" class="font-mono" placeholder="stripe_api_key" required />
-            <flux:input wire:model="value" type="password" :label="__('Value')" viewable autocomplete="off"
-                :description="$editingId ? __('Leave empty to keep the current value.') : null" />
-            <flux:input wire:model="description" :label="__('Description')" />
+            <flux:heading size="lg">{{ $editingId ? __('workspaces.secrets.edit_secret') : __('workspaces.secrets.add_secret') }}</flux:heading>
+            <flux:input wire:model="key" :label="__('common.key')" class="font-mono" placeholder="stripe_api_key" required />
+            <flux:input wire:model="value" type="password" :label="__('common.value')" viewable autocomplete="off"
+                :description="$editingId ? __('common.leave_empty_to_keep_the') : null" />
+            <flux:input wire:model="description" :label="__('common.description')" />
             <div class="flex justify-end gap-2">
-                <flux:modal.close><flux:button variant="ghost">{{ __('Cancel') }}</flux:button></flux:modal.close>
-                <flux:button type="submit" variant="primary">{{ __('Save') }}</flux:button>
+                <flux:modal.close><flux:button variant="ghost">{{ __('common.cancel') }}</flux:button></flux:modal.close>
+                <flux:button type="submit" variant="primary">{{ __('common.save') }}</flux:button>
             </div>
         </form>
     </flux:modal>

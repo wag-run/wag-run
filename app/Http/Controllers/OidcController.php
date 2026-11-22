@@ -47,11 +47,11 @@ class OidcController extends Controller
         $pending = $request->session()->pull(self::SESSION_KEY);
 
         if ($request->filled('error')) {
-            return $this->failed(__(':name did not sign you in: :error', ['name' => $provider->name, 'error' => (string) ($request->query('error_description') ?: $request->query('error'))]));
+            return $this->failed(__('oidc.name_did_not_sign_you', ['name' => $provider->name, 'error' => (string) ($request->query('error_description') ?: $request->query('error'))]));
         }
 
         if (! is_array($pending) || $pending['provider'] !== $provider->id || ! is_string($request->query('state')) || ! hash_equals($pending['state'], $request->query('state')) || ! $request->filled('code')) {
-            return $this->failed(__('The sign-in expired or did not match. Try again.'));
+            return $this->failed(__('oidc.sign_in_expired_or_did'));
         }
 
         try {

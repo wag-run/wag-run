@@ -23,12 +23,12 @@ class ManualTrigger extends Node
 
     public function label(): string
     {
-        return __('Manual');
+        return __('nodes.manual_trigger.manual');
     }
 
     public function description(): string
     {
-        return __('A user runs the workflow from inside the app.');
+        return __('nodes.manual_trigger.user_runs_the_workflow_from');
     }
 
     public function kind(): NodeKind
@@ -43,7 +43,7 @@ class ManualTrigger extends Node
 
     public function inputs(): array
     {
-        return [new Field('fields', __('Inputs to ask for'), Field::LIST, fields: Task::formFieldDefinition())];
+        return [new Field('fields', __('nodes.manual_trigger.inputs_to_ask_for'), Field::LIST, fields: Task::formFieldDefinition())];
     }
 
     public function outputs(array $config = []): array

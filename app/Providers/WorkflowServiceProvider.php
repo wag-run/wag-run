@@ -36,7 +36,6 @@ class WorkflowServiceProvider extends ServiceProvider
         Actions\Wait::class,
         Actions\Compose::class,
         Actions\LlmCall::class,
-        Actions\Branch::class,
         Actions\Merge::class,
         Actions\Approval::class,
         Actions\Task::class,

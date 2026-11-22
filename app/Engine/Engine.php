@@ -43,13 +43,13 @@ class Engine
         ?ExecutionStep $parentStep = null,
     ): Execution {
         $version = $workflow->publishedVersion
-            ?? throw new RuntimeException(__('Workflow ":name" has no published version.', ['name' => $workflow->name]));
+            ?? throw new RuntimeException(__('engine.workflow_name_has_no_published', ['name' => $workflow->name]));
 
         $graph = $version->toGraph();
         $triggerNodeId ??= $this->firstTrigger($graph->nodes);
 
         if ($triggerNodeId === null || ! $graph->has($triggerNodeId)) {
-            throw new InvalidArgumentException(__('Workflow ":name" has no trigger to start from.', ['name' => $workflow->name]));
+            throw new InvalidArgumentException(__('engine.workflow_name_has_no_trigger', ['name' => $workflow->name]));
         }
 
         return DB::transaction(function () use ($workflow, $version, $input, $user, $triggerType, $triggerNodeId, $parentStep) {
@@ -109,7 +109,7 @@ class Engine
     public function respond(ExecutionStep $step, array $payload = []): void
     {
         if ($step->status !== StepStatus::Waiting || $step->wait_type !== WaitType::External) {
-            throw new InvalidArgumentException(__('This step is not waiting for a response.'));
+            throw new InvalidArgumentException(__('engine.this_step_is_not_waiting'));
         }
 
         $this->coordinator->dispatchResume($step, ResumeReason::External, $payload);

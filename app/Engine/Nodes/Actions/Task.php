@@ -19,9 +19,25 @@ use App\Services\Assignments;
  */
 class Task extends Node
 {
-    public const FIELD_TYPES = ['text' => 'Text', 'textarea' => 'Long text', 'number' => 'Number', 'email' => 'Email', 'date' => 'Date', 'checkbox' => 'Checkbox', 'select' => 'Choice'];
-
     public function __construct(protected Assignments $assignments) {}
+
+    /**
+     * The kinds of form field a Task, Form trigger or Manual trigger can ask for.
+     *
+     * @return array<string, string>
+     */
+    public static function fieldTypes(): array
+    {
+        return [
+            'text' => __('nodes.task.field_types.text'),
+            'textarea' => __('nodes.task.field_types.textarea'),
+            'number' => __('nodes.task.field_types.number'),
+            'email' => __('nodes.task.field_types.email'),
+            'date' => __('nodes.task.field_types.date'),
+            'checkbox' => __('nodes.task.field_types.checkbox'),
+            'select' => __('nodes.task.field_types.select'),
+        ];
+    }
 
     public static function type(): string
     {
@@ -30,12 +46,12 @@ class Task extends Node
 
     public function label(): string
     {
-        return __('Task');
+        return __('common.task');
     }
 
     public function description(): string
     {
-        return __('Assigns a manual task with a form to fill in before the flow continues.');
+        return __('nodes.task.assigns_a_manual_task_with');
     }
 
     public function kind(): NodeKind
@@ -45,7 +61,7 @@ class Task extends Node
 
     public function category(): string
     {
-        return __('People');
+        return __('common.people');
     }
 
     public function icon(): string
@@ -56,11 +72,11 @@ class Task extends Node
     public function inputs(): array
     {
         return [
-            new Field('assignee', __('Assignee'), Field::USER, required: true),
-            new Field('title', __('Title'), Field::TEXT, required: true, templated: true),
-            new Field('instructions', __('Instructions'), Field::TEXTAREA, templated: true),
-            new Field('fields', __('Form fields'), Field::LIST, fields: static::formFieldDefinition()),
-            new Field('timeout_hours', __('Timeout (hours)'), Field::NUMBER, default: 48),
+            new Field('assignee', __('nodes.task.assignee'), Field::USER, required: true),
+            new Field('title', __('common.title'), Field::TEXT, required: true, templated: true),
+            new Field('instructions', __('common.instructions'), Field::TEXTAREA, templated: true),
+            new Field('fields', __('common.form_fields'), Field::LIST, fields: static::formFieldDefinition()),
+            new Field('timeout_hours', __('common.timeout_hours'), Field::NUMBER, default: 48),
         ];
     }
 
@@ -72,11 +88,11 @@ class Task extends Node
     public static function formFieldDefinition(): array
     {
         return [
-            new Field('name', __('Key'), Field::TEXT, required: true),
-            new Field('label', __('Label'), Field::TEXT, required: true),
-            new Field('type', __('Type'), Field::SELECT, required: true, default: 'text', options: self::FIELD_TYPES),
-            new Field('required', __('Required'), Field::BOOLEAN, default: false),
-            new Field('options', __('Choices'), Field::KEY_VALUE, description: __('For choice fields: value and label.')),
+            new Field('name', __('common.key'), Field::TEXT, required: true),
+            new Field('label', __('nodes.task.label'), Field::TEXT, required: true),
+            new Field('type', __('common.type'), Field::SELECT, required: true, default: 'text', options: static::fieldTypes()),
+            new Field('required', __('common.required'), Field::BOOLEAN, default: false),
+            new Field('options', __('nodes.task.choices'), Field::KEY_VALUE, description: __('nodes.task.for_choice_fields_value_and')),
         ];
     }
 
@@ -100,9 +116,9 @@ class Task extends Node
     public function outputs(array $config = []): array
     {
         return [
-            new Output('values', __('Submitted values'), 'object', children: static::outputsForFields($config['fields'] ?? [])),
-            new Output('responded_by', __('Submitted by (user id)'), 'number'),
-            new Output('responded_by_name', __('Submitted by'), 'string'),
+            new Output('values', __('common.submitted_values'), 'object', children: static::outputsForFields($config['fields'] ?? [])),
+            new Output('responded_by', __('common.submitted_by_user_id'), 'number'),
+            new Output('responded_by_name', __('nodes.task.submitted_by'), 'string'),
         ];
     }
 
@@ -111,7 +127,7 @@ class Task extends Node
         $assignee = $this->assignments->activeUser($context->input('assignee'));
 
         if (! $assignee) {
-            return NodeResult::fail(__('The assignee does not have an active account in this organization.'), retryable: false);
+            return NodeResult::fail(__('nodes.task.assignee_does_not_have_an'), retryable: false);
         }
 
         $dueAt = now()->addHours(max(1, (int) $context->input('timeout_hours', 48)));
@@ -133,7 +149,7 @@ class Task extends Node
         if ($resumption->reason === ResumeReason::TimerElapsed) {
             $this->assignments->expireFromState($context->state());
 
-            return NodeResult::fail(__('The task was not completed before it timed out.'), retryable: false);
+            return NodeResult::fail(__('nodes.task.task_was_not_completed_before'), retryable: false);
         }
 
         return NodeResult::complete([

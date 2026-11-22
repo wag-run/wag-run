@@ -185,11 +185,11 @@ class Assignments
     protected function decide(Assignment $assignment, User $user, AssignmentStatus $status, array $response, AssignmentType $expected = AssignmentType::Approval): void
     {
         if ($assignment->type !== $expected) {
-            throw ValidationException::withMessages(['assignment' => __('This is not a :type.', ['type' => $expected->value])]);
+            throw ValidationException::withMessages(['assignment' => __('inbox.this_is_not_a_type', ['type' => $expected->value])]);
         }
 
         if ($assignment->assignee_id !== $user->id) {
-            throw ValidationException::withMessages(['assignment' => __('Only the assignee can respond.')]);
+            throw ValidationException::withMessages(['assignment' => __('inbox.only_the_assignee_can_respond')]);
         }
 
         DB::transaction(function () use ($assignment, $user, $status, $response) {
@@ -204,7 +204,7 @@ class Assignments
                 ]);
 
             if ($updated === 0) {
-                throw ValidationException::withMessages(['assignment' => __('This has already been answered, expired or was withdrawn.')]);
+                throw ValidationException::withMessages(['assignment' => __('inbox.this_has_already_been_answered')]);
             }
 
             $this->engine->respond($assignment->step, [...$response, 'responded_by' => $user->id, 'responded_by_name' => $user->name]);

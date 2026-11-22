@@ -18,12 +18,12 @@ new class extends Component {
 
     public function render()
     {
-        return $this->view()->title(__('Audit log').' · '.$this->workspace->name);
+        return $this->view()->title(__('common.audit_log').' · '.$this->workspace->name);
     }
 }; ?>
 
 <section class="w-full">
-    <x-page-heading :heading="__('Audit log')" :subheading="__('Changes to this workspace\'s workflows, secrets, authentication and membership, and every secret reveal.')" />
+    <x-page-heading :heading="__('common.audit_log')" :subheading="__('workspaces.audit.changes_to_this_workspace_s')" />
 
     <x-audit-log-table :entries="$this->entries" />
 </section>

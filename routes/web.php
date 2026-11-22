@@ -7,7 +7,7 @@ use App\Http\Controllers\WorkflowExportController;
 use App\Http\Middleware\RememberCurrentWorkspace;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome')->name('home');
+Route::redirect('/', '/dashboard')->name('home');
 
 Route::livewire('invitations/{token}', 'pages::invitations.show')->name('invitations.show');
 

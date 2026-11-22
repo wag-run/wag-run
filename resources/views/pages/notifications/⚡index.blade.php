@@ -4,11 +4,10 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Notifications')] class extends Component {
+new class extends Component {
     use WithPagination;
 
     /**
@@ -36,13 +35,18 @@ new #[Title('Notifications')] class extends Component {
         Auth::user()->unreadNotifications()->update(['read_at' => now()]);
         unset($this->notifications);
     }
+
+    public function render()
+    {
+        return $this->view()->title(__('notifications.index.title'));
+    }
 }; ?>
 
 <section class="w-full max-w-3xl">
-    <x-page-heading :heading="__('Notifications')" :subheading="__('Failed runs of workflows you own, and approvals and tasks assigned to you.')">
+    <x-page-heading :heading="__('common.notifications')" :subheading="__('notifications.index.failed_runs_of_workflows_you')">
         <x-slot:actions>
             @if (Auth::user()->unreadNotifications()->exists())
-                <flux:button size="sm" wire:click="markAllRead" data-test="mark-all-read">{{ __('Mark all read') }}</flux:button>
+                <flux:button size="sm" wire:click="markAllRead" data-test="mark-all-read">{{ __('notifications.index.mark_all_read') }}</flux:button>
             @endif
         </x-slot:actions>
     </x-page-heading>
@@ -59,7 +63,7 @@ new #[Title('Notifications')] class extends Component {
                 <span class="shrink-0 text-xs text-zinc-500">{{ $notification->created_at->diffForHumans() }}</span>
             </button>
         @empty
-            <div class="p-8 text-center text-sm text-zinc-500">{{ __('No notifications yet.') }}</div>
+            <div class="p-8 text-center text-sm text-zinc-500">{{ __('notifications.index.no_notifications_yet') }}</div>
         @endforelse
     </div>
 

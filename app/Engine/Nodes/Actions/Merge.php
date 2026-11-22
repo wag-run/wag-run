@@ -21,12 +21,12 @@ class Merge extends Node
 
     public function label(): string
     {
-        return __('Merge');
+        return __('nodes.merge.merge');
     }
 
     public function description(): string
     {
-        return __('Waits for all parallel branches to complete before the flow moves forward.');
+        return __('nodes.merge.waits_for_all_parallel_branches');
     }
 
     public function kind(): NodeKind
@@ -36,7 +36,7 @@ class Merge extends Node
 
     public function category(): string
     {
-        return __('Flow');
+        return __('common.flow');
     }
 
     public function icon(): string
@@ -56,7 +56,7 @@ class Merge extends Node
 
     public function outputs(array $config = []): array
     {
-        return [new Output('branches', __('Branch outputs'), 'object', __('The output of the last node on each branch, keyed by node id.'))];
+        return [new Output('branches', __('nodes.merge.branch_outputs'), 'object', __('nodes.merge.output_of_the_last_node'))];
     }
 
     public function execute(NodeContext $context): NodeResult

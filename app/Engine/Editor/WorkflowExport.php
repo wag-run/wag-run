@@ -46,19 +46,19 @@ class WorkflowExport
         $data = json_decode($json, true);
 
         if (! is_array($data) || ($data['format'] ?? null) !== self::FORMAT) {
-            throw ValidationException::withMessages(['file' => __('This is not a workflow export file.')]);
+            throw ValidationException::withMessages(['file' => __('workflows.editor.this_is_not_a_workflow')]);
         }
 
         if ((int) ($data['version'] ?? 0) > self::VERSION) {
-            throw ValidationException::withMessages(['file' => __('This file was exported by a newer version of the app.')]);
+            throw ValidationException::withMessages(['file' => __('workflows.editor.this_file_was_exported_by')]);
         }
 
         if (! is_array($data['graph'] ?? null) || ! is_array($data['graph']['nodes'] ?? null) || ! is_array($data['graph']['edges'] ?? [])) {
-            throw ValidationException::withMessages(['file' => __('The file has no workflow graph.')]);
+            throw ValidationException::withMessages(['file' => __('workflows.editor.file_has_no_workflow_graph')]);
         }
 
         return [
-            'name' => mb_substr(trim((string) ($data['name'] ?? '')), 0, 255) ?: __('Imported workflow'),
+            'name' => mb_substr(trim((string) ($data['name'] ?? '')), 0, 255) ?: __('workflows.editor.imported_workflow'),
             'description' => is_string($data['description'] ?? null) ? $data['description'] : null,
             'concurrency' => ConcurrencyPolicy::tryFrom((string) ($data['concurrency'] ?? '')) ?? ConcurrencyPolicy::Allow,
             'retention_days' => is_numeric($data['retention_days'] ?? null) ? max(1, (int) $data['retention_days']) : null,

@@ -14,8 +14,8 @@ enum InstallRole: string
     public function label(): string
     {
         return match ($this) {
-            self::Admin => __('Organization admin'),
-            self::Member => __('Member'),
+            self::Admin => __('enums.install_role.organization_admin'),
+            self::Member => __('enums.install_role.member'),
         };
     }
 }

@@ -6,7 +6,7 @@
         <div class="truncate text-xs text-zinc-500">
             {{ $assignment->type->label() }} · {{ $assignment->execution->workflow->name }}
             @if ($assignment->isPending() && $assignment->due_at)
-                · {{ __('due :time', ['time' => $assignment->due_at->diffForHumans()]) }}
+                · {{ __('common.due_time', ['time' => $assignment->due_at->diffForHumans()]) }}
             @endif
         </div>
     </div>

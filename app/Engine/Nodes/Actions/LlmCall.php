@@ -23,7 +23,21 @@ use function Laravel\Ai\agent;
  */
 class LlmCall extends Node
 {
-    public const SCHEMA_TYPES = ['string' => 'Text', 'number' => 'Number', 'integer' => 'Whole number', 'boolean' => 'Yes/no', 'array' => 'List of text'];
+    /**
+     * The value types a structured output field can have.
+     *
+     * @return array<string, string>
+     */
+    public static function schemaTypes(): array
+    {
+        return [
+            'string' => __('nodes.llm_call.schema_types.string'),
+            'number' => __('nodes.llm_call.schema_types.number'),
+            'integer' => __('nodes.llm_call.schema_types.integer'),
+            'boolean' => __('nodes.llm_call.schema_types.boolean'),
+            'array' => __('nodes.llm_call.schema_types.array'),
+        ];
+    }
 
     public static function type(): string
     {
@@ -32,12 +46,12 @@ class LlmCall extends Node
 
     public function label(): string
     {
-        return __('LLM call');
+        return __('nodes.llm_call.llm_call');
     }
 
     public function description(): string
     {
-        return __('Sends a prompt to an LLM and returns the response.');
+        return __('nodes.llm_call.sends_a_prompt_to_an');
     }
 
     public function kind(): NodeKind
@@ -47,7 +61,7 @@ class LlmCall extends Node
 
     public function category(): string
     {
-        return __('AI');
+        return __('nodes.llm_call.ai');
     }
 
     public function icon(): string
@@ -63,34 +77,34 @@ class LlmCall extends Node
     public function inputs(): array
     {
         return [
-            new Field('credential', __('AI provider key'), Field::CREDENTIAL, required: true, credentialTypes: ['ai_provider']),
-            new Field('model', __('Model'), Field::TEXT, required: true, description: __('The provider\'s model name, such as claude-sonnet-5-5 or gpt-6.')),
-            new Field('system', __('Instructions'), Field::TEXTAREA, templated: true),
-            new Field('prompt', __('Prompt'), Field::TEXTAREA, required: true, templated: true),
-            new Field('output', __('Response'), Field::SELECT, required: true, default: 'text', options: ['text' => __('Free text'), 'structured' => __('Structured data')]),
-            new Field('schema', __('Structured fields'), Field::SCHEMA, fields: [
-                new Field('name', __('Key'), Field::TEXT, required: true),
-                new Field('type', __('Type'), Field::SELECT, required: true, default: 'string', options: self::SCHEMA_TYPES),
-                new Field('description', __('Description'), Field::TEXT),
-                new Field('required', __('Required'), Field::BOOLEAN, default: true),
+            new Field('credential', __('common.ai_provider_key'), Field::CREDENTIAL, required: true, credentialTypes: ['ai_provider']),
+            new Field('model', __('nodes.llm_call.model'), Field::TEXT, required: true, description: __('nodes.llm_call.provider_s_model_name_such')),
+            new Field('system', __('common.instructions'), Field::TEXTAREA, templated: true),
+            new Field('prompt', __('nodes.llm_call.prompt'), Field::TEXTAREA, required: true, templated: true),
+            new Field('output', __('nodes.llm_call.response'), Field::SELECT, required: true, default: 'text', options: ['text' => __('nodes.llm_call.free_text'), 'structured' => __('nodes.llm_call.structured_data')]),
+            new Field('schema', __('nodes.llm_call.structured_fields'), Field::SCHEMA, fields: [
+                new Field('name', __('common.key'), Field::TEXT, required: true),
+                new Field('type', __('common.type'), Field::SELECT, required: true, default: 'string', options: static::schemaTypes()),
+                new Field('description', __('common.description'), Field::TEXT),
+                new Field('required', __('common.required'), Field::BOOLEAN, default: true),
             ]),
-            new Field('timeout', __('Timeout (seconds)'), Field::NUMBER, default: 120),
+            new Field('timeout', __('common.timeout_seconds'), Field::NUMBER, default: 120),
         ];
     }
 
     public function outputs(array $config = []): array
     {
-        $usage = new Output('usage', __('Token usage'), 'object', children: [
-            new Output('input_tokens', __('Input tokens'), 'number'),
-            new Output('output_tokens', __('Output tokens'), 'number'),
+        $usage = new Output('usage', __('nodes.llm_call.token_usage'), 'object', children: [
+            new Output('input_tokens', __('nodes.llm_call.input_tokens'), 'number'),
+            new Output('output_tokens', __('nodes.llm_call.output_tokens'), 'number'),
         ]);
 
         if (($config['output'] ?? 'text') !== 'structured') {
-            return [new Output('text', __('Response text'), 'string'), $usage];
+            return [new Output('text', __('nodes.llm_call.response_text'), 'string'), $usage];
         }
 
         return [
-            new Output('data', __('Structured data'), 'object', children: array_map(
+            new Output('data', __('nodes.llm_call.structured_data'), 'object', children: array_map(
                 fn (array $field) => new Output((string) $field['name'], (string) $field['name'], match ($field['type'] ?? 'string') {
                     'integer', 'number' => 'number',
                     'boolean' => 'boolean',
@@ -108,13 +122,13 @@ class LlmCall extends Node
         $credential = $context->credential($context->input('credential'));
 
         if (! $credential || $credential->type !== 'ai_provider') {
-            return NodeResult::fail(__('Choose an AI provider key from this workspace\'s authentication settings.'), retryable: false);
+            return NodeResult::fail(__('nodes.llm_call.choose_an_ai_provider_key'), retryable: false);
         }
 
         $driver = (string) ($credential->config['provider'] ?? '');
 
         if (! array_key_exists($driver, AiProvider::PROVIDERS)) {
-            return NodeResult::fail(__('Unsupported AI provider [:provider].', ['provider' => $driver]), retryable: false);
+            return NodeResult::fail(__('nodes.llm_call.unsupported_ai_provider_provider', ['provider' => $driver]), retryable: false);
         }
 
         $provider = Ai::build(array_filter([
@@ -126,7 +140,7 @@ class LlmCall extends Node
         $fields = $context->input('output') === 'structured' ? $this->schemaFields($context->input('schema', [])) : [];
 
         if ($context->input('output') === 'structured' && $fields === []) {
-            return NodeResult::fail(__('Add at least one structured field.'), retryable: false);
+            return NodeResult::fail(__('nodes.llm_call.add_at_least_one_structured'), retryable: false);
         }
 
         $agent = agent(
@@ -142,7 +156,7 @@ class LlmCall extends Node
                 timeout: max(5, min(600, (int) $context->input('timeout', 120))),
             );
         } catch (Throwable $e) {
-            return NodeResult::fail(__('The AI provider returned an error: :message', ['message' => $e->getMessage()]));
+            return NodeResult::fail(__('nodes.llm_call.ai_provider_returned_an_error', ['message' => $e->getMessage()]));
         }
 
         $usage = [

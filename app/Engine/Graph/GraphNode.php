@@ -8,6 +8,7 @@ final readonly class GraphNode
      * @param  array<string, mixed>  $config
      * @param  array<string, mixed>|null  $retry
      * @param  array{x: float|int, y: float|int}  $position
+     * @param  bool  $errorPath  whether the node shows its "on error" output in the editor
      */
     public function __construct(
         public string $id,
@@ -16,6 +17,7 @@ final readonly class GraphNode
         public array $config = [],
         public ?array $retry = null,
         public array $position = ['x' => 0, 'y' => 0],
+        public bool $errorPath = false,
     ) {}
 
     /**
@@ -33,6 +35,7 @@ final readonly class GraphNode
                 'x' => (float) ($data['position']['x'] ?? 0),
                 'y' => (float) ($data['position']['y'] ?? 0),
             ],
+            errorPath: (bool) ($data['error_path'] ?? false),
         );
     }
 
@@ -48,6 +51,12 @@ final readonly class GraphNode
             'config' => $this->config,
             'retry' => $this->retry,
             'position' => $this->position,
+            'error_path' => $this->errorPath ?: null,
         ], fn ($value) => $value !== null);
+    }
+
+    public function withErrorPath(bool $errorPath): self
+    {
+        return new self($this->id, $this->type, $this->name, $this->config, $this->retry, $this->position, $errorPath);
     }
 }

@@ -16,19 +16,19 @@ class HttpBasic extends CredentialType implements HttpAuthenticator
 
     public function label(): string
     {
-        return __('HTTP Basic');
+        return __('credentials.http_basic.http_basic');
     }
 
     public function description(): string
     {
-        return __('A username and password sent with HTTP Basic authentication.');
+        return __('credentials.http_basic.username_and_password_sent_with');
     }
 
     public function fields(): array
     {
         return [
-            CredentialField::text('username', __('Username')),
-            CredentialField::secret('password', __('Password')),
+            CredentialField::text('username', __('credentials.http_basic.username')),
+            CredentialField::secret('password', __('common.password')),
         ];
     }
 

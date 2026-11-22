@@ -25,12 +25,12 @@ class ScheduleTrigger extends Node
 
     public function label(): string
     {
-        return __('Schedule');
+        return __('nodes.schedule_trigger.schedule');
     }
 
     public function description(): string
     {
-        return __('A configured time or interval is reached.');
+        return __('nodes.schedule_trigger.configured_time_or_interval_is');
     }
 
     public function kind(): NodeKind
@@ -46,16 +46,16 @@ class ScheduleTrigger extends Node
     public function inputs(): array
     {
         return [
-            new Field('mode', __('Run'), Field::SELECT, required: true, default: 'interval', options: ['interval' => __('Every N minutes'), 'cron' => __('On a cron schedule')]),
-            new Field('interval_minutes', __('Every (minutes)'), Field::NUMBER, default: 60),
-            new Field('cron', __('Cron expression'), Field::TEXT, description: __('Such as 0 9 * * 1-5 for 9:00 on weekdays.')),
-            new Field('timezone', __('Time zone'), Field::TEXT, default: 'UTC'),
+            new Field('mode', __('common.run'), Field::SELECT, required: true, default: 'interval', options: ['interval' => __('nodes.schedule_trigger.every_n_minutes'), 'cron' => __('nodes.schedule_trigger.on_a_cron_schedule')]),
+            new Field('interval_minutes', __('nodes.schedule_trigger.every_minutes'), Field::NUMBER, default: 60),
+            new Field('cron', __('nodes.schedule_trigger.cron_expression'), Field::TEXT, description: __('nodes.schedule_trigger.such_as_0_9_1')),
+            new Field('timezone', __('nodes.schedule_trigger.time_zone'), Field::TEXT, default: 'UTC'),
         ];
     }
 
     public function outputs(array $config = []): array
     {
-        return [new Output('scheduled_at', __('Scheduled time'), 'string')];
+        return [new Output('scheduled_at', __('nodes.schedule_trigger.scheduled_time'), 'string')];
     }
 
     public function execute(NodeContext $context): NodeResult

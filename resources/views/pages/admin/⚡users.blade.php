@@ -9,10 +9,9 @@ use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Users')] class extends Component {
+new class extends Component {
     public string $email = '';
 
     public string $installRole = 'member';
@@ -48,7 +47,7 @@ new #[Title('Users')] class extends Component {
 
         $this->inviteLink = route('invitations.show', $token);
         $this->reset('email', 'installRole');
-        Flux::toast(variant: 'success', text: __('Invitation sent.'));
+        Flux::toast(variant: 'success', text: __('admin.users.invitation_sent'));
     }
 
     public function revoke(int $invitationId, Invitations $invitations): void
@@ -56,35 +55,35 @@ new #[Title('Users')] class extends Component {
         $this->authorize('install-admin');
 
         $invitations->revoke(Organization::current()->invitations()->findOrFail($invitationId));
-        Flux::toast(text: __('Invitation revoked.'));
+        Flux::toast(text: __('common.invitation_revoked'));
     }
 
     public function promote(int $userId, UserDirectory $directory): void
     {
         $this->authorize('install-admin');
         $directory->promote($this->findUser($userId));
-        Flux::toast(text: __('User promoted to organization admin.'));
+        Flux::toast(text: __('admin.users.user_promoted_to_organization_admin'));
     }
 
     public function demote(int $userId, UserDirectory $directory): void
     {
         $this->authorize('install-admin');
         $directory->demote($this->findUser($userId));
-        Flux::toast(text: __('User is now an organization member.'));
+        Flux::toast(text: __('admin.users.user_is_now_an_organization'));
     }
 
     public function deactivate(int $userId, UserDirectory $directory): void
     {
         $this->authorize('install-admin');
         $directory->deactivate($this->findUser($userId), Auth::user());
-        Flux::toast(text: __('User deactivated.'));
+        Flux::toast(text: __('admin.users.user_deactivated'));
     }
 
     public function reactivate(int $userId, UserDirectory $directory): void
     {
         $this->authorize('install-admin');
         $directory->reactivate($this->findUser($userId));
-        Flux::toast(text: __('User reactivated.'));
+        Flux::toast(text: __('admin.users.user_reactivated'));
     }
 
     public function generateResetLink(int $userId, UserDirectory $directory): void
@@ -100,45 +99,50 @@ new #[Title('Users')] class extends Component {
     {
         return Organization::current()->users()->findOrFail($id);
     }
+
+    public function render()
+    {
+        return $this->view()->title(__('admin.users.title'));
+    }
 }; ?>
 
 <section class="w-full">
-    <x-page-heading :heading="__('Users')" :subheading="__('Everyone with an account in this organization. Members get their powers from their workspace roles.')" />
+    <x-page-heading :heading="__('common.users')" :subheading="__('admin.users.everyone_with_an_account_in')" />
 
     <flux:error name="user" class="mb-4" />
 
     <form wire:submit="invite" class="mb-6 flex flex-wrap items-end gap-3">
         <div class="min-w-64 flex-1">
-            <flux:input wire:model="email" type="email" :label="__('Invite by email')" placeholder="name@example.com" required />
+            <flux:input wire:model="email" type="email" :label="__('admin.users.invite_by_email')" placeholder="name@example.com" required />
         </div>
-        <flux:select wire:model="installRole" :label="__('Organization role')" class="w-44">
+        <flux:select wire:model="installRole" :label="__('admin.users.organization_role')" class="w-44">
             @foreach (InstallRole::cases() as $option)
                 <flux:select.option :value="$option->value">{{ $option->label() }}</flux:select.option>
             @endforeach
         </flux:select>
-        <flux:button type="submit" variant="primary" icon="envelope">{{ __('Invite') }}</flux:button>
+        <flux:button type="submit" variant="primary" icon="envelope">{{ __('admin.users.invite') }}</flux:button>
     </form>
 
     @if ($inviteLink)
-        <flux:callout icon="envelope" class="mb-6" :heading="__('Invitation sent')">
-            <flux:callout.text>{{ __('We emailed the invitation. You can also share this link; it is shown only once.') }}</flux:callout.text>
+        <flux:callout icon="envelope" class="mb-6" :heading="__('common.invitation_sent')">
+            <flux:callout.text>{{ __('common.we_emailed_the_invitation_you') }}</flux:callout.text>
             <flux:input :value="$inviteLink" readonly copyable class="mt-2" />
         </flux:callout>
     @endif
 
     @if ($resetLink)
-        <flux:callout icon="key" class="mb-6" :heading="__('Password reset link for :email', ['email' => $resetLinkFor])">
-            <flux:callout.text>{{ __('Give this link to the user. It works once and expires in :minutes minutes.', ['minutes' => config('auth.passwords.users.expire')]) }}</flux:callout.text>
+        <flux:callout icon="key" class="mb-6" :heading="__('admin.users.password_reset_link_for_email', ['email' => $resetLinkFor])">
+            <flux:callout.text>{{ __('admin.users.give_this_link_to_the', ['minutes' => config('auth.passwords.users.expire')]) }}</flux:callout.text>
             <flux:input :value="$resetLink" readonly copyable class="mt-2" data-test="reset-link" />
         </flux:callout>
     @endif
 
     <flux:table>
         <flux:table.columns>
-            <flux:table.column>{{ __('Name') }}</flux:table.column>
-            <flux:table.column>{{ __('Email') }}</flux:table.column>
-            <flux:table.column>{{ __('Organization role') }}</flux:table.column>
-            <flux:table.column>{{ __('Status') }}</flux:table.column>
+            <flux:table.column>{{ __('common.name') }}</flux:table.column>
+            <flux:table.column>{{ __('common.email') }}</flux:table.column>
+            <flux:table.column>{{ __('admin.users.organization_role') }}</flux:table.column>
+            <flux:table.column>{{ __('common.status') }}</flux:table.column>
             <flux:table.column></flux:table.column>
         </flux:table.columns>
         <flux:table.rows>
@@ -152,28 +156,28 @@ new #[Title('Users')] class extends Component {
                     </flux:table.cell>
                     <flux:table.cell>
                         @if ($membership->deactivated_at)
-                            <flux:badge size="sm" color="red">{{ __('Deactivated') }}</flux:badge>
+                            <flux:badge size="sm" color="red">{{ __('admin.users.deactivated') }}</flux:badge>
                         @else
-                            <flux:badge size="sm" color="green">{{ __('Active') }}</flux:badge>
+                            <flux:badge size="sm" color="green">{{ __('admin.users.active') }}</flux:badge>
                         @endif
                     </flux:table.cell>
                     <flux:table.cell align="end">
                         <flux:dropdown align="end">
-                            <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" :aria-label="__('Actions')" />
+                            <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" :aria-label="__('common.actions')" />
                             <flux:menu>
                                 @if ($membership->role === InstallRole::Admin)
-                                    <flux:menu.item wire:click="demote({{ $listedUser->id }})">{{ __('Demote to member') }}</flux:menu.item>
+                                    <flux:menu.item wire:click="demote({{ $listedUser->id }})">{{ __('admin.users.demote_to_member') }}</flux:menu.item>
                                 @else
-                                    <flux:menu.item wire:click="promote({{ $listedUser->id }})">{{ __('Promote to organization admin') }}</flux:menu.item>
+                                    <flux:menu.item wire:click="promote({{ $listedUser->id }})">{{ __('admin.users.promote_to_organization_admin') }}</flux:menu.item>
                                 @endif
-                                <flux:menu.item icon="key" wire:click="generateResetLink({{ $listedUser->id }})">{{ __('Generate password-reset link') }}</flux:menu.item>
+                                <flux:menu.item icon="key" wire:click="generateResetLink({{ $listedUser->id }})">{{ __('admin.users.generate_password_reset_link') }}</flux:menu.item>
                                 <flux:menu.separator />
                                 @if ($membership->deactivated_at)
-                                    <flux:menu.item wire:click="reactivate({{ $listedUser->id }})">{{ __('Reactivate') }}</flux:menu.item>
+                                    <flux:menu.item wire:click="reactivate({{ $listedUser->id }})">{{ __('admin.users.reactivate') }}</flux:menu.item>
                                 @else
                                     <flux:menu.item variant="danger" wire:click="deactivate({{ $listedUser->id }})"
-                                        wire:confirm="{{ __('Deactivate :name? They are signed out and cannot sign in until reactivated.', ['name' => $listedUser->name]) }}">
-                                        {{ __('Deactivate') }}
+                                        wire:confirm="{{ __('admin.users.deactivate_name_they_are_signed', ['name' => $listedUser->name]) }}">
+                                        {{ __('admin.users.deactivate') }}
                                     </flux:menu.item>
                                 @endif
                             </flux:menu>
@@ -185,12 +189,12 @@ new #[Title('Users')] class extends Component {
     </flux:table>
 
     @if ($this->invitations->isNotEmpty())
-        <flux:heading class="mt-10 mb-2">{{ __('Pending invitations') }}</flux:heading>
+        <flux:heading class="mt-10 mb-2">{{ __('common.pending_invitations') }}</flux:heading>
         <flux:table>
             <flux:table.columns>
-                <flux:table.column>{{ __('Email') }}</flux:table.column>
-                <flux:table.column>{{ __('Organization role') }}</flux:table.column>
-                <flux:table.column>{{ __('Expires') }}</flux:table.column>
+                <flux:table.column>{{ __('common.email') }}</flux:table.column>
+                <flux:table.column>{{ __('admin.users.organization_role') }}</flux:table.column>
+                <flux:table.column>{{ __('common.expires') }}</flux:table.column>
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
             <flux:table.rows>
@@ -200,7 +204,7 @@ new #[Title('Users')] class extends Component {
                         <flux:table.cell>{{ $invitation->install_role->label() }}</flux:table.cell>
                         <flux:table.cell>{{ $invitation->expires_at->diffForHumans() }}</flux:table.cell>
                         <flux:table.cell align="end">
-                            <flux:button size="sm" variant="ghost" wire:click="revoke({{ $invitation->id }})">{{ __('Revoke') }}</flux:button>
+                            <flux:button size="sm" variant="ghost" wire:click="revoke({{ $invitation->id }})">{{ __('common.revoke') }}</flux:button>
                         </flux:table.cell>
                     </flux:table.row>
                 @endforeach

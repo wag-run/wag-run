@@ -34,20 +34,20 @@ class AiProvider extends CredentialType
 
     public function label(): string
     {
-        return __('AI provider key');
+        return __('common.ai_provider_key');
     }
 
     public function description(): string
     {
-        return __('An API key for an LLM provider, used by the LLM call node.');
+        return __('credentials.ai_provider.api_key_for_an_llm');
     }
 
     public function fields(): array
     {
         return [
-            CredentialField::select('provider', __('Provider'), self::PROVIDERS, default: 'anthropic'),
-            CredentialField::secret('api_key', __('API key'), required: false, help: __('Not needed for a local Ollama server.')),
-            CredentialField::url('base_url', __('Base URL'), help: __('Optional, and required for an OpenAI-compatible endpoint. Overrides the provider endpoint, for example a self-hosted Ollama server.')),
+            CredentialField::select('provider', __('common.provider'), self::PROVIDERS, default: 'anthropic'),
+            CredentialField::secret('api_key', __('credentials.ai_provider.api_key'), required: false, help: __('credentials.ai_provider.not_needed_for_a_local')),
+            CredentialField::url('base_url', __('credentials.ai_provider.base_url'), help: __('credentials.ai_provider.optional_and_required_for_an')),
         ];
     }
 }

@@ -7,10 +7,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Inbox')] class extends Component {
+new class extends Component {
     public Workspace $workspace;
 
     /**
@@ -41,22 +40,27 @@ new #[Title('Inbox')] class extends Component {
             ->where('workspace_id', $this->workspace->id)
             ->where('assignee_id', Auth::id());
     }
+
+    public function render()
+    {
+        return $this->view()->title(__('inbox.index.title'));
+    }
 }; ?>
 
 <section class="w-full">
-    <x-page-heading :heading="__('Inbox')" :subheading="__('Approvals and tasks assigned to you in :workspace.', ['workspace' => $workspace->name])" />
+    <x-page-heading :heading="__('common.inbox')" :subheading="__('inbox.index.approvals_and_tasks_assigned_to', ['workspace' => $workspace->name])" />
 
-    <flux:heading class="mb-2">{{ __('Waiting on you') }}</flux:heading>
+    <flux:heading class="mb-2">{{ __('common.waiting_on_you') }}</flux:heading>
     <div class="mb-10 divide-y divide-zinc-200 rounded-xl border border-zinc-200 dark:divide-zinc-700 dark:border-zinc-700">
         @forelse ($this->pending as $assignment)
             @include('partials.assignment-row', ['assignment' => $assignment])
         @empty
-            <div class="p-8 text-center text-sm text-zinc-500" data-test="inbox-empty">{{ __('Nothing is waiting on you.') }}</div>
+            <div class="p-8 text-center text-sm text-zinc-500" data-test="inbox-empty">{{ __('inbox.index.nothing_is_waiting_on_you') }}</div>
         @endforelse
     </div>
 
     @if ($this->answered->isNotEmpty())
-        <flux:heading class="mb-2">{{ __('Recently closed') }}</flux:heading>
+        <flux:heading class="mb-2">{{ __('inbox.index.recently_closed') }}</flux:heading>
         <div class="divide-y divide-zinc-200 rounded-xl border border-zinc-200 dark:divide-zinc-700 dark:border-zinc-700">
             @foreach ($this->answered as $assignment)
                 @include('partials.assignment-row', ['assignment' => $assignment])

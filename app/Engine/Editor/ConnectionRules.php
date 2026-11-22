@@ -18,36 +18,40 @@ class ConnectionRules
     public function check(WorkflowGraph $graph, string $source, string $port, string $target): ?string
     {
         if (! $graph->has($source) || ! $graph->has($target)) {
-            return __('That node no longer exists. Reload the editor.');
+            return __('workflows.editor.that_node_no_longer_exists');
         }
 
         if ($source === $target) {
-            return __('A node cannot connect to itself.');
+            return __('workflows.editor.node_cannot_connect_to_itself');
         }
 
         $from = $graph->node($source);
         $to = $graph->node($target);
 
         if (! $this->registry->has($from->type) || ! $this->registry->has($to->type)) {
-            return __('One of these nodes has an unknown type.');
+            return __('workflows.editor.one_of_these_nodes_has');
         }
 
         $definition = $this->registry->make($from->type);
 
         if ($port === 'error' ? ! $definition->hasErrorPort() : ! in_array($port, $definition->ports($from->config), true)) {
-            return __(':name has no output named ":port".', ['name' => $from->name, 'port' => $port]);
+            return __('workflows.editor.name_has_no_output_named', ['name' => $from->name, 'port' => $port]);
+        }
+
+        if ($port === 'error' && ! $from->errorPath) {
+            return __('workflows.editor.turn_on_show_on_error_path', ['name' => $from->name]);
         }
 
         if ($this->registry->make($to->type)->kind() === NodeKind::Trigger) {
-            return __('Triggers start a workflow, so nothing can connect into them.');
+            return __('workflows.editor.triggers_start_a_workflow_so');
         }
 
         if ($graph->hasEdge($source, $port, $target)) {
-            return __('These nodes are already connected.');
+            return __('workflows.editor.these_nodes_are_already_connected');
         }
 
         if ($graph->canReach($target, $source)) {
-            return __('That would create a cycle. Use a For loop node to repeat steps.');
+            return __('workflows.editor.that_would_create_a_cycle');
         }
 
         return null;

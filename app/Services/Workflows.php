@@ -75,11 +75,11 @@ class Workflows
     public function rollback(Workflow $workflow, WorkflowVersion $target, ?User $publisher = null): WorkflowVersion
     {
         if ($target->workflow_id !== $workflow->id) {
-            throw ValidationException::withMessages(['version' => __('That version belongs to another workflow.')]);
+            throw ValidationException::withMessages(['version' => __('workflows.that_version_belongs_to_another')]);
         }
 
         return DB::transaction(function () use ($workflow, $target, $publisher) {
-            $version = $this->newVersion($workflow, $target->toGraph(), $publisher, __('Rollback to version :number', ['number' => $target->number]));
+            $version = $this->newVersion($workflow, $target->toGraph(), $publisher, __('workflows.rollback_to_version_number', ['number' => $target->number]));
 
             $workflow->forceFill(['draft_graph' => $target->graph, 'draft_updated_at' => now()])->save();
 

@@ -39,7 +39,7 @@ class Invitations
         $email = Str::lower(trim($email));
 
         if (User::query()->where('email', $email)->exists()) {
-            throw ValidationException::withMessages(['email' => __('That person already has an account in this organization.')]);
+            throw ValidationException::withMessages(['email' => __('invitations.that_person_already_has_an')]);
         }
 
         return DB::transaction(function () use ($organization, $email, $inviter, $installRole, $workspace, $workspaceRole) {
@@ -82,11 +82,11 @@ class Invitations
     public function accept(Invitation $invitation, User $user): void
     {
         if (! $invitation->isPending()) {
-            throw ValidationException::withMessages(['invitation' => __('This invitation has expired or was already used.')]);
+            throw ValidationException::withMessages(['invitation' => __('invitations.this_invitation_has_expired_or')]);
         }
 
         if (Str::lower($user->email) !== $invitation->email) {
-            throw ValidationException::withMessages(['invitation' => __('This invitation was sent to a different email address.')]);
+            throw ValidationException::withMessages(['invitation' => __('invitations.this_invitation_was_sent_to')]);
         }
 
         DB::transaction(function () use ($invitation, $user) {

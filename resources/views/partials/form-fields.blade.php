@@ -14,7 +14,7 @@
                 @break
             @case('select')
                 <flux:select wire:model="{{ $binding }}" :label="$field['label'] ?? $field['name']" :required="$field['required'] ?? false">
-                    <flux:select.option value="">{{ __('Choose…') }}</flux:select.option>
+                    <flux:select.option value="">{{ __('common.choose') }}</flux:select.option>
                     @foreach ((array) ($field['options'] ?? []) as $optionValue => $optionLabel)
                         <flux:select.option :value="$optionValue">{{ $optionLabel }}</flux:select.option>
                     @endforeach

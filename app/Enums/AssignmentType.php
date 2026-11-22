@@ -10,8 +10,8 @@ enum AssignmentType: string
     public function label(): string
     {
         return match ($this) {
-            self::Approval => __('Approval'),
-            self::Task => __('Task'),
+            self::Approval => __('common.approval'),
+            self::Task => __('common.task'),
         };
     }
 }

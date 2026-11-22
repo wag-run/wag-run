@@ -24,7 +24,7 @@ class UserDirectory
 
     public function demote(User $user): void
     {
-        $this->ensureNotLastAdmin($user, __('The last organization admin cannot be demoted.'));
+        $this->ensureNotLastAdmin($user, __('members.last_organization_admin_cannot_be_2'));
         $this->setRole($user, InstallRole::Member);
         Audit::record('user.demoted', $user);
     }
@@ -32,10 +32,10 @@ class UserDirectory
     public function deactivate(User $user, User $actor): void
     {
         if ($user->is($actor)) {
-            throw ValidationException::withMessages(['user' => __('You cannot deactivate your own account.')]);
+            throw ValidationException::withMessages(['user' => __('members.you_cannot_deactivate_your_own')]);
         }
 
-        $this->ensureNotLastAdmin($user, __('The last organization admin cannot be deactivated.'));
+        $this->ensureNotLastAdmin($user, __('members.last_organization_admin_cannot_be'));
 
         $this->organization()->users()->updateExistingPivot($user->id, ['deactivated_at' => now()]);
         DB::table('sessions')->where('user_id', $user->id)->delete();

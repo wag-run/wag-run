@@ -26,7 +26,7 @@
         </template>
         <template x-if="node.data.hasErrorPort">
             <div class="wag-port wag-port-error">
-                <span>{{ __('on error') }}</span>
+                <span>{{ __('workflows.editor.on_error') }}</span>
                 <div x-flow-handle:source.right="'error'" class="wag-handle-error"></div>
             </div>
         </template>

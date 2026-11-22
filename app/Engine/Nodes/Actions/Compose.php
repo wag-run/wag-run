@@ -22,12 +22,12 @@ class Compose extends Node
 
     public function label(): string
     {
-        return __('Compose');
+        return __('nodes.compose.compose');
     }
 
     public function description(): string
     {
-        return __('Builds a value with a template or expression and returns it as the output.');
+        return __('nodes.compose.builds_a_value_with_a');
     }
 
     public function kind(): NodeKind
@@ -37,7 +37,7 @@ class Compose extends Node
 
     public function category(): string
     {
-        return __('Data');
+        return __('nodes.compose.data');
     }
 
     public function icon(): string
@@ -48,16 +48,16 @@ class Compose extends Node
     public function inputs(): array
     {
         return [
-            new Field('mode', __('Build with'), Field::SELECT, required: true, default: 'template', options: ['template' => __('Template (Twig)'), 'expression' => __('Expression')]),
-            new Field('template', __('Template'), Field::TEXTAREA, description: __('Twig, such as Order {{ trigger.id }} for {{ trigger.customer.name|title }}')),
-            new Field('expression', __('Expression'), Field::TEXT, description: __('Such as item.price * item.quantity')),
-            new Field('parse_json', __('Parse the result as JSON'), Field::BOOLEAN, default: false),
+            new Field('mode', __('nodes.compose.build_with'), Field::SELECT, required: true, default: 'template', options: ['template' => __('nodes.compose.template_twig'), 'expression' => __('nodes.compose.expression')]),
+            new Field('template', __('nodes.compose.template'), Field::TEXTAREA, description: __('nodes.compose.twig_such_as_order_trigger')),
+            new Field('expression', __('nodes.compose.expression'), Field::TEXT, description: __('nodes.compose.such_as_item_price_item')),
+            new Field('parse_json', __('nodes.compose.parse_the_result_as_json'), Field::BOOLEAN, default: false),
         ];
     }
 
     public function outputs(array $config = []): array
     {
-        return [new Output('value', __('Value'))];
+        return [new Output('value', __('common.value'))];
     }
 
     public function execute(NodeContext $context): NodeResult
@@ -70,7 +70,7 @@ class Compose extends Node
             $decoded = json_decode($value, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                return NodeResult::fail(__('The result is not valid JSON: :error', ['error' => json_last_error_msg()]), retryable: false);
+                return NodeResult::fail(__('nodes.compose.result_is_not_valid_json', ['error' => json_last_error_msg()]), retryable: false);
             }
 
             $value = $decoded;

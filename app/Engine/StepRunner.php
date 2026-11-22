@@ -90,7 +90,7 @@ class StepRunner
         $execution = $step->execution;
 
         if (! $this->registry->has($step->node_type)) {
-            $this->coordinator->apply($step, $token, NodeResult::fail(__('Node type [:type] is not installed.', ['type' => $step->node_type]), retryable: false));
+            $this->coordinator->apply($step, $token, NodeResult::fail(__('engine.node_type_type_is_not', ['type' => $step->node_type]), retryable: false));
 
             return;
         }
@@ -102,7 +102,7 @@ class StepRunner
         try {
             $inputs = $context->inputs();
         } catch (Throwable $e) {
-            $this->coordinator->apply($step, $token, NodeResult::fail(__('Could not resolve inputs: :message', ['message' => $e->getMessage()]), retryable: false));
+            $this->coordinator->apply($step, $token, NodeResult::fail(__('engine.could_not_resolve_inputs_message', ['message' => $e->getMessage()]), retryable: false));
 
             return;
         }

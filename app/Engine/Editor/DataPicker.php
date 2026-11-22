@@ -54,7 +54,7 @@ class DataPicker
                 $items = $this->flatten($definition->outputs($node->config), 'trigger');
 
                 if ($items !== []) {
-                    $groups[] = ['label' => __('Trigger: :name', ['name' => $node->name]), 'items' => $items];
+                    $groups[] = ['label' => __('workflows.editor.trigger_name', ['name' => $node->name]), 'items' => $items];
                 }
 
                 continue;
@@ -73,19 +73,19 @@ class DataPicker
 
         foreach ($loopBodies as $loopId => $body) {
             if (isset($body[$nodeId])) {
-                $groups[] = ['label' => __('Loop: :name', ['name' => $graph->node($loopId)->name]), 'items' => [
-                    ['label' => __('Current item'), 'path' => 'item', 'type' => 'any'],
-                    ['label' => __('Item index'), 'path' => 'loop.index', 'type' => 'number'],
-                    ['label' => __('Item count'), 'path' => 'loop.count', 'type' => 'number'],
+                $groups[] = ['label' => __('workflows.editor.loop_name', ['name' => $graph->node($loopId)->name]), 'items' => [
+                    ['label' => __('workflows.editor.current_item'), 'path' => 'item', 'type' => 'any'],
+                    ['label' => __('workflows.editor.item_index'), 'path' => 'loop.index', 'type' => 'number'],
+                    ['label' => __('workflows.editor.item_count'), 'path' => 'loop.count', 'type' => 'number'],
                 ]];
             }
         }
 
         foreach ($graph->incoming($nodeId) as $edge) {
             if ($edge->sourcePort === 'error') {
-                $groups[] = ['label' => __('Error'), 'items' => [
-                    ['label' => __('Error message'), 'path' => 'error.message', 'type' => 'string'],
-                    ['label' => __('Attempt'), 'path' => 'error.attempt', 'type' => 'number'],
+                $groups[] = ['label' => __('common.error'), 'items' => [
+                    ['label' => __('workflows.editor.error_message'), 'path' => 'error.message', 'type' => 'string'],
+                    ['label' => __('workflows.editor.attempt'), 'path' => 'error.attempt', 'type' => 'number'],
                 ]];
 
                 break;
@@ -96,17 +96,17 @@ class DataPicker
         $secrets = $workspace->secrets()->orderBy('key')->pluck('key')->map(fn (string $key) => ['label' => $key, 'path' => "secrets.{$key}", 'type' => 'string'])->values()->all();
 
         if ($variables !== []) {
-            $groups[] = ['label' => __('Variables'), 'items' => $variables];
+            $groups[] = ['label' => __('common.variables'), 'items' => $variables];
         }
 
         if ($secrets !== []) {
-            $groups[] = ['label' => __('Secrets'), 'items' => $secrets];
+            $groups[] = ['label' => __('common.secrets'), 'items' => $secrets];
         }
 
-        $groups[] = ['label' => __('Execution'), 'items' => [
-            ['label' => __('Execution id'), 'path' => 'execution.id', 'type' => 'number'],
-            ['label' => __('Workflow name'), 'path' => 'execution.workflow', 'type' => 'string'],
-            ['label' => __('Started at'), 'path' => 'execution.started_at', 'type' => 'string'],
+        $groups[] = ['label' => __('workflows.editor.execution'), 'items' => [
+            ['label' => __('common.execution_id'), 'path' => 'execution.id', 'type' => 'number'],
+            ['label' => __('workflows.editor.workflow_name'), 'path' => 'execution.workflow', 'type' => 'string'],
+            ['label' => __('workflows.editor.started_at'), 'path' => 'execution.started_at', 'type' => 'string'],
         ]];
 
         return $groups;

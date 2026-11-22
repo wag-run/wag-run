@@ -1,0 +1,63 @@
+<?php
+
+return [
+    'audit' => [
+        'changes_to_this_workspace_s' => 'Changes to this workspace\'s workflows, secrets, authentication and membership, and every secret reveal.',
+    ],
+    'credentials' => [
+        'add_authentication' => 'Add authentication',
+        'authentication_setting_deleted' => 'Authentication setting deleted.',
+        'authentication_setting_saved' => 'Authentication setting saved.',
+        'delete_this_authentication_setting_workflows' => 'Delete this authentication setting? Workflows that use it will fail until it is replaced.',
+        'edit_authentication' => 'Edit authentication',
+        'no_authentication_settings_yet' => 'No authentication settings yet.',
+        'reusable_credentials_this_workspace_s' => 'Reusable credentials this workspace\'s workflows use to call other systems.',
+    ],
+    'members' => [
+        'add_or_invite_by_email' => 'Add or invite by email',
+        'invitation_sent_to_email' => 'Invitation sent to :email.',
+        'member_removed' => 'Member removed.',
+        'name_now_has_access_as' => ':name now has access as :role.',
+        'no_members_yet' => 'No members yet.',
+        'remove_name_from_this_workspace' => 'Remove :name from this workspace?',
+        'role' => 'Role',
+        'role_updated' => 'Role updated.',
+        'who_can_use_this_workspace' => 'Who can use this workspace. Organization admins act as Admin in every workspace without being listed here.',
+    ],
+    'overview' => [
+        'approvals_and_tasks_assigned_to' => 'Approvals and tasks assigned to you in this workspace appear here. Nothing is waiting on you.',
+        'this_workspace_has_no_workflows' => 'This workspace has no workflows yet.',
+        'your_approvals_and_tasks' => 'Your approvals and tasks',
+    ],
+    'secrets' => [
+        'add_secret' => 'Add secret',
+        'delete_this_secret_workflows_that' => 'Delete this secret? Workflows that reference it will fail until it is replaced.',
+        'edit_secret' => 'Edit secret',
+        'no_secrets_yet' => 'No secrets yet.',
+        'secret_deleted' => 'Secret deleted.',
+        'secret_saved' => 'Secret saved.',
+        'sensitive_values_for_this_workspace' => 'Sensitive values for this workspace\'s workflows. Encrypted at rest and masked in execution logs.',
+        'updated' => 'Updated',
+    ],
+    'settings' => [
+        'execution_log_retention' => 'Execution log retention',
+        'how_long_execution_logs_are' => 'How long execution logs are kept, failed runs included. A workflow can override this.',
+        'http_call_nodes_cannot_reach' => 'HTTP call nodes cannot reach private, loopback or link-local addresses unless they are listed here. One entry per line: a hostname, a wildcard like *.corp.internal, an IP address, or a CIDR range like 10.0.0.0/8.',
+        'internal_address_allowlist' => 'Internal-address allowlist',
+        'not_a_valid_host_ip' => 'Not a valid host, IP address or CIDR range: :entries',
+        'use_a_workspace_specific_retention' => 'Use a workspace-specific retention period',
+        'using_the_organization_default_days' => 'Using the organization default: :days days.',
+        'using_the_organization_default_keep' => 'Using the organization default: keep forever.',
+        'workspace_settings' => 'Workspace settings',
+        'workspace_settings_saved' => 'Workspace settings saved.',
+    ],
+    'variables' => [
+        'add_variable' => 'Add variable',
+        'delete_this_variable_workflows_that' => 'Delete this variable? Workflows that reference it will get an empty value.',
+        'edit_variable' => 'Edit variable',
+        'named_values_every_workflow_in' => 'Named values every workflow in this workspace can reference.',
+        'no_variables_yet' => 'No variables yet.',
+        'variable_deleted' => 'Variable deleted.',
+        'variable_saved' => 'Variable saved.',
+    ],
+];

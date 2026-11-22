@@ -23,11 +23,11 @@
             @if ($switchableWorkspaces->isNotEmpty())
                 <flux:dropdown position="bottom" align="start" class="w-full">
                     <flux:button variant="subtle" icon:trailing="chevrons-up-down" class="w-full justify-between! truncate" data-test="workspace-switcher">
-                        {{ $activeWorkspace?->name ?? __('Choose a workspace') }}
+                        {{ $activeWorkspace?->name ?? __('navigation.choose_a_workspace') }}
                     </flux:button>
 
                     <flux:menu>
-                        <flux:menu.heading>{{ __('Workspaces') }}</flux:menu.heading>
+                        <flux:menu.heading>{{ __('common.workspaces') }}</flux:menu.heading>
                         @foreach ($switchableWorkspaces as $switchable)
                             <flux:menu.item
                                 wire:key="switch-{{ $switchable->id }}"
@@ -41,7 +41,7 @@
                         @if ($isInstallAdmin)
                             <flux:menu.separator />
                             <flux:menu.item :href="route('admin.workspaces')" icon="squares-plus" wire:navigate>
-                                {{ __('Manage workspaces') }}
+                                {{ __('navigation.manage_workspaces') }}
                             </flux:menu.item>
                         @endif
                     </flux:menu>
@@ -51,77 +51,77 @@
             <flux:sidebar.nav>
                 @php($unreadNotifications = $sidebarUser->unreadNotifications()->count())
                 <flux:sidebar.item icon="bell" :href="route('notifications')" :current="request()->routeIs('notifications')" :badge="$unreadNotifications ?: null" wire:navigate data-test="notifications-link">
-                    {{ __('Notifications') }}
+                    {{ __('common.notifications') }}
                 </flux:sidebar.item>
 
                 @if ($activeWorkspace)
-                    <flux:sidebar.group :heading="__('Workspace')" class="grid">
+                    <flux:sidebar.group :heading="__('common.workspace')" class="grid">
                         <flux:sidebar.item icon="home" :href="route('workspaces.show', $activeWorkspace)" :current="request()->routeIs('workspaces.show')" wire:navigate>
-                            {{ __('Overview') }}
+                            {{ __('navigation.overview') }}
                         </flux:sidebar.item>
                         @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewWorkflows))
                             <flux:sidebar.item icon="share" :href="route('workspaces.workflows', $activeWorkspace)" :current="request()->routeIs('workspaces.workflows*')" wire:navigate>
-                                {{ __('Workflows') }}
+                                {{ __('common.workflows') }}
                             </flux:sidebar.item>
                         @endif
                         @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewExecutions))
                             <flux:sidebar.item icon="play-circle" :href="route('workspaces.executions', $activeWorkspace)" :current="request()->routeIs('workspaces.executions*')" wire:navigate>
-                                {{ __('Runs') }}
+                                {{ __('common.runs') }}
                             </flux:sidebar.item>
                         @endif
                         @php($pendingAssignments = $activeWorkspace->assignments()->where('assignee_id', $sidebarUser->id)->where('status', \App\Enums\AssignmentStatus::Pending)->count())
                         <flux:sidebar.item icon="inbox" :href="route('workspaces.inbox', $activeWorkspace)" :current="request()->routeIs('workspaces.inbox*')" :badge="$pendingAssignments ?: null" wire:navigate>
-                            {{ __('Inbox') }}
+                            {{ __('common.inbox') }}
                         </flux:sidebar.item>
                         @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewVariables))
                             <flux:sidebar.item icon="variable" :href="route('workspaces.variables', $activeWorkspace)" :current="request()->routeIs('workspaces.variables')" wire:navigate>
-                                {{ __('Variables') }}
+                                {{ __('common.variables') }}
                             </flux:sidebar.item>
                         @endif
                         @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewSecrets))
                             <flux:sidebar.item icon="lock-closed" :href="route('workspaces.secrets', $activeWorkspace)" :current="request()->routeIs('workspaces.secrets')" wire:navigate>
-                                {{ __('Secrets') }}
+                                {{ __('common.secrets') }}
                             </flux:sidebar.item>
                         @endif
                         @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewCredentials))
                             <flux:sidebar.item icon="key" :href="route('workspaces.credentials', $activeWorkspace)" :current="request()->routeIs('workspaces.credentials')" wire:navigate>
-                                {{ __('Authentication') }}
+                                {{ __('common.authentication') }}
                             </flux:sidebar.item>
                         @endif
                         @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewMembers))
                             <flux:sidebar.item icon="users" :href="route('workspaces.members', $activeWorkspace)" :current="request()->routeIs('workspaces.members')" wire:navigate>
-                                {{ __('Members') }}
+                                {{ __('common.members') }}
                             </flux:sidebar.item>
                         @endif
                         @if ($activeRole->can(\App\Enums\WorkspacePermission::ManageSettings))
                             <flux:sidebar.item icon="cog-6-tooth" :href="route('workspaces.settings', $activeWorkspace)" :current="request()->routeIs('workspaces.settings')" wire:navigate>
-                                {{ __('Settings') }}
+                                {{ __('common.settings') }}
                             </flux:sidebar.item>
                         @endif
                         @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewAuditLog))
                             <flux:sidebar.item icon="clipboard-document-list" :href="route('workspaces.audit', $activeWorkspace)" :current="request()->routeIs('workspaces.audit')" wire:navigate>
-                                {{ __('Audit log') }}
+                                {{ __('common.audit_log') }}
                             </flux:sidebar.item>
                         @endif
                     </flux:sidebar.group>
                 @endif
 
                 @if ($isInstallAdmin)
-                    <flux:sidebar.group :heading="__('Organization')" class="grid">
+                    <flux:sidebar.group :heading="__('navigation.organization')" class="grid">
                         <flux:sidebar.item icon="squares-2x2" :href="route('admin.workspaces')" :current="request()->routeIs('admin.workspaces')" wire:navigate>
-                            {{ __('Workspaces') }}
+                            {{ __('common.workspaces') }}
                         </flux:sidebar.item>
                         <flux:sidebar.item icon="users" :href="route('admin.users')" :current="request()->routeIs('admin.users')" wire:navigate>
-                            {{ __('Users') }}
+                            {{ __('common.users') }}
                         </flux:sidebar.item>
                         <flux:sidebar.item icon="adjustments-horizontal" :href="route('admin.settings')" :current="request()->routeIs('admin.settings')" wire:navigate>
-                            {{ __('Sign-in & defaults') }}
+                            {{ __('common.sign_in_and_defaults') }}
                         </flux:sidebar.item>
                         <flux:sidebar.item icon="finger-print" :href="route('admin.sign-in-providers')" :current="request()->routeIs('admin.sign-in-providers')" wire:navigate>
-                            {{ __('Sign-in providers') }}
+                            {{ __('common.sign_in_providers') }}
                         </flux:sidebar.item>
                         <flux:sidebar.item icon="clipboard-document-list" :href="route('admin.audit')" :current="request()->routeIs('admin.audit')" wire:navigate>
-                            {{ __('Audit log') }}
+                            {{ __('common.audit_log') }}
                         </flux:sidebar.item>
                     </flux:sidebar.group>
                 @endif
@@ -165,7 +165,7 @@
 
                     <flux:menu.radio.group>
                         <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
-                            {{ __('Settings') }}
+                            {{ __('common.settings') }}
                         </flux:menu.item>
                     </flux:menu.radio.group>
 
@@ -180,7 +180,7 @@
                             class="w-full cursor-pointer"
                             data-test="logout-button"
                         >
-                            {{ __('Log out') }}
+                            {{ __('common.log_out') }}
                         </flux:menu.item>
                     </form>
                 </flux:menu>

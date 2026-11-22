@@ -118,7 +118,7 @@ new class extends Component {
 
         if ($this->execution->refresh()->isInProgress()) {
             $engine->cancel($this->execution, Auth::user());
-            Flux::toast(text: __('Run cancelled.'));
+            Flux::toast(text: __('runs.show.run_cancelled'));
         }
 
         $this->refreshRun();
@@ -156,20 +156,20 @@ new class extends Component {
 
     public function render()
     {
-        return $this->view()->title(__('Run #:id', ['id' => $this->execution->id]).' · '.$this->execution->workflow->name);
+        return $this->view()->title(__('common.run_id', ['id' => $this->execution->id]).' · '.$this->execution->workflow->name);
     }
 }; ?>
 
 <div class="-m-6 flex h-screen flex-col lg:-m-8" @if ($execution->isInProgress()) wire:poll.2s="refreshRun" @endif>
     {{-- Top bar --}}
     <div class="flex flex-wrap items-center gap-3 border-b border-zinc-200 bg-white px-4 py-2 dark:border-zinc-700 dark:bg-zinc-900">
-        <flux:button size="sm" variant="ghost" icon="arrow-left" :href="route('workspaces.executions', [$workspace, 'workflow' => $execution->workflow_id])" wire:navigate :aria-label="__('Back to runs')" />
+        <flux:button size="sm" variant="ghost" icon="arrow-left" :href="route('workspaces.executions', [$workspace, 'workflow' => $execution->workflow_id])" wire:navigate :aria-label="__('runs.show.back_to_runs')" />
         <div class="min-w-0">
-            <flux:heading class="truncate">{{ __('Run #:id', ['id' => $execution->id]) }} · {{ $execution->workflow->name }}</flux:heading>
+            <flux:heading class="truncate">{{ __('common.run_id', ['id' => $execution->id]) }} · {{ $execution->workflow->name }}</flux:heading>
             <flux:text class="text-xs">
-                {{ __('Version :n', ['n' => $execution->version->number]) }}
-                · {{ ucfirst($execution->trigger_type) }}
-                @if ($execution->triggeredBy) · {{ __('by :name', ['name' => $execution->triggeredBy->name]) }} @endif
+                {{ __('common.version_n', ['n' => $execution->version->number]) }}
+                · {{ __('runs.trigger_types.'.$execution->trigger_type) }}
+                @if ($execution->triggeredBy) · {{ __('runs.show.by_name', ['name' => $execution->triggeredBy->name]) }} @endif
                 · {{ $execution->started_at?->toDayDateTimeString() }}
                 @if ($execution->durationForHumans()) · {{ $execution->durationForHumans() }} @endif
             </flux:text>
@@ -177,26 +177,26 @@ new class extends Component {
         <flux:badge size="sm" :color="$execution->status->color()" data-test="run-status">{{ $execution->status->label() }}</flux:badge>
         @if ($execution->parentStep)
             <flux:link class="text-sm" :href="route('workspaces.executions.show', [$workspace, $execution->parentStep->execution_id])" wire:navigate>
-                {{ __('Started by run #:id', ['id' => $execution->parentStep->execution_id]) }}
+                {{ __('runs.show.started_by_run_id', ['id' => $execution->parentStep->execution_id]) }}
             </flux:link>
         @endif
 
         <flux:spacer />
 
-        <flux:button size="sm" icon="pencil-square" :href="route('workspaces.workflows.edit', [$workspace, $execution->workflow])" wire:navigate>{{ __('Open workflow') }}</flux:button>
+        <flux:button size="sm" icon="pencil-square" :href="route('workspaces.workflows.edit', [$workspace, $execution->workflow])" wire:navigate>{{ __('runs.show.open_workflow') }}</flux:button>
         @if ($this->canCancel)
-            <flux:button size="sm" variant="danger" icon="stop" wire:click="cancel" data-test="cancel-run-button">{{ __('Cancel run') }}</flux:button>
+            <flux:button size="sm" variant="danger" icon="stop" wire:click="cancel" data-test="cancel-run-button">{{ __('runs.show.cancel_run') }}</flux:button>
         @endif
     </div>
 
     @if ($execution->error)
-        <flux:callout variant="danger" icon="exclamation-triangle" class="m-3" :heading="$execution->error['message'] ?? __('The run failed.')">
+        <flux:callout variant="danger" icon="exclamation-triangle" class="m-3" :heading="$execution->error['message'] ?? __('common.run_failed')">
             @if (isset($execution->error['node_id']))
-                <flux:callout.text>{{ __('At :node', ['node' => $this->nodeNames[$execution->error['node_id']] ?? $execution->error['node_id']]) }}</flux:callout.text>
+                <flux:callout.text>{{ __('runs.show.at_node', ['node' => $this->nodeNames[$execution->error['node_id']] ?? $execution->error['node_id']]) }}</flux:callout.text>
             @endif
         </flux:callout>
     @elseif ($execution->cancelledBy)
-        <flux:callout icon="stop" class="m-3" :heading="__('Cancelled by :name', ['name' => $execution->cancelledBy->name])" />
+        <flux:callout icon="stop" class="m-3" :heading="__('runs.show.cancelled_by_name', ['name' => $execution->cancelledBy->name])" />
     @endif
 
     <div class="flex min-h-0 flex-1">
@@ -231,11 +231,11 @@ new class extends Component {
                     <div class="min-w-0">
                         <flux:heading class="truncate">{{ $this->nodeNames[$step->node_id] ?? $step->node_id }}</flux:heading>
                         <flux:text class="text-xs">
-                            {{ $this->typeLabel($step->node_type) }} · {{ __('Attempt :n', ['n' => $step->attempt]) }}
+                            {{ $this->typeLabel($step->node_type) }} · {{ __('runs.show.attempt_n', ['n' => $step->attempt]) }}
                             @if ($iteration = \App\Engine\Editor\RunCanvas::iterationLabel($step)) · {{ $iteration }} @endif
                         </flux:text>
                     </div>
-                    <flux:button size="sm" variant="ghost" icon="x-mark" wire:click="deselect" :aria-label="__('Back to all steps')" />
+                    <flux:button size="sm" variant="ghost" icon="x-mark" wire:click="deselect" :aria-label="__('runs.show.back_to_all_steps')" />
                 </div>
 
                 <div class="mb-4 flex flex-wrap items-center gap-2 text-sm">
@@ -248,36 +248,36 @@ new class extends Component {
                     @if ($step->status === \App\Enums\StepStatus::Waiting && $step->resume_at)
                         <flux:text class="text-xs">
                             {{ $step->wait_type === \App\Enums\WaitType::Timer
-                                ? __('Resumes :time', ['time' => $step->resume_at->diffForHumans()])
-                                : __('Times out :time', ['time' => $step->resume_at->toDayDateTimeString()]) }}
+                                ? __('runs.show.resumes_time', ['time' => $step->resume_at->diffForHumans()])
+                                : __('runs.show.times_out_time', ['time' => $step->resume_at->toDayDateTimeString()]) }}
                         </flux:text>
                     @endif
                 </div>
 
                 @if ($assignment = $this->assignment($step))
-                    <flux:callout icon="user" class="mb-4" :heading="__(':type for :name', ['type' => ucfirst($assignment->type->value), 'name' => $assignment->assignee->name])">
-                        <flux:callout.text>{{ ucfirst($assignment->status->value) }}@if ($assignment->due_at && $assignment->isPending()) · {{ __('due :time', ['time' => $assignment->due_at->diffForHumans()]) }}@endif</flux:callout.text>
+                    <flux:callout icon="user" class="mb-4" :heading="__('runs.show.type_for_name', ['type' => $assignment->type->label(), 'name' => $assignment->assignee->name])">
+                        <flux:callout.text>{{ $assignment->status->label() }}@if ($assignment->due_at && $assignment->isPending()) · {{ __('common.due_time', ['time' => $assignment->due_at->diffForHumans()]) }}@endif</flux:callout.text>
                     </flux:callout>
                 @endif
 
                 @foreach ($step->childExecutions as $child)
                     <flux:link wire:key="child-{{ $child->id }}" class="mb-4 block text-sm" :href="route('workspaces.executions.show', [$workspace, $child])" wire:navigate>
-                        {{ __('Child run #:id (:status)', ['id' => $child->id, 'status' => $child->status->label()]) }}
+                        {{ __('runs.show.child_run_id_status', ['id' => $child->id, 'status' => $child->status->label()]) }}
                     </flux:link>
                 @endforeach
 
-                @foreach (['error' => __('Error'), 'input' => __('Input'), 'output' => __('Output')] as $part => $label)
+                @foreach (['error' => __('common.error'), 'input' => __('common.input'), 'output' => __('common.output')] as $part => $label)
                     @if ($step->{$part} !== null && $step->{$part} !== [])
                         <flux:heading size="sm" class="mt-4 mb-1">{{ $label }}</flux:heading>
                         <pre class="max-h-80 overflow-auto rounded-lg whitespace-pre-wrap break-words bg-zinc-50 p-3 text-xs dark:bg-zinc-800 {{ $part === 'error' ? 'text-red-600 dark:text-red-400' : '' }}" data-test="step-{{ $part }}">{{ $this->json($step->{$part}) }}</pre>
                     @endif
                 @endforeach
             @else
-                <flux:heading class="mb-3">{{ __('Steps') }}</flux:heading>
+                <flux:heading class="mb-3">{{ __('runs.show.steps') }}</flux:heading>
 
                 @if ($execution->input)
                     <details class="mb-4">
-                        <summary class="cursor-pointer text-sm text-zinc-500">{{ __('Trigger input') }}</summary>
+                        <summary class="cursor-pointer text-sm text-zinc-500">{{ __('runs.show.trigger_input') }}</summary>
                         <pre class="mt-2 max-h-60 overflow-auto rounded-lg bg-zinc-50 p-3 text-xs dark:bg-zinc-800">{{ $this->json($execution->input) }}</pre>
                     </details>
                 @endif
@@ -290,24 +290,24 @@ new class extends Component {
                                 <span class="block truncate font-medium">{{ $this->nodeNames[$step->node_id] ?? $step->node_id }}</span>
                                 <span class="block truncate text-xs text-zinc-500">
                                     {{ $this->typeLabel($step->node_type) }}
-                                    @if ($step->attempt > 1) · {{ __('attempt :n', ['n' => $step->attempt]) }} @endif
+                                    @if ($step->attempt > 1) · {{ __('runs.show.attempt_n_2', ['n' => $step->attempt]) }} @endif
                                     @if ($iteration = \App\Engine\Editor\RunCanvas::iterationLabel($step)) · {{ $iteration }} @endif
                                 </span>
                             </span>
                             <flux:badge size="sm" :color="$step->status->color()">{{ $step->status->label() }}</flux:badge>
                         </button>
                     @empty
-                        <div class="p-6 text-center text-sm text-zinc-500">{{ $execution->status === \App\Enums\ExecutionStatus::Skipped ? __('Skipped because another run was in progress.') : __('No steps yet.') }}</div>
+                        <div class="p-6 text-center text-sm text-zinc-500">{{ $execution->status === \App\Enums\ExecutionStatus::Skipped ? __('runs.show.skipped_because_another_run_was') : __('runs.show.no_steps_yet') }}</div>
                     @endforelse
                 </div>
 
                 @if ($this->notRun)
-                    <flux:heading size="sm" class="mt-6 mb-1">{{ $execution->isInProgress() ? __('Not reached yet') : __('Not run') }}</flux:heading>
+                    <flux:heading size="sm" class="mt-6 mb-1">{{ $execution->isInProgress() ? __('runs.show.not_reached_yet') : __('common.not_run') }}</flux:heading>
                     <flux:text class="text-sm" data-test="not-run">{{ collect($this->notRun)->map(fn ($id) => $this->nodeNames[$id])->join(', ') }}</flux:text>
                 @endif
 
                 @if ($execution->output !== null && $execution->status === \App\Enums\ExecutionStatus::Complete)
-                    <flux:heading size="sm" class="mt-6 mb-1">{{ __('Run output') }}</flux:heading>
+                    <flux:heading size="sm" class="mt-6 mb-1">{{ __('runs.show.run_output') }}</flux:heading>
                     <pre class="max-h-60 overflow-auto rounded-lg whitespace-pre-wrap break-words bg-zinc-50 p-3 text-xs dark:bg-zinc-800">{{ $this->json($execution->output) }}</pre>
                 @endif
             @endif

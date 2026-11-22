@@ -54,7 +54,7 @@ class ManualRuns
     public function start(Workflow $workflow, User $user, array $values = []): Execution
     {
         if (! $workflow->publishedVersion) {
-            throw ValidationException::withMessages(['run' => __('Publish the workflow before running it.')]);
+            throw ValidationException::withMessages(['run' => __('workflows.publish_the_workflow_before_running')]);
         }
 
         $trigger = $this->manualTrigger($workflow);

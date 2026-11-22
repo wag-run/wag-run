@@ -16,20 +16,20 @@ class ApiToken extends CredentialType implements HttpAuthenticator
 
     public function label(): string
     {
-        return __('API token');
+        return __('credentials.api_token.api_token');
     }
 
     public function description(): string
     {
-        return __('A token sent in a request header, such as a bearer token.');
+        return __('credentials.api_token.token_sent_in_a_request');
     }
 
     public function fields(): array
     {
         return [
-            CredentialField::text('header', __('Header name'), default: 'Authorization'),
-            CredentialField::text('prefix', __('Value prefix'), required: false, default: 'Bearer', help: __('Sent before the token, separated by a space. Leave empty to send the token alone.')),
-            CredentialField::secret('token', __('Token')),
+            CredentialField::text('header', __('credentials.api_token.header_name'), default: 'Authorization'),
+            CredentialField::text('prefix', __('credentials.api_token.value_prefix'), required: false, default: 'Bearer', help: __('credentials.api_token.sent_before_the_token_separated')),
+            CredentialField::secret('token', __('credentials.api_token.token')),
         ];
     }
 

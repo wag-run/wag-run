@@ -14,12 +14,12 @@ enum StepStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Pending => __('Pending'),
-            self::Running => __('Running'),
-            self::Waiting => __('Waiting'),
-            self::Complete => __('Complete'),
-            self::Failed => __('Failed'),
-            self::Cancelled => __('Cancelled'),
+            self::Pending => __('enums.step_status.pending'),
+            self::Running => __('common.running'),
+            self::Waiting => __('common.waiting'),
+            self::Complete => __('common.complete'),
+            self::Failed => __('common.failed'),
+            self::Cancelled => __('common.cancelled'),
         };
     }
 

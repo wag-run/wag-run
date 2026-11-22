@@ -16,9 +16,9 @@ enum ConcurrencyPolicy: string
     public function label(): string
     {
         return match ($this) {
-            self::Allow => __('Allow concurrent runs'),
-            self::SkipIfRunning => __('One at a time, skip new runs'),
-            self::CancelPrevious => __('One at a time, new run cancels the previous'),
+            self::Allow => __('enums.concurrency_policy.allow_concurrent_runs'),
+            self::SkipIfRunning => __('enums.concurrency_policy.one_at_a_time_skip'),
+            self::CancelPrevious => __('enums.concurrency_policy.one_at_a_time_new'),
         };
     }
 }

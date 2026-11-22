@@ -28,11 +28,11 @@ class WebhookController extends Controller
         $method = strtoupper((string) ($config['method'] ?? 'POST'));
 
         if ($method !== 'ANY' && $request->method() !== $method) {
-            return response()->json(['message' => __('Method not allowed.')], 405);
+            return response()->json(['message' => __('webhooks.method_not_allowed')], 405);
         }
 
         if (! $this->verified($request, $config, $trigger)) {
-            return response()->json(['message' => __('The request could not be verified.')], 403);
+            return response()->json(['message' => __('webhooks.request_could_not_be_verified')], 403);
         }
 
         $execution = $engine->start($trigger->workflow, $this->payload($request), triggerType: 'webhook', triggerNodeId: $trigger->node_id);

@@ -48,6 +48,8 @@ new class extends Component {
      */
     public array $retry = ['max_retries' => 0, 'backoff_seconds' => 30];
 
+    public bool $errorPath = false;
+
     public string $name = '';
 
     public string $description = '';
@@ -172,7 +174,7 @@ new class extends Component {
         $groups = [];
 
         foreach (app(NodeRegistry::class)->all() as $type => $node) {
-            $group = $node->kind() === NodeKind::Trigger ? __('Triggers') : $node->category();
+            $group = $node->kind() === NodeKind::Trigger ? __('common.triggers') : $node->category();
             $groups[$group][] = ['type' => $type, 'label' => $node->label(), 'description' => $node->description(), 'icon' => $node->icon()];
         }
 
@@ -239,6 +241,7 @@ new class extends Component {
             'max_retries' => $node->retry['max_retries'] ?? 0,
             'backoff_seconds' => $node->retry['backoff_seconds'] ?? 30,
         ];
+        $this->errorPath = $node->errorPath;
         $this->form = $this->definition ? ConfigForm::toForm($this->definition, $node->config) : [];
         $this->resetValidation();
     }
@@ -255,7 +258,7 @@ new class extends Component {
     public function canConnect(string $source, string $target, ?string $sourceHandle = null, ?string $targetHandle = null, ?string $replacing = null): bool|array
     {
         if (! $this->canEdit) {
-            return ['allowed' => false, 'reason' => __('You can view this workflow but not edit it.')];
+            return ['allowed' => false, 'reason' => __('workflows.edit.you_can_view_this_workflow')];
         }
 
         $reason = app(ConnectionRules::class)->check($this->graph, $source, $sourceHandle ?: 'main', $target);
@@ -292,7 +295,7 @@ new class extends Component {
         $this->save($this->graph->withNode(new GraphNode($node->id, $node->type, $node->name, $node->config, $node->retry, [
             'x' => round((float) ($position['x'] ?? 0)),
             'y' => round((float) ($position['y'] ?? 0)),
-        ])));
+        ], $node->errorPath)));
     }
 
     /**
@@ -332,7 +335,9 @@ new class extends Component {
             $graph = $graph->withoutEdge((string) ($edge['source'] ?? ''), (string) (($edge['sourceHandle'] ?? null) ?: 'main'), (string) ($edge['target'] ?? ''));
         }
 
-        $this->save($graph);
+        if (count($graph->edges) !== count($this->graph->edges)) {
+            $this->save($graph);
+        }
     }
 
     public function addNode(string $type): void
@@ -396,6 +401,11 @@ new class extends Component {
         $this->saveSelected();
     }
 
+    public function updatedErrorPath(): void
+    {
+        $this->saveSelected();
+    }
+
     public function addRow(string $field): void
     {
         $definition = collect($this->definition?->inputs() ?? [])->firstWhere('name', $field);
@@ -443,7 +453,7 @@ new class extends Component {
             Audit::record('workflow.settings_updated', $this->workflow, $this->workspace, ['changed' => $changed]);
         }
 
-        Flux::toast(variant: 'success', text: __('Workflow settings saved.'));
+        Flux::toast(variant: 'success', text: __('workflows.edit.workflow_settings_saved'));
     }
 
     public function publish(Workflows $workflows): void
@@ -461,7 +471,7 @@ new class extends Component {
         $this->publishErrors = [];
         $this->workflow->refresh();
         unset($this->versions);
-        Flux::toast(variant: 'success', text: __('Published version :n. New runs use it.', ['n' => $version->number]));
+        Flux::toast(variant: 'success', text: __('workflows.edit.published_version_n_new_runs', ['n' => $version->number]));
     }
 
     public function rollback(int $versionId, Workflows $workflows): void
@@ -476,7 +486,7 @@ new class extends Component {
         $this->deselect();
         $this->reloadCanvas();
         Flux::modal('versions')->close();
-        Flux::toast(variant: 'success', text: __('Rolled back to version :old as version :new.', ['old' => $target->number, 'new' => $version->number]));
+        Flux::toast(variant: 'success', text: __('workflows.edit.rolled_back_to_version_old', ['old' => $target->number, 'new' => $version->number]));
     }
 
     protected function saveSelected(): void
@@ -500,19 +510,21 @@ new class extends Component {
             ? ['max_retries' => (int) $this->retry['max_retries'], 'backoff_seconds' => (int) ($this->retry['backoff_seconds'] ?? 30)]
             : null;
 
+        $errorPath = $this->errorPath && $this->definition->hasErrorPort();
         $oldPorts = $this->definition->ports($node->config);
         $newPorts = $this->definition->ports($config);
-        $updated = new GraphNode($node->id, $node->type, $this->nodeName, $config, $retry, $node->position);
+        $outputsChanged = $oldPorts !== $newPorts || $errorPath !== $node->errorPath;
+        $updated = new GraphNode($node->id, $node->type, $this->nodeName, $config, $retry, $node->position, $errorPath);
 
         $graph = $this->graph->withNode($updated);
 
-        if ($oldPorts !== $newPorts) {
-            $graph = $graph->withoutEdgesFromPortsOtherThan($node->id, [...$newPorts, 'error']);
+        if ($outputsChanged) {
+            $graph = $graph->withoutEdgesFromPortsOtherThan($node->id, $errorPath ? [...$newPorts, 'error'] : $newPorts);
         }
 
         $this->save($graph);
 
-        if ($oldPorts !== $newPorts) {
+        if ($outputsChanged) {
             $this->reloadCanvas();
         } else {
             $this->flowUpdateNode($node->id, ['data' => $this->withIcon(app(CanvasMapper::class)->node($updated))['data']]);
@@ -570,40 +582,40 @@ new class extends Component {
 <div class="-m-6 flex h-screen flex-col lg:-m-8">
     {{-- Top bar --}}
     <div class="flex flex-wrap items-center gap-3 border-b border-zinc-200 bg-white px-4 py-2 dark:border-zinc-700 dark:bg-zinc-900">
-        <flux:button size="sm" variant="ghost" icon="arrow-left" :href="route('workspaces.workflows', $workspace)" wire:navigate :aria-label="__('Back to workflows')" />
+        <flux:button size="sm" variant="ghost" icon="arrow-left" :href="route('workspaces.workflows', $workspace)" wire:navigate :aria-label="__('workflows.edit.back_to_workflows')" />
         <div class="min-w-0">
             <flux:heading class="truncate">{{ $workflow->name }}</flux:heading>
         </div>
         @if ($workflow->publishedVersion)
-            <flux:badge size="sm" color="green">{{ __('Published v:n', ['n' => $workflow->publishedVersion->number]) }}</flux:badge>
+            <flux:badge size="sm" color="green">{{ __('common.published_vn', ['n' => $workflow->publishedVersion->number]) }}</flux:badge>
         @endif
         @if ($workflow->hasUnpublishedChanges())
-            <flux:badge size="sm" color="amber" data-test="draft-badge">{{ __('Unpublished draft') }}</flux:badge>
+            <flux:badge size="sm" color="amber" data-test="draft-badge">{{ __('workflows.edit.unpublished_draft') }}</flux:badge>
         @endif
-        <flux:text class="text-xs" wire:loading.remove wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,addNode">
-            {{ $workflow->draft_updated_at ? __('Draft saved :time', ['time' => $workflow->draft_updated_at->diffForHumans()]) : '' }}
+        <flux:text class="text-xs" wire:loading.remove wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,errorPath,addNode">
+            {{ $workflow->draft_updated_at ? __('workflows.edit.draft_saved_time', ['time' => $workflow->draft_updated_at->diffForHumans()]) : '' }}
         </flux:text>
-        <flux:text class="text-xs" wire:loading wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,addNode">{{ __('Saving…') }}</flux:text>
+        <flux:text class="text-xs" wire:loading wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,errorPath,addNode">{{ __('workflows.edit.saving') }}</flux:text>
 
         <flux:spacer />
 
-        <flux:button size="sm" icon="play-circle" :href="route('workspaces.executions', [$workspace, 'workflow' => $workflow->id])" wire:navigate>{{ __('Runs') }}</flux:button>
+        <flux:button size="sm" icon="play-circle" :href="route('workspaces.executions', [$workspace, 'workflow' => $workflow->id])" wire:navigate>{{ __('common.runs') }}</flux:button>
         <flux:modal.trigger name="versions">
-            <flux:button size="sm" icon="clock">{{ __('Versions') }}</flux:button>
+            <flux:button size="sm" icon="clock">{{ __('workflows.edit.versions') }}</flux:button>
         </flux:modal.trigger>
-        <flux:button size="sm" icon="arrow-down-tray" :href="route('workspaces.workflows.export', [$workspace, $workflow])">{{ __('Export') }}</flux:button>
+        <flux:button size="sm" icon="arrow-down-tray" :href="route('workspaces.workflows.export', [$workspace, $workflow])">{{ __('workflows.edit.export') }}</flux:button>
         @if ($this->canRun)
             <flux:button size="sm" icon="play" wire:click="startRun" data-test="run-button"
-                :tooltip="$workflow->hasUnpublishedChanges() ? __('Runs the published version, not the draft.') : null">{{ __('Run') }}</flux:button>
+                :tooltip="$workflow->hasUnpublishedChanges() ? __('workflows.edit.runs_the_published_version_not') : null">{{ __('common.run') }}</flux:button>
         @endif
         @if ($this->canPublish)
-            <flux:button size="sm" variant="primary" icon="rocket-launch" wire:click="publish" data-test="publish-button">{{ __('Publish') }}</flux:button>
+            <flux:button size="sm" variant="primary" icon="rocket-launch" wire:click="publish" data-test="publish-button">{{ __('workflows.edit.publish') }}</flux:button>
         @endif
     </div>
     <flux:error name="run" class="mx-4 mt-2" />
 
     @if ($publishErrors)
-        <flux:callout variant="danger" icon="exclamation-triangle" class="m-3" :heading="__('Fix these before publishing')">
+        <flux:callout variant="danger" icon="exclamation-triangle" class="m-3" :heading="__('workflows.edit.fix_these_before_publishing')">
             <ul class="list-disc ps-5 text-sm">
                 @foreach ($publishErrors as $error)
                     <li>{{ $error }}</li>
@@ -655,6 +667,22 @@ new class extends Component {
                 <x-slot:node>
                     @include('partials.workflow-canvas-node')
                 </x-slot:node>
+
+                @if ($this->canEdit)
+                    <x-flow-context-menu scope="edge" class="wag-menu">
+                        <button type="button" class="wag-menu-item is-danger" @click="removeEdges([contextMenu.edge.id]); closeContextMenu()" data-test="edge-menu-delete">
+                            <flux:icon.trash variant="micro" />
+                            {{ __('workflows.edit.delete_connection') }}
+                        </button>
+                    </x-flow-context-menu>
+
+                    <x-flow-panel position="bottom-center">
+                        <div x-show="selectedEdges.size > 0" x-cloak class="wag-edge-bar" data-test="edge-bar">
+                            <span class="text-xs text-zinc-500">{{ __('workflows.edit.connection') }}</span>
+                            <flux:button size="xs" variant="danger" icon="trash" x-on:click="removeEdges([...selectedEdges])">{{ __('workflows.edit.delete_connection') }}</flux:button>
+                        </div>
+                    </x-flow-panel>
+                @endif
             </x-flow>
         </div>
 
@@ -668,13 +696,13 @@ new class extends Component {
                         <flux:text class="text-xs">{{ $definition->description() }}</flux:text>
                     </div>
                     @if ($this->canEdit)
-                        <flux:button size="sm" variant="ghost" icon="trash" wire:click="deleteSelected" :aria-label="__('Delete node')" />
+                        <flux:button size="sm" variant="ghost" icon="trash" wire:click="deleteSelected" :aria-label="__('workflows.edit.delete_node')" />
                     @endif
                 </div>
 
                 <fieldset class="space-y-4" @disabled(! $this->canEdit)>
-                    <flux:input wire:model.live.debounce.600ms="nodeName" :label="__('Name')" />
-                    <flux:text class="text-xs">{{ __('Reference its output as') }} <code class="rounded bg-zinc-100 px-1 dark:bg-zinc-800">nodes.{{ $selected }}.output</code></flux:text>
+                    <flux:input wire:model.live.debounce.600ms="nodeName" :label="__('common.name')" />
+                    <flux:text class="text-xs">{{ __('workflows.edit.reference_its_output_as') }} <code class="rounded bg-zinc-100 px-1 dark:bg-zinc-800">nodes.{{ $selected }}.output</code></flux:text>
 
                     @foreach ($definition->inputs() as $field)
                         <div wire:key="field-{{ $selected }}-{{ $field->name }}">
@@ -684,60 +712,64 @@ new class extends Component {
 
                     @if ($definition->kind() === NodeKind::Action)
                         <flux:separator />
-                        <flux:heading size="sm">{{ __('Retries') }}</flux:heading>
+                        <flux:heading size="sm">{{ __('workflows.edit.retries') }}</flux:heading>
                         <div class="grid grid-cols-2 gap-3">
-                            <flux:input type="number" min="0" max="25" wire:model.live.debounce.600ms="retry.max_retries" :label="__('Retries')" />
-                            <flux:input type="number" min="0" wire:model.live.debounce.600ms="retry.backoff_seconds" :label="__('Backoff (s)')" />
+                            <flux:input type="number" min="0" max="25" wire:model.live.debounce.600ms="retry.max_retries" :label="__('workflows.edit.retries')" />
+                            <flux:input type="number" min="0" wire:model.live.debounce.600ms="retry.backoff_seconds" :label="__('workflows.edit.backoff_s')" />
                         </div>
-                        <flux:text class="text-xs">{{ __('Each retry waits twice as long as the one before. Connect the "on error" output to handle a final failure.') }}</flux:text>
+                        <flux:text class="text-xs">{{ __('workflows.edit.each_retry_waits_twice_as') }}</flux:text>
+                    @endif
+
+                    @if ($definition->hasErrorPort())
+                        <flux:checkbox wire:model.live="errorPath" :label="__('workflows.edit.show_on_error_path')" :description="__('workflows.edit.show_on_error_path_help')" data-test="error-path-checkbox" />
                     @endif
                 </fieldset>
 
                 <flux:separator class="my-4" />
-                <flux:heading size="sm">{{ __('Outputs') }}</flux:heading>
+                <flux:heading size="sm">{{ __('workflows.edit.outputs') }}</flux:heading>
                 <ul class="mt-2 space-y-1 text-xs">
                     @forelse ($definition->outputs($this->selectedNode()->config) as $output)
                         <li><code>{{ $output->name }}</code> <span class="text-zinc-500">· {{ $output->type }} · {{ $output->label }}</span></li>
                     @empty
-                        <li class="text-zinc-500">{{ __('This node has no outputs.') }}</li>
+                        <li class="text-zinc-500">{{ __('workflows.edit.this_node_has_no_outputs') }}</li>
                     @endforelse
                 </ul>
             @elseif ($this->selectedNode())
-                <flux:callout variant="danger" icon="exclamation-triangle">{{ __('This node\'s type is not installed. Delete it or install its integration.') }}</flux:callout>
+                <flux:callout variant="danger" icon="exclamation-triangle">{{ __('workflows.edit.this_node_s_type_is') }}</flux:callout>
                 @if ($this->canEdit)
-                    <flux:button class="mt-3" size="sm" icon="trash" wire:click="deleteSelected">{{ __('Delete node') }}</flux:button>
+                    <flux:button class="mt-3" size="sm" icon="trash" wire:click="deleteSelected">{{ __('workflows.edit.delete_node') }}</flux:button>
                 @endif
             @else
-                <flux:heading>{{ __('Workflow settings') }}</flux:heading>
-                <flux:text class="mb-4 text-xs">{{ __('Select a node to configure it. Add nodes from the left; drag from an output to an input to connect them.') }}</flux:text>
+                <flux:heading>{{ __('workflows.edit.workflow_settings') }}</flux:heading>
+                <flux:text class="mb-4 text-xs">{{ __('workflows.edit.select_a_node_to_configure') }}</flux:text>
                 <form wire:submit="saveSettings" class="space-y-4">
                     <fieldset class="space-y-4" @disabled(! $this->canEdit)>
-                        <flux:input wire:model="name" :label="__('Name')" required />
-                        <flux:textarea wire:model="description" :label="__('Description')" rows="2" />
-                        <flux:select wire:model="concurrency" :label="__('Concurrent runs')">
+                        <flux:input wire:model="name" :label="__('common.name')" required />
+                        <flux:textarea wire:model="description" :label="__('common.description')" rows="2" />
+                        <flux:select wire:model="concurrency" :label="__('workflows.edit.concurrent_runs')">
                             @foreach (ConcurrencyPolicy::cases() as $policy)
                                 <flux:select.option :value="$policy->value">{{ $policy->label() }}</flux:select.option>
                             @endforeach
                         </flux:select>
-                        <flux:switch wire:model.live="customRetention" :label="__('Override log retention')" />
+                        <flux:switch wire:model.live="customRetention" :label="__('workflows.edit.override_log_retention')" />
                         @if ($customRetention)
-                            <flux:input type="number" min="1" wire:model="retentionDays" :label="__('Keep execution logs for (days)')" />
+                            <flux:input type="number" min="1" wire:model="retentionDays" :label="__('workflows.edit.keep_execution_logs_for_days')" />
                         @endif
                         @if ($this->canEdit)
-                            <flux:button type="submit" size="sm" variant="primary">{{ __('Save settings') }}</flux:button>
+                            <flux:button type="submit" size="sm" variant="primary">{{ __('common.save_settings') }}</flux:button>
                         @endif
                     </fieldset>
                 </form>
 
                 <flux:separator class="my-4" />
-                <flux:heading size="sm">{{ __('Trigger URLs') }}</flux:heading>
+                <flux:heading size="sm">{{ __('workflows.edit.trigger_urls') }}</flux:heading>
                 @forelse ($workflow->triggers()->whereIn('type', ['webhook', 'form'])->get() as $trigger)
                     <div class="mt-2" wire:key="trigger-{{ $trigger->id }}">
                         <flux:text class="text-xs">{{ $this->graph->has($trigger->node_id) ? $this->graph->node($trigger->node_id)->name : $trigger->node_id }} ({{ $trigger->type }})</flux:text>
                         <flux:input size="sm" :value="$trigger->url()" readonly copyable />
                     </div>
                 @empty
-                    <flux:text class="mt-1 text-xs">{{ __('Webhook and form triggers get their URL when the workflow is published.') }}</flux:text>
+                    <flux:text class="mt-1 text-xs">{{ __('workflows.edit.webhook_and_form_triggers_get') }}</flux:text>
                 @endforelse
             @endif
         </aside>
@@ -746,45 +778,45 @@ new class extends Component {
     <flux:modal name="run" class="md:w-lg">
         <form wire:submit="run" class="space-y-6">
             <div>
-                <flux:heading size="lg">{{ __('Run :name', ['name' => $workflow->name]) }}</flux:heading>
-                <flux:text class="mt-1">{{ __('The Manual trigger asks for these inputs. The run uses the published version.') }}</flux:text>
+                <flux:heading size="lg">{{ __('workflows.edit.run_name', ['name' => $workflow->name]) }}</flux:heading>
+                <flux:text class="mt-1">{{ __('workflows.edit.manual_trigger_asks_for_these') }}</flux:text>
             </div>
             @include('partials.form-fields', ['fields' => $this->runFields, 'model' => 'runValues'])
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
-                    <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
+                    <flux:button variant="ghost">{{ __('common.cancel') }}</flux:button>
                 </flux:modal.close>
-                <flux:button type="submit" variant="primary" icon="play" data-test="start-run-button">{{ __('Start run') }}</flux:button>
+                <flux:button type="submit" variant="primary" icon="play" data-test="start-run-button">{{ __('workflows.edit.start_run') }}</flux:button>
             </div>
         </form>
     </flux:modal>
 
     <flux:modal name="versions" class="md:w-xl">
-        <flux:heading size="lg">{{ __('Version history') }}</flux:heading>
-        <flux:text class="mb-4">{{ __('Each publish is a version. Runs stay on the version they started with. Rolling back publishes an old version again as a new one.') }}</flux:text>
+        <flux:heading size="lg">{{ __('workflows.edit.version_history') }}</flux:heading>
+        <flux:text class="mb-4">{{ __('workflows.edit.each_publish_is_a_version') }}</flux:text>
         <div class="space-y-2">
             @forelse ($this->versions as $version)
                 <div wire:key="version-{{ $version->id }}" class="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-700">
                     <div>
                         <div class="flex items-center gap-2">
-                            <span class="font-medium">{{ __('Version :n', ['n' => $version->number]) }}</span>
+                            <span class="font-medium">{{ __('common.version_n', ['n' => $version->number]) }}</span>
                             @if ($version->id === $workflow->published_version_id)
-                                <flux:badge size="sm" color="green">{{ __('Live') }}</flux:badge>
+                                <flux:badge size="sm" color="green">{{ __('workflows.edit.live') }}</flux:badge>
                             @endif
                         </div>
                         <flux:text class="text-xs">
-                            {{ $version->publisher?->name ?? __('Unknown') }} · {{ $version->created_at->diffForHumans() }}
+                            {{ $version->publisher?->name ?? __('workflows.edit.unknown') }} · {{ $version->created_at->diffForHumans() }}
                             @if ($version->note) · {{ $version->note }} @endif
                         </flux:text>
                     </div>
                     @if ($this->canPublish && $version->id !== $workflow->published_version_id)
-                        <flux:button size="sm" wire:click="rollback({{ $version->id }})" wire:confirm="{{ __('Publish version :n again as a new version? The current draft is replaced.', ['n' => $version->number]) }}">
-                            {{ __('Roll back') }}
+                        <flux:button size="sm" wire:click="rollback({{ $version->id }})" wire:confirm="{{ __('workflows.edit.publish_version_n_again_as', ['n' => $version->number]) }}">
+                            {{ __('workflows.edit.roll_back') }}
                         </flux:button>
                     @endif
                 </div>
             @empty
-                <flux:text>{{ __('Not published yet.') }}</flux:text>
+                <flux:text>{{ __('workflows.edit.not_published_yet') }}</flux:text>
             @endforelse
         </div>
     </flux:modal>

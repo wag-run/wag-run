@@ -57,7 +57,7 @@ class SandboxedTemplateEngine implements TemplateEngine
 
             return $this->twig()->createTemplate($template)->render($data);
         } catch (Throwable $e) {
-            throw new TemplateError(__('Template error: :message', ['message' => $e->getMessage()]), previous: $e);
+            throw new TemplateError(__('engine.template_error_message', ['message' => $e->getMessage()]), previous: $e);
         }
     }
 
@@ -68,9 +68,9 @@ class SandboxedTemplateEngine implements TemplateEngine
 
             return DataBag::unwrap($this->expressions->evaluate($expression, $variables));
         } catch (SyntaxError $e) {
-            throw new TemplateError(__('Expression error: :message', ['message' => $e->getMessage()]), previous: $e);
+            throw new TemplateError(__('engine.expression_error_message', ['message' => $e->getMessage()]), previous: $e);
         } catch (Throwable $e) {
-            throw new TemplateError(__('Expression error: :message', ['message' => $e->getMessage()]), previous: $e);
+            throw new TemplateError(__('engine.expression_error_message', ['message' => $e->getMessage()]), previous: $e);
         }
     }
 

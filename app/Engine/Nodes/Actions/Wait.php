@@ -24,12 +24,12 @@ class Wait extends Node
 
     public function label(): string
     {
-        return __('Wait');
+        return __('nodes.wait.wait');
     }
 
     public function description(): string
     {
-        return __('Pauses the flow for a set time.');
+        return __('nodes.wait.pauses_the_flow_for_a');
     }
 
     public function kind(): NodeKind
@@ -39,7 +39,7 @@ class Wait extends Node
 
     public function category(): string
     {
-        return __('Flow');
+        return __('common.flow');
     }
 
     public function icon(): string
@@ -50,16 +50,16 @@ class Wait extends Node
     public function inputs(): array
     {
         return [
-            new Field('mode', __('Wait'), Field::SELECT, required: true, default: 'duration', options: ['duration' => __('For a duration'), 'until' => __('Until a time')]),
-            new Field('amount', __('Amount'), Field::NUMBER, default: 5, templated: true),
-            new Field('unit', __('Unit'), Field::SELECT, default: 'minutes', options: ['seconds' => __('Seconds'), 'minutes' => __('Minutes'), 'hours' => __('Hours'), 'days' => __('Days')]),
-            new Field('until', __('Until'), Field::TEXT, templated: true, description: __('A date and time, such as 2026-12-01 09:00 or {{ trigger.send_at }}')),
+            new Field('mode', __('nodes.wait.wait'), Field::SELECT, required: true, default: 'duration', options: ['duration' => __('nodes.wait.for_a_duration'), 'until' => __('nodes.wait.until_a_time')]),
+            new Field('amount', __('nodes.wait.amount'), Field::NUMBER, default: 5, templated: true),
+            new Field('unit', __('nodes.wait.unit'), Field::SELECT, default: 'minutes', options: ['seconds' => __('nodes.wait.seconds'), 'minutes' => __('nodes.wait.minutes'), 'hours' => __('nodes.wait.hours'), 'days' => __('nodes.wait.days')]),
+            new Field('until', __('nodes.wait.until'), Field::TEXT, templated: true, description: __('nodes.wait.date_and_time_such_as')),
         ];
     }
 
     public function outputs(array $config = []): array
     {
-        return [new Output('waited_until', __('Waited until'), 'string')];
+        return [new Output('waited_until', __('nodes.wait.waited_until'), 'string')];
     }
 
     public function execute(NodeContext $context): NodeResult
@@ -69,7 +69,7 @@ class Wait extends Node
                 ? CarbonImmutable::parse((string) $context->input('until'))
                 : now()->add((string) $context->input('unit', 'minutes'), max(0, (float) $context->input('amount', 0)));
         } catch (Throwable) {
-            return NodeResult::fail(__('Could not read the time to wait until.'), retryable: false);
+            return NodeResult::fail(__('nodes.wait.could_not_read_the_time'), retryable: false);
         }
 
         $output = ['waited_until' => $until->toIso8601String()];

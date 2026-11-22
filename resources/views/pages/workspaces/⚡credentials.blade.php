@@ -110,7 +110,7 @@ new class extends Component {
                 Rule::unique('credentials', 'key')->where('workspace_id', $this->workspace->id)->ignore($this->editingId)],
             'type' => ['required', Rule::in(array_keys($registry->all()))],
             'description' => ['nullable', 'string', 'max:255'],
-        ], ['key.regex' => __('Use letters, numbers and underscores, starting with a letter or underscore.')]);
+        ], ['key.regex' => __('common.use_letters_numbers_and_underscores')]);
 
         $type = $registry->get($this->type);
         $secretFields = $type->secretFieldNames();
@@ -144,7 +144,7 @@ new class extends Component {
         Audit::record($existing ? 'credential.updated' : 'credential.created', $credential, $this->workspace, ['type' => $type->key()]);
 
         Flux::modal('credential-form')->close();
-        Flux::toast(variant: 'success', text: __('Authentication setting saved.'));
+        Flux::toast(variant: 'success', text: __('workspaces.credentials.authentication_setting_saved'));
         $this->resetForm();
     }
 
@@ -173,7 +173,7 @@ new class extends Component {
         $credential->delete();
 
         Audit::record('credential.deleted', $credential, $this->workspace);
-        Flux::toast(text: __('Authentication setting deleted.'));
+        Flux::toast(text: __('workspaces.credentials.authentication_setting_deleted'));
     }
 
     protected function resetForm(): void
@@ -185,25 +185,25 @@ new class extends Component {
 
     public function render()
     {
-        return $this->view()->title(__('Authentication').' · '.$this->workspace->name);
+        return $this->view()->title(__('common.authentication').' · '.$this->workspace->name);
     }
 }; ?>
 
 <section class="w-full">
-    <x-page-heading :heading="__('Authentication')" :subheading="__('Reusable credentials this workspace\'s workflows use to call other systems.')">
+    <x-page-heading :heading="__('common.authentication')" :subheading="__('workspaces.credentials.reusable_credentials_this_workspace_s')">
         @if ($this->canManage)
             <x-slot:actions>
-                <flux:button variant="primary" icon="plus" wire:click="create">{{ __('Add authentication') }}</flux:button>
+                <flux:button variant="primary" icon="plus" wire:click="create">{{ __('workspaces.credentials.add_authentication') }}</flux:button>
             </x-slot:actions>
         @endif
     </x-page-heading>
 
     <flux:table>
         <flux:table.columns>
-            <flux:table.column>{{ __('Key') }}</flux:table.column>
-            <flux:table.column>{{ __('Type') }}</flux:table.column>
-            <flux:table.column>{{ __('Settings') }}</flux:table.column>
-            <flux:table.column>{{ __('Description') }}</flux:table.column>
+            <flux:table.column>{{ __('common.key') }}</flux:table.column>
+            <flux:table.column>{{ __('common.type') }}</flux:table.column>
+            <flux:table.column>{{ __('common.settings') }}</flux:table.column>
+            <flux:table.column>{{ __('common.description') }}</flux:table.column>
             <flux:table.column></flux:table.column>
         </flux:table.columns>
         <flux:table.rows>
@@ -235,15 +235,15 @@ new class extends Component {
                     <flux:table.cell>{{ $credential->description }}</flux:table.cell>
                     <flux:table.cell align="end">
                         @if ($this->canManage)
-                            <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit({{ $credential->id }})" :aria-label="__('Edit')" />
+                            <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit({{ $credential->id }})" :aria-label="__('common.edit')" />
                             <flux:button size="sm" variant="ghost" icon="trash" wire:click="delete({{ $credential->id }})"
-                                wire:confirm="{{ __('Delete this authentication setting? Workflows that use it will fail until it is replaced.') }}" :aria-label="__('Delete')" />
+                                wire:confirm="{{ __('workspaces.credentials.delete_this_authentication_setting_workflows') }}" :aria-label="__('common.delete')" />
                         @endif
                     </flux:table.cell>
                 </flux:table.row>
             @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="5" class="text-center text-zinc-500">{{ __('No authentication settings yet.') }}</flux:table.cell>
+                    <flux:table.cell colspan="5" class="text-center text-zinc-500">{{ __('workspaces.credentials.no_authentication_settings_yet') }}</flux:table.cell>
                 </flux:table.row>
             @endforelse
         </flux:table.rows>
@@ -251,16 +251,16 @@ new class extends Component {
 
     <flux:modal name="credential-form" class="md:w-lg">
         <form wire:submit="save" class="space-y-6">
-            <flux:heading size="lg">{{ $editingId ? __('Edit authentication') : __('Add authentication') }}</flux:heading>
+            <flux:heading size="lg">{{ $editingId ? __('workspaces.credentials.edit_authentication') : __('workspaces.credentials.add_authentication') }}</flux:heading>
 
-            <flux:select wire:model.live="type" :label="__('Type')" :disabled="(bool) $editingId">
+            <flux:select wire:model.live="type" :label="__('common.type')" :disabled="(bool) $editingId">
                 @foreach ($this->types as $typeKey => $credentialType)
                     <flux:select.option :value="$typeKey" wire:key="type-{{ $typeKey }}">{{ $credentialType->label() }}</flux:select.option>
                 @endforeach
             </flux:select>
             <flux:text class="-mt-4 text-sm">{{ $this->selectedType()->description() }}</flux:text>
 
-            <flux:input wire:model="key" :label="__('Key')" class="font-mono" placeholder="github_api" required />
+            <flux:input wire:model="key" :label="__('common.key')" class="font-mono" placeholder="github_api" required />
 
             @foreach ($this->selectedType()->fields() as $field)
                 <div wire:key="field-{{ $type }}-{{ $field->name }}">
@@ -272,18 +272,18 @@ new class extends Component {
                         </flux:select>
                     @elseif ($field->secret)
                         <flux:input wire:model="config.{{ $field->name }}" type="password" viewable autocomplete="off" :label="$field->label"
-                            :description="$editingId ? __('Leave empty to keep the current value.') : $field->help" />
+                            :description="$editingId ? __('common.leave_empty_to_keep_the') : $field->help" />
                     @else
                         <flux:input wire:model="config.{{ $field->name }}" :type="$field->type === 'url' ? 'url' : 'text'" :label="$field->label" :description="$field->help" />
                     @endif
                 </div>
             @endforeach
 
-            <flux:input wire:model="description" :label="__('Description')" />
+            <flux:input wire:model="description" :label="__('common.description')" />
 
             <div class="flex justify-end gap-2">
-                <flux:modal.close><flux:button variant="ghost">{{ __('Cancel') }}</flux:button></flux:modal.close>
-                <flux:button type="submit" variant="primary">{{ __('Save') }}</flux:button>
+                <flux:modal.close><flux:button variant="ghost">{{ __('common.cancel') }}</flux:button></flux:modal.close>
+                <flux:button type="submit" variant="primary">{{ __('common.save') }}</flux:button>
             </div>
         </form>
     </flux:modal>

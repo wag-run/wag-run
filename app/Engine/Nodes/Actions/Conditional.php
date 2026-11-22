@@ -22,12 +22,12 @@ class Conditional extends Node
 
     public function label(): string
     {
-        return __('Conditional logic');
+        return __('nodes.conditional.conditional_logic');
     }
 
     public function description(): string
     {
-        return __('Routes the flow based on a condition.');
+        return __('nodes.conditional.routes_the_flow_based_on');
     }
 
     public function kind(): NodeKind
@@ -37,7 +37,7 @@ class Conditional extends Node
 
     public function category(): string
     {
-        return __('Flow');
+        return __('common.flow');
     }
 
     public function icon(): string
@@ -48,14 +48,14 @@ class Conditional extends Node
     public function inputs(): array
     {
         return [
-            new Field('condition', __('Condition'), Field::TEXT, required: true, expression: true,
-                description: __('An expression, such as nodes.fetch.output.status == 200 and trigger.amount > 100')),
+            new Field('condition', __('nodes.conditional.condition'), Field::TEXT, required: true, expression: true,
+                description: __('nodes.conditional.expression_such_as_nodes_fetch')),
         ];
     }
 
     public function outputs(array $config = []): array
     {
-        return [new Output('result', __('Result'), 'boolean')];
+        return [new Output('result', __('nodes.conditional.result'), 'boolean')];
     }
 
     public function ports(array $config = []): array

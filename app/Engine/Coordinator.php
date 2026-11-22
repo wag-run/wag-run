@@ -76,7 +76,7 @@ class Coordinator
 
             $fresh->setRelation('execution', $execution);
 
-            $this->fail($fresh, __('The worker running this step stopped responding.'), true, null, Redactor::forWorkspace($execution->workspace));
+            $this->fail($fresh, __('engine.worker_running_this_step_stopped'), true, null, Redactor::forWorkspace($execution->workspace));
             $this->settle($execution);
         });
     }
@@ -143,9 +143,9 @@ class Coordinator
             : [ResumeReason::ChildFailed, [
                 'execution_id' => $execution->id,
                 'message' => match ($execution->status) {
-                    ExecutionStatus::Skipped => __('The child workflow was skipped because a run was already in progress.'),
-                    ExecutionStatus::Cancelled => __('The child workflow was cancelled.'),
-                    default => $execution->error['message'] ?? __('The child workflow failed.'),
+                    ExecutionStatus::Skipped => __('engine.child_workflow_was_skipped_because'),
+                    ExecutionStatus::Cancelled => __('engine.child_workflow_was_cancelled'),
+                    default => $execution->error['message'] ?? __('engine.child_workflow_failed'),
                 },
             ]];
 
@@ -293,7 +293,7 @@ class Coordinator
             $status,
             output: $redactor->mask($result->output),
             error: $status === ExecutionStatus::Failed
-                ? ['message' => __('Ended by a Terminate node.'), 'node_id' => $step->node_id, 'step_id' => $step->id]
+                ? ['message' => __('engine.ended_by_a_terminate_node'), 'node_id' => $step->node_id, 'step_id' => $step->id]
                 : null,
         );
     }
