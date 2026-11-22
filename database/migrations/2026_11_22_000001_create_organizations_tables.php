@@ -56,7 +56,7 @@ return new class extends Migration
             $table->foreignId('workspace_id')->nullable()->constrained()->cascadeOnDelete();
             $table->foreignId('invited_by')->nullable()->constrained('users')->nullOnDelete();
             $table->string('email');
-            $table->string('install_role', 20)->default('member');
+            $table->string('org_role', 20)->default('member');
             $table->string('workspace_role', 20)->nullable();
             $table->string('token_hash', 64)->unique();
             $table->timestamp('expires_at');
