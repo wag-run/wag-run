@@ -1,12 +1,19 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\WebhookController;
 use App\Http\Middleware\RememberCurrentWorkspace;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
 
 Route::livewire('invitations/{token}', 'pages::invitations.show')->name('invitations.show');
+
+Route::any('hooks/{key}', WebhookController::class)
+    ->middleware('throttle:120,1')
+    ->name('webhooks.receive');
+
+Route::livewire('forms/{key}', 'pages::forms.show')->name('forms.show');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');

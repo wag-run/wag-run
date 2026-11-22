@@ -4,8 +4,10 @@ namespace App\Credentials\Types;
 
 use App\Credentials\CredentialField;
 use App\Credentials\CredentialType;
+use App\Credentials\HttpAuthenticator;
+use Illuminate\Http\Client\PendingRequest;
 
-class HttpBasic extends CredentialType
+class HttpBasic extends CredentialType implements HttpAuthenticator
 {
     public function key(): string
     {
@@ -28,5 +30,10 @@ class HttpBasic extends CredentialType
             CredentialField::text('username', __('Username')),
             CredentialField::secret('password', __('Password')),
         ];
+    }
+
+    public function authenticate(PendingRequest $request, array $config): PendingRequest
+    {
+        return $request->withBasicAuth((string) ($config['username'] ?? ''), (string) ($config['password'] ?? ''));
     }
 }

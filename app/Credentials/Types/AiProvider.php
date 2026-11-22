@@ -22,7 +22,9 @@ class AiProvider extends CredentialType
         'xai' => 'xAI',
         'deepseek' => 'DeepSeek',
         'openrouter' => 'OpenRouter',
+        'cohere' => 'Cohere',
         'ollama' => 'Ollama',
+        'openai-compatible' => 'OpenAI-compatible endpoint',
     ];
 
     public function key(): string
@@ -44,8 +46,8 @@ class AiProvider extends CredentialType
     {
         return [
             CredentialField::select('provider', __('Provider'), self::PROVIDERS, default: 'anthropic'),
-            CredentialField::secret('api_key', __('API key')),
-            CredentialField::url('base_url', __('Base URL'), help: __('Optional. Overrides the provider endpoint, for example a self-hosted Ollama server.')),
+            CredentialField::secret('api_key', __('API key'), required: false, help: __('Not needed for a local Ollama server.')),
+            CredentialField::url('base_url', __('Base URL'), help: __('Optional, and required for an OpenAI-compatible endpoint. Overrides the provider endpoint, for example a self-hosted Ollama server.')),
         ];
     }
 }

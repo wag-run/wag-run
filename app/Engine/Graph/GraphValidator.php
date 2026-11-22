@@ -31,6 +31,10 @@ class GraphValidator
                 continue;
             }
 
+            if (! preg_match('/^[A-Za-z_][A-Za-z0-9_]{0,63}$/', $node->id)) {
+                $errors[] = __('Node id [:id] must start with a letter or underscore and use only letters, numbers and underscores, so templates can reference it.', ['id' => $node->id]);
+            }
+
             if (! $this->registry->has($node->type)) {
                 $errors[] = __('Node ":name" has an unknown type [:type].', ['name' => $node->name, 'type' => $node->type]);
 

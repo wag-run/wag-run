@@ -18,7 +18,10 @@ use Illuminate\Validation\ValidationException;
  */
 class Workflows
 {
-    public function __construct(protected GraphValidator $validator) {}
+    public function __construct(
+        protected GraphValidator $validator,
+        protected TriggerSync $triggers,
+    ) {}
 
     public function create(Workspace $workspace, string $name, User $owner, ?WorkflowGraph $graph = null): Workflow
     {
@@ -106,6 +109,8 @@ class Workflows
 
         $workflow->forceFill(['published_version_id' => $version->id])->save();
         $workflow->setRelation('publishedVersion', $version);
+
+        $this->triggers->sync($workflow);
 
         return $version;
     }

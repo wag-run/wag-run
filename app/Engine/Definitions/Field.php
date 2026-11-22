@@ -29,6 +29,8 @@ final readonly class Field
 
     public const CREDENTIAL = 'credential';
 
+    public const SECRET = 'secret';
+
     public const WORKFLOW = 'workflow';
 
     public const USER = 'user';

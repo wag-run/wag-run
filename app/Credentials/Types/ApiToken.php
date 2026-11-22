@@ -4,8 +4,10 @@ namespace App\Credentials\Types;
 
 use App\Credentials\CredentialField;
 use App\Credentials\CredentialType;
+use App\Credentials\HttpAuthenticator;
+use Illuminate\Http\Client\PendingRequest;
 
-class ApiToken extends CredentialType
+class ApiToken extends CredentialType implements HttpAuthenticator
 {
     public function key(): string
     {
@@ -29,5 +31,15 @@ class ApiToken extends CredentialType
             CredentialField::text('prefix', __('Value prefix'), required: false, default: 'Bearer', help: __('Sent before the token, separated by a space. Leave empty to send the token alone.')),
             CredentialField::secret('token', __('Token')),
         ];
+    }
+
+    public function authenticate(PendingRequest $request, array $config): PendingRequest
+    {
+        $prefix = trim((string) ($config['prefix'] ?? ''));
+        $token = (string) ($config['token'] ?? '');
+
+        return $request->withHeaders([
+            (string) ($config['header'] ?? 'Authorization') => $prefix === '' ? $token : "{$prefix} {$token}",
+        ]);
     }
 }

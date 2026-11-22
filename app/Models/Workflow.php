@@ -104,6 +104,14 @@ class Workflow extends Model
     }
 
     /**
+     * @return HasMany<WorkflowTrigger, $this>
+     */
+    public function triggers(): HasMany
+    {
+        return $this->hasMany(WorkflowTrigger::class);
+    }
+
+    /**
      * @return HasMany<Execution, $this>
      */
     public function executions(): HasMany

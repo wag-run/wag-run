@@ -25,6 +25,7 @@ trait RunsWorkflows
 
     /**
      * Build a graph. Nodes map an id to a type, or to [type, config, retry].
+     * A type without a dot is a test fixture: "emit" means "test.emit".
      * Edges are "a->b" or "a:port->b".
      *
      * @param  array<string, string|array{0: string, 1?: array<string, mixed>, 2?: array<string, mixed>}>  $nodes
@@ -36,7 +37,7 @@ trait RunsWorkflows
         $graphNodes = [];
         foreach ($nodes as $id => $spec) {
             [$type, $config, $retry] = array_pad((array) $spec, 3, null);
-            $graphNodes[] = array_filter(['id' => $id, 'type' => "test.{$type}", 'name' => $id, 'config' => $config ?? [], 'retry' => $retry], fn ($v) => $v !== null);
+            $graphNodes[] = array_filter(['id' => $id, 'type' => str_contains($type, '.') ? $type : "test.{$type}", 'name' => $id, 'config' => $config ?? [], 'retry' => $retry], fn ($v) => $v !== null);
         }
 
         $graphEdges = [];

@@ -6,9 +6,6 @@ use App\Credentials\CredentialTypeRegistry;
 use App\Credentials\Types\AiProvider;
 use App\Credentials\Types\ApiToken;
 use App\Credentials\Types\HttpBasic;
-use App\Engine\NodeRegistry;
-use App\Engine\Templates\PlainTemplateEngine;
-use App\Engine\Templates\TemplateEngine;
 use App\Enums\WorkspacePermission;
 use App\Models\User;
 use App\Models\Workspace;
@@ -36,8 +33,6 @@ class AppServiceProvider extends ServiceProvider
             return $registry;
         });
 
-        $this->app->singleton(NodeRegistry::class);
-        $this->app->bind(TemplateEngine::class, PlainTemplateEngine::class);
     }
 
     /**

@@ -1,0 +1,68 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
+
+/**
+ * A published trigger the app listens for: a webhook URL, a form page, or a
+ * schedule. Synced from the published graph on every publish, keeping each
+ * node's key stable so URLs do not change.
+ *
+ * @property int $id
+ * @property int $workflow_id
+ * @property int $workspace_id
+ * @property string $node_id
+ * @property string $type
+ * @property string|null $key
+ * @property Carbon|null $next_run_at
+ * @property-read Workflow $workflow
+ */
+#[Fillable(['workflow_id', 'workspace_id', 'node_id', 'type', 'key', 'next_run_at'])]
+class WorkflowTrigger extends Model
+{
+    public const WEBHOOK = 'webhook';
+
+    public const FORM = 'form';
+
+    public const SCHEDULE = 'schedule';
+
+    protected function casts(): array
+    {
+        return [
+            'next_run_at' => 'datetime',
+        ];
+    }
+
+    public function url(): ?string
+    {
+        return match ($this->type) {
+            self::WEBHOOK => route('webhooks.receive', $this->key),
+            self::FORM => route('forms.show', $this->key),
+            default => null,
+        };
+    }
+
+    /**
+     * The trigger node's config in the workflow's published version.
+     *
+     * @return array<string, mixed>
+     */
+    public function config(): array
+    {
+        $graph = $this->workflow->publishedVersion?->toGraph();
+
+        return $graph && $graph->has($this->node_id) ? $graph->node($this->node_id)->config : [];
+    }
+
+    /**
+     * @return BelongsTo<Workflow, $this>
+     */
+    public function workflow(): BelongsTo
+    {
+        return $this->belongsTo(Workflow::class);
+    }
+}
