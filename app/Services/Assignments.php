@@ -10,6 +10,7 @@ use App\Enums\WorkspaceRole;
 use App\Models\Assignment;
 use App\Models\Execution;
 use App\Models\User;
+use App\Notifications\AssignmentNotification;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -62,7 +63,7 @@ class Assignments
             $this->workspaces->addMember($workspace, $assignee, WorkspaceRole::Guest);
         }
 
-        return Assignment::create([
+        $assignment = Assignment::create([
             'workspace_id' => $workspace->id,
             'execution_id' => $context->execution->id,
             'execution_step_id' => $context->step->id,
@@ -74,6 +75,10 @@ class Assignments
             'fields' => $fields ?: null,
             'due_at' => $dueAt,
         ]);
+
+        DB::afterCommit(fn () => $assignee->notify(new AssignmentNotification($assignment)));
+
+        return $assignment;
     }
 
     public function approve(Assignment $assignment, User $user, ?string $comment = null): void
@@ -99,7 +104,7 @@ class Assignments
             $rules[$field['name']] = static::rulesFor($field);
         }
 
-        $validated = Validator::make($values, $rules)->validate();
+        $validated = static::castValues($assignment->fields ?? [], Validator::make($values, $rules)->validate());
 
         $this->decide($assignment, $user, AssignmentStatus::Submitted, ['values' => $validated], AssignmentType::Task);
     }
@@ -121,6 +126,33 @@ class Assignments
             ->where('execution_id', $execution->id)
             ->where('status', AssignmentStatus::Pending)
             ->update(['status' => AssignmentStatus::Cancelled]);
+    }
+
+    /**
+     * Turn validated form values into their field types: numbers become
+     * ints or floats and checkboxes booleans, so later nodes can compare them.
+     *
+     * @param  iterable<mixed>  $fields
+     * @param  array<string, mixed>  $values
+     * @return array<string, mixed>
+     */
+    public static function castValues(iterable $fields, array $values): array
+    {
+        foreach ($fields as $field) {
+            $name = is_array($field) ? ($field['name'] ?? null) : null;
+
+            if (! is_string($name) || ! array_key_exists($name, $values) || $values[$name] === null || $values[$name] === '') {
+                continue;
+            }
+
+            $values[$name] = match ($field['type'] ?? 'text') {
+                'number' => is_numeric($values[$name]) ? $values[$name] + 0 : $values[$name],
+                'checkbox' => (bool) $values[$name],
+                default => $values[$name],
+            };
+        }
+
+        return $values;
     }
 
     /**
@@ -177,6 +209,11 @@ class Assignments
 
             $this->engine->respond($assignment->step, [...$response, 'responded_by' => $user->id, 'responded_by_name' => $user->name]);
         });
+
+        $user->unreadNotifications()
+            ->where('type', AssignmentNotification::class)
+            ->where('data->assignment_id', $assignment->id)
+            ->update(['read_at' => now()]);
 
         $assignment->refresh();
     }

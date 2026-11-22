@@ -83,6 +83,14 @@ class Organization extends Model
     }
 
     /**
+     * @return HasMany<OidcProvider, $this>
+     */
+    public function oidcProviders(): HasMany
+    {
+        return $this->hasMany(OidcProvider::class);
+    }
+
+    /**
      * @return HasMany<Invitation, $this>
      */
     public function invitations(): HasMany

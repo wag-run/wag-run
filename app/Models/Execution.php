@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ExecutionStatus;
 use App\Enums\StepStatus;
+use Carbon\CarbonInterval;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -46,6 +47,25 @@ class Execution extends Model
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
         ];
+    }
+
+    public function isInProgress(): bool
+    {
+        return in_array($this->status, ExecutionStatus::inProgress(), true);
+    }
+
+    /**
+     * How long the run took, or has taken so far, as "2m 5s".
+     */
+    public function durationForHumans(): ?string
+    {
+        if (! $this->started_at) {
+            return null;
+        }
+
+        $seconds = (int) $this->started_at->diffInSeconds($this->finished_at ?? now());
+
+        return $seconds < 1 ? __('<1s') : CarbonInterval::seconds($seconds)->cascade()->forHumans(short: true, parts: 2);
     }
 
     /**
@@ -110,5 +130,13 @@ class Execution extends Model
     public function triggeredBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'triggered_by');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function cancelledBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 }

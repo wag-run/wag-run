@@ -61,7 +61,10 @@ new #[Title('Sign-in & defaults')] class extends Component {
             <flux:heading>{{ __('Sign-in') }}</flux:heading>
             <flux:switch wire:model="registrationOpen" :label="__('Allow anyone to register')"
                 :description="__('When off, people join only by invitation. New accounts join as install Members with no workspace access.')" />
-            <flux:text class="text-sm">{{ __('OIDC providers are configured here in a later release.') }}</flux:text>
+            <flux:text class="text-sm">
+                {{ __('People can also sign in with an OpenID Connect provider.') }}
+                <flux:link :href="route('admin.sign-in-providers')" wire:navigate>{{ __('Manage sign-in providers') }}</flux:link>
+            </flux:text>
         </div>
 
         <div class="space-y-3">

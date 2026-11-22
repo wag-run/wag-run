@@ -15,6 +15,7 @@ use App\Models\Organization;
 use App\Models\Workflow;
 use App\Models\WorkflowVersion;
 use App\Models\Workspace;
+use App\Services\ManualRuns;
 use App\Services\Workflows;
 use App\Support\Audit;
 use ArtisanFlow\WireFlow\Concerns\WithWireFlow;
@@ -62,6 +63,13 @@ new class extends Component {
      */
     public array $publishErrors = [];
 
+    /**
+     * Values for the Manual trigger's inputs, asked for before a run.
+     *
+     * @var array<string, mixed>
+     */
+    public array $runValues = [];
+
     public function mount(): void
     {
         $this->name = $this->workflow->name;
@@ -81,6 +89,60 @@ new class extends Component {
     public function canEdit(): bool
     {
         return Auth::user()->can('edit-workflows', $this->workspace);
+    }
+
+    #[Computed]
+    public function canRun(): bool
+    {
+        return $this->workflow->publishedVersion !== null && Auth::user()->can('run-workflows', $this->workspace);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    #[Computed]
+    public function runFields(): array
+    {
+        return app(ManualRuns::class)->fields($this->workflow);
+    }
+
+    /**
+     * Run the published version, first asking for the Manual trigger's
+     * inputs when it declares any.
+     */
+    public function startRun(ManualRuns $runs): void
+    {
+        $this->authorize('run-workflows', $this->workspace);
+
+        if ($this->runFields === []) {
+            $this->run($runs);
+
+            return;
+        }
+
+        $this->runValues = [];
+
+        foreach ($this->runFields as $field) {
+            $this->runValues[$field['name']] = ($field['type'] ?? 'text') === 'checkbox' ? false : null;
+        }
+
+        Flux::modal('run')->show();
+    }
+
+    public function run(ManualRuns $runs): void
+    {
+        $this->authorize('run-workflows', $this->workspace);
+        $this->resetValidation();
+
+        try {
+            $execution = $runs->start($this->workflow->refresh(), Auth::user(), $this->runValues);
+        } catch (ValidationException $exception) {
+            throw ValidationException::withMessages(collect($exception->errors())
+                ->mapWithKeys(fn (array $messages, string $key) => [$key === 'run' ? 'run' : "runValues.{$key}" => $messages])
+                ->all());
+        }
+
+        $this->redirectRoute('workspaces.executions.show', [$this->workspace, $execution], navigate: true);
     }
 
     #[Computed]
@@ -525,14 +587,20 @@ new class extends Component {
 
         <flux:spacer />
 
+        <flux:button size="sm" icon="play-circle" :href="route('workspaces.executions', [$workspace, 'workflow' => $workflow->id])" wire:navigate>{{ __('Runs') }}</flux:button>
         <flux:modal.trigger name="versions">
             <flux:button size="sm" icon="clock">{{ __('Versions') }}</flux:button>
         </flux:modal.trigger>
         <flux:button size="sm" icon="arrow-down-tray" :href="route('workspaces.workflows.export', [$workspace, $workflow])">{{ __('Export') }}</flux:button>
+        @if ($this->canRun)
+            <flux:button size="sm" icon="play" wire:click="startRun" data-test="run-button"
+                :tooltip="$workflow->hasUnpublishedChanges() ? __('Runs the published version, not the draft.') : null">{{ __('Run') }}</flux:button>
+        @endif
         @if ($this->canPublish)
             <flux:button size="sm" variant="primary" icon="rocket-launch" wire:click="publish" data-test="publish-button">{{ __('Publish') }}</flux:button>
         @endif
     </div>
+    <flux:error name="run" class="mx-4 mt-2" />
 
     @if ($publishErrors)
         <flux:callout variant="danger" icon="exclamation-triangle" class="m-3" :heading="__('Fix these before publishing')">
@@ -585,32 +653,7 @@ new class extends Component {
                 @edges-change="edgesChanged"
             >
                 <x-slot:node>
-                    <div class="wag-node" :class="{ 'is-trigger': node.data.isTrigger, 'is-unknown': node.data.unknown }">
-                        <template x-if="! node.data.isTrigger">
-                            <div x-flow-handle:target.left="'in'"></div>
-                        </template>
-                        <div class="wag-node-header">
-                            <span class="wag-node-icon" x-html="node.data.iconHtml"></span>
-                            <div class="min-w-0">
-                                <div class="truncate font-medium" x-text="node.data.name"></div>
-                                <div class="truncate text-xs text-zinc-500" x-text="node.data.typeLabel + ' · ' + node.id"></div>
-                            </div>
-                        </div>
-                        <div class="py-1">
-                            <template x-for="port in node.data.ports" :key="port.id">
-                                <div class="wag-port">
-                                    <span x-text="port.label"></span>
-                                    <div x-flow-handle:source.right="port.id"></div>
-                                </div>
-                            </template>
-                            <template x-if="node.data.hasErrorPort">
-                                <div class="wag-port wag-port-error">
-                                    <span>{{ __('on error') }}</span>
-                                    <div x-flow-handle:source.right="'error'" class="wag-handle-error"></div>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
+                    @include('partials.workflow-canvas-node')
                 </x-slot:node>
             </x-flow>
         </div>
@@ -699,6 +742,22 @@ new class extends Component {
             @endif
         </aside>
     </div>
+
+    <flux:modal name="run" class="md:w-lg">
+        <form wire:submit="run" class="space-y-6">
+            <div>
+                <flux:heading size="lg">{{ __('Run :name', ['name' => $workflow->name]) }}</flux:heading>
+                <flux:text class="mt-1">{{ __('The Manual trigger asks for these inputs. The run uses the published version.') }}</flux:text>
+            </div>
+            @include('partials.form-fields', ['fields' => $this->runFields, 'model' => 'runValues'])
+            <div class="flex justify-end gap-2">
+                <flux:modal.close>
+                    <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
+                </flux:modal.close>
+                <flux:button type="submit" variant="primary" icon="play" data-test="start-run-button">{{ __('Start run') }}</flux:button>
+            </div>
+        </form>
+    </flux:modal>
 
     <flux:modal name="versions" class="md:w-xl">
         <flux:heading size="lg">{{ __('Version history') }}</flux:heading>

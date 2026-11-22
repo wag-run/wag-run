@@ -10,6 +10,7 @@ use App\Engine\Nodes\Triggers;
 use App\Engine\Templates\SandboxedTemplateEngine;
 use App\Engine\Templates\TemplateEngine;
 use App\Services\Assignments;
+use App\Services\RunNotifications;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
@@ -60,5 +61,6 @@ class WorkflowServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Event::listen(ExecutionFinished::class, fn (ExecutionFinished $event) => $this->app->make(Assignments::class)->cancelFor($event->execution));
+        Event::listen(ExecutionFinished::class, fn (ExecutionFinished $event) => $this->app->make(RunNotifications::class)->notifyOwnerIfFailed($event->execution));
     }
 }

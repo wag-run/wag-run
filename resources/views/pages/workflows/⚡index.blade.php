@@ -143,7 +143,13 @@ new class extends Component {
                     <flux:table.cell class="text-sm text-zinc-500">
                         {{ $this->triggerLabels($workflow) ?: '—' }}
                     </flux:table.cell>
-                    <flux:table.cell>{{ $workflow->executions_count }}</flux:table.cell>
+                    <flux:table.cell>
+                        @can('view-executions', $workspace)
+                            <flux:link :href="route('workspaces.executions', [$workspace, 'workflow' => $workflow->id])" wire:navigate>{{ $workflow->executions_count }}</flux:link>
+                        @else
+                            {{ $workflow->executions_count }}
+                        @endcan
+                    </flux:table.cell>
                     <flux:table.cell>{{ $workflow->owner?->name }}</flux:table.cell>
                     <flux:table.cell align="end">
                         <flux:dropdown align="end">

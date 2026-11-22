@@ -136,6 +136,22 @@ class Workspace extends Model
     }
 
     /**
+     * @return HasMany<Execution, $this>
+     */
+    public function executions(): HasMany
+    {
+        return $this->hasMany(Execution::class);
+    }
+
+    /**
+     * @return HasMany<Assignment, $this>
+     */
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(Assignment::class);
+    }
+
+    /**
      * @return HasMany<Invitation, $this>
      */
     public function invitations(): HasMany

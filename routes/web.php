@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\OidcController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\WorkflowExportController;
 use App\Http\Middleware\RememberCurrentWorkspace;
@@ -16,8 +17,14 @@ Route::any('hooks/{key}', WebhookController::class)
 
 Route::livewire('forms/{key}', 'pages::forms.show')->name('forms.show');
 
+Route::middleware(['guest', 'throttle:30,1'])->prefix('auth/oidc/{provider}')->name('oidc.')->group(function () {
+    Route::get('redirect', [OidcController::class, 'redirect'])->name('redirect');
+    Route::get('callback', [OidcController::class, 'callback'])->name('callback');
+});
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::livewire('notifications', 'pages::notifications.index')->name('notifications');
 
     Route::prefix('w/{workspace}')
         ->name('workspaces.')
@@ -32,6 +39,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->middleware('can:view-workflows,workspace')->name('workflows.edit');
             Route::get('workflows/{workflow}/export', WorkflowExportController::class)
                 ->middleware('can:view-workflows,workspace')->name('workflows.export');
+            Route::livewire('runs', 'pages::executions.index')
+                ->middleware('can:view-executions,workspace')->name('executions');
+            Route::livewire('runs/{execution}', 'pages::executions.show')
+                ->middleware('can:view-executions,workspace')->name('executions.show');
+            Route::livewire('inbox', 'pages::inbox.index')
+                ->middleware('can:view-own-assignments,workspace')->name('inbox');
+            Route::livewire('inbox/{assignment}', 'pages::inbox.show')
+                ->middleware('can:view-own-assignments,workspace')->name('inbox.show');
             Route::livewire('variables', 'pages::workspaces.variables')
                 ->middleware('can:view-variables,workspace')->name('variables');
             Route::livewire('secrets', 'pages::workspaces.secrets')
@@ -53,6 +68,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::livewire('workspaces', 'pages::admin.workspaces')->name('workspaces');
             Route::livewire('users', 'pages::admin.users')->name('users');
             Route::livewire('settings', 'pages::admin.settings')->name('settings');
+            Route::livewire('sign-in-providers', 'pages::admin.sign-in-providers')->name('sign-in-providers');
             Route::livewire('audit', 'pages::admin.audit')->name('audit');
         });
 });

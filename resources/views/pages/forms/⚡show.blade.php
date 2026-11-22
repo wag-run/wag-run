@@ -93,7 +93,7 @@ new #[Layout('layouts::auth')] #[Title('Form')] class extends Component {
             $attributes["values.{$field['name']}"] = $field['label'] ?? $field['name'];
         }
 
-        $validated = $this->validate($rules, [], $attributes)['values'] ?? [];
+        $validated = Assignments::castValues($this->fields, $this->validate($rules, [], $attributes)['values'] ?? []);
 
         $engine->start($this->trigger->workflow, [
             'values' => $validated,
@@ -114,30 +114,7 @@ new #[Layout('layouts::auth')] #[Title('Form')] class extends Component {
         </flux:callout>
     @else
         <form wire:submit="submit" class="flex flex-col gap-6">
-            @foreach ($this->fields as $field)
-                @php($model = 'values.'.$field['name'])
-                <div wire:key="field-{{ $field['name'] }}">
-                    @switch($field['type'] ?? 'text')
-                        @case('textarea')
-                            <flux:textarea wire:model="{{ $model }}" :label="$field['label'] ?? $field['name']" :required="$field['required'] ?? false" />
-                            @break
-                        @case('checkbox')
-                            <flux:checkbox wire:model="{{ $model }}" :label="$field['label'] ?? $field['name']" />
-                            @break
-                        @case('select')
-                            <flux:select wire:model="{{ $model }}" :label="$field['label'] ?? $field['name']" :required="$field['required'] ?? false">
-                                <flux:select.option value="">{{ __('Choose…') }}</flux:select.option>
-                                @foreach ((array) ($field['options'] ?? []) as $optionValue => $optionLabel)
-                                    <flux:select.option :value="$optionValue">{{ $optionLabel }}</flux:select.option>
-                                @endforeach
-                            </flux:select>
-                            @break
-                        @default
-                            <flux:input wire:model="{{ $model }}" :type="in_array($field['type'] ?? 'text', ['number', 'email', 'date'], true) ? $field['type'] : 'text'"
-                                :label="$field['label'] ?? $field['name']" :required="$field['required'] ?? false" />
-                    @endswitch
-                </div>
-            @endforeach
+            @include('partials.form-fields', ['fields' => $this->fields, 'model' => 'values'])
 
             <flux:button type="submit" variant="primary" class="w-full" data-test="submit-form-button">{{ __('Submit') }}</flux:button>
         </form>

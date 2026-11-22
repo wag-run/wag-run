@@ -110,3 +110,45 @@ select:focus[data-flux-control] {
     stroke: var(--color-red-400);
     stroke-dasharray: 5 4;
 }
+
+.wag-run-status {
+    @apply shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300;
+}
+
+.wag-node.run-complete .wag-run-status {
+    @apply bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300;
+}
+
+.wag-node.run-failed .wag-run-status {
+    @apply bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300;
+}
+
+.wag-node.run-running .wag-run-status,
+.wag-node.run-pending .wag-run-status {
+    @apply bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300;
+}
+
+.wag-node.run-waiting .wag-run-status {
+    @apply bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300;
+}
+
+.wag-node.run-not_run {
+    @apply opacity-50;
+}
+
+.flow-container .flow-node:has(.wag-node.run-complete) {
+    border-color: var(--color-green-500);
+}
+
+.flow-container .flow-node:has(.wag-node.run-failed) {
+    border-color: var(--color-red-500);
+}
+
+.flow-container .flow-node:has(.wag-node.run-waiting) {
+    border-color: var(--color-amber-500);
+}
+
+.flow-container .flow-node:has(.wag-node.run-running),
+.flow-container .flow-node:has(.wag-node.run-pending) {
+    border-color: var(--color-sky-500);
+}

@@ -49,6 +49,11 @@
             @endif
 
             <flux:sidebar.nav>
+                @php($unreadNotifications = $sidebarUser->unreadNotifications()->count())
+                <flux:sidebar.item icon="bell" :href="route('notifications')" :current="request()->routeIs('notifications')" :badge="$unreadNotifications ?: null" wire:navigate data-test="notifications-link">
+                    {{ __('Notifications') }}
+                </flux:sidebar.item>
+
                 @if ($activeWorkspace)
                     <flux:sidebar.group :heading="__('Workspace')" class="grid">
                         <flux:sidebar.item icon="home" :href="route('workspaces.show', $activeWorkspace)" :current="request()->routeIs('workspaces.show')" wire:navigate>
@@ -59,6 +64,15 @@
                                 {{ __('Workflows') }}
                             </flux:sidebar.item>
                         @endif
+                        @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewExecutions))
+                            <flux:sidebar.item icon="play-circle" :href="route('workspaces.executions', $activeWorkspace)" :current="request()->routeIs('workspaces.executions*')" wire:navigate>
+                                {{ __('Runs') }}
+                            </flux:sidebar.item>
+                        @endif
+                        @php($pendingAssignments = $activeWorkspace->assignments()->where('assignee_id', $sidebarUser->id)->where('status', \App\Enums\AssignmentStatus::Pending)->count())
+                        <flux:sidebar.item icon="inbox" :href="route('workspaces.inbox', $activeWorkspace)" :current="request()->routeIs('workspaces.inbox*')" :badge="$pendingAssignments ?: null" wire:navigate>
+                            {{ __('Inbox') }}
+                        </flux:sidebar.item>
                         @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewVariables))
                             <flux:sidebar.item icon="variable" :href="route('workspaces.variables', $activeWorkspace)" :current="request()->routeIs('workspaces.variables')" wire:navigate>
                                 {{ __('Variables') }}
@@ -102,6 +116,9 @@
                         </flux:sidebar.item>
                         <flux:sidebar.item icon="adjustments-horizontal" :href="route('admin.settings')" :current="request()->routeIs('admin.settings')" wire:navigate>
                             {{ __('Sign-in & defaults') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="finger-print" :href="route('admin.sign-in-providers')" :current="request()->routeIs('admin.sign-in-providers')" wire:navigate>
+                            {{ __('Sign-in providers') }}
                         </flux:sidebar.item>
                         <flux:sidebar.item icon="clipboard-document-list" :href="route('admin.audit')" :current="request()->routeIs('admin.audit')" wire:navigate>
                             {{ __('Audit log') }}

@@ -1,7 +1,10 @@
 <?php
 
 use App\Enums\WorkspacePermission;
+use App\Enums\AssignmentStatus;
+use App\Models\Assignment;
 use App\Models\Workspace;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
@@ -13,6 +16,22 @@ new class extends Component {
     public function role(): ?\App\Enums\WorkspaceRole
     {
         return Auth::user()->roleIn($this->workspace);
+    }
+
+    /**
+     * Approvals and tasks waiting on the signed-in user here.
+     *
+     * @return Collection<int, Assignment>
+     */
+    #[Computed]
+    public function pendingAssignments(): Collection
+    {
+        return $this->workspace->assignments()
+            ->with('execution.workflow')
+            ->where('assignee_id', Auth::id())
+            ->where('status', AssignmentStatus::Pending)
+            ->oldest('due_at')
+            ->get();
     }
 
     /**
@@ -41,6 +60,20 @@ new class extends Component {
             <flux:badge>{{ $this->role?->label() }}</flux:badge>
         </x-slot:actions>
     </x-page-heading>
+
+    @if ($this->pendingAssignments->isNotEmpty())
+        <div class="mb-8">
+            <div class="mb-2 flex items-center justify-between">
+                <flux:heading>{{ __('Waiting on you') }}</flux:heading>
+                <flux:link :href="route('workspaces.inbox', $workspace)" wire:navigate class="text-sm">{{ __('Inbox') }}</flux:link>
+            </div>
+            <div class="divide-y divide-zinc-200 rounded-xl border border-zinc-200 dark:divide-zinc-700 dark:border-zinc-700">
+                @foreach ($this->pendingAssignments as $assignment)
+                    @include('partials.assignment-row', ['assignment' => $assignment])
+                @endforeach
+            </div>
+        </div>
+    @endif
 
     @if ($this->role?->can(WorkspacePermission::ViewWorkflows))
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -82,7 +115,7 @@ new class extends Component {
                 @endforelse
             </div>
         </div>
-    @else
+    @elseif ($this->pendingAssignments->isEmpty())
         <div class="rounded-xl border border-dashed border-zinc-300 p-10 text-center dark:border-zinc-600">
             <flux:heading>{{ __('Your approvals and tasks') }}</flux:heading>
             <flux:text class="mt-1">{{ __('Approvals and tasks assigned to you in this workspace appear here. Nothing is waiting on you.') }}</flux:text>

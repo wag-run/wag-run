@@ -7,6 +7,18 @@
 
         <x-passkey-verify />
 
+        @php($oidcProviders = \App\Models\Organization::current()?->oidcProviders()->where('enabled', true)->orderBy('name')->get() ?? collect())
+        @if ($oidcProviders->isNotEmpty())
+            <div class="flex flex-col gap-2">
+                @foreach ($oidcProviders as $oidcProvider)
+                    <flux:button :href="route('oidc.redirect', $oidcProvider)" icon="finger-print" class="w-full" data-test="oidc-{{ $oidcProvider->slug }}">
+                        {{ __('Sign in with :name', ['name' => $oidcProvider->name]) }}
+                    </flux:button>
+                @endforeach
+            </div>
+            <flux:separator :text="__('or')" />
+        @endif
+
         <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-6">
             @csrf
 

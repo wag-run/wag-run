@@ -153,7 +153,7 @@ class ApprovalAndTaskTest extends TestCase
 
         app(Assignments::class)->submit($assignment, $assignee, ['count' => '12', 'notes' => 'shelf B']);
 
-        $this->assertSame(['count' => '12', 'notes' => 'shelf B'], $this->stepFor($execution, 'check')->output['values']);
+        $this->assertSame(['count' => 12, 'notes' => 'shelf B'], $this->stepFor($execution, 'check')->output['values']);
         $this->assertSame('12 left', $this->stepFor($execution, 'after')->output['value']);
     }
 }
