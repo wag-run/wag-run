@@ -8,8 +8,8 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
- * @property int $organization_id
- * @property int $user_id
+ * @property string $organization_id
+ * @property string $user_id
  * @property OrgRole $role
  * @property Carbon|null $deactivated_at
  */

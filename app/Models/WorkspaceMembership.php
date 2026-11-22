@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 /**
  * @property int $id
  * @property int $workspace_id
- * @property int $user_id
+ * @property string $user_id
  * @property WorkspaceRole $role
  */
 class WorkspaceMembership extends Pivot

@@ -18,14 +18,14 @@ use Illuminate\Support\Carbon;
  * @property int $workspace_id
  * @property string $execution_id
  * @property int $execution_step_id
- * @property int $assignee_id
+ * @property string $assignee_id
  * @property AssignmentType $type
  * @property AssignmentStatus $status
  * @property string $title
  * @property string|null $message
  * @property list<array<string, mixed>>|null $fields
  * @property array<string, mixed>|null $response
- * @property int|null $responded_by
+ * @property string|null $responded_by
  * @property Carbon|null $responded_at
  * @property Carbon|null $due_at
  * @property Carbon|null $created_at

@@ -850,9 +850,12 @@ new class extends Component {
             <flux:button size="sm" icon="clock">{{ __('workflows.edit.versions') }}</flux:button>
         </flux:modal.trigger>
         <flux:button size="sm" icon="arrow-down-tray" :href="route('workspaces.workflows.export', [$workspace, $workflow])">{{ __('workflows.edit.export') }}</flux:button>
-        @if ($this->canRun)
-            <flux:button size="sm" icon="play" wire:click="startRun" data-test="run-button"
-                :tooltip="$workflow->hasUnpublishedChanges() ? __('workflows.edit.runs_the_published_version_not') : null">{{ __('common.run') }}</flux:button>
+        @if ($this->canRun && $workflow->hasUnpublishedChanges())
+            <flux:tooltip :content="__('workflows.edit.runs_the_published_version_not')">
+                <flux:button size="sm" icon="play" wire:click="startRun" data-test="run-button">{{ __('common.run') }}</flux:button>
+            </flux:tooltip>
+        @elseif ($this->canRun)
+            <flux:button size="sm" icon="play" wire:click="startRun" data-test="run-button">{{ __('common.run') }}</flux:button>
         @endif
         @if ($this->canPublish)
             <flux:button size="sm" variant="primary" icon="rocket-launch" wire:click="publish" data-test="publish-button">{{ __('workflows.edit.publish') }}</flux:button>

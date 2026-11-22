@@ -16,7 +16,7 @@ use Illuminate\Support\Str;
 
 /**
  * @property int $id
- * @property int $organization_id
+ * @property string $organization_id
  * @property string $name
  * @property string $slug
  * @property int|null $retention_days
@@ -49,7 +49,7 @@ class Workspace extends Model
         });
     }
 
-    public static function uniqueSlug(string $name, ?int $organizationId, ?int $ignoreId = null): string
+    public static function uniqueSlug(string $name, ?string $organizationId, ?int $ignoreId = null): string
     {
         $base = Str::slug($name) ?: 'workspace';
         $slug = $base;

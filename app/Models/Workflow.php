@@ -17,7 +17,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property string $id a UUID
  * @property int $workspace_id
- * @property int|null $owner_id
+ * @property string|null $owner_id
  * @property string $name
  * @property string|null $description
  * @property ConcurrencyPolicy $concurrency

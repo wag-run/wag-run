@@ -84,7 +84,7 @@ new class extends Component {
         $this->redirectRoute('workspaces.workflows.edit', [$this->workspace, $workflow], navigate: true);
     }
 
-    public function delete(int $id, Workflows $workflows): void
+    public function delete(string $id, Workflows $workflows): void
     {
         $this->authorize('edit-workflows', $this->workspace);
 
@@ -159,7 +159,7 @@ new class extends Component {
                                 <flux:menu.item icon="arrow-down-tray" :href="route('workspaces.workflows.export', [$workspace, $workflow])">{{ __('workflows.index.export_json') }}</flux:menu.item>
                                 @if ($this->canEdit)
                                     <flux:menu.separator />
-                                    <flux:menu.item variant="danger" icon="trash" wire:click="delete({{ $workflow->id }})"
+                                    <flux:menu.item variant="danger" icon="trash" wire:click="delete('{{ $workflow->id }}')"
                                         wire:confirm="{{ __('workflows.index.delete_name_with_its_versions', ['name' => $workflow->name]) }}">
                                         {{ __('common.delete') }}
                                     </flux:menu.item>

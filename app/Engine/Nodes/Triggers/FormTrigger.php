@@ -60,7 +60,7 @@ class FormTrigger extends Node
         return [
             new Output('values', __('common.submitted_values'), 'object', children: Task::outputsForFields($config['fields'] ?? [])),
             new Output('submitted_at', __('nodes.form_trigger.submitted_at'), 'string'),
-            new Output('submitted_by', __('common.submitted_by_user_id'), 'number'),
+            new Output('submitted_by', __('common.submitted_by_user_id'), 'string'),
         ];
     }
 

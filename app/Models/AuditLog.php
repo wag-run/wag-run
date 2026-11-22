@@ -4,16 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 
 /**
- * @property int $id
- * @property int $organization_id
+ * @property string $id a UUID
+ * @property string $organization_id
  * @property int|null $workspace_id
- * @property int|null $user_id
+ * @property string|null $user_id
  * @property string $action
  * @property string|null $subject_type
  * @property string|null $subject_id an integer or UUID key, stored as text
@@ -27,6 +28,8 @@ use Illuminate\Support\Carbon;
 #[Fillable(['organization_id', 'workspace_id', 'user_id', 'action', 'subject_type', 'subject_id', 'subject_label', 'metadata', 'ip_address', 'created_at'])]
 class AuditLog extends Model
 {
+    use HasUuids;
+
     public const UPDATED_AT = null;
 
     protected function casts(): array

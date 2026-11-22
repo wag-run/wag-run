@@ -13,14 +13,14 @@ return new class extends Migration
             $table->foreignId('workspace_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('execution_id')->constrained()->cascadeOnDelete();
             $table->foreignId('execution_step_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('assignee_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignUuid('assignee_id')->constrained('users')->cascadeOnDelete();
             $table->string('type', 20);
             $table->string('status', 20)->default('pending');
             $table->string('title');
             $table->text('message')->nullable();
             $table->json('fields')->nullable();
             $table->json('response')->nullable();
-            $table->foreignId('responded_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('responded_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('responded_at')->nullable();
             $table->timestamp('due_at')->nullable();
             $table->timestamps();

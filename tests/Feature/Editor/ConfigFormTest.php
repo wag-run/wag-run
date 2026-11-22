@@ -12,10 +12,11 @@ class ConfigFormTest extends TestCase
     {
         $task = app(NodeRegistry::class)->make('core.task');
         $config = [
-            'assignee' => 4,
+            'assignee' => '01a2058d-4e48-77b6-8ca9-574fcc05f03a',
             'title' => 'Check {{ trigger.id }}',
             'fields' => [['name' => 'size', 'label' => 'Size', 'type' => 'select', 'required' => true, 'options' => ['s' => 'Small', 'l' => 'Large']]],
             'timeout_hours' => 48,
+            'email' => false,
         ];
 
         $form = ConfigForm::toForm($task, $config);
@@ -50,15 +51,16 @@ class ConfigFormTest extends TestCase
         $this->assertArrayNotHasKey('workflow', ConfigForm::toConfig($runWorkflow, $form));
     }
 
-    public function test_user_lists_are_edited_as_strings_and_stored_as_unique_ids(): void
+    public function test_user_lists_keep_unique_user_uuids_only(): void
     {
         $approval = app(NodeRegistry::class)->make('core.approval');
+        [$ada, $grace] = ['01a2058d-4e46-7a20-8cd6-9b03b2ef8919', '01a2058d-4e48-77b6-8ca9-574fcc05f03a'];
 
-        $form = ConfigForm::toForm($approval, ['approvers' => [4, 9]]);
-        $this->assertSame(['4', '9'], $form['approvers']);
+        $form = ConfigForm::toForm($approval, ['approvers' => [$ada, $grace]]);
+        $this->assertSame([$ada, $grace], $form['approvers']);
 
-        $form['approvers'] = ['9', '4', '9', ''];
-        $this->assertSame([9, 4], ConfigForm::toConfig($approval, $form)['approvers']);
+        $form['approvers'] = [$grace, $ada, $grace, '', '42'];
+        $this->assertSame([$grace, $ada], ConfigForm::toConfig($approval, $form)['approvers']);
     }
 
     public function test_key_value_rows_without_a_key_are_dropped_and_numbers_are_stored_as_numbers(): void

@@ -62,6 +62,7 @@ class Approval extends Node
             new Field('title', __('common.title'), Field::TEXT, required: true, templated: true),
             new Field('message', __('common.details'), Field::TEXTAREA, templated: true),
             new Field('timeout_hours', __('common.timeout_hours'), Field::NUMBER, default: 48),
+            new Field('email', __('nodes.approval.also_email_the_approvers'), Field::BOOLEAN, default: true, description: __('nodes.approval.they_always_get_an_in_app')),
         ];
     }
 
@@ -70,7 +71,7 @@ class Approval extends Node
         return [
             new Output('decision', __('nodes.approval.decision'), 'string', __('nodes.approval.approved_or_rejected')),
             new Output('comment', __('nodes.approval.comment'), 'string'),
-            new Output('responded_by', __('nodes.approval.responded_by_user_id'), 'number'),
+            new Output('responded_by', __('nodes.approval.responded_by_user_id'), 'string'),
             new Output('responded_by_name', __('nodes.approval.responded_by'), 'string'),
             new Output('approvals', __('nodes.approval.approvals'), 'number', __('nodes.approval.how_many_approved')),
             new Output('rejections', __('nodes.approval.rejections'), 'number', __('nodes.approval.how_many_rejected')),
@@ -106,7 +107,7 @@ class Approval extends Node
         $message = $this->text($context->input('message'));
 
         $ids = $approvers->map(fn ($approver) => $this->assignments->create(
-            $context, AssignmentType::Approval, $approver, $title, $message, $dueAt,
+            $context, AssignmentType::Approval, $approver, $title, $message, $dueAt, email: (bool) $context->input('email'),
         )->id)->all();
 
         return NodeResult::waitForResponse($dueAt, ['assignment_ids' => $ids, 'required' => $required]);

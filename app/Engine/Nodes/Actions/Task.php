@@ -77,6 +77,7 @@ class Task extends Node
             new Field('instructions', __('common.instructions'), Field::TEXTAREA, templated: true),
             new Field('fields', __('common.form_fields'), Field::LIST, fields: static::formFieldDefinition()),
             new Field('timeout_hours', __('common.timeout_hours'), Field::NUMBER, default: 48),
+            new Field('email', __('nodes.task.also_email_the_assignee'), Field::BOOLEAN, default: true, description: __('nodes.task.they_always_get_an_in_app')),
         ];
     }
 
@@ -117,7 +118,7 @@ class Task extends Node
     {
         return [
             new Output('values', __('common.submitted_values'), 'object', children: static::outputsForFields($config['fields'] ?? [])),
-            new Output('responded_by', __('common.submitted_by_user_id'), 'number'),
+            new Output('responded_by', __('common.submitted_by_user_id'), 'string'),
             new Output('responded_by_name', __('nodes.task.submitted_by'), 'string'),
         ];
     }
@@ -139,6 +140,7 @@ class Task extends Node
             $instructions === null || $instructions === '' ? null : (string) $instructions,
             $dueAt,
             array_values(array_filter((array) $context->input('fields', []), fn ($field) => is_array($field) && filled($field['name'] ?? null))),
+            email: (bool) $context->input('email'),
         );
 
         return NodeResult::waitForResponse($dueAt, ['assignment_id' => $assignment->id]);

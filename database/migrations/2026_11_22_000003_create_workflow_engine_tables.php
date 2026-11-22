@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('workflows', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignId('workspace_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('owner_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('owner_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('name');
             $table->text('description')->nullable();
             $table->string('concurrency', 20)->default('allow');
@@ -27,7 +27,7 @@ return new class extends Migration
             $table->foreignUuid('workflow_id')->constrained()->cascadeOnDelete();
             $table->unsignedInteger('number');
             $table->json('graph');
-            $table->foreignId('published_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('published_by')->nullable()->constrained('users')->nullOnDelete();
             $table->string('note')->nullable();
             $table->timestamp('created_at')->useCurrent();
 
@@ -45,8 +45,8 @@ return new class extends Migration
             $table->json('input')->nullable();
             $table->json('output')->nullable();
             $table->json('error')->nullable();
-            $table->foreignId('triggered_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('cancelled_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('triggered_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('cancelled_by')->nullable()->constrained('users')->nullOnDelete();
             $table->unsignedBigInteger('parent_step_id')->nullable()->index();
             $table->unsignedSmallInteger('chain_depth')->default(1);
             $table->timestamp('started_at')->nullable();

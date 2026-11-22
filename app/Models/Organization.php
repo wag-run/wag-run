@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\OrgRole;
 use Database\Factories\OrganizationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -15,7 +16,7 @@ use Illuminate\Support\Carbon;
  * The organization layer above workspaces. The first release serves one
  * organization per install; see {@see Organization::current()}.
  *
- * @property int $id
+ * @property string $id a UUID
  * @property string $name
  * @property int|null $default_retention_days
  * @property bool $registration_open
@@ -29,7 +30,7 @@ use Illuminate\Support\Carbon;
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected function casts(): array
     {

@@ -10,8 +10,10 @@ use App\Models\Assignment;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Models\Workspace;
+use App\Notifications\AssignmentNotification;
 use App\Services\Assignments;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 use Tests\Concerns\RunsWorkflows;
 use Tests\TestCase;
@@ -179,6 +181,45 @@ class ApprovalAndTaskTest extends TestCase
         app(Engine::class)->cancel($execution);
 
         $this->assertSame(AssignmentStatus::Cancelled, Assignment::sole()->status);
+    }
+
+    public function test_approvers_are_emailed_only_when_the_node_asks_for_it(): void
+    {
+        Notification::fake();
+        [$emailed, $notEmailed] = User::factory()->orgMember()->count(2)->create();
+
+        $this->runWorkflow($this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger', 'approve' => ['core.approval', ['approvers' => [$emailed->id], 'title' => 'Refund', 'email' => true]]],
+            ['start->approve'],
+        )));
+        $this->runWorkflow($this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger', 'check' => ['core.task', ['assignee' => $notEmailed->id, 'title' => 'Check stock']]],
+            ['start->check'],
+        )));
+
+        $byMail = fn (AssignmentNotification $notification, array $channels) => $channels === ['mail'];
+        Notification::assertSentTo($emailed, AssignmentNotification::class, fn (AssignmentNotification $notification, array $channels) => $channels === ['database']);
+        Notification::assertSentTo($emailed, AssignmentNotification::class, $byMail);
+        Notification::assertSentTo($notEmailed, AssignmentNotification::class, fn (AssignmentNotification $notification, array $channels) => $channels === ['database']);
+        Notification::assertNotSentTo($notEmailed, AssignmentNotification::class, $byMail);
+    }
+
+    public function test_the_assignment_email_carries_the_request_due_date_and_a_link_to_it(): void
+    {
+        $this->freezeSecond();
+        $approver = User::factory()->orgMember()->create();
+        $workflow = $this->approvalWorkflow($approver);
+        $this->runWorkflow($workflow, ['amount' => 120, 'customer' => 'Acme']);
+        $assignment = Assignment::sole();
+
+        $mail = (new AssignmentNotification($assignment, ['mail']))->toMail($approver);
+
+        $this->assertSame('Approval requested: Refund 120', $mail->subject);
+        $this->assertContains("{$workflow->name} in {$workflow->workspace->name} is waiting on you.", $mail->introLines);
+        $this->assertContains('For Acme', $mail->introLines);
+        $this->assertContains('Please respond by '.$assignment->due_at->toDayDateTimeString().'.', $mail->introLines);
+        $this->assertSame('Review and respond', $mail->actionText);
+        $this->assertSame(route('workspaces.inbox.show', [$workflow->workspace, $assignment]), $mail->actionUrl);
     }
 
     public function test_deactivated_assignee_fails_the_step(): void

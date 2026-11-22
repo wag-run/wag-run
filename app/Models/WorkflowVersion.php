@@ -15,7 +15,7 @@ use Illuminate\Support\Carbon;
  * @property string $workflow_id
  * @property int $number
  * @property array<string, mixed> $graph
- * @property int|null $published_by
+ * @property string|null $published_by
  * @property string|null $note
  * @property Carbon $created_at
  * @property-read Workflow $workflow

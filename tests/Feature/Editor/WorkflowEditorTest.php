@@ -301,6 +301,23 @@ class WorkflowEditorTest extends TestCase
         $editor->set('form.mode', 'expression')->assertSeeHtml('data-test="data-picker"');
     }
 
+    public function test_the_run_button_explains_itself_only_when_the_draft_differs_from_the_published_version(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(['start' => 'core.manual_trigger'], []));
+        $owner = User::factory()->memberOf($workspace, WorkspaceRole::Admin)->create();
+        app(Workflows::class)->saveDraft($workflow, $workflow->draft());
+        app(Workflows::class)->publish($workflow, $owner);
+
+        $this->actingAs($user)->get(route('workspaces.workflows.edit', [$workspace, $workflow]))
+            ->assertSee('data-test="run-button"', false)
+            ->assertDontSee('Runs the published version, not the draft.');
+
+        $this->editor($workspace, $workflow, $user)->call('moveNode', 'start', ['x' => 10, 'y' => 10]);
+
+        $this->actingAs($user)->get(route('workspaces.workflows.edit', [$workspace, $workflow]))
+            ->assertSee('Runs the published version, not the draft.');
+    }
+
     public function test_publish_reports_problems_or_creates_a_version(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(['start' => 'core.manual_trigger', 'fetch' => 'core.http_request'], ['start->fetch']));

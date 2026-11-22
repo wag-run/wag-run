@@ -65,7 +65,7 @@ new class extends Component {
         $this->reset('email');
     }
 
-    public function changeRole(int $userId, string $role, WorkspaceManager $workspaces): void
+    public function changeRole(string $userId, string $role, WorkspaceManager $workspaces): void
     {
         $this->authorize('manage-members', $this->workspace);
 
@@ -75,7 +75,7 @@ new class extends Component {
         Flux::toast(text: __('workspaces.members.role_updated'));
     }
 
-    public function remove(int $userId, WorkspaceManager $workspaces): void
+    public function remove(string $userId, WorkspaceManager $workspaces): void
     {
         $this->authorize('manage-members', $this->workspace);
 
@@ -138,7 +138,7 @@ new class extends Component {
                     <flux:table.cell>{{ $member->email }}</flux:table.cell>
                     <flux:table.cell>
                         @if ($this->canManage)
-                            <flux:select size="sm" class="w-32" wire:change="changeRole({{ $member->id }}, $event.target.value)">
+                            <flux:select size="sm" class="w-32" wire:change="changeRole('{{ $member->id }}', $event.target.value)">
                                 @foreach (WorkspaceRole::cases() as $option)
                                     <flux:select.option :value="$option->value" :selected="$member->membership->role === $option">{{ $option->label() }}</flux:select.option>
                                 @endforeach
@@ -149,7 +149,7 @@ new class extends Component {
                     </flux:table.cell>
                     <flux:table.cell align="end">
                         @if ($this->canManage)
-                            <flux:button size="sm" variant="ghost" icon="trash" wire:click="remove({{ $member->id }})"
+                            <flux:button size="sm" variant="ghost" icon="trash" wire:click="remove('{{ $member->id }}')"
                                 wire:confirm="{{ __('workspaces.members.remove_name_from_this_workspace', ['name' => $member->name]) }}" :aria-label="__('common.remove')" />
                         @endif
                     </flux:table.cell>

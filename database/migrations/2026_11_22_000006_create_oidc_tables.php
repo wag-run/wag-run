@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('oidc_providers', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('organization_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('slug');
             $table->string('issuer');
@@ -26,9 +26,9 @@ return new class extends Migration
         });
 
         Schema::create('oidc_identities', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('oidc_provider_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('oidc_provider_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
             $table->string('subject');
             $table->string('email')->nullable();
             $table->timestamp('last_signed_in_at')->nullable();

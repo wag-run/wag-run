@@ -47,6 +47,36 @@
     ::file-selector-button {
         border-color: var(--color-gray-200, currentColor);
     }
+
+    /*
+     * Tailwind's reset gives buttons the default arrow; anything that does
+     * something when clicked shows the pointer instead. Disabled controls
+     * keep the arrow.
+     */
+    a[href],
+    button:not(:disabled),
+    summary,
+    select:not(:disabled),
+    ::file-selector-button,
+    [role="button"]:not([aria-disabled="true"]),
+    [role="menuitem"]:not([aria-disabled="true"], [data-disabled]),
+    [role="menuitemradio"]:not([aria-disabled="true"]),
+    [role="menuitemcheckbox"]:not([aria-disabled="true"]),
+    [role="option"]:not([aria-disabled="true"]),
+    [role="tab"],
+    [role="switch"],
+    [role="checkbox"],
+    [role="radio"],
+    input[type="checkbox"]:not(:disabled),
+    input[type="radio"]:not(:disabled),
+    ui-checkbox,
+    ui-switch,
+    ui-radio,
+    label:has(> input[type="checkbox"], > input[type="radio"]),
+    [wire\:click],
+    [x-on\:click] {
+        cursor: pointer;
+    }
 }
 
 [data-flux-field]:not(ui-radio, ui-checkbox) {

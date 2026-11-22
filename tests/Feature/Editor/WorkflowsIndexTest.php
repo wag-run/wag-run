@@ -111,4 +111,17 @@ class WorkflowsIndexTest extends TestCase
             ->assertSee('Published v1')
             ->assertSee('Webhook');
     }
+
+    public function test_admins_delete_a_workflow_by_its_uuid(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $admin = User::factory()->memberOf($workspace, WorkspaceRole::Admin)->create();
+        $workflow = Workflow::factory()->for($workspace)->create(['name' => 'Old flow']);
+
+        Livewire::actingAs($admin)->test('pages::workflows.index', ['workspace' => $workspace])
+            ->assertSeeHtml("wire:click=\"delete('{$workflow->id}')\"")
+            ->call('delete', $workflow->id);
+
+        $this->assertModelMissing($workflow);
+    }
 }

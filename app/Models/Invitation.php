@@ -12,9 +12,9 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
- * @property int $organization_id
+ * @property string $organization_id
  * @property int|null $workspace_id
- * @property int|null $invited_by
+ * @property string|null $invited_by
  * @property string $email
  * @property OrgRole $org_role
  * @property WorkspaceRole|null $workspace_role

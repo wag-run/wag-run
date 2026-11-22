@@ -25,8 +25,8 @@ use Illuminate\Support\Carbon;
  * @property array<string, mixed>|null $input
  * @property array<string, mixed>|null $output
  * @property array<string, mixed>|null $error
- * @property int|null $triggered_by
- * @property int|null $cancelled_by
+ * @property string|null $triggered_by
+ * @property string|null $cancelled_by
  * @property int|null $parent_step_id
  * @property int $chain_depth 1 for a run nothing else started; one more than its parent's for a run another workflow started
  * @property Carbon|null $started_at

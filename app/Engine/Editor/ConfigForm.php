@@ -66,7 +66,7 @@ class ConfigForm
                 array_filter((array) $value, 'is_array'),
             )),
             Field::BOOLEAN => (bool) $value,
-            Field::USERS => array_values(array_map('strval', array_filter((array) $value, 'is_numeric'))),
+            Field::USERS => array_values(array_filter((array) $value, fn (mixed $id) => is_string($id) && Str::isUuid($id))),
             default => is_array($value) ? json_encode($value) : ($value === null ? '' : (string) $value),
         };
     }
@@ -85,8 +85,8 @@ class ConfigForm
             Field::BOOLEAN => (bool) $value,
             Field::NUMBER => $field->templated && ! is_numeric($value) ? (string) $value : (is_numeric($value) ? $value + 0 : null),
             Field::WORKFLOW => is_string($value) && Str::isUuid($value) ? $value : null,
-            Field::USER => is_numeric($value) ? (int) $value : null,
-            Field::USERS => array_values(array_unique(array_map('intval', array_filter((array) $value, 'is_numeric')))),
+            Field::USER => is_string($value) && Str::isUuid($value) ? $value : null,
+            Field::USERS => array_values(array_unique(array_filter((array) $value, fn (mixed $id) => is_string($id) && Str::isUuid($id)))),
             default => is_string($value) ? $value : null,
         };
     }

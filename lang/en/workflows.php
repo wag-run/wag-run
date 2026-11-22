@@ -100,7 +100,7 @@ return [
         'one_of_these_nodes_has' => 'One of these nodes has an unknown type.',
         'one_per_line_as_value' => 'One per line, as value=Label',
         'started_at' => 'Started at',
-        'use_placeholders_to_insert_data' => 'Use {{ }} to insert data, such as {{ trigger.id }}.',
+        'use_placeholders_to_insert_data' => 'Placeholders can be used in this field.',
         'that_node_no_longer_exists' => 'That node no longer exists. Reload the editor.',
         'that_would_create_a_cycle' => 'That would create a cycle. Use a For loop node to repeat steps.',
         'these_nodes_are_already_connected' => 'These nodes are already connected.',

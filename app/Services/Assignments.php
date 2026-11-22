@@ -15,7 +15,9 @@ use App\Notifications\AssignmentNotification;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 /**
  * Approvals and tasks sent to named people. An assignee who is not a member
@@ -34,7 +36,7 @@ class Assignments
      */
     public function activeUser(mixed $id): ?User
     {
-        $user = is_numeric($id) ? User::query()->find((int) $id) : null;
+        $user = is_string($id) && Str::isUuid($id) ? User::query()->find($id) : null;
 
         return $user && $user->organizationMembership() && ! $user->isDeactivated() ? $user : null;
     }
@@ -54,9 +56,13 @@ class Assignments
     }
 
     /**
+     * Create an assignment and notify the assignee in the app, and by email
+     * when $email is set. A failed email is reported, not thrown, so it
+     * never fails the step that is already waiting on the assignment.
+     *
      * @param  list<array<string, mixed>>  $fields
      */
-    public function create(NodeContext $context, AssignmentType $type, User $assignee, string $title, ?string $message, ?CarbonInterface $dueAt, array $fields = []): Assignment
+    public function create(NodeContext $context, AssignmentType $type, User $assignee, string $title, ?string $message, ?CarbonInterface $dueAt, array $fields = [], bool $email = false): Assignment
     {
         $workspace = $context->workspace();
 
@@ -77,7 +83,19 @@ class Assignments
             'due_at' => $dueAt,
         ]);
 
-        DB::afterCommit(fn () => $assignee->notify(new AssignmentNotification($assignment)));
+        DB::afterCommit(function () use ($assignee, $assignment, $email) {
+            $assignee->notify(new AssignmentNotification($assignment));
+
+            if (! $email) {
+                return;
+            }
+
+            try {
+                $assignee->notify(new AssignmentNotification($assignment, ['mail']));
+            } catch (TransportExceptionInterface $exception) {
+                report($exception);
+            }
+        });
 
         return $assignment;
     }

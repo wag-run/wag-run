@@ -43,10 +43,10 @@ return new class extends Migration
         });
 
         Schema::create('audit_logs', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('organization_id')->constrained()->cascadeOnDelete();
             $table->foreignId('workspace_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignUuid('user_id')->nullable()->constrained()->nullOnDelete();
             $table->string('action', 64);
             $table->string('subject_type')->nullable();
             $table->string('subject_id', 36)->nullable();

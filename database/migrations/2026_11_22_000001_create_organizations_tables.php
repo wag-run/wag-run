@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('organizations', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('name');
             $table->unsignedInteger('default_retention_days')->nullable()->default(30);
             $table->boolean('registration_open')->default(false);
@@ -21,8 +21,8 @@ return new class extends Migration
 
         Schema::create('organization_user', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('organization_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
             $table->string('role', 20)->default('member');
             $table->timestamp('deactivated_at')->nullable();
             $table->timestamps();
@@ -32,7 +32,7 @@ return new class extends Migration
 
         Schema::create('workspaces', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('organization_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('slug');
             $table->unsignedInteger('retention_days')->nullable();
@@ -45,7 +45,7 @@ return new class extends Migration
         Schema::create('workspace_user', function (Blueprint $table) {
             $table->id();
             $table->foreignId('workspace_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
             $table->string('role', 20);
             $table->timestamps();
 
@@ -54,9 +54,9 @@ return new class extends Migration
 
         Schema::create('invitations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('organization_id')->constrained()->cascadeOnDelete();
             $table->foreignId('workspace_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->foreignId('invited_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('invited_by')->nullable()->constrained('users')->nullOnDelete();
             $table->string('email');
             $table->string('org_role', 20)->default('member');
             $table->string('workspace_role', 20)->nullable();

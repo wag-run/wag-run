@@ -58,35 +58,35 @@ new class extends Component {
         Flux::toast(text: __('common.invitation_revoked'));
     }
 
-    public function promote(int $userId, UserDirectory $directory): void
+    public function promote(string $userId, UserDirectory $directory): void
     {
         $this->authorize('org-admin');
         $directory->promote($this->findUser($userId));
         Flux::toast(text: __('admin.users.user_promoted_to_organization_admin'));
     }
 
-    public function demote(int $userId, UserDirectory $directory): void
+    public function demote(string $userId, UserDirectory $directory): void
     {
         $this->authorize('org-admin');
         $directory->demote($this->findUser($userId));
         Flux::toast(text: __('admin.users.user_is_now_an_organization'));
     }
 
-    public function deactivate(int $userId, UserDirectory $directory): void
+    public function deactivate(string $userId, UserDirectory $directory): void
     {
         $this->authorize('org-admin');
         $directory->deactivate($this->findUser($userId), Auth::user());
         Flux::toast(text: __('admin.users.user_deactivated'));
     }
 
-    public function reactivate(int $userId, UserDirectory $directory): void
+    public function reactivate(string $userId, UserDirectory $directory): void
     {
         $this->authorize('org-admin');
         $directory->reactivate($this->findUser($userId));
         Flux::toast(text: __('admin.users.user_reactivated'));
     }
 
-    public function generateResetLink(int $userId, UserDirectory $directory): void
+    public function generateResetLink(string $userId, UserDirectory $directory): void
     {
         $this->authorize('org-admin');
 
@@ -95,7 +95,7 @@ new class extends Component {
         $this->resetLinkFor = $user->email;
     }
 
-    protected function findUser(int $id): User
+    protected function findUser(string $id): User
     {
         return Organization::current()->users()->findOrFail($id);
     }
@@ -166,16 +166,16 @@ new class extends Component {
                             <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" :aria-label="__('common.actions')" />
                             <flux:menu>
                                 @if ($membership->role === OrgRole::Admin)
-                                    <flux:menu.item wire:click="demote({{ $listedUser->id }})">{{ __('admin.users.demote_to_member') }}</flux:menu.item>
+                                    <flux:menu.item wire:click="demote('{{ $listedUser->id }}')">{{ __('admin.users.demote_to_member') }}</flux:menu.item>
                                 @else
-                                    <flux:menu.item wire:click="promote({{ $listedUser->id }})">{{ __('admin.users.promote_to_organization_admin') }}</flux:menu.item>
+                                    <flux:menu.item wire:click="promote('{{ $listedUser->id }}')">{{ __('admin.users.promote_to_organization_admin') }}</flux:menu.item>
                                 @endif
-                                <flux:menu.item icon="key" wire:click="generateResetLink({{ $listedUser->id }})">{{ __('admin.users.generate_password_reset_link') }}</flux:menu.item>
+                                <flux:menu.item icon="key" wire:click="generateResetLink('{{ $listedUser->id }}')">{{ __('admin.users.generate_password_reset_link') }}</flux:menu.item>
                                 <flux:menu.separator />
                                 @if ($membership->deactivated_at)
-                                    <flux:menu.item wire:click="reactivate({{ $listedUser->id }})">{{ __('admin.users.reactivate') }}</flux:menu.item>
+                                    <flux:menu.item wire:click="reactivate('{{ $listedUser->id }}')">{{ __('admin.users.reactivate') }}</flux:menu.item>
                                 @else
-                                    <flux:menu.item variant="danger" wire:click="deactivate({{ $listedUser->id }})"
+                                    <flux:menu.item variant="danger" wire:click="deactivate('{{ $listedUser->id }}')"
                                         wire:confirm="{{ __('admin.users.deactivate_name_they_are_signed', ['name' => $listedUser->name]) }}">
                                         {{ __('admin.users.deactivate') }}
                                     </flux:menu.item>

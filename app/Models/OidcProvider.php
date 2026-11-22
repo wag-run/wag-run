@@ -6,6 +6,7 @@ use Database\Factories\OidcProviderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\RouteKey;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,8 +17,8 @@ use Illuminate\Support\Carbon;
  * An OpenID Connect provider people can sign in with, configured by organization
  * admins in the UI. The client secret is encrypted at rest.
  *
- * @property int $id
- * @property int $organization_id
+ * @property string $id a UUID
+ * @property string $organization_id
  * @property string $name
  * @property string $slug
  * @property string $issuer
@@ -37,7 +38,7 @@ use Illuminate\Support\Carbon;
 class OidcProvider extends Model
 {
     /** @use HasFactory<OidcProviderFactory> */
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected function casts(): array
     {

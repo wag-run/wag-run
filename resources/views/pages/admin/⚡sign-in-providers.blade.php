@@ -12,7 +12,7 @@ use Livewire\Component;
 
 new class extends Component {
     #[Locked]
-    public ?int $editingId = null;
+    public ?string $editingId = null;
 
     /**
      * The slug is fixed when a provider is created, so renaming it does not
@@ -51,7 +51,7 @@ new class extends Component {
         Flux::modal('provider-form')->show();
     }
 
-    public function edit(int $id): void
+    public function edit(string $id): void
     {
         $this->authorize('org-admin');
 
@@ -128,7 +128,7 @@ new class extends Component {
         $this->reset();
     }
 
-    public function test(int $id, OidcClient $client): void
+    public function test(string $id, OidcClient $client): void
     {
         $this->authorize('org-admin');
 
@@ -142,7 +142,7 @@ new class extends Component {
         }
     }
 
-    public function delete(int $id): void
+    public function delete(string $id): void
     {
         $this->authorize('org-admin');
 
@@ -158,7 +158,7 @@ new class extends Component {
         return route('oidc.callback', $slug ?? $this->editingSlug ?? (Str::slug($this->name) ?: 'provider'));
     }
 
-    protected function findProvider(int $id): OidcProvider
+    protected function findProvider(string $id): OidcProvider
     {
         return Organization::current()->oidcProviders()->findOrFail($id);
     }
@@ -198,9 +198,9 @@ new class extends Component {
                     <flux:table.cell>{{ $provider->allow_registration ? __('admin.sign_in_providers.get_an_account') : __('admin.sign_in_providers.need_an_invitation') }}</flux:table.cell>
                     <flux:table.cell>{{ $provider->identities_count }}</flux:table.cell>
                     <flux:table.cell align="end">
-                        <flux:button size="sm" variant="ghost" icon="signal" wire:click="test({{ $provider->id }})" :tooltip="__('admin.sign_in_providers.check_discovery')" :aria-label="__('admin.sign_in_providers.check_discovery')" />
-                        <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit({{ $provider->id }})" :aria-label="__('common.edit')" />
-                        <flux:button size="sm" variant="ghost" icon="trash" wire:click="delete({{ $provider->id }})"
+                        <flux:button size="sm" variant="ghost" icon="signal" wire:click="test('{{ $provider->id }}')" :tooltip="__('admin.sign_in_providers.check_discovery')" :aria-label="__('admin.sign_in_providers.check_discovery')" />
+                        <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit('{{ $provider->id }}')" :aria-label="__('common.edit')" />
+                        <flux:button size="sm" variant="ghost" icon="trash" wire:click="delete('{{ $provider->id }}')"
                             wire:confirm="{{ __('admin.sign_in_providers.delete_name_people_who_signed', ['name' => $provider->name]) }}"
                             :aria-label="__('common.delete')" />
                     </flux:table.cell>
