@@ -5,6 +5,7 @@ namespace Tests\Feature\Runs;
 use App\Enums\ExecutionStatus;
 use App\Enums\StepStatus;
 use App\Enums\WorkspaceRole;
+use App\Models\Execution;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Models\Workspace;
@@ -40,12 +41,14 @@ class ExecutionPagesTest extends TestCase
         $second = $this->runWorkflow($this->branchingWorkflow($workspace));
         $foreign = $this->runWorkflow($this->branchingWorkflow(Workspace::factory()->create()));
 
+        $ref = fn ($execution) => '#'.Execution::reference($execution->id);
+
         Livewire::actingAs($viewer)->test('pages::executions.index', ['workspace' => $workspace])
-            ->assertSee(['#'.$first->id, '#'.$second->id])
-            ->assertDontSee('#'.$foreign->id)
+            ->assertSee([$ref($first), $ref($second)])
+            ->assertDontSee($ref($foreign))
             ->set('workflow', $first->workflow_id)
-            ->assertSee('#'.$first->id)
-            ->assertDontSee('#'.$second->id);
+            ->assertSee($ref($first))
+            ->assertDontSee($ref($second));
     }
 
     public function test_a_run_shows_its_steps_and_the_nodes_it_never_reached(): void

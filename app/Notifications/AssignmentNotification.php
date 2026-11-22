@@ -23,7 +23,7 @@ class AssignmentNotification extends Notification
     }
 
     /**
-     * @return array{title: string, body: string, url: string, icon: string, workspace_id: int, assignment_id: int}
+     * @return array{title: string, body: string, url: string, icon: string, workspace_id: int, assignment_id: string}
      */
     public function toArray(object $notifiable): array
     {

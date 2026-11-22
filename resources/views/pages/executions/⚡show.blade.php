@@ -149,7 +149,11 @@ new class extends Component {
      */
     public function assignments(ExecutionStep $step)
     {
-        return Assignment::query()->with('assignee')->where('execution_step_id', $step->id)->orderBy('id')->get();
+        $order = array_flip(array_values((array) ($step->state['assignment_ids'] ?? [])));
+
+        return Assignment::query()->with('assignee')->where('execution_step_id', $step->id)->get()
+            ->sortBy(fn (Assignment $assignment) => $order[$assignment->id] ?? PHP_INT_MAX)
+            ->values();
     }
 
     public function json(mixed $value): string
@@ -159,7 +163,7 @@ new class extends Component {
 
     public function render()
     {
-        return $this->view()->title(__('common.run_id', ['id' => $this->execution->id]).' · '.$this->execution->workflow->name);
+        return $this->view()->title(__('common.run_id', ['id' => \App\Models\Execution::reference($this->execution->id)]).' · '.$this->execution->workflow->name);
     }
 }; ?>
 
@@ -168,7 +172,7 @@ new class extends Component {
     <div class="flex flex-wrap items-center gap-3 border-b border-zinc-200 bg-white px-4 py-2 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:button size="sm" variant="ghost" icon="arrow-left" :href="route('workspaces.executions', [$workspace, 'workflow' => $execution->workflow_id])" wire:navigate :aria-label="__('runs.show.back_to_runs')" />
         <div class="min-w-0">
-            <flux:heading class="truncate">{{ __('common.run_id', ['id' => $execution->id]) }} · {{ $execution->workflow->name }}</flux:heading>
+            <flux:heading class="truncate">{{ __('common.run_id', ['id' => \App\Models\Execution::reference($execution->id)]) }} · {{ $execution->workflow->name }}</flux:heading>
             <flux:text class="text-xs">
                 {{ __('common.version_n', ['n' => $execution->version->number]) }}
                 · {{ __('runs.trigger_types.'.$execution->trigger_type) }}
@@ -180,7 +184,7 @@ new class extends Component {
         <flux:badge size="sm" :color="$execution->status->color()" data-test="run-status">{{ $execution->status->label() }}</flux:badge>
         @if ($execution->parentStep)
             <flux:link class="text-sm" :href="route('workspaces.executions.show', [$workspace, $execution->parentStep->execution_id])" wire:navigate>
-                {{ __('runs.show.started_by_run_id', ['id' => $execution->parentStep->execution_id]) }}
+                {{ __('runs.show.started_by_run_id', ['id' => \App\Models\Execution::reference($execution->parentStep->execution_id)]) }}
             </flux:link>
         @endif
 
@@ -265,7 +269,7 @@ new class extends Component {
 
                 @foreach ($step->childExecutions as $child)
                     <flux:link wire:key="child-{{ $child->id }}" class="mb-4 block text-sm" :href="route('workspaces.executions.show', [$workspace, $child])" wire:navigate>
-                        {{ __('runs.show.child_run_id_status', ['id' => $child->id, 'status' => $child->status->label()]) }}
+                        {{ __('runs.show.child_run_id_status', ['id' => \App\Models\Execution::reference($child->id), 'status' => $child->status->label()]) }}
                     </flux:link>
                 @endforeach
 

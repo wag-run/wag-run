@@ -67,7 +67,7 @@ class RunWorkflow extends Node
     public function outputs(array $config = []): array
     {
         return ($config['mode'] ?? 'sync') === 'async'
-            ? [new Output('execution_id', __('common.execution_id'), 'number'), new Output('status', __('common.status'), 'string')]
+            ? [new Output('execution_id', __('common.execution_id'), 'string'), new Output('status', __('common.status'), 'string')]
             : [new Output('output', __('nodes.run_workflow.workflow_output'), 'object', __('nodes.run_workflow.output_of_the_last_node'))];
     }
 

@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('workflows', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->foreignId('workspace_id')->constrained()->cascadeOnDelete();
             $table->foreignId('owner_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('name');
@@ -24,7 +24,7 @@ return new class extends Migration
 
         Schema::create('workflow_versions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('workflow_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('workflow_id')->constrained()->cascadeOnDelete();
             $table->unsignedInteger('number');
             $table->json('graph');
             $table->foreignId('published_by')->nullable()->constrained('users')->nullOnDelete();
@@ -35,9 +35,9 @@ return new class extends Migration
         });
 
         Schema::create('executions', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->foreignId('workspace_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('workflow_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('workflow_id')->constrained()->cascadeOnDelete();
             $table->foreignId('workflow_version_id')->constrained()->cascadeOnDelete();
             $table->string('status', 20);
             $table->string('trigger_type', 30);
@@ -59,7 +59,7 @@ return new class extends Migration
 
         Schema::create('execution_steps', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('execution_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('execution_id')->constrained()->cascadeOnDelete();
             $table->string('node_id');
             $table->string('node_type');
             $table->unsignedInteger('attempt')->default(1);

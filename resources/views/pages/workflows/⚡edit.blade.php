@@ -898,7 +898,8 @@ new class extends Component {
                 :title="showMinimap ? @js(__('workflows.edit.hide_minimap')) : @js(__('workflows.edit.show_minimap'))"
                 :aria-label="showMinimap ? @js(__('workflows.edit.hide_minimap')) : @js(__('workflows.edit.show_minimap'))"
                 :aria-pressed="showMinimap.toString()">
-                <flux:icon.map variant="mini" class="size-4" />
+<flux:icon.x-mark variant="micro" class="size-3.5" x-show="showMinimap" />
+                <flux:icon.map variant="mini" class="size-4" x-show="! showMinimap" x-cloak />
             </button>
             <x-flow
                 :nodes="$this->canvas['nodes']"

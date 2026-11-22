@@ -6,6 +6,7 @@ use App\Enums\ExecutionStatus;
 use App\Enums\StepStatus;
 use Carbon\CarbonInterval;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -14,9 +15,9 @@ use Illuminate\Support\Carbon;
 /**
  * One persisted run of a workflow, pinned to the version it started on.
  *
- * @property int $id
+ * @property string $id a UUID
  * @property int $workspace_id
- * @property int $workflow_id
+ * @property string $workflow_id
  * @property int $workflow_version_id
  * @property ExecutionStatus $status
  * @property string $trigger_type
@@ -38,6 +39,8 @@ use Illuminate\Support\Carbon;
 #[Fillable(['workspace_id', 'workflow_id', 'workflow_version_id', 'status', 'trigger_type', 'trigger_node_id', 'input', 'output', 'error', 'triggered_by', 'cancelled_by', 'parent_step_id', 'chain_depth', 'started_at', 'finished_at'])]
 class Execution extends Model
 {
+    use HasUuids;
+
     protected function casts(): array
     {
         return [
@@ -49,6 +52,16 @@ class Execution extends Model
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
         ];
+    }
+
+    /**
+     * A short reference for people to read and quote: the last eight
+     * characters of a run's UUID. The leading characters are a timestamp, so
+     * runs started close together share them.
+     */
+    public static function reference(string $id): string
+    {
+        return substr(str_replace('-', '', $id), -8);
     }
 
     public function isInProgress(): bool

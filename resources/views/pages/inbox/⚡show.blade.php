@@ -97,7 +97,7 @@ new class extends Component {
             <flux:text class="mt-1">
                 {{ $assignment->type->label() }} · {{ $assignment->execution->workflow->name }}
                 @if ($this->canViewRun)
-                    · <flux:link :href="route('workspaces.executions.show', [$workspace, $assignment->execution_id])" wire:navigate>{{ __('common.run_id', ['id' => $assignment->execution_id]) }}</flux:link>
+                    · <flux:link :href="route('workspaces.executions.show', [$workspace, $assignment->execution_id])" wire:navigate>{{ __('common.run_id', ['id' => \App\Models\Execution::reference($assignment->execution_id)]) }}</flux:link>
                 @endif
             </flux:text>
         </div>

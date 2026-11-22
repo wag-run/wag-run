@@ -4,6 +4,7 @@ namespace App\Engine\Editor;
 
 use App\Engine\Definitions\Field;
 use App\Engine\Node;
+use Illuminate\Support\Str;
 
 /**
  * Converts a node's saved config to the shape the editor's form edits, and
@@ -83,7 +84,8 @@ class ConfigForm
             )),
             Field::BOOLEAN => (bool) $value,
             Field::NUMBER => $field->templated && ! is_numeric($value) ? (string) $value : (is_numeric($value) ? $value + 0 : null),
-            Field::WORKFLOW, Field::USER => is_numeric($value) ? (int) $value : null,
+            Field::WORKFLOW => is_string($value) && Str::isUuid($value) ? $value : null,
+            Field::USER => is_numeric($value) ? (int) $value : null,
             Field::USERS => array_values(array_unique(array_map('intval', array_filter((array) $value, 'is_numeric')))),
             default => is_string($value) ? $value : null,
         };

@@ -29,7 +29,7 @@ class RunFailedNotification extends Notification
         $workflow = $this->execution->workflow;
 
         return [
-            'title' => __('notifications.run_failed.run_id_of_workflow_failed', ['id' => $this->execution->id, 'workflow' => $workflow->name]),
+            'title' => __('notifications.run_failed.run_id_of_workflow_failed', ['id' => Execution::reference($this->execution->id), 'workflow' => $workflow->name]),
             'body' => (string) ($this->execution->error['message'] ?? __('common.run_failed')),
             'url' => route('workspaces.executions.show', [$workflow->workspace, $this->execution]),
             'icon' => 'exclamation-triangle',

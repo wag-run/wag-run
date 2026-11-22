@@ -13,7 +13,7 @@ use Illuminate\Support\Carbon;
  * node's key stable so URLs do not change.
  *
  * @property int $id
- * @property int $workflow_id
+ * @property string $workflow_id
  * @property int $workspace_id
  * @property string $node_id
  * @property string $type

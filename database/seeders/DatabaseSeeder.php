@@ -12,7 +12,8 @@ class DatabaseSeeder extends Seeder
 {
     /**
      * Seed a local install: an organization admin and an editor, both signing in
-     * with the factory password ("password"), and a Default workspace.
+     * with the factory password ("password"), a Default workspace and a few
+     * published demo workflows.
      */
     public function run(): void
     {
@@ -34,5 +35,7 @@ class DatabaseSeeder extends Seeder
         $workspace->members()->syncWithoutDetaching([
             $editor->id => ['role' => WorkspaceRole::Editor->value],
         ]);
+
+        $this->call(DemoWorkflowSeeder::class);
     }
 }

@@ -15,7 +15,7 @@ new class extends Component {
     public Workspace $workspace;
 
     #[Url]
-    public ?int $workflow = null;
+    public ?string $workflow = null;
 
     #[Url]
     public string $status = '';
@@ -45,7 +45,7 @@ new class extends Component {
     }
 
     /**
-     * @return array<int, string>
+     * @return array<string, string>
      */
     #[Computed]
     public function workflows(): array
@@ -96,7 +96,7 @@ new class extends Component {
             @forelse ($this->executions as $execution)
                 <flux:table.row :key="$execution->id">
                     <flux:table.cell>
-                        <flux:link :href="route('workspaces.executions.show', [$workspace, $execution])" wire:navigate data-test="run-link">#{{ $execution->id }}</flux:link>
+                        <flux:link :href="route('workspaces.executions.show', [$workspace, $execution])" wire:navigate data-test="run-link">#{{ \App\Models\Execution::reference($execution->id) }}</flux:link>
                     </flux:table.cell>
                     <flux:table.cell>
                         {{ $execution->workflow->name }}

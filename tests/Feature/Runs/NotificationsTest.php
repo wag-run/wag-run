@@ -59,7 +59,7 @@ class NotificationsTest extends TestCase
         $failed = $this->runWorkflow($this->workflowOwnedBy($owner, $workspace, 'failed'));
         $notification = $owner->unreadNotifications()->sole();
 
-        $this->actingAs($owner)->get(route('notifications'))->assertOk()->assertSee('Run #'.$failed->id);
+        $this->actingAs($owner)->get(route('notifications'))->assertOk()->assertSee('Run #'.substr(str_replace('-', '', $failed->id), -8).' of');
 
         Livewire::actingAs($owner)->test('pages::notifications.index')
             ->call('open', $notification->id)

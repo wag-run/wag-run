@@ -48,7 +48,9 @@ return new class extends Migration
             $table->foreignId('workspace_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->string('action', 64);
-            $table->nullableMorphs('subject');
+            $table->string('subject_type')->nullable();
+            $table->string('subject_id', 36)->nullable();
+            $table->index(['subject_type', 'subject_id']);
             $table->string('subject_label')->nullable();
             $table->json('metadata')->nullable();
             $table->string('ip_address', 45)->nullable();

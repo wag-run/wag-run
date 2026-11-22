@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\AssignmentStatus;
 use App\Enums\AssignmentType;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -13,9 +14,9 @@ use Illuminate\Support\Carbon;
  * An approval or task waiting on a named person. The step it belongs to
  * waits until they respond or it times out.
  *
- * @property int $id
+ * @property string $id a UUID
  * @property int $workspace_id
- * @property int $execution_id
+ * @property string $execution_id
  * @property int $execution_step_id
  * @property int $assignee_id
  * @property AssignmentType $type
@@ -36,6 +37,8 @@ use Illuminate\Support\Carbon;
 #[Fillable(['workspace_id', 'execution_id', 'execution_step_id', 'assignee_id', 'type', 'status', 'title', 'message', 'fields', 'response', 'responded_by', 'responded_at', 'due_at'])]
 class Assignment extends Model
 {
+    use HasUuids;
+
     protected function casts(): array
     {
         return [

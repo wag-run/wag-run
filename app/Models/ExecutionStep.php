@@ -18,7 +18,7 @@ use Illuminate\Support\Carbon;
  * 'L12.0' in iteration 0 of the loop whose step is 12, 'L12.0/L15.3' nested.
  *
  * @property int $id
- * @property int $execution_id
+ * @property string $execution_id
  * @property string $node_id
  * @property string $node_type
  * @property int $attempt

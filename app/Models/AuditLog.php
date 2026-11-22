@@ -16,7 +16,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $user_id
  * @property string $action
  * @property string|null $subject_type
- * @property int|null $subject_id
+ * @property string|null $subject_id an integer or UUID key, stored as text
  * @property string|null $subject_label
  * @property array<string, mixed>|null $metadata
  * @property string|null $ip_address

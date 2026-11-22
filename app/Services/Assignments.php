@@ -46,9 +46,9 @@ class Assignments
      */
     public function expireFromState(array $state): void
     {
-        $ids = array_filter([...(array) ($state['assignment_ids'] ?? []), $state['assignment_id'] ?? null], 'is_numeric');
+        $ids = array_filter([...(array) ($state['assignment_ids'] ?? []), $state['assignment_id'] ?? null], fn (mixed $id) => is_string($id) && $id !== '');
 
-        foreach (Assignment::query()->whereKey(array_map('intval', $ids))->get() as $assignment) {
+        foreach (Assignment::query()->whereKey($ids)->get() as $assignment) {
             $this->expire($assignment);
         }
     }
@@ -191,12 +191,14 @@ class Assignments
      */
     protected function approvalOutcome(ExecutionStep $step, array $latest): ?array
     {
+        $order = array_flip(array_values((array) ($step->state['assignment_ids'] ?? [])));
         $assignments = Assignment::query()
             ->with('assignee:id,name')
             ->where('execution_step_id', $step->id)
             ->where('type', AssignmentType::Approval)
-            ->orderBy('id')
-            ->get();
+            ->get()
+            ->sortBy(fn (Assignment $assignment) => $order[$assignment->id] ?? PHP_INT_MAX)
+            ->values();
 
         $required = max(1, (int) ($step->state['required'] ?? 1));
         $approvals = $assignments->where('status', AssignmentStatus::Approved)->count();

@@ -9,9 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('assignments', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->foreignId('workspace_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('execution_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('execution_id')->constrained()->cascadeOnDelete();
             $table->foreignId('execution_step_id')->constrained()->cascadeOnDelete();
             $table->foreignId('assignee_id')->constrained('users')->cascadeOnDelete();
             $table->string('type', 20);
@@ -31,7 +31,7 @@ return new class extends Migration
 
         Schema::create('workflow_triggers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('workflow_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('workflow_id')->constrained()->cascadeOnDelete();
             $table->foreignId('workspace_id')->constrained()->cascadeOnDelete();
             $table->string('node_id');
             $table->string('type', 20);

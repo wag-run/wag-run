@@ -191,7 +191,7 @@ class Coordinator
      * @param  callable(Execution): TReturn  $callback
      * @return TReturn|null
      */
-    public function locked(int $executionId, callable $callback): mixed
+    public function locked(string $executionId, callable $callback): mixed
     {
         return DB::transaction(function () use ($executionId, $callback) {
             $execution = Execution::query()->lockForUpdate()->find($executionId);

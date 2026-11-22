@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
  * An immutable published graph. Every execution is pinned to one.
  *
  * @property int $id
- * @property int $workflow_id
+ * @property string $workflow_id
  * @property int $number
  * @property array<string, mixed> $graph
  * @property int|null $published_by

@@ -39,6 +39,17 @@ class ConfigFormTest extends TestCase
         $this->assertArrayNotHasKey('options', ConfigForm::toConfig($task, $form)['fields'][0], 'choices only apply to choice fields');
     }
 
+    public function test_workflow_choices_are_stored_as_uuids(): void
+    {
+        $runWorkflow = app(NodeRegistry::class)->make('core.run_workflow');
+        $form = ConfigForm::toForm($runWorkflow, ['workflow' => '01a20578-74f2-7106-8f87-942283c8c857']);
+
+        $this->assertSame('01a20578-74f2-7106-8f87-942283c8c857', ConfigForm::toConfig($runWorkflow, $form)['workflow']);
+
+        $form['workflow'] = '42';
+        $this->assertArrayNotHasKey('workflow', ConfigForm::toConfig($runWorkflow, $form));
+    }
+
     public function test_user_lists_are_edited_as_strings_and_stored_as_unique_ids(): void
     {
         $approval = app(NodeRegistry::class)->make('core.approval');

@@ -179,13 +179,13 @@ select:focus[data-flux-control] {
     border-color: var(--color-sky-500);
 }
 
-/* Minimap show/hide button: sits above the minimap, or in its corner when hidden */
+/* Minimap show/hide button: an X in the minimap's top-right corner, or a map icon in the canvas corner when hidden */
 .wag-minimap-toggle {
-    @apply absolute right-3 bottom-[172px] z-20 flex size-7 cursor-pointer items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 shadow-sm hover:text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100;
+    @apply absolute right-[18px] bottom-[138px] z-20 flex size-5 cursor-pointer items-center justify-center text-zinc-400 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-100;
 }
 
 .wag-minimap-hidden .wag-minimap-toggle {
-    @apply bottom-3;
+    @apply right-3 bottom-3 size-7 rounded-md border border-zinc-200 bg-white text-zinc-500 shadow-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400;
 }
 
 .wag-minimap-hidden .flow-minimap {
