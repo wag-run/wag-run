@@ -2,11 +2,17 @@
 
 namespace App\Models;
 
+use App\Enums\InstallRole;
+use App\Enums\WorkspacePermission;
+use App\Enums\WorkspaceRole;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -25,6 +31,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
  * @property string|null $remember_token
+ * @property int|null $current_workspace_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -46,6 +53,134 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * @return BelongsToMany<Organization, $this, OrganizationMembership, 'membership'>
+     */
+    public function organizations(): BelongsToMany
+    {
+        return $this->belongsToMany(Organization::class)
+            ->using(OrganizationMembership::class)
+            ->as('membership')
+            ->withPivot(['role', 'deactivated_at'])
+            ->withTimestamps();
+    }
+
+    /**
+     * @return BelongsToMany<Workspace, $this, WorkspaceMembership, 'membership'>
+     */
+    public function workspaces(): BelongsToMany
+    {
+        return $this->belongsToMany(Workspace::class, 'workspace_user')
+            ->using(WorkspaceMembership::class)
+            ->as('membership')
+            ->withPivot(['id', 'role'])
+            ->withTimestamps();
+    }
+
+    /**
+     * @return BelongsTo<Workspace, $this>
+     */
+    public function currentWorkspace(): BelongsTo
+    {
+        return $this->belongsTo(Workspace::class, 'current_workspace_id');
+    }
+
+    /**
+     * The user's membership of the organization this install serves.
+     */
+    public function organizationMembership(): ?OrganizationMembership
+    {
+        $organization = Organization::current();
+
+        if (! $organization) {
+            return null;
+        }
+
+        return OrganizationMembership::query()
+            ->where('organization_id', $organization->id)
+            ->where('user_id', $this->id)
+            ->first();
+    }
+
+    /**
+     * The user's own membership of a workspace, ignoring install-admin powers.
+     */
+    public function workspaceMembership(Workspace $workspace): ?WorkspaceMembership
+    {
+        return WorkspaceMembership::query()
+            ->where('workspace_id', $workspace->id)
+            ->where('user_id', $this->id)
+            ->first();
+    }
+
+    public function installRole(): ?InstallRole
+    {
+        return $this->organizationMembership()?->role;
+    }
+
+    public function isInstallAdmin(): bool
+    {
+        $membership = $this->organizationMembership();
+
+        return $membership?->role === InstallRole::Admin && $membership->deactivated_at === null;
+    }
+
+    public function isDeactivated(): bool
+    {
+        return $this->organizationMembership()?->deactivated_at !== null;
+    }
+
+    /**
+     * The user's effective role in a workspace. Install admins act as Admin in
+     * every workspace of their organization without being added as a member.
+     */
+    public function roleIn(Workspace $workspace): ?WorkspaceRole
+    {
+        if ($this->isInstallAdmin() && $this->organizationMembership()?->organization_id === $workspace->organization_id) {
+            return WorkspaceRole::Admin;
+        }
+
+        return $this->workspaceMembership($workspace)?->role;
+    }
+
+    public function hasWorkspacePermission(Workspace $workspace, WorkspacePermission $permission): bool
+    {
+        return (bool) $this->roleIn($workspace)?->can($permission);
+    }
+
+    /**
+     * Workspaces the user can move between: every workspace for install
+     * admins, else the ones they are a member of (any role, Guest included).
+     *
+     * @return Collection<int, Workspace>
+     */
+    public function accessibleWorkspaces(): Collection
+    {
+        if ($this->isInstallAdmin()) {
+            return Workspace::query()
+                ->where('organization_id', $this->organizationMembership()?->organization_id)
+                ->orderBy('name')
+                ->get();
+        }
+
+        return $this->workspaces()->orderBy('name')->get();
+    }
+
+    /**
+     * IDs of workspaces where the user is a member with the Admin role.
+     *
+     * @return list<int>
+     */
+    public function administeredWorkspaceIds(): array
+    {
+        return array_values(WorkspaceMembership::query()
+            ->where('user_id', $this->id)
+            ->where('role', WorkspaceRole::Admin->value)
+            ->pluck('workspace_id')
+            ->map(fn (mixed $id): int => intval($id))
+            ->all());
     }
 
     /**

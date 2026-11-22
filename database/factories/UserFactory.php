@@ -2,7 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Enums\InstallRole;
+use App\Enums\WorkspaceRole;
+use App\Models\Organization;
 use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -56,5 +60,52 @@ class UserFactory extends Factory
             'two_factor_recovery_codes' => encrypt(json_encode(['recovery-code-1'])),
             'two_factor_confirmed_at' => now(),
         ]);
+    }
+
+    /**
+     * Make the user an install admin of the install's organization.
+     */
+    public function installAdmin(): static
+    {
+        return $this->afterCreating(fn (User $user) => static::joinOrganization($user, InstallRole::Admin));
+    }
+
+    /**
+     * Make the user a member of the install's organization.
+     */
+    public function installMember(): static
+    {
+        return $this->afterCreating(fn (User $user) => static::joinOrganization($user, InstallRole::Member));
+    }
+
+    /**
+     * Make the user an install member who has been deactivated.
+     */
+    public function deactivated(): static
+    {
+        return $this->afterCreating(function (User $user) {
+            static::joinOrganization($user, InstallRole::Member);
+            $user->organizations()->updateExistingPivot(Organization::current()->id, ['deactivated_at' => now()]);
+        });
+    }
+
+    /**
+     * Add the user to a workspace with a role (and to its organization as a member).
+     */
+    public function memberOf(Workspace $workspace, WorkspaceRole $role): static
+    {
+        return $this->afterCreating(function (User $user) use ($workspace, $role) {
+            static::joinOrganization($user, InstallRole::Member, $workspace->organization);
+            $user->workspaces()->attach($workspace, ['role' => $role->value]);
+        });
+    }
+
+    protected static function joinOrganization(User $user, InstallRole $role, ?Organization $organization = null): void
+    {
+        $organization ??= Organization::current() ?? Organization::factory()->create();
+
+        if (! $user->organizations()->whereKey($organization->id)->exists()) {
+            $user->organizations()->attach($organization, ['role' => $role->value]);
+        }
     }
 }

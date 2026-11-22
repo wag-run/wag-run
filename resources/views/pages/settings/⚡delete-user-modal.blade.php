@@ -2,6 +2,7 @@
 
 use App\Concerns\PasswordValidationRules;
 use App\Livewire\Actions\Logout;
+use App\Services\UserDirectory;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
@@ -13,11 +14,13 @@ new class extends Component {
     /**
      * Delete the currently authenticated user.
      */
-    public function deleteUser(Logout $logout): void
+    public function deleteUser(Logout $logout, UserDirectory $directory): void
     {
         $this->validate([
             'password' => $this->currentPasswordRules(),
         ]);
+
+        $directory->ensureNotLastAdmin(Auth::user(), __('You are the last install admin. Promote another admin before deleting your account.'));
 
         tap(Auth::user(), $logout(...))->delete();
 

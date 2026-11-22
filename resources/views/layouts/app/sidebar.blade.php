@@ -10,25 +10,102 @@
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
+            @php
+                $sidebarUser = auth()->user();
+                $routeWorkspace = request()->route('workspace');
+                $activeWorkspace = $routeWorkspace instanceof \App\Models\Workspace ? $routeWorkspace : $sidebarUser->currentWorkspace;
+                $activeRole = $activeWorkspace ? $sidebarUser->roleIn($activeWorkspace) : null;
+                $activeWorkspace = $activeRole ? $activeWorkspace : null;
+                $switchableWorkspaces = $sidebarUser->accessibleWorkspaces();
+                $isInstallAdmin = $sidebarUser->isInstallAdmin();
+            @endphp
+
+            @if ($switchableWorkspaces->isNotEmpty())
+                <flux:dropdown position="bottom" align="start" class="w-full">
+                    <flux:button variant="subtle" icon:trailing="chevrons-up-down" class="w-full justify-between! truncate" data-test="workspace-switcher">
+                        {{ $activeWorkspace?->name ?? __('Choose a workspace') }}
+                    </flux:button>
+
+                    <flux:menu>
+                        <flux:menu.heading>{{ __('Workspaces') }}</flux:menu.heading>
+                        @foreach ($switchableWorkspaces as $switchable)
+                            <flux:menu.item
+                                wire:key="switch-{{ $switchable->id }}"
+                                :href="route('workspaces.show', $switchable)"
+                                :icon="$activeWorkspace?->is($switchable) ? 'check' : null"
+                                wire:navigate
+                            >
+                                {{ $switchable->name }}
+                            </flux:menu.item>
+                        @endforeach
+                        @if ($isInstallAdmin)
+                            <flux:menu.separator />
+                            <flux:menu.item :href="route('admin.workspaces')" icon="squares-plus" wire:navigate>
+                                {{ __('Manage workspaces') }}
+                            </flux:menu.item>
+                        @endif
+                    </flux:menu>
+                </flux:dropdown>
+            @endif
+
             <flux:sidebar.nav>
-                <flux:sidebar.group :heading="__('Platform')" class="grid">
-                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
+                @if ($activeWorkspace)
+                    <flux:sidebar.group :heading="__('Workspace')" class="grid">
+                        <flux:sidebar.item icon="home" :href="route('workspaces.show', $activeWorkspace)" :current="request()->routeIs('workspaces.show')" wire:navigate>
+                            {{ __('Overview') }}
+                        </flux:sidebar.item>
+                        @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewVariables))
+                            <flux:sidebar.item icon="variable" :href="route('workspaces.variables', $activeWorkspace)" :current="request()->routeIs('workspaces.variables')" wire:navigate>
+                                {{ __('Variables') }}
+                            </flux:sidebar.item>
+                        @endif
+                        @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewSecrets))
+                            <flux:sidebar.item icon="lock-closed" :href="route('workspaces.secrets', $activeWorkspace)" :current="request()->routeIs('workspaces.secrets')" wire:navigate>
+                                {{ __('Secrets') }}
+                            </flux:sidebar.item>
+                        @endif
+                        @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewCredentials))
+                            <flux:sidebar.item icon="key" :href="route('workspaces.credentials', $activeWorkspace)" :current="request()->routeIs('workspaces.credentials')" wire:navigate>
+                                {{ __('Authentication') }}
+                            </flux:sidebar.item>
+                        @endif
+                        @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewMembers))
+                            <flux:sidebar.item icon="users" :href="route('workspaces.members', $activeWorkspace)" :current="request()->routeIs('workspaces.members')" wire:navigate>
+                                {{ __('Members') }}
+                            </flux:sidebar.item>
+                        @endif
+                        @if ($activeRole->can(\App\Enums\WorkspacePermission::ManageSettings))
+                            <flux:sidebar.item icon="cog-6-tooth" :href="route('workspaces.settings', $activeWorkspace)" :current="request()->routeIs('workspaces.settings')" wire:navigate>
+                                {{ __('Settings') }}
+                            </flux:sidebar.item>
+                        @endif
+                        @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewAuditLog))
+                            <flux:sidebar.item icon="clipboard-document-list" :href="route('workspaces.audit', $activeWorkspace)" :current="request()->routeIs('workspaces.audit')" wire:navigate>
+                                {{ __('Audit log') }}
+                            </flux:sidebar.item>
+                        @endif
+                    </flux:sidebar.group>
+                @endif
+
+                @if ($isInstallAdmin)
+                    <flux:sidebar.group :heading="__('Install')" class="grid">
+                        <flux:sidebar.item icon="squares-2x2" :href="route('admin.workspaces')" :current="request()->routeIs('admin.workspaces')" wire:navigate>
+                            {{ __('Workspaces') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="users" :href="route('admin.users')" :current="request()->routeIs('admin.users')" wire:navigate>
+                            {{ __('Users') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="adjustments-horizontal" :href="route('admin.settings')" :current="request()->routeIs('admin.settings')" wire:navigate>
+                            {{ __('Sign-in & defaults') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="clipboard-document-list" :href="route('admin.audit')" :current="request()->routeIs('admin.audit')" wire:navigate>
+                            {{ __('Audit log') }}
+                        </flux:sidebar.item>
+                    </flux:sidebar.group>
+                @endif
             </flux:sidebar.nav>
 
             <flux:spacer />
-
-            <flux:sidebar.nav>
-                <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                    {{ __('Repository') }}
-                </flux:sidebar.item>
-
-                <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
-                    {{ __('Documentation') }}
-                </flux:sidebar.item>
-            </flux:sidebar.nav>
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
         </flux:sidebar>
