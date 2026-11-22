@@ -61,9 +61,26 @@ new class extends Component {
             @endforeach
         </div>
 
-        <div class="mt-8 rounded-xl border border-dashed border-zinc-300 p-10 text-center dark:border-zinc-600">
-            <flux:heading>{{ __('Workflows') }}</flux:heading>
-            <flux:text class="mt-1">{{ __('This workspace has no workflows yet.') }}</flux:text>
+        <div class="mt-8">
+            <div class="mb-2 flex items-center justify-between">
+                <flux:heading>{{ __('Workflows') }}</flux:heading>
+                <flux:link :href="route('workspaces.workflows', $workspace)" wire:navigate class="text-sm">{{ __('All workflows') }}</flux:link>
+            </div>
+            <div class="divide-y divide-zinc-200 rounded-xl border border-zinc-200 dark:divide-zinc-700 dark:border-zinc-700">
+                @forelse ($workspace->workflows()->with('publishedVersion')->latest('updated_at')->limit(8)->get() as $workflow)
+                    <a href="{{ route('workspaces.workflows.edit', [$workspace, $workflow]) }}" wire:navigate wire:key="wf-{{ $workflow->id }}"
+                       class="flex items-center justify-between px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-700/40">
+                        <span class="font-medium">{{ $workflow->name }}</span>
+                        @if ($workflow->publishedVersion)
+                            <flux:badge size="sm" color="green">{{ __('v:n', ['n' => $workflow->publishedVersion->number]) }}</flux:badge>
+                        @else
+                            <flux:badge size="sm">{{ __('Draft') }}</flux:badge>
+                        @endif
+                    </a>
+                @empty
+                    <div class="p-8 text-center text-sm text-zinc-500">{{ __('This workspace has no workflows yet.') }}</div>
+                @endforelse
+            </div>
         </div>
     @else
         <div class="rounded-xl border border-dashed border-zinc-300 p-10 text-center dark:border-zinc-600">

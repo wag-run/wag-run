@@ -143,4 +143,95 @@ final readonly class WorkflowGraph
 
         return false;
     }
+
+    public function withNode(GraphNode $node): self
+    {
+        return new self([...$this->nodes, $node->id => $node], $this->edges);
+    }
+
+    /**
+     * Remove a node and every connection to or from it.
+     */
+    public function withoutNode(string $nodeId): self
+    {
+        $nodes = $this->nodes;
+        unset($nodes[$nodeId]);
+
+        return new self($nodes, array_values(array_filter(
+            $this->edges,
+            fn (GraphEdge $edge) => $edge->source !== $nodeId && $edge->target !== $nodeId,
+        )));
+    }
+
+    public function withEdge(GraphEdge $edge): self
+    {
+        return new self($this->nodes, [...$this->edges, $edge]);
+    }
+
+    public function withoutEdge(string $source, string $port, string $target): self
+    {
+        return new self($this->nodes, array_values(array_filter(
+            $this->edges,
+            fn (GraphEdge $edge) => ! ($edge->source === $source && $edge->sourcePort === $port && $edge->target === $target),
+        )));
+    }
+
+    /**
+     * Drop connections leaving $nodeId from ports it no longer has.
+     *
+     * @param  list<string>  $ports
+     */
+    public function withoutEdgesFromPortsOtherThan(string $nodeId, array $ports): self
+    {
+        return new self($this->nodes, array_values(array_filter(
+            $this->edges,
+            fn (GraphEdge $edge) => $edge->source !== $nodeId || in_array($edge->sourcePort, $ports, true),
+        )));
+    }
+
+    public function hasEdge(string $source, string $port, string $target): bool
+    {
+        foreach ($this->edges as $edge) {
+            if ($edge->source === $source && $edge->sourcePort === $port && $edge->target === $target) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Every node that can reach $nodeId, $nodeId excluded.
+     *
+     * @return array<string, true>
+     */
+    public function ancestorsOf(string $nodeId): array
+    {
+        $ancestors = [];
+
+        foreach (array_keys($this->nodes) as $candidate) {
+            if ($candidate !== $nodeId && $this->canReach($candidate, $nodeId)) {
+                $ancestors[$candidate] = true;
+            }
+        }
+
+        return $ancestors;
+    }
+
+    /**
+     * A node id that is not taken yet, based on $base: http_request,
+     * http_request_2, http_request_3, ...
+     */
+    public function freeId(string $base): string
+    {
+        $base = preg_replace('/[^A-Za-z0-9_]/', '_', $base) ?: 'node';
+        $base = preg_match('/^[A-Za-z_]/', $base) ? $base : "n_{$base}";
+        $id = $base;
+
+        for ($i = 2; $this->has($id); $i++) {
+            $id = "{$base}_{$i}";
+        }
+
+        return $id;
+    }
 }

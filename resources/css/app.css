@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 @import '../../vendor/livewire/flux/dist/flux.css';
+@import '../../vendor/getartisanflow/wireflow/dist/alpineflow.css';
+@import '../../vendor/getartisanflow/wireflow/dist/alpineflow-theme-flux.css';
 
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -64,3 +66,47 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+/* Workflow editor canvas nodes */
+.flow-container .flow-node:has(.wag-node) {
+    --flow-node-padding: 0;
+    padding: 0;
+    min-width: 220px;
+}
+
+.wag-node {
+    @apply w-[220px] text-start text-sm;
+}
+
+.wag-node-header {
+    @apply flex items-center gap-2 border-b border-zinc-200 px-3 py-2 dark:border-zinc-700;
+}
+
+.wag-node-icon {
+    @apply flex size-7 shrink-0 items-center justify-center rounded-md bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-200;
+}
+
+.wag-node.is-trigger .wag-node-icon {
+    @apply bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300;
+}
+
+.wag-node.is-unknown .wag-node-icon {
+    @apply bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300;
+}
+
+.wag-port {
+    @apply relative flex min-h-6 items-center justify-end px-3 text-xs text-zinc-500;
+}
+
+.wag-port-error {
+    @apply text-red-500;
+}
+
+.flow-container .wag-handle-error {
+    background: var(--color-red-500);
+}
+
+.flow-container .wag-edge-error path {
+    stroke: var(--color-red-400);
+    stroke-dasharray: 5 4;
+}

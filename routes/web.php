@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\WebhookController;
+use App\Http\Controllers\WorkflowExportController;
 use App\Http\Middleware\RememberCurrentWorkspace;
 use Illuminate\Support\Facades\Route;
 
@@ -21,9 +22,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('w/{workspace}')
         ->name('workspaces.')
         ->middleware(RememberCurrentWorkspace::class)
+        ->scopeBindings()
         ->group(function () {
             Route::livewire('/', 'pages::workspaces.overview')
                 ->middleware('can:view-own-assignments,workspace')->name('show');
+            Route::livewire('workflows', 'pages::workflows.index')
+                ->middleware('can:view-workflows,workspace')->name('workflows');
+            Route::livewire('workflows/{workflow}', 'pages::workflows.edit')
+                ->middleware('can:view-workflows,workspace')->name('workflows.edit');
+            Route::get('workflows/{workflow}/export', WorkflowExportController::class)
+                ->middleware('can:view-workflows,workspace')->name('workflows.export');
             Route::livewire('variables', 'pages::workspaces.variables')
                 ->middleware('can:view-variables,workspace')->name('variables');
             Route::livewire('secrets', 'pages::workspaces.secrets')

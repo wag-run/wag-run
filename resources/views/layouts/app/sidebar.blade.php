@@ -54,6 +54,11 @@
                         <flux:sidebar.item icon="home" :href="route('workspaces.show', $activeWorkspace)" :current="request()->routeIs('workspaces.show')" wire:navigate>
                             {{ __('Overview') }}
                         </flux:sidebar.item>
+                        @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewWorkflows))
+                            <flux:sidebar.item icon="share" :href="route('workspaces.workflows', $activeWorkspace)" :current="request()->routeIs('workspaces.workflows*')" wire:navigate>
+                                {{ __('Workflows') }}
+                            </flux:sidebar.item>
+                        @endif
                         @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewVariables))
                             <flux:sidebar.item icon="variable" :href="route('workspaces.variables', $activeWorkspace)" :current="request()->routeIs('workspaces.variables')" wire:navigate>
                                 {{ __('Variables') }}

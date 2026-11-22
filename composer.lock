@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4fd36a72a660e9559d5c77ee5412d93e",
+    "content-hash": "2aa8344e6127c8c85311302f7c9aaabe",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -745,6 +745,70 @@
             ],
             "time": "2025-12-03T09:33:47+00:00",
             "published-time": "2025-12-03T09:37:01+00:00"
+        },
+        {
+            "name": "getartisanflow/wireflow",
+            "version": "v0.2.4-alpha",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/getartisanflow/wireflow.git",
+                "reference": "e3253c1793cd4344b323c33828d5ea29e3459ee9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/getartisanflow/wireflow/zipball/e3253c1793cd4344b323c33828d5ea29e3459ee9",
+                "reference": "e3253c1793cd4344b323c33828d5ea29e3459ee9",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/support": "^11.0|^12.0|^13.0",
+                "livewire/livewire": "^3.0|^4.0",
+                "php": "^8.3"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.0",
+                "orchestra/testbench": "^11.0",
+                "pestphp/pest": "^4.4",
+                "pestphp/pest-plugin-laravel": "^4.1"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "ArtisanFlow\\WireFlow\\WireFlowServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "ArtisanFlow\\WireFlow\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Zac Hiler",
+                    "homepage": "https://github.com/zachiler"
+                }
+            ],
+            "description": "Livewire components for AlpineFlow — build interactive flow diagrams in Laravel.",
+            "keywords": [
+                "alpineflow",
+                "diagram",
+                "flow",
+                "laravel",
+                "livewire",
+                "wireflow"
+            ],
+            "support": {
+                "issues": "https://github.com/getartisanflow/wireflow/issues",
+                "source": "https://github.com/getartisanflow/wireflow/tree/v0.2.4-alpha"
+            },
+            "time": "2026-10-16T02:35:31+00:00",
+            "published-time": "2026-10-16T02:44:34+00:00"
         },
         {
             "name": "graham-campbell/result-type",
@@ -11588,7 +11652,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "getartisanflow/wireflow": 15
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
