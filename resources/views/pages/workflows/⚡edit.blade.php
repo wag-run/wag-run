@@ -994,9 +994,14 @@ new class extends Component {
                         </button>
                     </x-flow-context-menu>
 
-                    <div x-show="selectedEdges.size > 0" x-cloak class="wag-edge-bar" x-on:pointerdown.stop x-on:mousedown.stop data-test="edge-bar">
-                        <span class="text-xs text-zinc-500">{{ __('workflows.edit.connection') }}</span>
-                        <flux:button size="xs" variant="danger" icon="trash" x-on:click="removeEdges([...selectedEdges])">{{ __('workflows.edit.delete_connection') }}</flux:button>
+                    <div x-data="wagEdgeTrash" class="pointer-events-none absolute inset-0 z-20" data-test="edge-trash">
+                        <template x-for="button in buttons" :key="button.id">
+                            <button type="button" class="wag-edge-trash" :style="`left: ${button.left}px; top: ${button.top}px`"
+                                x-on:pointerdown.stop x-on:mousedown.stop x-on:click.stop="remove(button.id)"
+                                title="{{ __('workflows.edit.delete_connection') }}" aria-label="{{ __('workflows.edit.delete_connection') }}">
+                                <flux:icon.trash variant="micro" />
+                            </button>
+                        </template>
                     </div>
                 @endif
             </x-flow>

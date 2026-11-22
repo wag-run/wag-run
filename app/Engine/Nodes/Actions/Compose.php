@@ -50,8 +50,8 @@ class Compose extends Node
     {
         return [
             new Field('mode', __('nodes.compose.build_with'), Field::SELECT, required: true, default: 'template', options: ['template' => __('nodes.compose.text_with_placeholders'), 'expression' => __('nodes.compose.expression')]),
-            new Field('template', __('nodes.compose.template'), Field::TEXTAREA, description: __('nodes.compose.text_such_as_order_trigger'), visibleWhen: ['mode' => 'template']),
-            new Field('expression', __('nodes.compose.expression'), Field::TEXT, description: __('nodes.compose.such_as_item_price_item'), visibleWhen: ['mode' => 'expression']),
+            new Field('template', __('nodes.compose.template'), Field::TEXTAREA, templated: true, description: __('nodes.compose.text_such_as_order_trigger'), visibleWhen: ['mode' => 'template']),
+            new Field('expression', __('nodes.compose.expression'), Field::TEXT, expression: true, description: __('nodes.compose.such_as_item_price_item'), visibleWhen: ['mode' => 'expression']),
             new Field('parse_json', __('nodes.compose.parse_the_result_as_json'), Field::BOOLEAN, default: false),
         ];
     }
@@ -64,8 +64,8 @@ class Compose extends Node
     public function execute(NodeContext $context): NodeResult
     {
         $value = $context->config('mode') === 'expression'
-            ? $context->evaluate((string) $context->config('expression'))
-            : $context->render((string) $context->config('template', ''));
+            ? $context->input('expression')
+            : $context->input('template', '');
 
         if ($context->config('parse_json') && is_string($value)) {
             $decoded = json_decode($value, true);

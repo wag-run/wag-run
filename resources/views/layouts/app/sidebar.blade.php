@@ -48,12 +48,9 @@
                 </flux:dropdown>
             @endif
 
-            <flux:sidebar.nav>
-                @php($unreadNotifications = $sidebarUser->unreadNotifications()->count())
-                <flux:sidebar.item icon="bell" :href="route('notifications')" :current="request()->routeIs('notifications')" :badge="$unreadNotifications ?: null" wire:navigate data-test="notifications-link">
-                    {{ __('common.notifications') }}
-                </flux:sidebar.item>
+            @php($unreadNotifications = $sidebarUser->unreadNotifications()->count())
 
+            <flux:sidebar.nav>
                 @if ($activeWorkspace)
                     <flux:sidebar.group :heading="__('common.workspace')" class="grid">
                         <flux:sidebar.item icon="home" :href="route('workspaces.show', $activeWorkspace)" :current="request()->routeIs('workspaces.show')" wire:navigate>
@@ -132,7 +129,7 @@
 
             <flux:spacer />
 
-            <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
+            <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" :unread="$unreadNotifications" />
         </flux:sidebar>
 
         <!-- Mobile User Menu -->
@@ -145,6 +142,12 @@
                 <flux:profile
                     :initials="auth()->user()->initials()"
                     icon-trailing="chevron-down"
+                    :avatar:badge="$unreadNotifications > 0"
+                    avatar:badge:color="red"
+                    avatar:badge:circle
+                    avatar:badge:position="top right"
+                    :aria-label="$unreadNotifications ? trans_choice('navigation.unread_notifications', $unreadNotifications, ['count' => $unreadNotifications]) : null"
+                    data-test="mobile-user-menu-button"
                 />
 
                 <flux:menu>
@@ -167,6 +170,7 @@
                     <flux:menu.separator />
 
                     <flux:menu.radio.group>
+                        @include('partials.notifications-menu-item', ['unread' => $unreadNotifications])
                         <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
                             {{ __('common.settings') }}
                         </flux:menu.item>

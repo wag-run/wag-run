@@ -9,7 +9,6 @@ return [
         'backoff_s' => 'Backoff (s)',
         'concurrent_runs' => 'Concurrent runs',
         'click_or_drag_to_add' => 'Click a node to add it after the selected one, or drag it onto the canvas.',
-        'connection' => 'Connection',
         'copied_n_nodes' => 'Copied :count node.|Copied :count nodes.',
         'copy' => 'Copy',
         'copy_keys' => '⌘C',

@@ -289,6 +289,18 @@ class WorkflowEditorTest extends TestCase
         $this->editor($workspace, $workflow, $user)->assertSet('choices.workflows', [$other->id => 'Billing']);
     }
 
+    public function test_compose_offers_the_data_picker_in_both_modes(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
+            ['start' => 'core.manual_trigger', 'build' => ['core.compose', ['mode' => 'template', 'template' => 'Hi']]],
+            ['start->build'],
+        ));
+        $editor = $this->editor($workspace, $workflow, $user)->call('selectNode', 'build');
+
+        $editor->assertSeeHtml('data-test="data-picker"');
+        $editor->set('form.mode', 'expression')->assertSeeHtml('data-test="data-picker"');
+    }
+
     public function test_publish_reports_problems_or_creates_a_version(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(['start' => 'core.manual_trigger', 'fetch' => 'core.http_request'], ['start->fetch']));

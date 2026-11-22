@@ -1,8 +1,15 @@
+@props(['unread' => 0])
+
 <flux:dropdown position="bottom" align="start">
     <flux:sidebar.profile
         :name="auth()->user()->name"
         :initials="auth()->user()->initials()"
         icon:trailing="chevrons-up-down"
+        :avatar:badge="$unread > 0"
+        avatar:badge:color="red"
+        avatar:badge:circle
+        avatar:badge:position="top right"
+        :aria-label="$unread ? trans_choice('navigation.unread_notifications', $unread, ['count' => $unread]) : null"
         data-test="sidebar-menu-button"
     />
 
@@ -19,6 +26,7 @@
         </div>
         <flux:menu.separator />
         <flux:menu.radio.group>
+            @include('partials.notifications-menu-item', ['unread' => $unread])
             <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
                 {{ __('common.settings') }}
             </flux:menu.item>
