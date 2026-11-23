@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Self-hosting guide
+    url: https://github.com/wag-run/wag-run/blob/main/docs/self-hosting.md
+    about: Settings, HTTPS, logs, backups and upgrades for running your own install.
+  - name: Documentation
+    url: https://github.com/wag-run/wag-run/blob/main/docs/README.md
+    about: Guides for building workflows and running wag.run.

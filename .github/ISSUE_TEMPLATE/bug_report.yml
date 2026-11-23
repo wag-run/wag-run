@@ -1,0 +1,115 @@
+name: Bug report
+description: Something in wag.run isn't working as it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this! A clear report with steps to reproduce is the fastest way to get it fixed.
+
+        Self-hosting? Settings, logs and upgrades are covered in the [self-hosting guide](https://github.com/wag-run/wag-run/blob/main/docs/self-hosting.md).
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before you start
+      options:
+        - label: I've searched the [existing issues](https://github.com/wag-run/wag-run/issues?q=is%3Aissue) and this hasn't been reported yet.
+          required: true
+        - label: This is not a security vulnerability. Those go to a [private security advisory](https://github.com/wag-run/wag-run/security/advisories/new) instead.
+          required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: How are you running wag.run?
+      options:
+        - Self-hosted with Docker Compose
+        - Self-hosted without Docker
+        - Local development
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Commit
+      description: Self-hosted only. The commit you're running, from `git rev-parse --short HEAD` in your checkout.
+      placeholder: e.g. 1ead928
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of the app?
+      options:
+        - Workflow editor
+        - Triggers (manual, webhook, schedule, form)
+        - Actions and nodes
+        - Data and placeholders
+        - Runs and run history
+        - Approvals, tasks and the Inbox
+        - Workspaces, members and roles
+        - Variables, secrets and authentication settings
+        - Organization administration
+        - Sign-in, passkeys, two-factor or single sign-on
+        - Email and notifications
+        - Audit log
+        - Installation or upgrading
+        - Something else
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Include any error message you saw. If a run failed, include the failing step's error from the run page.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: If a workflow is involved, attaching its export (from the editor) makes it much easier to reproduce. Remove any secrets first.
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. See ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        Self-hosted only. Anything about your setup that might matter, such as the settings below, your host OS, and whether you use a reverse proxy.
+        **Leave out APP_KEY, passwords, API keys and other secrets.**
+      placeholder: |
+        APP_URL: https://wag.example.com
+        QUEUE_WORKERS: 2
+        MAIL_MAILER: smtp
+        Host OS: Ubuntu 24.04
+        Reverse proxy: Caddy
+      render: yaml
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: |
+        Self-hosted only. Paste the relevant lines from `docker compose logs app` or `storage/logs/laravel.log`.
+        **Remove any API keys, passwords, or other secrets first.**
+      render: shell
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else?
+      description: Screenshots, your browser, or anything else that might help.
