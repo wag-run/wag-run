@@ -90,6 +90,8 @@ return [
         'who_can_submit' => 'Who can submit',
     ],
     'http_request' => [
+        'allow_insecure' => 'Allow insecure connections',
+        'allow_insecure_help' => 'Skip checking the server\'s TLS certificate, for internal servers with a self-signed certificate or one that does not match the address. The connection is still encrypted, but anyone in between could read or change it.',
         'authentication_key_cannot_be_used' => 'Authentication ":key" cannot be used for HTTP calls.',
         'connection_failed_message' => 'Connection failed: :message',
         'decoded_json_when_the_response' => 'Decoded JSON when the response is JSON, else text.',

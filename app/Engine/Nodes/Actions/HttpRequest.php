@@ -87,6 +87,7 @@ class HttpRequest extends Node
             new Field('timeout', __('common.timeout_seconds'), Field::NUMBER, default: 30),
             new Field('follow_redirects', __('nodes.http_request.follow_redirects'), Field::BOOLEAN, default: true),
             new Field('fail_on_error', __('nodes.http_request.fail_on_an_error_status'), Field::BOOLEAN, default: true),
+            new Field('allow_insecure', __('nodes.http_request.allow_insecure'), Field::BOOLEAN, default: false, description: __('nodes.http_request.allow_insecure_help')),
         ];
     }
 
@@ -160,6 +161,7 @@ class HttpRequest extends Node
         $request = Http::timeout(max(1, min(300, (int) $context->input('timeout', 30))))
             ->withOptions([
                 'allow_redirects' => false,
+                'verify' => ! $context->input('allow_insecure', false),
                 'curl' => [CURLOPT_RESOLVE => ["{$target['host']}:{$target['port']}:{$ip}"]],
             ])
             ->withHeaders(array_filter((array) $context->input('headers', []), fn ($value, $key) => $key !== '', ARRAY_FILTER_USE_BOTH));

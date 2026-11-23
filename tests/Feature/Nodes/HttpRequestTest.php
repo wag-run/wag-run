@@ -202,4 +202,19 @@ class HttpRequestTest extends TestCase
 
         $this->assertStringNotContainsString('tok_abcdef123', json_encode($execution->steps()->get(['input', 'output'])->toArray()));
     }
+
+    public function test_allow_insecure_skips_certificate_checks_only_when_turned_on(): void
+    {
+        $verified = [];
+        Http::fake(function ($request, array $options) use (&$verified) {
+            $verified[] = $options['verify'];
+
+            return Http::response('ok');
+        });
+
+        $this->runWorkflow($this->httpWorkflow(['method' => 'GET', 'url' => 'https://api.example.com/backup']));
+        $this->runWorkflow($this->httpWorkflow(['method' => 'GET', 'url' => 'https://api.example.com/backup', 'allow_insecure' => true]));
+
+        $this->assertSame([true, false], $verified);
+    }
 }
