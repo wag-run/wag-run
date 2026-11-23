@@ -70,7 +70,7 @@ Until email is set up, outgoing mail is written to the log instead of sent.
 
 ## Connecting GitHub and Google
 
-Workspaces connect GitHub and Google accounts through OAuth, for the [GitHub](triggers.md#github) and [Google](actions.md#google) nodes. Each install needs its own OAuth app with each provider, because the provider sends people back to your install's address. Until a provider is set up, its nodes say which settings are missing instead of showing a **Connect** button.
+Workspaces connect GitHub and Google accounts through OAuth, for the [GitHub](triggers.md#github) and [Google](actions.md#google) nodes. Each install needs its own OAuth app with each provider, because the provider sends people back to your install's address. Until a provider is set up, the **Add authentication** form and its nodes say which settings are missing instead of showing a **Connect** button.
 
 The provider only sends people's browsers back to wag.run, so connecting works even when the install isn't reachable from the internet, such as on a private network.
 
@@ -98,7 +98,7 @@ wag.run uses a GitHub **OAuth App**, not a GitHub App.
    ```
 
 5. Apply the settings with `docker compose up -d`.
-6. In the editor, select a GitHub node and choose **Connect GitHub** under its account field. GitHub asks you to approve access to your repositories and their webhooks. Choose **Authorize**, and you're sent back to the node with the account filled in. See [Connecting an account](workspaces.md#connecting-an-account).
+6. In a workspace, open **Authentication → Add authentication**, choose **GitHub**, then **Connect GitHub**. Or select a GitHub node in the editor and choose **Connect GitHub** under its account field. GitHub asks you to approve access to your repositories and their webhooks. Choose **Authorize**, and you're sent back to where you started. See [Connecting an account](workspaces.md#connecting-an-account).
 
 If your organization restricts which OAuth Apps can see its repositories, GitHub's consent page lists it under **Organization access**. Choose **Grant**, or **Request** to ask an organization owner. Otherwise the connection can't see the organization's repositories, and the GitHub nodes fail with `404`.
 
@@ -122,7 +122,7 @@ The webhook is added to the repository, so you'll find it under the repository's
    GOOGLE_CLIENT_SECRET=your-client-secret
    ```
 
-5. In the editor, select a Google node and choose **Connect Google**, the same way as for GitHub.
+5. Connect a Google account the same way as for GitHub, with **Connect Google**.
 
 An **External** app in the **Testing** publishing status only lets the test users you list connect, and Google expires their connections after 7 days. To keep connections working, publish the app or use an **Internal** one.
 

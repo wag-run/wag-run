@@ -77,21 +77,20 @@ Click **Add authentication**, choose a **Type**, and give it a **Key** and an op
 | **AI provider** | LLM call | **Provider**, **API key** (not needed for a local Ollama server) and **Base URL** (optional, but needed for an OpenAI-compatible endpoint) |
 | **SMTP server** | Send email | **Host**, **Port**, **Encryption**, **Username**, **Password**, **From address** and **From name**. Lets a workspace send email through its own server instead of the organization's. |
 | **Chat webhook** | Chat message | **Service** (Slack or Mattermost, Microsoft Teams, Discord, or Google Chat) and **Webhook URL**. See [Chat webhooks](chat-webhooks.md) for getting one from each app. |
-| **GitHub** | GitHub nodes, HTTP call | None: connected from a GitHub node (see below) |
-| **Google** | Google Sheets nodes, HTTP call | None: connected from a Google node (see below) |
+| **GitHub** | GitHub nodes, HTTP call | None: you connect a GitHub account (see below) |
+| **Google** | Google Sheets nodes, HTTP call | None: you connect a Google account (see below) |
 | **OAuth 2.0** | HTTP call | **Authorization URL**, **Token URL**, **Client ID**, **Client secret** and **Scopes**, from the OAuth app you registered with the provider |
 
 ### Connecting an account
 
 GitHub, Google and OAuth 2.0 settings connect to an account instead of holding a password.
 
-**GitHub and Google** are connected from the nodes that use them, not from **Add authentication**:
+**GitHub and Google** accounts are connected with a **Connect** button, from either place:
 
-1. In the editor, select a GitHub or Google node.
-2. Under its account field, choose **Connect GitHub** (or **Connect Google**). If the workspace already has an account connected, the button says **Connect another GitHub account**.
-3. Approve the connection at the provider.
+- **On this page:** choose **Add authentication**, pick **GitHub** or **Google**, and choose **Connect GitHub** (or **Connect Google**). You come back here with the new account listed.
+- **From a node:** in the editor, select a GitHub or Google node and choose **Connect GitHub** under its account field (**Connect another GitHub account** if one is already connected). You come back to the same node with the new account filled in.
 
-You're sent back to the same node, with the new account filled in. wag.run names the setting after the account, such as `github_octocat`, and lists it on **Authentication**, where you can **Reconnect** it (to connect a different account, or after access was revoked at the provider) or delete it. Only workspace admins see the button; others see a note asking them to ask an admin. If the install's OAuth app isn't set up yet, the node says which settings to add instead.
+Either way, you approve the connection at the provider, and wag.run names the setting after the account, such as `github_octocat`. On this page you can then **Reconnect** it (to connect a different account, or after access was revoked at the provider), change its key or description, or delete it. Only workspace admins can connect accounts; on a node, others see a note asking them to ask an admin. If the install's OAuth app isn't set up yet, the form and the node say which settings to add instead of showing the button.
 
 **OAuth 2.0** settings are added under **Add authentication**, with the provider's app details. When you save one, wag.run sends you to the provider to approve the connection, then back to **Authentication**, where the setting shows the account it's connected as.
 

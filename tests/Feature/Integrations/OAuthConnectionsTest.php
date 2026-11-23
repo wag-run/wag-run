@@ -159,15 +159,42 @@ class OAuthConnectionsTest extends TestCase
             ->assertNotFound();
     }
 
-    public function test_the_authentication_page_leaves_github_and_google_to_the_nodes(): void
+    public function test_the_add_authentication_form_connects_github_instead_of_asking_for_details(): void
     {
-        $page = Livewire::actingAs($this->admin)->test('pages::workspaces.credentials', ['workspace' => $this->workspace]);
+        $page = Livewire::actingAs($this->admin)->test('pages::workspaces.credentials', ['workspace' => $this->workspace])
+            ->call('create')
+            ->set('type', 'github')
+            ->assertSee('data-test="connect-account"', false)
+            ->assertDontSee('placeholder="github_api"', false);
 
-        $this->assertSame([], array_intersect(['github', 'google'], array_keys($page->instance()->types())));
-        $this->assertContains('oauth2', array_keys($page->instance()->types()));
-
-        $page->set('type', 'github')->set('key', 'github')->call('save')->assertHasErrors(['type' => 'in']);
+        $location = $page->call('connect')->effects['redirect'];
+        $this->assertSame('https://github.com/login/oauth/authorize', $this->authorizeQuery($location)['url']);
+        $page->call('save')->assertHasErrors(['type' => 'in']);
         $this->assertSame(0, Credential::count());
+
+        Http::fake([
+            'github.com/login/oauth/access_token' => Http::response(['access_token' => 'gho_page']),
+            'api.github.com/user' => Http::response(['login' => 'release-bot']),
+        ]);
+
+        $this->actingAs($this->admin)->get(route('integrations.oauth.callback', ['type' => 'github', 'state' => $this->authorizeQuery($location)['state'], 'code' => 'abc']))
+            ->assertRedirect(route('workspaces.credentials', $this->workspace))
+            ->assertSessionHas('oauth_status', 'github_release_bot is connected as release-bot.')
+            ->assertSessionMissing('editor_select_node');
+        $this->assertSame('github_release_bot', Credential::sole()->key);
+    }
+
+    public function test_the_add_authentication_form_says_what_to_set_when_the_app_is_missing(): void
+    {
+        config(['services.github' => ['client_id' => null, 'client_secret' => null]]);
+
+        Livewire::actingAs($this->admin)->test('pages::workspaces.credentials', ['workspace' => $this->workspace])
+            ->call('create')
+            ->set('type', 'github')
+            ->assertDontSee('data-test="connect-account"', false)
+            ->assertSee('Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in the environment first.')
+            ->call('connect')
+            ->assertNotFound();
     }
 
     public function test_a_callback_from_another_attempt_or_a_declined_consent_is_refused(): void

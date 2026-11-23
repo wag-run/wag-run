@@ -8,6 +8,7 @@ return [
     'connect' => 'Connect',
     'connected' => ':key is connected as :account.',
     'connected_short' => 'Connected',
+    'connect_from_here' => 'You\'ll go to :provider to approve the connection, then come back here. The setting is named after the account you connect. You can also connect an account from any node that uses one.',
     'connection_attempt_expired' => 'This connection attempt expired or was started by someone else. Try connecting again.',
     'could_not_connect' => 'Couldn\'t connect',
     'not_an_oauth_setting' => ':key isn\'t an OAuth authentication setting.',

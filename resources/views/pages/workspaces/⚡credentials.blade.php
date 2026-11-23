@@ -5,6 +5,7 @@ use App\Credentials\OAuthCredentialType;
 use App\Credentials\CredentialTypeRegistry;
 use App\Models\Credential;
 use App\Models\Workspace;
+use App\Services\OAuthConnections;
 use App\Support\Audit;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
@@ -46,20 +47,38 @@ new class extends Component {
     }
 
     /**
-     * The types the form offers. Accounts of providers set up in the
-     * environment, such as GitHub, are connected from a node's account field
-     * instead, so they are left out unless the setting being edited is one.
-     *
      * @return array<string, CredentialType>
      */
     #[Computed]
     public function types(): array
     {
-        return array_filter(
-            app(CredentialTypeRegistry::class)->all(),
-            fn (CredentialType $type, string $key) => ! ($type instanceof OAuthCredentialType && $type->connectsFromNodes()) || ($this->editingId && $key === $this->type),
-            ARRAY_FILTER_USE_BOTH,
-        );
+        return app(CredentialTypeRegistry::class)->all();
+    }
+
+    /**
+     * Whether the form connects a new account instead of asking for
+     * details: adding a provider whose app is set up in the environment,
+     * such as GitHub.
+     */
+    public function connectsNewAccount(): bool
+    {
+        $type = $this->selectedType();
+
+        return ! $this->editingId && $type instanceof OAuthCredentialType && $type->connectsFromNodes();
+    }
+
+    /**
+     * Connect a new account of the chosen type: off to the provider, and
+     * back to this page with the new setting listed.
+     */
+    public function connect(OAuthConnections $connections): void
+    {
+        $this->authorize('manage-credentials', $this->workspace);
+
+        $type = $this->selectedType();
+        abort_unless($this->connectsNewAccount() && $type instanceof OAuthCredentialType && $type->isConfigured(), 404);
+
+        $this->redirect($connections->beginForWorkspace($type, $this->workspace, Auth::user()));
     }
 
     #[Computed]
@@ -117,7 +136,7 @@ new class extends Component {
         $this->validate([
             'key' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z_][A-Za-z0-9_]*$/',
                 Rule::unique('credentials', 'key')->where('workspace_id', $this->workspace->id)->ignore($this->editingId)],
-            'type' => ['required', Rule::in($existing ? [$existing->type] : array_keys($this->types))],
+            'type' => ['required', Rule::in($existing ? [$existing->type] : array_keys(array_filter($registry->all(), fn (CredentialType $type) => ! ($type instanceof OAuthCredentialType && $type->connectsFromNodes()))))],
             'description' => ['nullable', 'string', 'max:255'],
         ], ['key.regex' => __('common.use_letters_numbers_and_underscores')]);
 
@@ -215,8 +234,6 @@ new class extends Component {
         @endif
     </x-page-heading>
 
-    <flux:text class="-mt-2 mb-4 text-sm">{{ __('workspaces.credentials.github_and_google_accounts_are_connected') }}</flux:text>
-
     @if (session('oauth_status'))
         <flux:callout class="mb-4" variant="success" icon="check-circle" :heading="session('oauth_status')" data-test="oauth-status" />
     @endif
@@ -299,6 +316,21 @@ new class extends Component {
             </flux:select>
             <flux:text class="-mt-4 text-sm">{{ $this->selectedType()->description() }}</flux:text>
 
+            @if ($this->connectsNewAccount())
+                @php($oauthType = $this->selectedType())
+                @if ($oauthType->isConfigured())
+                    <flux:text class="text-sm">{{ __('oauth.connect_from_here', ['provider' => $oauthType->label()]) }}</flux:text>
+                    <div class="flex justify-end gap-2">
+                        <flux:modal.close><flux:button variant="ghost">{{ __('common.cancel') }}</flux:button></flux:modal.close>
+                        <flux:button variant="primary" icon="link" wire:click="connect" data-test="connect-account">{{ __('workflows.editor.connect_provider', ['provider' => $oauthType->label()]) }}</flux:button>
+                    </div>
+                @else
+                    <flux:callout variant="warning" icon="exclamation-triangle" :heading="__('workflows.editor.provider_not_set_up', ['provider' => $oauthType->label(), 'keys' => implode(' and ', $oauthType->environmentKeys())])" data-test="oauth-not-set-up" />
+                    <div class="flex justify-end">
+                        <flux:modal.close><flux:button variant="ghost">{{ __('common.cancel') }}</flux:button></flux:modal.close>
+                    </div>
+                @endif
+            @else
             <flux:input wire:model="key" :label="__('common.key')" class="font-mono" placeholder="github_api" required />
 
             @foreach ($this->selectedType()->fields() as $field)
@@ -332,6 +364,7 @@ new class extends Component {
                 <flux:modal.close><flux:button variant="ghost">{{ __('common.cancel') }}</flux:button></flux:modal.close>
                 <flux:button type="submit" variant="primary">{{ __('common.save') }}</flux:button>
             </div>
+            @endif
         </form>
     </flux:modal>
 </section>

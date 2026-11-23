@@ -23,12 +23,13 @@ use Throwable;
 /**
  * Connects OAuth authentication settings and keeps their tokens fresh.
  *
- * Connecting is the authorization code flow with PKCE. It starts one of two
- * ways: from a saved setting on the Authentication page (to connect it or
- * connect it again), or from a node's account field in the editor, for a
- * provider whose app is set up in the environment, such as GitHub. Then the
- * setting is created only once the provider approves, named after the
- * account, and filled into the node.
+ * Connecting is the authorization code flow with PKCE. It starts from a
+ * saved setting (to connect it or connect it again), or, for a provider
+ * whose app is set up in the environment such as GitHub, as a new account:
+ * from the Authentication page's Connect button or from a node's account
+ * field in the editor. A new account's setting is created only once the
+ * provider approves, named after the account, and, from a node, filled into
+ * that node.
  *
  * The session only holds the attempt: who started it, where, and the PKCE
  * verifier. Client secrets never leave the setting or the environment.
@@ -54,6 +55,15 @@ class OAuthConnections
     public function begin(Credential $credential, User $user): string
     {
         return $this->start($this->typeOf($credential), $credential->workspace, $user, $credential->config, ['credential_id' => $credential->id]);
+    }
+
+    /**
+     * Start connecting a new account of $type from the workspace's
+     * Authentication page. On success the new setting is listed there.
+     */
+    public function beginForWorkspace(OAuthCredentialType $type, Workspace $workspace, User $user): string
+    {
+        return $this->start($type, $workspace, $user, [], []);
     }
 
     /**
