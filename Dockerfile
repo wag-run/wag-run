@@ -32,7 +32,7 @@ RUN composer install --no-dev --classmap-authoritative --no-interaction --no-pro
 # ---------------------------------------------------------------------------
 # assets: the Vite build. Node never reaches the final image.
 # ---------------------------------------------------------------------------
-FROM node:22-bookworm-slim AS assets
+FROM node:26-bookworm-slim AS assets
 
 ARG VITE_APP_NAME=wag.run
 ENV VITE_APP_NAME=$VITE_APP_NAME
