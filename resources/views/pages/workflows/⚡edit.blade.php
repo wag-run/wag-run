@@ -1148,11 +1148,6 @@ new class extends Component {
 
                 @if ($this->canEdit)
                     <x-flow-context-menu scope="node" class="wag-menu" x-on:pointerdown.stop x-on:mousedown.stop>
-                        <button type="button" class="wag-menu-item" data-test="node-menu-settings"
-                            @click="$wire.selectNode(contextMenu.node.id); $store.editorLayout.showSettingsForNode(); closeContextMenu()">
-                            <flux:icon.adjustments-horizontal variant="micro" />
-                            <span class="flex-1">{{ __('workflows.edit.node_settings') }}</span>
-                        </button>
                         <button type="button" class="wag-menu-item" data-test="node-menu-copy"
                             @click="$wire.copyNodes(selectedNodes.has(contextMenu.node.id) ? [...selectedNodes] : [contextMenu.node.id]); closeContextMenu()">
                             <flux:icon.document-duplicate variant="micro" />
@@ -1170,6 +1165,12 @@ new class extends Component {
                             <flux:icon.trash variant="micro" />
                             <span class="flex-1">{{ __('workflows.edit.delete') }}</span>
                             <kbd class="wag-kbd">{{ __('workflows.edit.delete_keys') }}</kbd>
+                        </button>
+                        <div class="wag-menu-separator" role="separator"></div>
+                        <button type="button" class="wag-menu-item" data-test="node-menu-settings"
+                            @click="$wire.selectNode(contextMenu.node.id); $store.editorLayout.showSettingsForNode(); closeContextMenu()">
+                            <flux:icon.adjustments-horizontal variant="micro" />
+                            <span class="flex-1">{{ __('workflows.edit.node_settings') }}</span>
                         </button>
                     </x-flow-context-menu>
 
