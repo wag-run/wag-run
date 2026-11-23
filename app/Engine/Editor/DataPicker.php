@@ -128,6 +128,14 @@ class DataPicker
             if ($output->type === 'object' && $output->children !== []) {
                 array_push($items, ...$this->flatten($output->children, $path, $label));
             }
+
+            if ($output->type === 'file') {
+                array_push($items, ...$this->flatten([
+                    new Output('name', __('run_files.name'), 'string'),
+                    new Output('mime', __('run_files.type'), 'string'),
+                    new Output('size', __('run_files.size_in_bytes'), 'number'),
+                ], $path, $label));
+            }
         }
 
         return $items;

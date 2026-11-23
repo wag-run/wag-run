@@ -4,6 +4,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OidcController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\WorkflowExportController;
+use App\Http\Controllers\WorkflowFileController;
 use App\Http\Middleware\RememberCurrentWorkspace;
 use Illuminate\Support\Facades\Route;
 
@@ -44,6 +45,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->middleware('can:view-executions,workspace')->name('executions');
             Route::livewire('runs/{execution}', 'pages::executions.show')
                 ->middleware('can:view-executions,workspace')->name('executions.show');
+            Route::get('runs/{execution}/files/{file}', [WorkflowFileController::class, 'download'])
+                ->middleware('can:view-executions,workspace')->name('executions.files.download');
             Route::get('inbox', fn () => redirect()->route('inbox'))->name('inbox');
             Route::livewire('inbox/{assignment}', 'pages::inbox.show')
                 ->middleware('can:view-own-assignments,workspace')->name('inbox.show');

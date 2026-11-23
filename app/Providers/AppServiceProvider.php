@@ -7,10 +7,12 @@ use App\Credentials\Types\AiProvider;
 use App\Credentials\Types\ApiToken;
 use App\Credentials\Types\ChatWebhook;
 use App\Credentials\Types\HttpBasic;
+use App\Credentials\Types\S3Storage;
 use App\Credentials\Types\Smtp;
 use App\Enums\WorkspacePermission;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\WorkflowFiles;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\DevCommands;
 use Illuminate\Support\Facades\Date;
@@ -26,6 +28,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->scoped(WorkflowFiles::class);
+
         $this->app->singleton(CredentialTypeRegistry::class, function () {
             $registry = new CredentialTypeRegistry;
 
@@ -34,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
             $registry->register(new AiProvider);
             $registry->register(new Smtp);
             $registry->register(new ChatWebhook);
+            $registry->register(new S3Storage);
 
             return $registry;
         });

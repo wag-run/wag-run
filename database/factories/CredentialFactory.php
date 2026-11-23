@@ -61,6 +61,25 @@ class CredentialFactory extends Factory
         ]);
     }
 
+    /**
+     * @param  array<string, string>  $overrides
+     */
+    public function s3(array $overrides = []): static
+    {
+        return $this->state(fn () => [
+            'type' => 's3',
+            'config' => [
+                'access_key_id' => 'AKIAEXAMPLE',
+                'secret_access_key' => 'secret-'.fake()->sha1(),
+                'region' => 'us-east-1',
+                'bucket' => 'backups',
+                'endpoint' => '',
+                'path_style' => 'no',
+                ...$overrides,
+            ],
+        ]);
+    }
+
     public function aiProvider(string $provider = 'anthropic'): static
     {
         return $this->state(fn () => [

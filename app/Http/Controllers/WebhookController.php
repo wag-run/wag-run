@@ -4,10 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Engine\Engine;
 use App\Models\WorkflowTrigger;
+use App\Models\Workspace;
+use App\Services\WorkflowFiles;
 use App\Support\AddressAllowlist;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
+use RuntimeException;
+use Symfony\Component\Mime\MimeTypes;
 
 /**
  * Receives requests for webhook triggers and starts the workflow.
@@ -35,7 +40,13 @@ class WebhookController extends Controller
             return response()->json(['message' => __('webhooks.request_could_not_be_verified')], 403);
         }
 
-        $execution = $engine->start($trigger->workflow, $this->payload($request), triggerType: 'webhook', triggerNodeId: $trigger->node_id);
+        try {
+            $payload = $this->payload($request, $trigger->workflow->workspace);
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 413);
+        }
+
+        $execution = $engine->start($trigger->workflow, $payload, triggerType: 'webhook', triggerNodeId: $trigger->node_id);
 
         return response()->json(['execution_id' => $execution->id, 'status' => $execution->status->value], 202);
     }
@@ -80,11 +91,30 @@ class WebhookController extends Controller
     /**
      * @return array<string, mixed>
      */
-    protected function payload(Request $request): array
+    /**
+     * What the trigger receives. Uploaded files arrive as files; so does a
+     * body that is not text, such as an image posted as is.
+     *
+     * @return array<string, mixed>
+     */
+    protected function payload(Request $request, Workspace $workspace): array
     {
+        $files = app(WorkflowFiles::class);
         $body = $request->isJson() ? $request->json()->all() : ($request->request->all() ?: $request->getContent());
 
-        return [
+        if (is_string($body) && $body !== '' && ! mb_check_encoding($body, 'UTF-8')) {
+            $type = trim(Str::before((string) $request->header('Content-Type'), ';')) ?: null;
+            $body = $files->store($workspace, null, $body, 'body'.($type ? '.'.(MimeTypes::getDefault()->getExtensions($type)[0] ?? 'bin') : ''), $type);
+        }
+
+        $uploads = array_map(
+            fn (mixed $upload) => is_array($upload)
+                ? array_values(array_map(fn (UploadedFile $file) => $files->storeUpload($workspace, null, $file), array_filter($upload, fn ($file) => $file instanceof UploadedFile)))
+                : $files->storeUpload($workspace, null, $upload),
+            $request->allFiles(),
+        );
+
+        return array_filter([
             'method' => $request->method(),
             'headers' => collect($request->headers->all())
                 ->except(['cookie', 'authorization', 'x-webhook-token', 'x-signature'])
@@ -92,7 +122,8 @@ class WebhookController extends Controller
                 ->all(),
             'query' => $request->query(),
             'body' => $body,
+            'files' => $uploads ?: null,
             'ip' => $request->ip(),
-        ];
+        ], fn (mixed $value) => $value !== null);
     }
 }

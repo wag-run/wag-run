@@ -15,6 +15,7 @@ use App\Models\Organization;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowVersion;
+use App\Services\WorkflowFiles;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
@@ -29,6 +30,7 @@ class Engine
     public function __construct(
         protected Coordinator $coordinator,
         protected NodeRegistry $registry,
+        protected WorkflowFiles $files,
     ) {}
 
     /**
@@ -70,7 +72,7 @@ class Engine
 
         $chainDepth = (($parentStep?->execution ?? $startedBy)?->chain_depth ?? 0) + 1;
 
-        return DB::transaction(function () use ($workflow, $version, $isTest, $input, $user, $triggerType, $triggerNodeId, $parentStep, $chainDepth) {
+        $execution = DB::transaction(function () use ($workflow, $version, $isTest, $input, $user, $triggerType, $triggerNodeId, $parentStep, $chainDepth) {
             Workflow::query()->lockForUpdate()->find($workflow->id);
 
             $inProgress = $workflow->executions()->where('is_test', false)->whereIn('status', ExecutionStatus::inProgress())->get();
@@ -118,10 +120,15 @@ class Engine
             }
 
             $execution = Execution::create([...$attributes, 'status' => ExecutionStatus::Running]);
+            $this->files->claim($execution, $input);
             $this->coordinator->startAt($execution, $triggerNodeId);
 
             return $execution;
         });
+
+        $this->files->claim($execution, $input);
+
+        return $execution;
     }
 
     /**

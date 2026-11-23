@@ -10,8 +10,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 new class extends Component {
+    use WithFileUploads;
+
     public Workspace $workspace;
 
     public Assignment $assignment;
@@ -209,7 +212,7 @@ new class extends Component {
                 <p class="whitespace-pre-line">{{ $assignment->response['comment'] }}</p>
             @endif
             @foreach ($assignment->response['values'] ?? [] as $key => $value)
-                <div wire:key="value-{{ $key }}" class="flex gap-2"><span class="text-zinc-500">{{ collect($this->fields)->firstWhere('name', $key)['label'] ?? $key }}:</span> <span>{{ is_bool($value) ? ($value ? __('inbox.show.yes') : __('inbox.show.no')) : $value }}</span></div>
+                <div wire:key="value-{{ $key }}" class="flex gap-2"><span class="text-zinc-500">{{ collect($this->fields)->firstWhere('name', $key)['label'] ?? $key }}:</span> <span>{{ \App\Services\WorkflowFiles::isReference($value) ? $value['name'] : (is_bool($value) ? ($value ? __('inbox.show.yes') : __('inbox.show.no')) : (is_array($value) ? json_encode($value) : $value)) }}</span></div>
             @endforeach
         </div>
     @endif

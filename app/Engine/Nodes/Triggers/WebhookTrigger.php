@@ -64,6 +64,7 @@ class WebhookTrigger extends Node
             new Output('headers', __('common.headers'), 'object'),
             new Output('query', __('common.query_parameters'), 'object'),
             new Output('body', __('common.body'), 'any', __('nodes.webhook_trigger.decoded_json_or_form_fields')),
+            new Output('files', __('nodes.webhook_trigger.uploaded_files'), 'object', __('nodes.webhook_trigger.uploaded_files_help')),
             new Output('ip', __('nodes.webhook_trigger.caller_ip'), 'string'),
         ];
     }

@@ -38,6 +38,14 @@ return [
             'report' => false,
         ],
 
+        'workflow_files' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/workflow-files'),
+            'serve' => false,
+            'throw' => true,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

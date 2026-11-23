@@ -36,6 +36,7 @@ class Task extends Node
             'date' => __('nodes.task.field_types.date'),
             'checkbox' => __('nodes.task.field_types.checkbox'),
             'select' => __('nodes.task.field_types.select'),
+            'file' => __('nodes.task.field_types.file'),
         ];
     }
 
@@ -108,6 +109,7 @@ class Task extends Node
             fn (array $field) => new Output((string) $field['name'], (string) ($field['label'] ?? $field['name']), match ($field['type'] ?? 'text') {
                 'number' => 'number',
                 'checkbox' => 'boolean',
+                'file' => 'file',
                 default => 'string',
             }),
             array_filter(is_array($fields) ? $fields : [], fn ($field) => is_array($field) && filled($field['name'] ?? null)),

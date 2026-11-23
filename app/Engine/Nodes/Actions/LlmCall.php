@@ -9,9 +9,13 @@ use App\Engine\Node;
 use App\Engine\NodeContext;
 use App\Engine\NodeResult;
 use App\Enums\NodeKind;
+use App\Models\WorkflowFile;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Ai;
+use Laravel\Ai\Files\Document;
+use Laravel\Ai\Files\Image;
 use Laravel\Ai\Responses\StructuredAgentResponse;
+use RuntimeException;
 use Throwable;
 
 use function Laravel\Ai\agent;
@@ -81,6 +85,7 @@ class LlmCall extends Node
             new Field('model', __('nodes.llm_call.model'), Field::TEXT, required: true, description: __('nodes.llm_call.provider_s_model_name_such')),
             new Field('system', __('common.instructions'), Field::TEXTAREA, templated: true),
             new Field('prompt', __('nodes.llm_call.prompt'), Field::TEXTAREA, required: true, templated: true),
+            new Field('attachments', __('nodes.llm_call.attachments'), Field::TEXT, templated: true, description: __('nodes.llm_call.attachments_help')),
             new Field('output', __('nodes.llm_call.response'), Field::SELECT, required: true, default: 'text', options: ['text' => __('nodes.llm_call.free_text'), 'structured' => __('nodes.llm_call.structured_data')]),
             new Field('schema', __('nodes.llm_call.structured_fields'), Field::SCHEMA, fields: [
                 new Field('name', __('common.key'), Field::TEXT, required: true),
@@ -143,6 +148,12 @@ class LlmCall extends Node
             return NodeResult::fail(__('nodes.llm_call.add_at_least_one_structured'), retryable: false);
         }
 
+        try {
+            $attachments = array_map($this->attachment(...), $context->files($context->input('attachments')));
+        } catch (RuntimeException $e) {
+            return NodeResult::fail($e->getMessage(), retryable: false);
+        }
+
         $agent = agent(
             instructions: (string) $context->input('system', ''),
             schema: $fields === [] ? null : fn (JsonSchema $schema) => $this->schema($schema, $fields),
@@ -151,6 +162,7 @@ class LlmCall extends Node
         try {
             $response = $agent->prompt(
                 (string) $context->input('prompt'),
+                attachments: $attachments,
                 provider: [$provider],
                 model: (string) $context->input('model'),
                 timeout: max(5, min(600, (int) $context->input('timeout', 120))),
@@ -167,6 +179,25 @@ class LlmCall extends Node
         return NodeResult::complete($response instanceof StructuredAgentResponse
             ? ['data' => $response->toArray(), 'usage' => $usage]
             : ['text' => (string) $response, 'usage' => $usage]);
+    }
+
+    /**
+     * A workflow file as something the model can read: an image, or a
+     * document such as a PDF or a text file.
+     *
+     * @throws RuntimeException for other kinds of file
+     */
+    protected function attachment(WorkflowFile $file): Image|Document
+    {
+        if (str_starts_with($file->mime, 'image/')) {
+            return Image::fromStorage($file->path, $file->disk);
+        }
+
+        if ($file->mime === 'application/pdf' || str_starts_with($file->mime, 'text/')) {
+            return Document::fromStorage($file->path, $file->disk);
+        }
+
+        throw new RuntimeException(__('nodes.llm_call.cannot_attach', ['name' => $file->name, 'type' => $file->mime]));
     }
 
     /**

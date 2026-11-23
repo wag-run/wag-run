@@ -20,6 +20,9 @@
                     @endforeach
                 </flux:select>
                 @break
+            @case('file')
+                <flux:input type="file" wire:model="{{ $binding }}" :label="$field['label'] ?? $field['name']" :required="$field['required'] ?? false" data-test="file-field" />
+                @break
             @default
                 <flux:input wire:model="{{ $binding }}" :type="in_array($field['type'] ?? 'text', ['number', 'email', 'date'], true) ? $field['type'] : 'text'"
                     :label="$field['label'] ?? $field['name']" :required="$field['required'] ?? false" />

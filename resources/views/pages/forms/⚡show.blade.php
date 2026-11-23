@@ -8,8 +8,11 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 new #[Layout('layouts::auth')] class extends Component {
+    use WithFileUploads;
+
     #[Locked]
     public string $key = '';
 
@@ -92,7 +95,7 @@ new #[Layout('layouts::auth')] class extends Component {
             $attributes["values.{$field['name']}"] = $field['label'] ?? $field['name'];
         }
 
-        $validated = Assignments::castValues($this->fields, $this->validate($rules, [], $attributes)['values'] ?? []);
+        $validated = Assignments::castValues($this->fields, $this->validate($rules, [], $attributes)['values'] ?? [], $this->trigger->workflow->workspace);
 
         $engine->start($this->trigger->workflow, [
             'values' => $validated,

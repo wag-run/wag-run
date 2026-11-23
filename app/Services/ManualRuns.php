@@ -129,6 +129,6 @@ class ManualRuns
             $attributes[$field['name']] = $field['label'] ?? $field['name'];
         }
 
-        return Assignments::castValues($fields, Validator::make($values, ManualTrigger::rules($trigger->config), [], $attributes)->validate());
+        return Assignments::castValues($fields, Validator::make($values, ManualTrigger::rules($trigger->config), [], $attributes)->validate(), $workflow->workspace);
     }
 }

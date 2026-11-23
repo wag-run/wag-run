@@ -27,9 +27,10 @@ use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 new class extends Component {
-    use WithWireFlow;
+    use WithFileUploads, WithWireFlow;
 
     public Workspace $workspace;
 

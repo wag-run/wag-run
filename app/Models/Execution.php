@@ -156,4 +156,14 @@ class Execution extends Model
     {
         return $this->belongsTo(User::class, 'cancelled_by');
     }
+
+    /**
+     * Files this run made or received.
+     *
+     * @return HasMany<WorkflowFile, $this>
+     */
+    public function files(): HasMany
+    {
+        return $this->hasMany(WorkflowFile::class);
+    }
 }

@@ -380,6 +380,7 @@ new class extends Component {
                     @if ($step->{$part} !== null && $step->{$part} !== [])
                         <flux:heading size="sm" class="mt-4 mb-1">{{ $label }}</flux:heading>
                         <pre class="max-h-80 overflow-auto rounded-lg whitespace-pre-wrap break-words bg-zinc-50 p-3 text-xs dark:bg-zinc-800 {{ $part === 'error' ? 'text-red-600 dark:text-red-400' : '' }}" data-test="step-{{ $part }}">{{ $this->json($step->{$part}) }}</pre>
+                        @include('partials.run-files', ['value' => $step->{$part}, 'key' => $part])
                     @endif
                 @endforeach
             @else
@@ -389,6 +390,7 @@ new class extends Component {
                     <details class="mb-4">
                         <summary class="cursor-pointer text-sm text-zinc-500">{{ __('runs.show.trigger_input') }}</summary>
                         <pre class="mt-2 max-h-60 overflow-auto rounded-lg bg-zinc-50 p-3 text-xs dark:bg-zinc-800">{{ $this->json($execution->input) }}</pre>
+                        @include('partials.run-files', ['value' => $execution->input, 'key' => 'trigger'])
                     </details>
                 @endif
 

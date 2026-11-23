@@ -11,6 +11,7 @@ use App\Enums\NodeKind;
 use App\Mail\WorkflowEmail;
 use App\Services\Mailers;
 use Illuminate\Support\Facades\Mail;
+use RuntimeException;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 /**
@@ -64,6 +65,7 @@ class SendEmail extends Node
                 'html' => __('nodes.send_email.html'),
             ]),
             new Field('body', __('nodes.send_email.body'), Field::TEXTAREA, required: true, templated: true),
+            new Field('attachments', __('nodes.send_email.attachments'), Field::TEXT, templated: true, description: __('nodes.send_email.attachments_help')),
             new Field('credential', __('nodes.send_email.smtp_server'), Field::CREDENTIAL, credentialTypes: ['smtp'], description: __('nodes.send_email.leave_empty_to_use_the')),
         ];
     }
@@ -108,11 +110,18 @@ class SendEmail extends Node
         $subject = (string) $context->input('subject');
 
         try {
+            $attachments = $context->files($context->input('attachments'));
+        } catch (RuntimeException $e) {
+            return NodeResult::fail($e->getMessage(), retryable: false);
+        }
+
+        try {
             $sent = Mail::mailer($mailer)->to($to)->cc($cc)->bcc($bcc)->send(new WorkflowEmail(
                 $subject,
                 (string) $context->input('body'),
                 $context->input('format') === 'html',
                 $replyTo,
+                $attachments,
             ));
         } catch (TransportExceptionInterface $exception) {
             return NodeResult::fail(__('nodes.send_email.could_not_send', ['message' => $exception->getMessage()]));

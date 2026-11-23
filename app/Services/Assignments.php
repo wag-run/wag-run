@@ -11,9 +11,11 @@ use App\Models\Assignment;
 use App\Models\Execution;
 use App\Models\ExecutionStep;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Notifications\AssignmentNotification;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -124,7 +126,7 @@ class Assignments
             $rules[$field['name']] = static::rulesFor($field);
         }
 
-        $validated = static::castValues($assignment->fields ?? [], Validator::make($values, $rules)->validate());
+        $validated = static::castValues($assignment->fields ?? [], Validator::make($values, $rules)->validate(), $assignment->workspace, $assignment->execution);
 
         $this->decide($assignment, $user, AssignmentStatus::Submitted, ['values' => $validated], AssignmentType::Task);
     }
@@ -156,7 +158,7 @@ class Assignments
      * @param  array<string, mixed>  $values
      * @return array<string, mixed>
      */
-    public static function castValues(iterable $fields, array $values): array
+    public static function castValues(iterable $fields, array $values, ?Workspace $workspace = null, ?Execution $execution = null): array
     {
         foreach ($fields as $field) {
             $name = is_array($field) ? ($field['name'] ?? null) : null;
@@ -168,6 +170,9 @@ class Assignments
             $values[$name] = match ($field['type'] ?? 'text') {
                 'number' => is_numeric($values[$name]) ? $values[$name] + 0 : $values[$name],
                 'checkbox' => (bool) $values[$name],
+                'file' => $values[$name] instanceof UploadedFile && $workspace
+                    ? app(WorkflowFiles::class)->storeUpload($workspace, $execution, $values[$name])
+                    : null,
                 default => $values[$name],
             };
         }
@@ -189,8 +194,13 @@ class Assignments
             'checkbox' => 'boolean',
             'date' => 'date',
             'select' => 'in:'.implode(',', array_map('strval', array_keys((array) ($field['options'] ?? [])))),
+            'file' => 'file',
             default => 'string',
         };
+
+        if (($field['type'] ?? 'text') === 'file') {
+            $rules[] = 'max:'.intdiv((int) config('workflows.files.max_bytes'), 1024);
+        }
 
         if (in_array($field['type'] ?? 'text', ['text', 'textarea', 'email'], true)) {
             $rules[] = 'max:10000';

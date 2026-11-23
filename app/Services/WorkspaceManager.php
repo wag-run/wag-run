@@ -40,6 +40,7 @@ class WorkspaceManager
         DB::transaction(function () use ($workspace) {
             Audit::record('workspace.deleted', $workspace, null, ['workspace' => $workspace->name], $workspace->name);
 
+            app(WorkflowFiles::class)->deleteForWorkspace($workspace);
             $workspace->delete();
         });
     }

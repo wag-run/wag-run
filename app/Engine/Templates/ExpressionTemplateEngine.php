@@ -2,6 +2,7 @@
 
 namespace App\Engine\Templates;
 
+use App\Services\WorkflowFiles;
 use Throwable;
 
 /**
@@ -130,6 +131,10 @@ class ExpressionTemplateEngine implements TemplateEngine
 
     protected function stringify(mixed $value): string
     {
+        if (WorkflowFiles::isReference($value)) {
+            throw new TemplateError(__('run_files.cannot_be_part_of_text'));
+        }
+
         return match (true) {
             $value === null => '',
             is_bool($value) => $value ? 'true' : 'false',

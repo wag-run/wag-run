@@ -8,7 +8,10 @@ use App\Engine\Templates\TemplateEngine;
 use App\Models\Credential;
 use App\Models\Execution;
 use App\Models\ExecutionStep;
+use App\Models\WorkflowFile;
 use App\Models\Workspace;
+use App\Services\WorkflowFiles;
+use RuntimeException;
 
 /**
  * Everything a node can use while it runs.
@@ -61,6 +64,7 @@ class NodeContext
         }
 
         $resolved = [];
+        app(WorkflowFiles::class)->scopeTo($this->workspace());
 
         foreach ($this->definition->inputs() as $field) {
             $resolved[$field->name] = $this->resolve($field, $this->node->config[$field->name] ?? $field->default);
@@ -127,7 +131,59 @@ class NodeContext
      */
     public function render(string $template, array $extra = []): mixed
     {
+        app(WorkflowFiles::class)->scopeTo($this->workspace());
+
         return $this->templates->render($template, [...$this->data, ...$extra]);
+    }
+
+    /**
+     * The file a reference from an input points to, if it is one of this
+     * workspace's files.
+     */
+    public function file(mixed $reference): ?WorkflowFile
+    {
+        return app(WorkflowFiles::class)->find($this->workspace(), $reference);
+    }
+
+    /**
+     * Every file an input holds: one file or a list of them. Anything that
+     * is not a file of this workspace is reported by name.
+     *
+     * @return list<WorkflowFile>
+     *
+     * @throws RuntimeException when a value is not a file of this workspace
+     */
+    public function files(mixed $value): array
+    {
+        if ($value === null || $value === '' || $value === []) {
+            return [];
+        }
+
+        $items = WorkflowFiles::isReference($value) || ! is_array($value) || ! array_is_list($value) ? [$value] : $value;
+
+        return array_map(fn (mixed $item) => $this->file($item) ?? throw new RuntimeException(
+            WorkflowFiles::isReference($item) ? __('run_files.file_not_found') : __('run_files.not_a_file'),
+        ), $items);
+    }
+
+    /**
+     * Save bytes as a file of this run.
+     *
+     * @return array{kind: 'file', id: string, name: string, mime: string, size: int}
+     */
+    public function storeFile(string $contents, string $name, ?string $mime = null): array
+    {
+        return app(WorkflowFiles::class)->store($this->workspace(), $this->execution, $contents, $name, $mime);
+    }
+
+    /**
+     * Save a local file, such as a download, as a file of this run.
+     *
+     * @return array{kind: 'file', id: string, name: string, mime: string, size: int}
+     */
+    public function storeFilePath(string $path, string $name, ?string $mime = null): array
+    {
+        return app(WorkflowFiles::class)->storePath($this->workspace(), $this->execution, $path, $name, $mime);
     }
 
     /**

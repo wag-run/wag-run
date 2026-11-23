@@ -38,6 +38,7 @@ class WorkflowServiceProvider extends ServiceProvider
         Actions\Wait::class,
         Actions\Compose::class,
         Actions\Filter::class,
+        Actions\CreateFile::class,
         Actions\LlmCall::class,
         Actions\Merge::class,
         Actions\Approval::class,
@@ -46,6 +47,7 @@ class WorkflowServiceProvider extends ServiceProvider
         Actions\SendEmail::class,
         Actions\SendNotification::class,
         Actions\ChatMessage::class,
+        Actions\UploadToS3::class,
         Note::class,
     ];
 

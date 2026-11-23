@@ -2,8 +2,10 @@
 
 namespace App\Engine\Templates;
 
+use App\Services\WorkflowFiles;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\ExpressionLanguage\ExpressionFunction;
@@ -67,6 +69,28 @@ class SafeExpressionLanguage extends ExpressionLanguage
     public function helperNames(): array
     {
         return $this->helperNames;
+    }
+
+    /**
+     * A file's bytes, read for text() or base64(). Only files of the run's
+     * workspace can be read, and only small ones.
+     */
+    protected static function fileBytes(mixed $reference): string
+    {
+        $files = app(WorkflowFiles::class);
+
+        return $files->contents($files->inScope($reference));
+    }
+
+    protected static function fileText(mixed $reference): string
+    {
+        $bytes = static::fileBytes($reference);
+
+        if (! mb_check_encoding($bytes, 'UTF-8')) {
+            throw new RuntimeException(__('run_files.not_text'));
+        }
+
+        return $bytes;
     }
 
     protected static function date(mixed $value = null, ?string $timezone = null): CarbonImmutable
@@ -140,6 +164,10 @@ class SafeExpressionLanguage extends ExpressionLanguage
             'escape' => fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
             'strip_tags' => fn (mixed $value): string => strip_tags((string) $value),
             'base64_encode' => fn (mixed $value): string => base64_encode((string) $value),
+            'text' => fn (mixed $value): string => static::fileText(DataBag::unwrap($value)),
+            'base64' => fn (mixed $value): string => WorkflowFiles::isReference($file = DataBag::unwrap($value))
+                ? base64_encode(static::fileBytes($file))
+                : base64_encode(is_scalar($file) || $file === null ? (string) $file : (string) json_encode($file)),
             'base64_decode' => fn (mixed $value): string => (string) base64_decode((string) $value, true),
             'sha256' => fn (mixed $value): string => hash('sha256', (string) $value),
             'slug' => fn (mixed $value): string => Str::slug((string) $value),
