@@ -59,9 +59,9 @@ class NotificationsTest extends TestCase
         $failed = $this->runWorkflow($this->workflowOwnedBy($owner, $workspace, 'failed'));
         $notification = $owner->unreadNotifications()->sole();
 
-        $this->actingAs($owner)->get(route('notifications'))->assertOk()->assertSee('Run #'.substr(str_replace('-', '', $failed->id), -8).' of');
+        $this->actingAs($owner)->get(route('inbox'))->assertOk()->assertSee('Run #'.substr(str_replace('-', '', $failed->id), -8).' of');
 
-        Livewire::actingAs($owner)->test('pages::notifications.index')
+        Livewire::actingAs($owner)->test('pages::inbox.index')
             ->call('open', $notification->id)
             ->assertRedirect(route('workspaces.executions.show', [$workspace, $failed]));
 
@@ -75,7 +75,7 @@ class NotificationsTest extends TestCase
         $this->runWorkflow($this->workflowOwnedBy($owner, $workspace, 'failed'));
         $someoneElse = User::factory()->memberOf($workspace, WorkspaceRole::Editor)->create();
 
-        Livewire::actingAs($someoneElse)->test('pages::notifications.index')
+        Livewire::actingAs($someoneElse)->test('pages::inbox.index')
             ->call('open', $owner->notifications()->sole()->id)
             ->assertNotFound();
     }

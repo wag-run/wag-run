@@ -66,10 +66,6 @@
                                 {{ __('common.runs') }}
                             </flux:sidebar.item>
                         @endif
-                        @php($pendingAssignments = $activeWorkspace->assignments()->where('assignee_id', $sidebarUser->id)->where('status', \App\Enums\AssignmentStatus::Pending)->count())
-                        <flux:sidebar.item icon="inbox" :href="route('workspaces.inbox', $activeWorkspace)" :current="request()->routeIs('workspaces.inbox*')" :badge="$pendingAssignments ?: null" wire:navigate>
-                            {{ __('common.inbox') }}
-                        </flux:sidebar.item>
                         @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewVariables))
                             <flux:sidebar.item icon="variable" :href="route('workspaces.variables', $activeWorkspace)" :current="request()->routeIs('workspaces.variables')" wire:navigate>
                                 {{ __('common.variables') }}
@@ -146,7 +142,7 @@
                     avatar:badge:color="red"
                     avatar:badge:circle
                     avatar:badge:position="top right"
-                    :aria-label="$unreadNotifications ? trans_choice('navigation.unread_notifications', $unreadNotifications, ['count' => $unreadNotifications]) : null"
+                    :aria-label="$unreadNotifications ? trans_choice('navigation.account_menu_unread', $unreadNotifications, ['count' => $unreadNotifications]) : null"
                     data-test="mobile-user-menu-button"
                 />
 
@@ -170,7 +166,7 @@
                     <flux:menu.separator />
 
                     <flux:menu.radio.group>
-                        @include('partials.notifications-menu-item', ['unread' => $unreadNotifications])
+                        @include('partials.inbox-menu-item', ['unread' => $unreadNotifications])
                         <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
                             {{ __('common.settings') }}
                         </flux:menu.item>

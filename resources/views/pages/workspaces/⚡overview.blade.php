@@ -65,7 +65,7 @@ new class extends Component {
         <div class="mb-8">
             <div class="mb-2 flex items-center justify-between">
                 <flux:heading>{{ __('common.waiting_on_you') }}</flux:heading>
-                <flux:link :href="route('workspaces.inbox', $workspace)" wire:navigate class="text-sm">{{ __('common.inbox') }}</flux:link>
+                <flux:link :href="route('inbox')" wire:navigate class="text-sm">{{ __('common.inbox') }}</flux:link>
             </div>
             <div class="divide-y divide-zinc-200 rounded-xl border border-zinc-200 dark:divide-zinc-700 dark:border-zinc-700">
                 @foreach ($this->pendingAssignments as $assignment)

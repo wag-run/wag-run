@@ -15,6 +15,10 @@ return [
     'show' => [
         'at_node' => 'At :node',
         'attempt_n' => 'Attempt :n',
+        'attempts' => 'Attempts',
+        'iteration_label_of_count' => ':label of :count',
+        'next_iteration' => 'Next iteration',
+        'previous_iteration' => 'Previous iteration',
         'attempt_n_2' => 'attempt :n',
         'back_to_all_steps' => 'Back to all steps',
         'back_to_runs' => 'Back to runs',

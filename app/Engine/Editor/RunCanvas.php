@@ -65,6 +65,21 @@ class RunCanvas
     /**
      * "Iteration 3" for a step inside a loop, from its scope key.
      */
+    /**
+     * "Iteration 3", or "Iteration 2 › 3" inside nested loops, for a step's
+     * whole scope.
+     */
+    public static function scopeLabel(string $scope): ?string
+    {
+        if ($scope === '') {
+            return null;
+        }
+
+        $numbers = array_map(fn (string $frame) => (int) substr((string) strrchr($frame, '.'), 1) + 1, explode('/', $scope));
+
+        return __('workflows.editor.iteration_n', ['n' => implode(' › ', $numbers)]);
+    }
+
     public static function iterationLabel(ExecutionStep $step): ?string
     {
         if ($step->scope_key === '') {

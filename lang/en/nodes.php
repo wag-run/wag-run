@@ -177,7 +177,7 @@ return [
         'notifies_people_in_the_app' => 'Notifies people in the app, and optionally by email.',
         'recipients' => 'Recipients',
         'send_notification' => 'Send notification',
-        'where_opening_the_notification_goes' => 'Optional. The page opening the notification goes to.',
+        'where_opening_the_notification_goes' => 'Optional. Defaults to this run.',
     ],
     'switch' => [
         'case_n' => 'case :n',

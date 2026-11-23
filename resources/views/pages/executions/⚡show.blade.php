@@ -97,6 +97,59 @@ new class extends Component {
         return $registry->has($type) ? $registry->make($type)->label() : $type;
     }
 
+    /**
+     * The selected node's runs, one entry per loop iteration in the order
+     * they started, each pointing at its latest attempt. Empty when the node
+     * ran outside a loop.
+     *
+     * @return list<array{scope: string, label: string, step_id: int, status: \App\Enums\StepStatus}>
+     */
+    #[Computed]
+    public function iterations(): array
+    {
+        if (! $this->step || $this->step->scope_key === '') {
+            return [];
+        }
+
+        return $this->steps
+            ->where('node_id', $this->step->node_id)
+            ->groupBy('scope_key')
+            ->map(fn ($attempts, string $scope) => [
+                'scope' => $scope,
+                'label' => (string) RunCanvas::scopeLabel($scope),
+                'step_id' => $attempts->last()->id,
+                'status' => $attempts->last()->status,
+                'first_id' => $attempts->first()->id,
+            ])
+            ->sortBy('first_id')
+            ->map(fn (array $iteration) => array_diff_key($iteration, ['first_id' => true]))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Every attempt of the selected step's node in the same iteration.
+     *
+     * @return Collection<int, ExecutionStep>
+     */
+    #[Computed]
+    public function attempts(): Collection
+    {
+        if (! $this->step) {
+            return new Collection;
+        }
+
+        return $this->steps
+            ->where('node_id', $this->step->node_id)
+            ->where('scope_key', $this->step->scope_key)
+            ->values();
+    }
+
+    public function updatedSelectedStep(): void
+    {
+        $this->selectedStep = $this->steps->firstWhere('id', $this->selectedStep)?->id;
+    }
+
     public function selectNode(string $nodeId): void
     {
         $this->selectedStep = $this->steps->where('node_id', $nodeId)->last()?->id;
@@ -247,6 +300,34 @@ new class extends Component {
                     </div>
                     <flux:button size="sm" variant="ghost" icon="x-mark" wire:click="deselect" :aria-label="__('runs.show.back_to_all_steps')" />
                 </div>
+
+                @php($iterations = $this->iterations)
+                @if (count($iterations) > 1)
+                    @php($position = collect($iterations)->search(fn ($iteration) => $iteration['scope'] === $step->scope_key))
+                    <div class="mb-3 flex items-center gap-1" data-test="iteration-switcher">
+                        <flux:button size="sm" variant="ghost" icon="chevron-left" :disabled="$position === 0"
+                            wire:click="selectStep({{ $iterations[max(0, $position - 1)]['step_id'] }})" :aria-label="__('runs.show.previous_iteration')" data-test="previous-iteration" />
+                        <flux:select size="sm" wire:model.live="selectedStep" class="min-w-0 flex-1" data-test="iteration-select">
+                            @foreach ($iterations as $index => $iteration)
+                                <flux:select.option :value="$iteration['scope'] === $step->scope_key ? $step->id : $iteration['step_id']">
+                                    {{ __('runs.show.iteration_label_of_count', ['label' => $iteration['label'], 'count' => count($iterations)]) }} · {{ $iteration['status']->label() }}
+                                </flux:select.option>
+                            @endforeach
+                        </flux:select>
+                        <flux:button size="sm" variant="ghost" icon="chevron-right" :disabled="$position === count($iterations) - 1"
+                            wire:click="selectStep({{ $iterations[min(count($iterations) - 1, $position + 1)]['step_id'] }})" :aria-label="__('runs.show.next_iteration')" data-test="next-iteration" />
+                    </div>
+                @endif
+
+                @if ($this->attempts->count() > 1)
+                    <div class="mb-3 flex flex-wrap items-center gap-1" data-test="attempt-switcher">
+                        <flux:text class="me-1 text-xs">{{ __('runs.show.attempts') }}</flux:text>
+                        @foreach ($this->attempts as $attempt)
+                            <flux:button size="xs" :variant="$attempt->id === $step->id ? 'primary' : 'ghost'" wire:click="selectStep({{ $attempt->id }})"
+                                wire:key="attempt-{{ $attempt->id }}">{{ $attempt->attempt }}</flux:button>
+                        @endforeach
+                    </div>
+                @endif
 
                 <div class="mb-4 flex flex-wrap items-center gap-2 text-sm">
                     <flux:badge size="sm" :color="$step->status->color()">{{ $step->status->label() }}</flux:badge>

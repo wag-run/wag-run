@@ -14,8 +14,10 @@ use Illuminate\Support\Facades\Notification;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 /**
- * Notifies people in the app, on their Notifications page, and optionally
- * by email through the organization's mail settings.
+ * Notifies people in the app, in their inbox, and optionally
+ * by email through the organization's mail settings. Without a link, the
+ * notification and the email open the run that sent them, even for
+ * recipients who cannot view runs.
  */
 class SendNotification extends Node
 {
@@ -88,17 +90,18 @@ class SendNotification extends Node
             return NodeResult::fail(__('nodes.send_notification.link_is_not_a_valid', ['link' => $link]), retryable: false);
         }
 
+        $link = $link !== '' ? $link : route('workspaces.executions.show', [$context->workspace(), $context->execution]);
         $title = (string) $context->input('title');
         $message = $context->input('message');
         $message = $message === null || $message === '' ? null : (string) $message;
         $workspaceId = $context->workspace()->id;
         $output = ['recipients' => $users->pluck('id')->all(), 'count' => $users->count()];
 
-        Notification::send($users, new WorkflowNotification($title, $message, $link ?: null, $workspaceId));
+        Notification::send($users, new WorkflowNotification($title, $message, $link, $workspaceId));
 
         if ($context->input('email')) {
             try {
-                Notification::send($users, new WorkflowNotification($title, $message, $link ?: null, $workspaceId, ['mail']));
+                Notification::send($users, new WorkflowNotification($title, $message, $link, $workspaceId, ['mail']));
             } catch (TransportExceptionInterface $exception) {
                 return NodeResult::fail(__('nodes.send_notification.notified_in_the_app_but', ['message' => $exception->getMessage()]), retryable: false, output: $output);
             }

@@ -65,6 +65,16 @@ class Assignment extends Model
     }
 
     /**
+     * The person who answered, once someone has.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function responder(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'responded_by');
+    }
+
+    /**
      * @return BelongsTo<ExecutionStep, $this>
      */
     public function step(): BelongsTo

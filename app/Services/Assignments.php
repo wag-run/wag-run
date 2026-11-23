@@ -13,6 +13,7 @@ use App\Models\ExecutionStep;
 use App\Models\User;
 use App\Notifications\AssignmentNotification;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -199,6 +200,52 @@ class Assignments
     }
 
     /**
+     * Where an approval step stands across everyone it was sent to: each
+     * approver's request in the order the node lists them, how many approvals
+     * it needs, how many it has, and the decision once there is one.
+     *
+     * @return array{approvers: Collection<int, Assignment>, required: int, approvals: int, rejections: int, decision: 'approved'|'rejected'|null}
+     */
+    public function approvalProgress(ExecutionStep $step): array
+    {
+        $approvers = $this->approvers($step);
+        $required = max(1, (int) ($step->state['required'] ?? 1));
+        $approvals = $approvers->where('status', AssignmentStatus::Approved)->count();
+        $rejections = $approvers->where('status', AssignmentStatus::Rejected)->count();
+
+        return [
+            'approvers' => $approvers,
+            'required' => $required,
+            'approvals' => $approvals,
+            'rejections' => $rejections,
+            'decision' => match (true) {
+                $approvals >= $required => 'approved',
+                $rejections > $approvers->count() - $required => 'rejected',
+                default => null,
+            },
+        ];
+    }
+
+    /**
+     * The approval requests of one step, in the order the node lists the
+     * approvers.
+     *
+     * @return Collection<int, Assignment>
+     */
+    protected function approvers(ExecutionStep $step): Collection
+    {
+        $order = array_flip(array_values((array) ($step->state['assignment_ids'] ?? [])));
+
+        return Assignment::query()
+            ->with('assignee:id,name')
+            ->where('execution_step_id', $step->id)
+            ->where('type', AssignmentType::Approval)
+            ->get()
+            ->sortBy(fn (Assignment $assignment) => $order[$assignment->id] ?? PHP_INT_MAX)
+            ->values();
+    }
+
+    /**
      * Whether an approval step's answers so far decide it: approved once the
      * number needed have approved, rejected once so many have rejected that
      * the number can no longer be reached. Pending requests of a decided step
@@ -209,24 +256,7 @@ class Assignments
      */
     protected function approvalOutcome(ExecutionStep $step, array $latest): ?array
     {
-        $order = array_flip(array_values((array) ($step->state['assignment_ids'] ?? [])));
-        $assignments = Assignment::query()
-            ->with('assignee:id,name')
-            ->where('execution_step_id', $step->id)
-            ->where('type', AssignmentType::Approval)
-            ->get()
-            ->sortBy(fn (Assignment $assignment) => $order[$assignment->id] ?? PHP_INT_MAX)
-            ->values();
-
-        $required = max(1, (int) ($step->state['required'] ?? 1));
-        $approvals = $assignments->where('status', AssignmentStatus::Approved)->count();
-        $rejections = $assignments->where('status', AssignmentStatus::Rejected)->count();
-
-        $decision = match (true) {
-            $approvals >= $required => 'approved',
-            $rejections > $assignments->count() - $required => 'rejected',
-            default => null,
-        };
+        ['approvers' => $assignments, 'approvals' => $approvals, 'rejections' => $rejections, 'decision' => $decision] = $this->approvalProgress($step);
 
         if ($decision === null) {
             return null;

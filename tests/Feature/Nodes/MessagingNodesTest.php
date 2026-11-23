@@ -113,6 +113,22 @@ class MessagingNodesTest extends TestCase
         $this->assertSame(['recipients' => [$ada->id, $grace->id], 'count' => 2], $this->stepFor($execution, 'notify')->output);
     }
 
+    public function test_send_notification_without_a_link_opens_the_run_that_sent_it(): void
+    {
+        Notification::fake();
+        $workspace = Workspace::factory()->create();
+        $ada = User::factory()->orgMember()->create();
+
+        $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger', 'notify' => ['core.send_notification', ['recipients' => [$ada->id], 'title' => 'Done', 'link' => '  ', 'email' => true]]],
+            ['start->notify'],
+        ), $workspace));
+
+        $runUrl = route('workspaces.executions.show', [$workspace, $execution]);
+        Notification::assertSentTo($ada, WorkflowNotification::class, fn (WorkflowNotification $notification, array $channels) => $channels === ['database'] && $notification->toArray($ada)['url'] === $runUrl);
+        Notification::assertSentTo($ada, WorkflowNotification::class, fn (WorkflowNotification $notification, array $channels) => $channels === ['mail'] && $notification->toMail($ada)->actionUrl === $runUrl);
+    }
+
     public function test_send_notification_fails_without_an_active_recipient(): void
     {
         Notification::fake();

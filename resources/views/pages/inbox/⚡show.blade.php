@@ -3,6 +3,7 @@
 use App\Enums\AssignmentType;
 use App\Models\Assignment;
 use App\Models\Workspace;
+use App\Notifications\AssignmentNotification;
 use App\Services\Assignments;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
@@ -26,6 +27,11 @@ new class extends Component {
     {
         abort_unless($this->assignment->assignee_id === Auth::id(), 403);
 
+        Auth::user()->unreadNotifications()
+            ->where('type', AssignmentNotification::class)
+            ->where('data->assignment_id', $this->assignment->id)
+            ->update(['read_at' => now()]);
+
         foreach ($this->fields as $field) {
             $this->values[$field['name']] = ($field['type'] ?? 'text') === 'checkbox' ? false : null;
         }
@@ -38,6 +44,24 @@ new class extends Component {
     public function fields(): array
     {
         return array_values(array_filter($this->assignment->fields ?? [], fn (mixed $field) => is_array($field) && filled($field['name'] ?? null)));
+    }
+
+    /**
+     * Everyone an approval went to and where it stands, when it went to
+     * more than one person.
+     *
+     * @return array{approvers: \Illuminate\Database\Eloquent\Collection<int, Assignment>, required: int, approvals: int, rejections: int, decision: 'approved'|'rejected'|null}|null
+     */
+    #[Computed]
+    public function approval(): ?array
+    {
+        if ($this->assignment->type !== AssignmentType::Approval || ! $this->assignment->step) {
+            return null;
+        }
+
+        $progress = app(Assignments::class)->approvalProgress($this->assignment->step);
+
+        return $progress['approvers']->count() > 1 ? $progress : null;
     }
 
     #[Computed]
@@ -77,6 +101,7 @@ new class extends Component {
         $callback();
 
         $this->assignment->refresh();
+        unset($this->approval);
         Flux::toast(variant: 'success', text: $message);
     }
 
@@ -87,7 +112,7 @@ new class extends Component {
 }; ?>
 
 <section class="w-full max-w-2xl">
-    <flux:link :href="route('workspaces.inbox', $workspace)" wire:navigate class="mb-4 inline-flex items-center gap-1 text-sm">
+    <flux:link :href="route('inbox')" wire:navigate class="mb-4 inline-flex items-center gap-1 text-sm">
         <flux:icon name="arrow-left" variant="micro" /> {{ __('common.inbox') }}
     </flux:link>
 
@@ -106,6 +131,48 @@ new class extends Component {
 
     @if ($assignment->message)
         <div class="mb-6 rounded-xl border border-zinc-200 p-4 text-sm whitespace-pre-line dark:border-zinc-700">{{ $assignment->message }}</div>
+    @endif
+
+    @if ($approval = $this->approval)
+        <div class="mb-6" data-test="approvers">
+            <div class="mb-2 flex items-baseline justify-between gap-4">
+                <flux:heading>{{ __('inbox.show.approvers') }}</flux:heading>
+                <flux:text class="text-sm" data-test="approval-summary">
+                    @if ($approval['decision'] === 'approved')
+                        {{ __('inbox.show.summary_approved', ['approvals' => $approval['approvals'], 'required' => $approval['required']]) }}
+                    @elseif ($approval['decision'] === 'rejected')
+                        {{ __('inbox.show.summary_rejected', ['required' => $approval['required']]) }}
+                    @elseif ($approval['approvers']->contains(fn ($approver) => $approver->isPending()))
+                        {{ trans_choice('inbox.show.summary_waiting', $approval['required'], ['approvals' => $approval['approvals'], 'required' => $approval['required']]) }}
+                    @endif
+                </flux:text>
+            </div>
+            <div class="divide-y divide-zinc-200 rounded-xl border border-zinc-200 text-sm dark:divide-zinc-700 dark:border-zinc-700">
+                @foreach ($approval['approvers'] as $approver)
+                    <div wire:key="approver-{{ $approver->id }}" class="flex items-start gap-3 px-4 py-3" data-test="approver">
+                        <div class="min-w-0 flex-1">
+                            <div class="font-medium">
+                                {{ $approver->assignee?->name ?? __('inbox.show.deleted_user') }}
+                                @if ($approver->is($assignment))
+                                    <span class="font-normal text-zinc-500">{{ __('inbox.show.you') }}</span>
+                                @endif
+                            </div>
+                            @if ($approver->response['comment'] ?? null)
+                                <p class="mt-1 whitespace-pre-line text-zinc-600 dark:text-zinc-300">{{ $approver->response['comment'] }}</p>
+                            @endif
+                            @if ($approver->responded_at)
+                                <div class="mt-1 text-xs text-zinc-500">{{ $approver->responded_at->diffForHumans() }}</div>
+                            @endif
+                        </div>
+                        @if ($approver->isPending())
+                            <flux:badge size="sm" color="amber">{{ __('inbox.show.waiting') }}</flux:badge>
+                        @else
+                            <flux:badge size="sm" :color="$approver->status->color()">{{ $approver->status->label() }}</flux:badge>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
     @endif
 
     <flux:error name="assignment" class="mb-4" />
@@ -129,9 +196,15 @@ new class extends Component {
                 <flux:button type="submit" variant="primary" data-test="submit-task-button">{{ __('common.submit') }}</flux:button>
             </form>
         @endif
-    @elseif ($assignment->response)
+    @elseif ($assignment->response && ! $approval)
         <div class="rounded-xl border border-zinc-200 p-4 text-sm dark:border-zinc-700">
-            <flux:text class="mb-2">{{ __('inbox.show.answered_time', ['time' => $assignment->responded_at?->diffForHumans()]) }}</flux:text>
+            <flux:text class="mb-2" data-test="answered">
+                @if ($assignment->responder)
+                    {{ __('inbox.show.answered_by_name_time', ['name' => $assignment->responder->name, 'time' => $assignment->responded_at?->diffForHumans()]) }}
+                @else
+                    {{ __('inbox.show.answered_time', ['time' => $assignment->responded_at?->diffForHumans()]) }}
+                @endif
+            </flux:text>
             @if ($assignment->response['comment'] ?? null)
                 <p class="whitespace-pre-line">{{ $assignment->response['comment'] }}</p>
             @endif

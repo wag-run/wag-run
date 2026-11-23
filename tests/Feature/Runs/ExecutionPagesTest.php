@@ -72,6 +72,48 @@ class ExecutionPagesTest extends TestCase
             ->assertSeeHtml('data-test="step-output"');
     }
 
+    public function test_a_node_inside_a_loop_can_be_viewed_one_iteration_at_a_time(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
+        $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger', 'each' => ['core.for_loop', ['items' => '{{ trigger.names }}']], 'greet' => ['core.compose', ['template' => 'Hi {{ item }}']]],
+            ['start->each', 'each:item->greet'],
+        ), $workspace), ['names' => ['Ada', 'Grace', 'Linus']]);
+        $greetings = $execution->steps()->where('node_id', 'greet')->orderBy('id')->get();
+
+        $page = Livewire::actingAs($viewer)->test('pages::executions.show', ['workspace' => $workspace, 'execution' => $execution])
+            ->call('selectNode', 'greet')
+            ->assertSet('selectedStep', $greetings[2]->id)
+            ->assertSeeHtml('data-test="iteration-switcher"')
+            ->assertSee('Iteration 3 of 3')
+            ->assertSee('Hi Linus');
+
+        $page->call('selectStep', $greetings[0]->id)->assertSee('Hi Ada')->assertDontSee('Hi Linus');
+        $page->set('selectedStep', $greetings[1]->id)->assertSee('Hi Grace');
+
+        $page->call('selectNode', 'start')->assertDontSeeHtml('data-test="iteration-switcher"');
+    }
+
+    public function test_each_attempt_of_a_retried_step_can_be_opened(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
+        $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
+            ['start' => 'start', 'call' => ['flaky', ['fail_times' => 1], ['max_retries' => 2, 'backoff_seconds' => 0]]],
+            ['start->call'],
+        ), $workspace));
+        [$first, $second] = $execution->steps()->where('node_id', 'call')->orderBy('id')->get();
+
+        Livewire::actingAs($viewer)->test('pages::executions.show', ['workspace' => $workspace, 'execution' => $execution])
+            ->call('selectNode', 'call')
+            ->assertSet('selectedStep', $second->id)
+            ->assertSeeHtml('data-test="attempt-switcher"')
+            ->assertDontSeeHtml('data-test="iteration-switcher"')
+            ->call('selectStep', $first->id)
+            ->assertSee('Failed attempt 1');
+    }
+
     public function test_guests_cannot_open_runs_and_runs_of_other_workspaces_are_not_found(): void
     {
         $workspace = Workspace::factory()->create();

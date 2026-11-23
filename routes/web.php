@@ -24,7 +24,8 @@ Route::middleware(['guest', 'throttle:30,1'])->prefix('auth/oidc/{provider}')->n
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
-    Route::livewire('notifications', 'pages::notifications.index')->name('notifications');
+    Route::livewire('inbox', 'pages::inbox.index')->name('inbox');
+    Route::get('notifications', fn () => redirect()->route('inbox'))->name('notifications');
 
     Route::prefix('w/{workspace}')
         ->name('workspaces.')
@@ -43,8 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->middleware('can:view-executions,workspace')->name('executions');
             Route::livewire('runs/{execution}', 'pages::executions.show')
                 ->middleware('can:view-executions,workspace')->name('executions.show');
-            Route::livewire('inbox', 'pages::inbox.index')
-                ->middleware('can:view-own-assignments,workspace')->name('inbox');
+            Route::get('inbox', fn () => redirect()->route('inbox'))->name('inbox');
             Route::livewire('inbox/{assignment}', 'pages::inbox.show')
                 ->middleware('can:view-own-assignments,workspace')->name('inbox.show');
             Route::livewire('variables', 'pages::workspaces.variables')

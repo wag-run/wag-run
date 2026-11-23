@@ -9,5 +9,5 @@ return [
     'platform' => 'Platform',
     'repository' => 'Repository',
     'search' => 'Search',
-    'unread_notifications' => 'Account menu, :count unread notification|Account menu, :count unread notifications',
+    'account_menu_unread' => 'Account menu, :count unread item in your inbox|Account menu, :count unread items in your inbox',
 ];
