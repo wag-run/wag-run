@@ -24,8 +24,7 @@ yarn-error.log
 /.zed
 /.agents
 /.amp
-/.claude/*
-!/.claude/skills
+/.claude
 /.codex
 /.cursor
 /.factory

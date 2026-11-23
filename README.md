@@ -146,6 +146,8 @@ Authentication setting types extend `App\Credentials\CredentialType` and are reg
 
 ## Development
 
+See [Local development](docs/development.md) to set up a checkout. Run `php artisan boost:update` as part of that setup: it generates the AI agent skills into `.claude/skills`, which isn't committed.
+
 ```bash
 php artisan test --compact   # the test suite
 vendor/bin/pint              # code style

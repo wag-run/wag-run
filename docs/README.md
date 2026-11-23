@@ -16,6 +16,7 @@ wag.run is a workflow automation app for teams. You build a workflow on a visual
 | [Workspaces](workspaces.md) | Members and roles, variables, secrets, authentication settings, workspace settings and the audit log |
 | [Organization administration](administration.md) | Users, workspaces, sign-in, sign-in providers, email and organization defaults |
 | [Self-hosting](self-hosting.md) | Running wag.run with Docker: settings, HTTPS, backups and upgrades |
+| [Local development](development.md) | Setting up a checkout to work on the code, including the AI agent skills |
 
 ## What you can do with it
 
