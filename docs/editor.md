@@ -4,7 +4,7 @@ You build workflows in the editor, which opens when you open a workflow from **W
 
 ## The layout
 
-- **Node palette** on the left, grouped into **Triggers**, **Flow**, **Data**, **Integrations**, **AI**, **Messaging**, **People** and **Notes**.
+- **Node palette** on the left, grouped into **Triggers**, **Event in other app** (triggers such as a new GitHub tag), **Flow**, **Data**, **Integrations**, **GitHub**, **Google**, **AI**, **Messaging** and **People**.
 - **Canvas** in the middle. Scroll or drag the background to move around, and use the minimap in the corner to jump to a part of a large workflow. You can hide the minimap.
 - **Settings panel** on the right. It shows the selected node's settings, or the workflow's settings when nothing is selected. Hide it with the panel button in the toolbar to make more room for the canvas.
 - **Toolbar** along the top, with undo and redo, **Runs**, **Versions**, **Export**, **Run** or **Test draft**, and **Publish**.
@@ -57,7 +57,7 @@ Click a node to select it. Right-click a node for **Copy**, **Cut**, **Delete** 
 
 Sticky notes explain a workflow to whoever reads it next. They never run and can't be connected.
 
-Add one by right-clicking the canvas and choosing **Add sticky note**, or from **Notes** in the palette. Select it to edit:
+Add one by right-clicking the canvas and choosing **Add sticky note**. Select it to edit:
 
 - **Text**: supports basic Markdown, such as `**bold**`, `_italic_`, lists and links.
 - **Color**: **Yellow**, **Blue**, **Green**, **Pink**, **Gray**, or a hex code such as `#fde68a`.

@@ -33,6 +33,7 @@ return [
     'email_address' => 'Email address',
     'error' => 'Error',
     'execution_id' => 'Execution id',
+    'event_in_other_app' => 'Event in other app',
     'expires' => 'Expires',
     'failed' => 'Failed',
     'flow' => 'Flow',

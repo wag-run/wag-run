@@ -33,11 +33,11 @@ abstract class Node
     }
 
     /**
-     * Groups nodes in the editor's palette.
+     * Groups nodes in the editor's palette. Groups of triggers come first.
      */
     public function category(): string
     {
-        return $this->kind() === NodeKind::Trigger ? 'Triggers' : 'Actions';
+        return $this->kind() === NodeKind::Trigger ? __('common.triggers') : __('common.actions');
     }
 
     /**

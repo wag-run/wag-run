@@ -416,6 +416,19 @@ class WorkflowEditorTest extends TestCase
             ->assertSee(__('workflows.edit.add_sticky_note'));
     }
 
+    public function test_the_palette_groups_triggers_on_other_apps_events_after_the_other_triggers(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor();
+
+        $palette = $this->editor($workspace, $workflow, $user)->instance()->palette();
+        $types = fn (string $group) => array_column($palette[$group], 'type');
+
+        $this->assertSame(['Triggers', 'Event in other app'], array_slice(array_keys($palette), 0, 2));
+        $this->assertSame(['core.manual_trigger', 'core.webhook_trigger', 'core.schedule_trigger', 'core.form_trigger'], $types('Triggers'));
+        $this->assertSame(['github.new_tag', 'github.new_release', 'github.workflow_run_failed'], $types('Event in other app'));
+        $this->assertContains('github.create_issue', $types('GitHub'));
+    }
+
     public function test_a_sticky_note_goes_where_the_canvas_was_clicked_and_its_text_and_color_save(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor();

@@ -347,25 +347,25 @@ new class extends Component {
     }
 
     /**
-     * The palette's nodes by group. Sticky notes are left out: they are added from the canvas's context menu.
+     * The palette's nodes by group, groups of triggers first. Sticky notes are left out: they are added from the canvas's context menu.
      *
      * @return array<string, list<array{type: string, label: string, description: string, icon: string}>>
      */
     #[Computed]
     public function palette(): array
     {
-        $groups = [];
+        $groups = ['triggers' => [], 'actions' => []];
 
         foreach (app(NodeRegistry::class)->all() as $type => $node) {
             if ($node->kind() === NodeKind::Note) {
                 continue;
             }
 
-            $group = $node->kind() === NodeKind::Trigger ? __('common.triggers') : $node->category();
-            $groups[$group][] = ['type' => $type, 'label' => $node->label(), 'description' => $node->description(), 'icon' => $node->icon()];
+            $kind = $node->kind() === NodeKind::Trigger ? 'triggers' : 'actions';
+            $groups[$kind][$node->category()][] = ['type' => $type, 'label' => $node->label(), 'description' => $node->description(), 'icon' => $node->icon()];
         }
 
-        return $groups;
+        return [...$groups['triggers'], ...$groups['actions']];
     }
 
     #[Computed]
