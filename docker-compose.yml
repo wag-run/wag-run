@@ -1,0 +1,91 @@
+name: wag
+
+# Settings come from a .env file next to this one. See .env.docker.example.
+
+services:
+  app:
+    build:
+      context: .
+    image: wag.run:latest
+    restart: unless-stopped
+    user: "82:82"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:mode=1777,noexec,nosuid,nodev,size=256m
+    pids_limit: 256
+    mem_limit: ${APP_MEMORY_LIMIT:-1g}
+    stop_grace_period: 70s
+    ports:
+      # Loopback only by default: put a TLS-terminating reverse proxy in front.
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-8080}:8080"
+    environment:
+      APP_NAME: ${APP_NAME:-wag.run}
+      # Leave empty to have one generated on first run and kept in the storage volume.
+      APP_KEY: ${APP_KEY:-}
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
+      SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      QUEUE_WORKERS: ${QUEUE_WORKERS:-2}
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: wag
+      DB_USERNAME: wag
+      DB_PASSWORD: ${DB_PASSWORD:-}
+      MAIL_MAILER: ${MAIL_MAILER:-log}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-hello@example.com}
+    volumes:
+      - storage:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - public
+      - internal
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    user: "70:70"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:mode=1777,noexec,nosuid,nodev
+      - /var/run/postgresql:uid=70,gid=70,mode=0750,noexec,nosuid,nodev
+    pids_limit: 256
+    mem_limit: ${DB_MEMORY_LIMIT:-1g}
+    environment:
+      POSTGRES_DB: wag
+      POSTGRES_USER: wag
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wag -d wag"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+networks:
+  public:
+  # No route in or out: the database is reachable only from the app.
+  internal:
+    internal: true
+
+volumes:
+  storage:
+  database:
