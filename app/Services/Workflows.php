@@ -139,6 +139,7 @@ class Workflows
         Audit::record('workflow.deleted', $workflow, $workflow->workspace, label: $workflow->name);
 
         app(WorkflowFiles::class)->deleteForExecutions($workflow->executions()->pluck('id'));
+        $this->triggers->forget($workflow);
         $workflow->delete();
     }
 

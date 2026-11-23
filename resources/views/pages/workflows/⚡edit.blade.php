@@ -1430,6 +1430,21 @@ new class extends Component {
                 @empty
                     <flux:text class="mt-1 text-xs">{{ __('workflows.edit.webhook_and_form_triggers_get') }}</flux:text>
                 @endforelse
+
+                @foreach ($workflow->triggers()->whereIn('type', [\App\Models\WorkflowTrigger::POLL, \App\Models\WorkflowTrigger::SUBSCRIPTION])->get() as $trigger)
+                    <div class="mt-3" wire:key="event-trigger-{{ $trigger->id }}" data-test="event-trigger-status">
+                        <flux:text class="text-xs font-medium">{{ $this->graph->has($trigger->node_id) ? $this->graph->node($trigger->node_id)->name : $trigger->node_id }}</flux:text>
+                        @if (filled($trigger->state['error'] ?? null))
+                            <flux:text class="text-xs text-red-600 dark:text-red-400">{{ __('workflows.edit.event_trigger_error', ['message' => $trigger->state['error']]) }}</flux:text>
+                        @elseif ($trigger->type === \App\Models\WorkflowTrigger::SUBSCRIPTION)
+                            <flux:text class="text-xs">{{ isset($trigger->state['subscription']) ? __('workflows.edit.webhook_registered') : __('workflows.edit.webhook_not_registered_yet') }}</flux:text>
+                        @else
+                            <flux:text class="text-xs">{{ filled($trigger->state['checked_at'] ?? null)
+                                ? __('workflows.edit.last_checked', ['ago' => \Illuminate\Support\Carbon::parse($trigger->state['checked_at'])->diffForHumans()])
+                                : __('workflows.edit.first_check_soon') }}</flux:text>
+                        @endif
+                    </div>
+                @endforeach
             @endif
         </aside>
     </div>

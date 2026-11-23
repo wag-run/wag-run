@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
+use App\Engine\EventTrigger;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * A published trigger the app listens for: a webhook URL, a form page, or a
- * schedule. Synced from the published graph on every publish, keeping each
- * node's key stable so URLs do not change.
+ * A published trigger the app listens for: a webhook URL, a form page, a
+ * schedule, or another app's events, which it either polls for or receives
+ * through a webhook it registered there. Synced from the published graph on
+ * every publish, keeping each node's key stable so URLs do not change.
  *
  * @property int $id
  * @property string $workflow_id
@@ -19,9 +21,10 @@ use Illuminate\Support\Carbon;
  * @property string $type
  * @property string|null $key
  * @property Carbon|null $next_run_at
+ * @property array<string, mixed>|null $state see {@see EventTrigger}
  * @property-read Workflow $workflow
  */
-#[Fillable(['workflow_id', 'workspace_id', 'node_id', 'type', 'key', 'next_run_at'])]
+#[Fillable(['workflow_id', 'workspace_id', 'node_id', 'type', 'key', 'next_run_at', 'state'])]
 class WorkflowTrigger extends Model
 {
     public const WEBHOOK = 'webhook';
@@ -30,10 +33,21 @@ class WorkflowTrigger extends Model
 
     public const SCHEDULE = 'schedule';
 
+    /**
+     * Polls another app for new events.
+     */
+    public const POLL = 'poll';
+
+    /**
+     * Receives another app's events through a webhook registered there.
+     */
+    public const SUBSCRIPTION = 'subscription';
+
     protected function casts(): array
     {
         return [
             'next_run_at' => 'datetime',
+            'state' => 'encrypted:array',
         ];
     }
 
@@ -42,6 +56,7 @@ class WorkflowTrigger extends Model
         return match ($this->type) {
             self::WEBHOOK => route('webhooks.receive', $this->key),
             self::FORM => route('forms.show', $this->key),
+            self::SUBSCRIPTION => route('integrations.events', $this->key),
             default => null,
         };
     }

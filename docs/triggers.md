@@ -126,3 +126,57 @@ What the run receives:
 | `trigger.submitted_by` | The user ID of the person who sent it, for a members-only form. Empty for a public form. |
 
 Note that form answers are under `trigger.values`, while a manual trigger's inputs are directly on `trigger`.
+
+## GitHub
+
+Three triggers start a workflow on a GitHub repository's events: **New tag**, **New release** and **Actions run failed**. Each needs a **GitHub account**, a [GitHub authentication setting](workspaces.md#connecting-an-account) connected to an account that can see the repository, and the **Repository**, as `owner/name`.
+
+### Polling or a webhook
+
+**Find out about new events by** decides how wag.run hears about them:
+
+- **Checking every few minutes** (the default): wag.run asks GitHub what's new every **Check every (minutes)**, 5 by default. It works even when GitHub can't reach your install. The first check after publishing only notes what already exists, so publishing doesn't start runs for old tags or releases.
+- **A webhook on the repository**: when you publish, wag.run adds a webhook to the repository, and GitHub sends each event as it happens. GitHub must be able to reach your install's `APP_URL`, and the connected account needs admin access to the repository. Changing the trigger, unpublishing it or deleting the workflow removes the webhook.
+
+Under **Trigger URLs** in the [workflow settings](editor.md#workflow-settings), each GitHub trigger shows when it last checked or whether its webhook is registered, and what's wrong if it isn't working. Runs it starts show **Another app** as their trigger.
+
+### New tag
+
+Fires when a tag is pushed. Polling checks the 100 tags GitHub lists first.
+
+| Placeholder | What it holds |
+|---|---|
+| `trigger.tag` | The tag's name, such as `v1.2.0` |
+| `trigger.sha` | The commit it points to |
+| `trigger.repository` | `owner/name` |
+| `trigger.url` | The tag on GitHub |
+
+### New release
+
+Fires when a release is published. Drafts don't count until they're published. Turn off **Include pre-releases** to skip pre-releases.
+
+| Placeholder | What it holds |
+|---|---|
+| `trigger.tag`, `trigger.name` | The release's tag and title |
+| `trigger.body` | The release notes |
+| `trigger.url` | The release on GitHub |
+| `trigger.prerelease` | Whether it's a pre-release |
+| `trigger.author` | Who published it |
+| `trigger.published_at` | When it was published |
+| `trigger.repository` | `owner/name` |
+
+### Actions run failed
+
+Fires when a GitHub Actions run fails. Set **Actions workflow** (its name, such as `CI`, or its file name, such as `ci.yml`) or **Branch** to only hear about some runs.
+
+| Placeholder | What it holds |
+|---|---|
+| `trigger.id`, `trigger.run_number` | The run's ID and number |
+| `trigger.workflow` | The Actions workflow's name |
+| `trigger.branch`, `trigger.sha` | The branch and commit it ran on |
+| `trigger.event` | What started the run, such as `push` |
+| `trigger.actor` | Who started it |
+| `trigger.url` | The run on GitHub |
+| `trigger.repository` | `owner/name` |
+
+A workflow that a GitHub trigger starts, and that changes the same repository, can start itself again, for example by creating a tag. Each workflow can start only so many [runs a minute](runs.md#runs-per-minute), but check that its actions can't fire its own trigger.

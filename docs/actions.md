@@ -1,6 +1,6 @@
 # Actions
 
-Actions are the nodes that do the work after a trigger. They're grouped in the palette as **Flow**, **Data**, **Integrations**, **AI**, **Messaging** and **People**.
+Actions are the nodes that do the work after a trigger. They're grouped in the palette as **Flow**, **Data**, **Integrations**, **GitHub**, **Google**, **AI**, **Messaging** and **People**.
 
 Each node's outputs are available to the nodes after it as `nodes.<id>.output`, where `<id>` is shown in the node's settings under **Reference its output as**. For example, the status code of an HTTP call with the id `fetch` is `{{ nodes.fetch.output.status }}`. See [Data and placeholders](data-and-placeholders.md).
 
@@ -155,6 +155,51 @@ Outputs: `status` (the status code), `ok` (true for a 2xx status), `headers`, an
 HTTP calls can't reach private, loopback or link-local addresses, such as `10.0.0.5` or `localhost`, unless a workspace admin lists them in the [internal-address allowlist](workspaces.md#workspace-settings).
 
 > **Warning:** With **Allow insecure connections** on, the connection is still encrypted, but wag.run no longer checks who it's talking to. Anyone between wag.run and the server could read or change the request and the response, including any token or password sent with it. Use it only for internal servers you control. Where you can, give the server a valid certificate instead.
+
+## GitHub
+
+These nodes work on a GitHub repository as the account a [GitHub authentication setting](workspaces.md#connecting-an-account) is connected to. Each has a **GitHub account** and a **Repository**, as `owner/name` or the repository's URL. A placeholder works in **Repository**, such as `{{ trigger.repository }}` after a [GitHub trigger](triggers.md#github).
+
+If GitHub refuses the request, the step fails with GitHub's message. Only server errors and rate limits are retried.
+
+### Create issue
+
+Opens an issue. **Title** is required; **Body**, **Labels** and **Assignees** (usernames) are optional, with labels and assignees separated by commas.
+
+Outputs: `number`, `url` and `id`.
+
+### Comment on issue or PR
+
+Adds a **Comment** to the issue or pull request with the given **number**.
+
+Outputs: `id` and `url`.
+
+### Create release
+
+Publishes a release for **Tag**. If the tag doesn't exist yet, GitHub creates it at **Target**, a branch or commit (the default branch if empty). **Name** defaults to the tag. Turn on **Generate release notes** to have GitHub add notes from the pull requests since the last release, or **Save as a draft** or **Pre-release** as needed.
+
+Outputs: `id`, `tag` and `url`.
+
+### Run Actions workflow
+
+Starts a GitHub Actions workflow on **Branch or tag**. **Actions workflow** is its file name, such as `deploy.yml`, and it needs a `workflow_dispatch` trigger. **Inputs** are the inputs it declares. GitHub doesn't say which run it started.
+
+Outputs: `workflow` and `ref`.
+
+## Google
+
+### Add row to sheet
+
+Adds a row after the last one in a Google Sheets sheet, as the account a [Google authentication setting](workspaces.md#connecting-an-account) is connected to.
+
+| Setting | What it does |
+|---|---|
+| **Google account** | The Google authentication setting to use |
+| **Spreadsheet** | The spreadsheet's URL or ID |
+| **Sheet** | The sheet's name, `Sheet1` by default |
+| **Values** | One value per column, starting from the first. Values are entered as if typed, so numbers and dates are recognised. |
+
+Outputs: `range`, the cells it wrote, such as `'Orders'!A5:C5`, and `rows`.
 
 ## AI
 

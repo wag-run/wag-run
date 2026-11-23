@@ -6,6 +6,8 @@ use App\Engine\Events\ExecutionFinished;
 use App\Engine\Node;
 use App\Engine\NodeRegistry;
 use App\Engine\Nodes\Actions;
+use App\Engine\Nodes\GitHub;
+use App\Engine\Nodes\Google;
 use App\Engine\Nodes\Note;
 use App\Engine\Nodes\Triggers;
 use App\Engine\Templates\ExpressionTemplateEngine;
@@ -48,6 +50,14 @@ class WorkflowServiceProvider extends ServiceProvider
         Actions\SendNotification::class,
         Actions\ChatMessage::class,
         Actions\UploadToS3::class,
+        GitHub\NewTag::class,
+        GitHub\NewRelease::class,
+        GitHub\WorkflowRunFailed::class,
+        GitHub\CreateIssue::class,
+        GitHub\AddComment::class,
+        GitHub\CreateRelease::class,
+        GitHub\RunActionsWorkflow::class,
+        Google\AppendSheetRow::class,
         Note::class,
     ];
 

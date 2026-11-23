@@ -23,7 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureUserIsActive::class,
         ]);
 
-        $middleware->validateCsrfTokens(except: ['hooks/*']);
+        $middleware->validateCsrfTokens(except: ['hooks/*', 'integrations/events/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EventWebhookController;
 use App\Http\Controllers\OAuthConnectionController;
 use App\Http\Controllers\OidcController;
 use App\Http\Controllers\WebhookController;
@@ -17,6 +18,10 @@ Route::livewire('invitations/{token}', 'pages::invitations.show')->name('invitat
 Route::any('hooks/{key}', WebhookController::class)
     ->middleware('throttle:120,1')
     ->name('webhooks.receive');
+
+Route::post('integrations/events/{key}', EventWebhookController::class)
+    ->middleware('throttle:120,1')
+    ->name('integrations.events');
 
 Route::livewire('forms/{key}', 'pages::forms.show')->name('forms.show');
 

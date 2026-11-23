@@ -46,6 +46,7 @@ return [
         'form' => 'Form',
         'workflow' => 'Another workflow',
         'api' => 'API',
+        'event' => 'Another app',
     ],
     'test' => 'Test',
     'test_run' => 'Test run',

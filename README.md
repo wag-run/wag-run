@@ -8,12 +8,12 @@ Built with Laravel 13, Livewire 4, Flux and [WireFlow](https://github.com/getart
 
 - **Visual editor**: drag nodes from the palette, draw connections, right-click to copy, paste or delete, undo and redo (⌘Z / ⇧⌘Z), and a data picker to insert earlier outputs into fields.
 - **Drafts and versions**: edits stay in a draft until you publish. Each publish is a version, runs stay on the version they started with, and you can roll back or discard the draft.
-- **Triggers**: manual (with inputs to fill in), webhook (optionally verified by token, HMAC signature or IP allowlist), schedule (interval or cron) and public or members-only forms.
-- **Actions**: HTTP call, conditional logic, switch, for loop, wait, merge, terminate, compose, trigger another workflow, LLM call, send email and send notification.
+- **Triggers**: manual (with inputs to fill in), webhook (optionally verified by token, HMAC signature or IP allowlist), schedule (interval or cron), public or members-only forms, and GitHub (new tag, new release, failed Actions run), by polling or a webhook registered on the repository.
+- **Actions**: HTTP call, conditional logic, switch, for loop, wait, merge, terminate, compose, trigger another workflow, LLM call, send email and send notification, GitHub (create issue, comment, create release, run an Actions workflow) and Google Sheets (add row).
 - **People in the loop**: approvals (one or more approvers, with an "approvals needed" count) and tasks with a form to fill in. They show up in the assignee's inbox and, unless turned off on the node, by email.
 - **Error handling**: per-node retries with backoff, and an optional "on error" path to catch a node that still fails.
 - **Runs**: a live view of each run on the canvas with every step's input, output and error. Retention is configurable per organization, workspace and workflow.
-- **Workspaces and roles**: Admin, Editor, Viewer and Guest roles per workspace, plus organization admins. Variables, encrypted secrets and reusable authentication settings (HTTP basic, API token, AI provider, SMTP) belong to a workspace.
+- **Workspaces and roles**: Admin, Editor, Viewer and Guest roles per workspace, plus organization admins. Variables, encrypted secrets and reusable authentication settings (HTTP basic, API token, AI provider, SMTP, and GitHub, Google or any OAuth 2.0 provider connected through OAuth) belong to a workspace.
 - **Sign-in**: email and password, passkeys, two-factor authentication, and OpenID Connect providers.
 - **API and MCP server**: start and inspect runs from scripts with personal access tokens, or connect an AI assistant such as Claude to the MCP server through OAuth.
 - **Audit log** of changes to workflows, secrets, members and settings.
