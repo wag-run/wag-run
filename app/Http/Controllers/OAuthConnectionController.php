@@ -41,6 +41,6 @@ class OAuthConnectionController extends Controller
         }
 
         return redirect()->to($returnUrl)
-            ->with('oauth_status', __('oauth.connected', ['key' => $credential->key, 'account' => $credential->config['account'] ?? $credential->credentialType()->label()]));
+            ->with('oauth_status', __('oauth.connected', ['name' => $credential->description]));
     }
 }

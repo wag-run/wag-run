@@ -20,12 +20,14 @@ final class GitHub
     /**
      * @throws RuntimeException when the setting doesn't exist, isn't a GitHub connection, or isn't connected
      */
-    public static function request(Workspace $workspace, mixed $credentialKey): PendingRequest
+    public static function request(Workspace $workspace, mixed $credentialId): PendingRequest
     {
-        $credential = $workspace->credentials()->where('key', (string) $credentialKey)->first();
+        $credential = is_string($credentialId) && Str::isUuid($credentialId)
+            ? $workspace->credentials()->whereKey($credentialId)->first()
+            : null;
 
         if (! $credential || $credential->type !== 'github') {
-            throw new RuntimeException(__('nodes.github.connection_not_found', ['key' => (string) $credentialKey]));
+            throw new RuntimeException(__('nodes.github.connection_not_found'));
         }
 
         return Http::baseUrl(GitHubOAuth::API)

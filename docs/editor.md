@@ -96,9 +96,9 @@ Click **Save settings** to apply them. Workflow settings take effect immediately
 
 ## Export and import
 
-Click **Export** in the toolbar, or **Export JSON** on the **Workflows** list, to download the workflow as a `.workflow.json` file. The file contains the nodes and connections. It contains no secret values, only the names of the secrets and authentication settings the workflow uses.
+Click **Export** in the toolbar, or **Export JSON** on the **Workflows** list, to download the workflow as a `.workflow.json` file. The file contains the nodes and connections. It contains no secret values: only the names of the secrets the workflow uses, and the IDs of its authentication settings.
 
-To bring a workflow in, click **Import** on the **Workflows** list and choose the file. It's created as a new workflow with an unpublished draft. Any secrets and authentication settings it refers to must exist in the workspace, under the same names, before it can run.
+To bring a workflow in, click **Import** on the **Workflows** list and choose the file. It's created as a new workflow with an unpublished draft. Any secrets it refers to must exist in the workspace, under the same names, before it can run. Authentication settings only carry over when you import into the workspace the workflow came from; elsewhere, nodes that used one are left empty, so choose the setting again in each before publishing.
 
 ## Deleting a workflow
 

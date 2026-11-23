@@ -458,17 +458,18 @@ new class extends Component {
     }
 
     /**
-     * Choices for credential, secret, workflow and user fields.
+     * Choices for credential, secret, workflow and user fields. Settings are
+     * listed by description and stored by UUID.
      *
-     * @return array<string, array<string, string>>
+     * @return array{credentials: array<string, array{type: string, label: string}>, secrets: array<string, string>, workflows: array<string, string>, users: array<string, string>}
      */
     #[Computed]
     public function choices(): array
     {
-        $credentials = $this->workspace->credentials()->orderBy('key')->get(['key', 'type']);
+        $credentials = $this->workspace->credentials()->orderBy('description')->get(['id', 'type', 'description']);
 
         return [
-            'credentials' => $credentials->mapWithKeys(fn ($credential) => [$credential->key => $credential->type])->all(),
+            'credentials' => $credentials->mapWithKeys(fn ($credential) => [$credential->id => ['type' => $credential->type, 'label' => $credential->description]])->all(),
             'secrets' => $this->workspace->secrets()->orderBy('key')->pluck('key', 'key')->all(),
             'workflows' => $this->workspace->workflows()->whereKeyNot($this->workflow->id)->orderBy('name')->pluck('name', 'id')->all(),
             'users' => Organization::current()?->users()->wherePivotNull('deactivated_at')->orderBy('name')->get(['users.id', 'name', 'email'])

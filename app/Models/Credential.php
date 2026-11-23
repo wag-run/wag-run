@@ -7,6 +7,7 @@ use App\Credentials\CredentialTypeRegistry;
 use Database\Factories\CredentialFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,19 +16,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * A reusable workspace authentication setting (HTTP Basic, API token, AI
  * provider key, OAuth connection). The whole config is encrypted at rest.
  *
- * @property int $id
+ * Nodes refer to a setting by its UUID, and people know it by its
+ * description, which is unique in the workspace.
+ *
+ * @property string $id a UUID
  * @property int $workspace_id
- * @property string $key
  * @property string $type
  * @property array<string, mixed> $config
- * @property string|null $description
+ * @property string $description
+ * @property-read Workspace $workspace
  */
-#[Fillable(['key', 'type', 'config', 'description'])]
+#[Fillable(['type', 'config', 'description'])]
 #[Hidden(['config'])]
 class Credential extends Model
 {
     /** @use HasFactory<CredentialFactory> */
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected function casts(): array
     {

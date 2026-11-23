@@ -104,7 +104,7 @@ class SendEmail extends Node
         $mailer = $this->mailerFor($context);
 
         if ($mailer === null) {
-            return NodeResult::fail(__('nodes.send_email.smtp_server_not_found', ['key' => $context->input('credential')]), retryable: false);
+            return NodeResult::fail(__('nodes.send_email.smtp_server_not_found'), retryable: false);
         }
 
         $subject = (string) $context->input('subject');

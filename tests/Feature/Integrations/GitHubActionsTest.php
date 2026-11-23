@@ -24,7 +24,7 @@ class GitHubActionsTest extends TestCase
 
         Http::preventStrayRequests();
         $this->workspace = Workspace::factory()->create();
-        Credential::factory()->for($this->workspace)->oauth('github')->create(['key' => 'github']);
+        Credential::factory()->for($this->workspace)->oauth('github')->create(['id' => $this->settingId('github'), 'description' => 'github']);
     }
 
     /**
@@ -34,7 +34,7 @@ class GitHubActionsTest extends TestCase
     private function runAction(string $type, array $config, array $input = []): ExecutionStep
     {
         $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'act' => [$type, ['credential' => 'github', 'repository' => '{{ trigger.repo }}', ...$config], ['max_retries' => 1, 'backoff_seconds' => 0]]],
+            ['start' => 'core.manual_trigger', 'act' => [$type, ['credential' => $this->settingId('github'), 'repository' => '{{ trigger.repo }}', ...$config], ['max_retries' => 1, 'backoff_seconds' => 0]]],
             ['start->act'],
         ), $this->workspace), ['repo' => 'https://github.com/acme/app', ...$input]);
 
@@ -89,19 +89,19 @@ class GitHubActionsTest extends TestCase
     {
         Http::fake();
 
-        $this->assertSame('GitHub authentication setting "nope" not found.', $this->runAction('github.create_issue', ['credential' => 'nope', 'title' => 'x'])->error['message']);
+        $this->assertSame('The GitHub account chosen on this node no longer exists. Choose or connect another in the node\'s settings.', $this->runAction('github.create_issue', ['credential' => $this->settingId('nope'), 'title' => 'x'])->error['message']);
         $this->assertStringContainsString('isn\'t a repository', $this->runAction('github.create_issue', ['title' => 'x'], ['repo' => 'acme'])->error['message']);
         Http::assertNothingSent();
     }
 
     public function test_adds_a_row_to_a_google_sheet(): void
     {
-        Credential::factory()->for($this->workspace)->oauth('google', ['access_token' => 'ya29.token'])->create(['key' => 'google']);
+        Credential::factory()->for($this->workspace)->oauth('google', ['access_token' => 'ya29.token'])->create(['id' => $this->settingId('google'), 'description' => 'google']);
         Http::fake(['sheets.googleapis.com/*' => Http::response(['updates' => ['updatedRange' => "'Orders'!A5:C5", 'updatedRows' => 1]])]);
 
         $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger', 'add' => ['google.append_sheet_row', [
-                'credential' => 'google',
+                'credential' => $this->settingId('google'),
                 'spreadsheet' => 'https://docs.google.com/spreadsheets/d/1AbC_d-9/edit#gid=0',
                 'sheet' => 'Orders',
                 'values' => [['value' => '{{ trigger.id }}'], ['value' => '{{ trigger.total }}'], ['value' => 'paid']],

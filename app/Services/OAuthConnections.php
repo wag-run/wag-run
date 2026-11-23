@@ -28,8 +28,8 @@ use Throwable;
  * whose app is set up in the environment such as GitHub, as a new account:
  * from the Authentication page's Connect button or from a node's account
  * field in the editor. A new account's setting is created only once the
- * provider approves, named after the account, and, from a node, filled into
- * that node.
+ * provider approves, described by the account, such as "GitHub (octocat)",
+ * and, from a node, filled into that node.
  *
  * The session only holds the attempt: who started it, where, and the PKCE
  * verifier. Client secrets never leave the setting or the environment.
@@ -151,7 +151,7 @@ class OAuthConnections
         $created = ! $credential->exists;
 
         if ($created) {
-            $credential->key = $this->freeKey($workspace, $type->key().(filled($account) ? '_'.$account : ''));
+            $credential->description = $this->freeDescription($workspace, filled($account) ? "{$type->label()} ({$account})" : $type->label());
         }
 
         $credential->config = [...$credential->config, ...$this->connection($tokens, null), 'account' => $account];
@@ -220,27 +220,25 @@ class OAuthConnections
 
         $node = $graph->node($pending['node_id']);
         $this->workflows->saveDraft($workflow, $graph->withNode(new GraphNode(
-            $node->id, $node->type, $node->name, [...$node->config, $pending['field'] => $credential->key], $node->retry, $node->position, $node->errorPath,
+            $node->id, $node->type, $node->name, [...$node->config, $pending['field'] => $credential->id], $node->retry, $node->position, $node->errorPath,
         )));
 
         session()->flash('editor_select_node', $node->id);
     }
 
     /**
-     * $base as a setting key that is free in the workspace: letters, numbers
-     * and underscores, with _2, _3 and so on added when it is taken.
+     * $base as a description that is free in the workspace, with (2), (3)
+     * and so on added when it is taken.
      */
-    protected function freeKey(Workspace $workspace, string $base): string
+    protected function freeDescription(Workspace $workspace, string $base): string
     {
-        $base = trim((string) preg_replace('/[^A-Za-z0-9_]+/', '_', $base), '_');
-        $base = preg_match('/^[A-Za-z_]/', $base) ? $base : 'oauth_'.$base;
-        $key = $base;
+        $description = $base;
 
-        for ($suffix = 2; $workspace->credentials()->where('key', $key)->exists(); $suffix++) {
-            $key = "{$base}_{$suffix}";
+        for ($suffix = 2; $workspace->credentials()->where('description', $description)->exists(); $suffix++) {
+            $description = "{$base} ({$suffix})";
         }
 
-        return $key;
+        return $description;
     }
 
     /**
@@ -252,7 +250,7 @@ class OAuthConnections
     public function accessToken(Credential $credential): string
     {
         if (! OAuthCredentialType::isConnected($credential)) {
-            throw new RuntimeException(__('oauth.not_connected', ['key' => $credential->key]));
+            throw new RuntimeException(__('oauth.not_connected', ['name' => $credential->description]));
         }
 
         if ($this->expiring($credential) && filled($credential->config['refresh_token'] ?? null)) {
@@ -343,7 +341,7 @@ class OAuthConnections
         $type = $credential->credentialType();
 
         if (! $type instanceof OAuthCredentialType) {
-            throw new RuntimeException(__('oauth.not_an_oauth_setting', ['key' => $credential->key]));
+            throw new RuntimeException(__('oauth.not_an_oauth_setting', ['name' => $credential->description]));
         }
 
         return $type;

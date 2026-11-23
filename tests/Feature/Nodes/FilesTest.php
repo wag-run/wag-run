@@ -149,12 +149,12 @@ class FilesTest extends TestCase
         }]);
         $this->app->instance(ObjectStorage::class, $storage);
         $workspace = Workspace::factory()->create();
-        Credential::factory()->for($workspace)->s3()->create(['key' => 'media']);
+        Credential::factory()->for($workspace)->s3()->create(['id' => $this->settingId('media'), 'description' => 'media']);
 
         $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger',
                 'make' => ['core.create_file', ['name' => 'pixel.png', 'content' => base64_encode(self::PNG), 'encoding' => 'base64']],
-                'upload' => ['core.s3_upload', ['credential' => 'media', 'key' => 'images/{{ nodes.make.output.file.name }}', 'content' => '{{ nodes.make.output.file }}']]],
+                'upload' => ['core.s3_upload', ['credential' => $this->settingId('media'), 'key' => 'images/{{ nodes.make.output.file.name }}', 'content' => '{{ nodes.make.output.file }}']]],
             ['start->make', 'make->upload'],
         ), $workspace));
 
@@ -205,11 +205,11 @@ class FilesTest extends TestCase
     {
         AnonymousAgent::fake(['A red pixel.', 'unused']);
         $workspace = Workspace::factory()->create();
-        Credential::factory()->for($workspace)->aiProvider('anthropic')->create(['key' => 'claude']);
+        Credential::factory()->for($workspace)->aiProvider('anthropic')->create(['id' => $this->settingId('claude'), 'description' => 'claude']);
         $ask = fn (string $name, string $content) => $this->runWorkflow($this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger',
                 'make' => ['core.create_file', ['name' => $name, 'content' => $content, 'encoding' => 'base64']],
-                'ask' => ['core.llm', ['credential' => 'claude', 'model' => 'claude-sonnet-5-5', 'prompt' => 'What is this?', 'attachments' => '{{ nodes.make.output.file }}']]],
+                'ask' => ['core.llm', ['credential' => $this->settingId('claude'), 'model' => 'claude-sonnet-5-5', 'prompt' => 'What is this?', 'attachments' => '{{ nodes.make.output.file }}']]],
             ['start->make', 'make->ask'],
         ), $workspace));
 

@@ -19,6 +19,9 @@ return [
         'delete_this_authentication_setting_workflows' => 'Delete this authentication setting? Workflows that use it will fail until it is replaced.',
         'edit_authentication' => 'Edit authentication',
         'no_authentication_settings_yet' => 'No authentication settings yet.',
+        'another_setting_has_this_description' => 'Another authentication setting in this workspace already has this description.',
+        'description_help' => 'How nodes list it. Must be different from the workspace\'s other settings.',
+        'description_placeholder' => 'Billing API token',
         'reusable_credentials_this_workspace_s' => 'Reusable credentials this workspace\'s workflows use to call other systems.',
     ],
     'members' => [

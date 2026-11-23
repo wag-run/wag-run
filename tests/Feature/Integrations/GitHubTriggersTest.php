@@ -30,7 +30,7 @@ class GitHubTriggersTest extends TestCase
 
         Http::preventStrayRequests();
         $this->workspace = Workspace::factory()->create();
-        Credential::factory()->for($this->workspace)->oauth('github')->create(['key' => 'github']);
+        Credential::factory()->for($this->workspace)->oauth('github')->create(['id' => $this->settingId('github'), 'description' => 'github']);
     }
 
     /**
@@ -38,7 +38,7 @@ class GitHubTriggersTest extends TestCase
      */
     private function publish(string $type, array $config = [], ?Workflow $workflow = null): Workflow
     {
-        $graph = $this->graph(['on' => [$type, ['credential' => 'github', 'repository' => 'acme/app', 'listen' => 'poll', ...$config]]]);
+        $graph = $this->graph(['on' => [$type, ['credential' => $this->settingId('github'), 'repository' => 'acme/app', 'listen' => 'poll', ...$config]]]);
         $workflow ??= Workflow::factory()->for($this->workspace)->create();
         $workflow->update(['draft_graph' => $graph]);
         app(Workflows::class)->publish($workflow->refresh());
@@ -180,7 +180,7 @@ class GitHubTriggersTest extends TestCase
 
     public function test_publishing_refuses_a_repository_that_isnt_owner_and_name(): void
     {
-        $workflow = Workflow::factory()->for($this->workspace)->create(['draft_graph' => $this->graph(['on' => ['github.new_tag', ['credential' => 'github', 'repository' => 'not a repo']]])]);
+        $workflow = Workflow::factory()->for($this->workspace)->create(['draft_graph' => $this->graph(['on' => ['github.new_tag', ['credential' => $this->settingId('github'), 'repository' => 'not a repo']]])]);
 
         $this->expectException(ValidationException::class);
         app(Workflows::class)->publish($workflow);

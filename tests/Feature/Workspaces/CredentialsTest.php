@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -23,15 +24,16 @@ class CredentialsTest extends TestCase
         Livewire::actingAs($admin)
             ->test('pages::workspaces.credentials', ['workspace' => $workspace])
             ->set('type', 'ai_provider')
-            ->set('key', 'anthropic_prod')
+            ->set('description', 'Anthropic production')
             ->set('config.provider', 'anthropic')
             ->set('config.api_key', 'sk-ant-plaintext')
             ->call('save')
             ->assertHasNoErrors();
 
-        $credential = Credential::firstWhere('key', 'anthropic_prod');
+        $credential = Credential::firstWhere('description', 'Anthropic production');
 
         $this->assertSame('ai_provider', $credential->type);
+        $this->assertTrue(Str::isUuid($credential->id));
         $this->assertSame('sk-ant-plaintext', $credential->config['api_key']);
         $this->assertStringNotContainsString('sk-ant-plaintext', DB::table('credentials')->value('config'));
         $this->assertSame(['sk-ant-plaintext'], $credential->secretValues());
@@ -45,15 +47,37 @@ class CredentialsTest extends TestCase
         Livewire::actingAs($admin)
             ->test('pages::workspaces.credentials', ['workspace' => $workspace])
             ->set('type', 'http_basic')
-            ->set('key', 'intranet')
+            ->set('description', 'Intranet')
             ->call('save')
             ->assertHasErrors(['config.username' => 'required', 'config.password' => 'required']);
+    }
+
+    public function test_the_description_is_required_and_unique_in_the_workspace(): void
+    {
+        $workspace = Workspace::factory()->create();
+        Credential::factory()->for($workspace)->create(['description' => 'Billing API']);
+        Credential::factory()->create(['description' => 'Shop API']);
+        $admin = User::factory()->memberOf($workspace, WorkspaceRole::Admin)->create();
+
+        $page = Livewire::actingAs($admin)->test('pages::workspaces.credentials', ['workspace' => $workspace])
+            ->set('type', 'api_token')
+            ->set('config.token', 'tok')
+            ->call('save')
+            ->assertHasErrors(['description' => 'required'])
+            ->set('description', 'Billing API')
+            ->call('save')
+            ->assertHasErrors(['description' => 'unique'])
+            ->set('description', 'Shop API')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame(['Billing API', 'Shop API'], $workspace->credentials()->orderBy('description')->pluck('description')->all(), 'another workspace may use the same description');
     }
 
     public function test_editing_without_new_secret_values_keeps_them(): void
     {
         $workspace = Workspace::factory()->create();
-        $credential = Credential::factory()->for($workspace)->httpBasic()->create(['key' => 'intranet']);
+        $credential = Credential::factory()->for($workspace)->httpBasic()->create(['id' => $this->settingId('intranet'), 'description' => 'intranet']);
         $originalPassword = $credential->config['password'];
         $admin = User::factory()->memberOf($workspace, WorkspaceRole::Admin)->create();
 
@@ -91,7 +115,7 @@ class CredentialsTest extends TestCase
 
         Livewire::actingAs($editor)
             ->test('pages::workspaces.credentials', ['workspace' => $workspace])
-            ->set('key', 'nope')
+            ->set('description', 'nope')
             ->set('config.token', 'x')
             ->call('save')
             ->assertForbidden();
@@ -102,7 +126,7 @@ class CredentialsTest extends TestCase
     public function test_page_shows_setting_names_but_not_secret_values(): void
     {
         $workspace = Workspace::factory()->create();
-        Credential::factory()->for($workspace)->create(['key' => 'github_api', 'config' => ['header' => 'Authorization', 'prefix' => 'Bearer', 'token' => 'ghp_plaintext']]);
+        Credential::factory()->for($workspace)->create(['id' => $this->settingId('github_api'), 'description' => 'github_api', 'config' => ['header' => 'Authorization', 'prefix' => 'Bearer', 'token' => 'ghp_plaintext']]);
         $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
 
         $this->actingAs($viewer)

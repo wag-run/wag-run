@@ -76,7 +76,7 @@ class ChatMessage extends Node
         $credential = $context->credential($context->input('credential'));
 
         if (! $credential || $credential->type !== 'chat_webhook') {
-            return NodeResult::fail(__('nodes.chat_message.chat_webhook_not_found', ['key' => $context->input('credential')]), retryable: false);
+            return NodeResult::fail(__('nodes.chat_message.chat_webhook_not_found'), retryable: false);
         }
 
         $service = (string) ($credential->config['service'] ?? 'slack');

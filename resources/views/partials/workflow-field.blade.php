@@ -18,7 +18,7 @@
 @elseif (in_array($field->type, [Field::CREDENTIAL, Field::SECRET, Field::WORKFLOW, Field::USER], true))
     @php
         $options = match ($field->type) {
-            Field::CREDENTIAL => collect($choices['credentials'])->filter(fn ($type) => $field->credentialTypes === [] || in_array($type, $field->credentialTypes, true))->mapWithKeys(fn ($type, $key) => [$key => $key])->all(),
+            Field::CREDENTIAL => collect($choices['credentials'])->filter(fn (array $credential) => $field->credentialTypes === [] || in_array($credential['type'], $field->credentialTypes, true))->map(fn (array $credential) => $credential['label'])->all(),
             Field::SECRET => $choices['secrets'],
             Field::WORKFLOW => $choices['workflows'],
             Field::USER => $choices['users'],

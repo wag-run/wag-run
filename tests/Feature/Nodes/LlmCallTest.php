@@ -24,10 +24,10 @@ class LlmCallTest extends TestCase
     private function llmWorkflow(array $config, ?Workspace $workspace = null): Workflow
     {
         $workspace ??= Workspace::factory()->create();
-        Credential::factory()->for($workspace)->aiProvider('anthropic')->create(['key' => 'claude']);
+        Credential::factory()->for($workspace)->aiProvider('anthropic')->create(['id' => $this->settingId('claude'), 'description' => 'claude']);
 
         return $this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'ask' => ['core.llm', ['credential' => 'claude', 'model' => 'claude-sonnet-5-5', ...$config]]],
+            ['start' => 'core.manual_trigger', 'ask' => ['core.llm', ['credential' => $this->settingId('claude'), 'model' => 'claude-sonnet-5-5', ...$config]]],
             ['start->ask'],
         ), $workspace);
     }
@@ -73,9 +73,9 @@ class LlmCallTest extends TestCase
     {
         AnonymousAgent::fake();
         $workspace = Workspace::factory()->create();
-        Credential::factory()->for($workspace)->create(['key' => 'not_ai']);
+        Credential::factory()->for($workspace)->create(['id' => $this->settingId('not_ai'), 'description' => 'not_ai']);
         $workflow = $this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'ask' => ['core.llm', ['credential' => 'not_ai', 'model' => 'm', 'prompt' => 'hi']]],
+            ['start' => 'core.manual_trigger', 'ask' => ['core.llm', ['credential' => $this->settingId('not_ai'), 'model' => 'm', 'prompt' => 'hi']]],
             ['start->ask'],
         ), $workspace);
 

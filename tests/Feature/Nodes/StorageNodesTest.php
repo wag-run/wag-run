@@ -75,7 +75,7 @@ class StorageNodesTest extends TestCase
     private function runUpload(Workspace $workspace, array $config, array $input = []): Execution
     {
         return $this->runWorkflow($this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'upload' => ['core.s3_upload', ['credential' => 'backups', ...$config]]],
+            ['start' => 'core.manual_trigger', 'upload' => ['core.s3_upload', ['credential' => $this->settingId('backups'), ...$config]]],
             ['start->upload'],
         ), $workspace), $input);
     }
@@ -84,7 +84,7 @@ class StorageNodesTest extends TestCase
     {
         $this->storageAnswers(fn () => new Result([]));
         $workspace = Workspace::factory()->create();
-        Credential::factory()->for($workspace)->s3()->create(['key' => 'backups']);
+        Credential::factory()->for($workspace)->s3()->create(['id' => $this->settingId('backups'), 'description' => 'backups']);
 
         $execution = $this->runUpload($workspace, [
             'key' => '/opnsense/{{ trigger.host }}.xml',
@@ -112,14 +112,14 @@ class StorageNodesTest extends TestCase
         Storage::fake('workflow_files');
         $this->storageAnswers(fn () => new Result([]));
         $workspace = Workspace::factory()->create();
-        Credential::factory()->for($workspace)->s3()->create(['key' => 'backups']);
+        Credential::factory()->for($workspace)->s3()->create(['id' => $this->settingId('backups'), 'description' => 'backups']);
 
         $this->runUpload($workspace, ['key' => 'config.xml', 'content' => '<a/>', 'storage_class' => 'GLACIER']);
         $this->storageAnswers(fn () => new Result([]));
         $this->runWorkflow($this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger',
                 'make' => ['core.create_file', ['name' => 'config.tar', 'content' => 'tar bytes']],
-                'upload' => ['core.s3_upload', ['credential' => 'backups', 'key' => 'config.tar', 'content' => '{{ nodes.make.output.file }}', 'storage_class' => 'DEEP_ARCHIVE']]],
+                'upload' => ['core.s3_upload', ['credential' => $this->settingId('backups'), 'key' => 'config.tar', 'content' => '{{ nodes.make.output.file }}', 'storage_class' => 'DEEP_ARCHIVE']]],
             ['start->make', 'make->upload'],
         ), $workspace));
 
@@ -130,7 +130,7 @@ class StorageNodesTest extends TestCase
     {
         $this->storageAnswers(fn () => new Result([]));
         $workspace = Workspace::factory()->create();
-        Credential::factory()->for($workspace)->s3()->create(['key' => 'backups']);
+        Credential::factory()->for($workspace)->s3()->create(['id' => $this->settingId('backups'), 'description' => 'backups']);
 
         $execution = $this->runUpload($workspace, ['key' => 'config.xml', 'content' => '<a/>', 'storage_class' => 'COLD']);
 
@@ -144,7 +144,7 @@ class StorageNodesTest extends TestCase
         $minio = ['endpoint' => 'http://minio.corp.internal:9000', 'path_style' => 'yes'];
 
         $blocked = Workspace::factory()->create();
-        Credential::factory()->for($blocked)->s3($minio)->create(['key' => 'backups']);
+        Credential::factory()->for($blocked)->s3($minio)->create(['id' => $this->settingId('backups'), 'description' => 'backups']);
         $execution = $this->runUpload($blocked, ['key' => 'config.xml', 'content' => '<a/>']);
 
         $this->assertSame(ExecutionStatus::Failed, $execution->status);
@@ -152,7 +152,8 @@ class StorageNodesTest extends TestCase
         $this->assertSame([], $this->sent);
 
         $allowed = Workspace::factory()->create(['internal_allowlist' => ['*.corp.internal']]);
-        Credential::factory()->for($allowed)->s3($minio)->create(['key' => 'backups']);
+        Credential::query()->delete();
+        Credential::factory()->for($allowed)->s3($minio)->create(['id' => $this->settingId('backups'), 'description' => 'backups']);
         $execution = $this->runUpload($allowed, ['key' => 'config.xml', 'content' => '<a/>']);
 
         $this->assertSame(ExecutionStatus::Complete, $execution->status);
@@ -167,7 +168,7 @@ class StorageNodesTest extends TestCase
             'response' => new Response(403),
         ]));
         $workspace = Workspace::factory()->create();
-        $credential = Credential::factory()->for($workspace)->s3()->create(['key' => 'backups']);
+        $credential = Credential::factory()->for($workspace)->s3()->create(['id' => $this->settingId('backups'), 'description' => 'backups']);
 
         $execution = $this->runUpload($workspace, ['key' => 'config.xml', 'content' => '<a/>']);
 
@@ -180,11 +181,11 @@ class StorageNodesTest extends TestCase
     {
         $this->storageAnswers(fn () => new Result([]));
         $workspace = Workspace::factory()->create();
-        Credential::factory()->for($workspace)->create(['key' => 'backups']);
+        Credential::factory()->for($workspace)->create(['id' => $this->settingId('backups'), 'description' => 'backups']);
 
         $execution = $this->runUpload($workspace, ['key' => 'config.xml', 'content' => '<a/>']);
 
-        $this->assertSame('Storage "backups" was not found in this workspace\'s authentication settings.', $execution->error['message']);
+        $this->assertSame('The storage chosen on this node no longer exists. Choose another in the node\'s settings.', $execution->error['message']);
         $this->assertSame([], $this->sent);
     }
 }

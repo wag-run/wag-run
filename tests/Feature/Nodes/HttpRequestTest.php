@@ -57,11 +57,11 @@ class HttpRequestTest extends TestCase
     {
         Http::fake(['api.example.com/*' => Http::response(['id' => 42, 'name' => 'Widget'], 200, ['Content-Type' => 'application/json'])]);
         $workspace = Workspace::factory()->create();
-        Credential::factory()->for($workspace)->create(['key' => 'shop', 'config' => ['header' => 'Authorization', 'prefix' => 'Bearer', 'token' => 'tok_123456']]);
+        Credential::factory()->for($workspace)->create(['id' => $this->settingId('shop'), 'description' => 'shop', 'config' => ['header' => 'Authorization', 'prefix' => 'Bearer', 'token' => 'tok_123456']]);
         $workflow = $this->httpWorkflow([
             'method' => 'POST',
             'url' => 'https://api.example.com/orders/{{ trigger.id }}',
-            'credential' => 'shop',
+            'credential' => $this->settingId('shop'),
             'query' => ['expand' => 'items'],
             'headers' => ['X-Request' => 'run-{{ execution.id }}'],
             'body_type' => 'json',
@@ -86,9 +86,9 @@ class HttpRequestTest extends TestCase
     {
         Http::fake(['api.example.com/*' => Http::response('ok')]);
         $workspace = Workspace::factory()->create();
-        Credential::factory()->for($workspace)->httpBasic()->create(['key' => 'intranet', 'config' => ['username' => 'svc', 'password' => 'pw-secret']]);
+        Credential::factory()->for($workspace)->httpBasic()->create(['id' => $this->settingId('intranet'), 'description' => 'intranet', 'config' => ['username' => 'svc', 'password' => 'pw-secret']]);
 
-        $this->runWorkflow($this->httpWorkflow(['url' => 'https://api.example.com/ping', 'credential' => 'intranet'], $workspace));
+        $this->runWorkflow($this->httpWorkflow(['url' => 'https://api.example.com/ping', 'credential' => $this->settingId('intranet')], $workspace));
 
         Http::assertSent(fn (Request $request) => $request->header('Authorization') === ['Basic '.base64_encode('svc:pw-secret')]);
     }
@@ -196,9 +196,9 @@ class HttpRequestTest extends TestCase
     {
         Http::fake(['api.example.com/*' => Http::response(['echo' => 'tok_abcdef123'], 200, ['Content-Type' => 'application/json'])]);
         $workspace = Workspace::factory()->create();
-        Credential::factory()->for($workspace)->create(['key' => 'api', 'config' => ['header' => 'X-Key', 'prefix' => '', 'token' => 'tok_abcdef123']]);
+        Credential::factory()->for($workspace)->create(['id' => $this->settingId('api'), 'description' => 'api', 'config' => ['header' => 'X-Key', 'prefix' => '', 'token' => 'tok_abcdef123']]);
 
-        $execution = $this->runWorkflow($this->httpWorkflow(['url' => 'https://api.example.com/x', 'credential' => 'api'], $workspace));
+        $execution = $this->runWorkflow($this->httpWorkflow(['url' => 'https://api.example.com/x', 'credential' => $this->settingId('api')], $workspace));
 
         $this->assertStringNotContainsString('tok_abcdef123', json_encode($execution->steps()->get(['input', 'output'])->toArray()));
     }

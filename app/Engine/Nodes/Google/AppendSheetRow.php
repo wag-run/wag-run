@@ -76,7 +76,7 @@ class AppendSheetRow extends Node
         $credential = $context->credential($context->input('credential'));
 
         if (! $credential || $credential->type !== 'google') {
-            return NodeResult::fail(__('nodes.google_sheets.connection_not_found', ['key' => (string) $context->input('credential')]), retryable: false);
+            return NodeResult::fail(__('nodes.google_sheets.connection_not_found'), retryable: false);
         }
 
         $spreadsheet = $this->spreadsheetId((string) $context->input('spreadsheet'));

@@ -11,6 +11,7 @@ use App\Models\ExecutionStep;
 use App\Models\WorkflowFile;
 use App\Models\Workspace;
 use App\Services\WorkflowFiles;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
@@ -114,13 +115,13 @@ class NodeContext
         return $this->data['secrets'][$key] ?? null;
     }
 
-    public function credential(?string $key): ?Credential
+    public function credential(?string $id): ?Credential
     {
-        if (blank($key)) {
+        if (blank($id) || ! Str::isUuid($id)) {
             return null;
         }
 
-        return $this->workspace()->credentials()->where('key', $key)->first();
+        return $this->workspace()->credentials()->whereKey($id)->first();
     }
 
     /**

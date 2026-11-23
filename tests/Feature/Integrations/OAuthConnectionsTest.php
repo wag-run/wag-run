@@ -99,7 +99,7 @@ class OAuthConnectionsTest extends TestCase
 
         $this->actingAs($this->admin)->get(route('integrations.oauth.callback', ['type' => 'github', 'state' => $query['state'], 'code' => 'abc']))
             ->assertRedirect(route('workspaces.workflows.edit', [$this->workspace, $workflow]))
-            ->assertSessionHas('oauth_status', 'github_octocat is connected as octocat.')
+            ->assertSessionHas('oauth_status', 'GitHub (octocat) is connected.')
             ->assertSessionHas('editor_select_node', 'issue');
 
         Http::assertSent(fn (Request $request) => $request->url() === 'https://github.com/login/oauth/access_token'
@@ -107,23 +107,23 @@ class OAuthConnectionsTest extends TestCase
             && $request['client_secret'] === 'gh-secret'
             && strlen($request['code_verifier']) === 64);
         $credential = Credential::sole();
-        $this->assertSame(['github_octocat', 'github'], [$credential->key, $credential->type]);
+        $this->assertSame(['GitHub (octocat)', 'github'], [$credential->description, $credential->type]);
         $this->assertSame('gho_new', $credential->config['access_token']);
         $this->assertSame(['gho_new'], $credential->secretValues());
-        $this->assertSame('github_octocat', $workflow->refresh()->draft()->node('issue')->config['credential']);
+        $this->assertSame($credential->id, $workflow->refresh()->draft()->node('issue')->config['credential']);
         $this->assertSame(['credential.created', 'credential.connected'], AuditLog::query()->orderBy('id')->pluck('action')->all());
 
-        $this->withSession(['editor_select_node' => 'issue', 'oauth_status' => 'github_octocat is connected as octocat.']);
+        $this->withSession(['editor_select_node' => 'issue', 'oauth_status' => 'GitHub (octocat) is connected.']);
         $this->editor($workflow)
             ->assertSet('selected', 'issue')
-            ->assertSet('form.credential', 'github_octocat')
+            ->assertSet('form.credential', $credential->id)
             ->assertSee('Connect another GitHub account')
             ->assertSee('data-test="connection-result"', false);
     }
 
-    public function test_a_second_account_with_the_same_name_gets_its_own_key(): void
+    public function test_a_second_account_with_the_same_name_gets_its_own_description(): void
     {
-        Credential::factory()->for($this->workspace)->oauth()->create(['key' => 'github_octocat']);
+        Credential::factory()->for($this->workspace)->oauth()->create(['description' => 'GitHub (octocat)']);
         $location = $this->editor($this->issueWorkflow())->call('selectNode', 'issue')->call('connectAccount', 'credential')->effects['redirect'];
         Http::fake([
             'github.com/login/oauth/access_token' => Http::response(['access_token' => 'gho_two']),
@@ -132,7 +132,7 @@ class OAuthConnectionsTest extends TestCase
 
         $this->actingAs($this->admin)->get(route('integrations.oauth.callback', ['type' => 'github', 'state' => $this->authorizeQuery($location)['state'], 'code' => 'abc']));
 
-        $this->assertSame(['github_octocat', 'github_octocat_2'], Credential::query()->orderBy('id')->pluck('key')->all());
+        $this->assertSame(['GitHub (octocat)', 'GitHub (octocat) (2)'], Credential::query()->orderBy('id')->pluck('description')->all());
     }
 
     public function test_only_people_who_manage_authentication_can_connect_from_a_node(): void
@@ -179,9 +179,9 @@ class OAuthConnectionsTest extends TestCase
 
         $this->actingAs($this->admin)->get(route('integrations.oauth.callback', ['type' => 'github', 'state' => $this->authorizeQuery($location)['state'], 'code' => 'abc']))
             ->assertRedirect(route('workspaces.credentials', $this->workspace))
-            ->assertSessionHas('oauth_status', 'github_release_bot is connected as release-bot.')
+            ->assertSessionHas('oauth_status', 'GitHub (release-bot) is connected.')
             ->assertSessionMissing('editor_select_node');
-        $this->assertSame('github_release_bot', Credential::sole()->key);
+        $this->assertSame('GitHub (release-bot)', Credential::sole()->description);
     }
 
     public function test_the_add_authentication_form_says_what_to_set_when_the_app_is_missing(): void
@@ -199,7 +199,7 @@ class OAuthConnectionsTest extends TestCase
 
     public function test_a_callback_from_another_attempt_or_a_declined_consent_is_refused(): void
     {
-        $credential = Credential::factory()->for($this->workspace)->create(['key' => 'github', 'type' => 'github', 'config' => []]);
+        $credential = Credential::factory()->for($this->workspace)->create(['id' => $this->settingId('github'), 'description' => 'github', 'type' => 'github', 'config' => []]);
 
         $this->actingAs($this->admin)->get(route('integrations.oauth.callback', ['type' => 'github', 'state' => 'forged', 'code' => 'abc']))
             ->assertRedirect(route('dashboard'))
@@ -218,7 +218,7 @@ class OAuthConnectionsTest extends TestCase
     public function test_reconnecting_needs_the_app_set_up_in_the_environment(): void
     {
         config(['services.github' => ['client_id' => null, 'client_secret' => null]]);
-        $credential = Credential::factory()->for($this->workspace)->create(['key' => 'github', 'type' => 'github', 'config' => []]);
+        $credential = Credential::factory()->for($this->workspace)->create(['id' => $this->settingId('github'), 'description' => 'github', 'type' => 'github', 'config' => []]);
 
         $this->actingAs($this->admin)->get(route('workspaces.credentials.connect', [$this->workspace, $credential]))
             ->assertRedirect(route('workspaces.credentials', $this->workspace))
@@ -228,14 +228,14 @@ class OAuthConnectionsTest extends TestCase
     public function test_editors_cannot_connect_settings(): void
     {
         $editor = User::factory()->memberOf($this->workspace, WorkspaceRole::Editor)->create();
-        $credential = Credential::factory()->for($this->workspace)->create(['key' => 'github', 'type' => 'github', 'config' => []]);
+        $credential = Credential::factory()->for($this->workspace)->create(['id' => $this->settingId('github'), 'description' => 'github', 'type' => 'github', 'config' => []]);
 
         $this->actingAs($editor)->get(route('workspaces.credentials.connect', [$this->workspace, $credential]))->assertForbidden();
     }
 
     public function test_editing_a_connected_setting_keeps_its_connection(): void
     {
-        $credential = Credential::factory()->for($this->workspace)->oauth()->create(['key' => 'github']);
+        $credential = Credential::factory()->for($this->workspace)->oauth()->create(['id' => $this->settingId('github'), 'description' => 'github']);
 
         Livewire::actingAs($this->admin)
             ->test('pages::workspaces.credentials', ['workspace' => $this->workspace])
@@ -259,27 +259,27 @@ class OAuthConnectionsTest extends TestCase
                 return ['93.184.215.14'];
             }
         });
-        Credential::factory()->for($this->workspace)->oauth('google', ['access_token' => 'ya29.old', 'refresh_token' => '1//refresh', 'expires_at' => now()->subMinute()->getTimestamp()])->create(['key' => 'sheets']);
+        Credential::factory()->for($this->workspace)->oauth('google', ['access_token' => 'ya29.old', 'refresh_token' => '1//refresh', 'expires_at' => now()->subMinute()->getTimestamp()])->create(['id' => $this->settingId('sheets'), 'description' => 'sheets']);
         Http::fake([
             'oauth2.googleapis.com/token' => Http::response(['access_token' => 'ya29.new', 'expires_in' => 3599]),
             'sheets.googleapis.com/*' => Http::response(['ok' => true]),
         ]);
 
         $this->runWorkflow($this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'call' => ['core.http_request', ['method' => 'GET', 'url' => 'https://sheets.googleapis.com/v4/spreadsheets/abc', 'credential' => 'sheets']]],
+            ['start' => 'core.manual_trigger', 'call' => ['core.http_request', ['method' => 'GET', 'url' => 'https://sheets.googleapis.com/v4/spreadsheets/abc', 'credential' => $this->settingId('sheets')]]],
             ['start->call'],
         ), $this->workspace));
 
         Http::assertSent(fn (Request $request) => str_contains($request->url(), 'oauth2.googleapis.com') && $request['grant_type'] === 'refresh_token' && $request['refresh_token'] === '1//refresh');
         Http::assertSent(fn (Request $request) => str_contains($request->url(), 'sheets.googleapis.com') && $request->header('Authorization') === ['Bearer ya29.new']);
-        $config = Credential::firstWhere('key', 'sheets')->config;
+        $config = Credential::firstWhere('description', 'sheets')->config;
         $this->assertSame('1//refresh', $config['refresh_token']);
         $this->assertGreaterThan(now()->getTimestamp() + 3000, $config['expires_at']);
     }
 
     public function test_a_generic_provider_cannot_send_its_token_request_to_an_internal_address(): void
     {
-        $credential = Credential::factory()->for($this->workspace)->create(['key' => 'internal', 'type' => 'oauth2', 'config' => [
+        $credential = Credential::factory()->for($this->workspace)->create(['id' => $this->settingId('internal'), 'description' => 'internal', 'type' => 'oauth2', 'config' => [
             'authorize_url' => 'https://auth.example.com/authorize', 'token_url' => 'http://127.0.0.1/token', 'client_id' => 'id', 'client_secret' => 'secret', 'scope' => 'read write',
         ]]);
 

@@ -60,9 +60,9 @@ class MessagingNodesTest extends TestCase
     {
         Mail::fake();
         $workspace = Workspace::factory()->create();
-        $credential = Credential::factory()->for($workspace)->smtp()->create(['key' => 'team_mail']);
+        $credential = Credential::factory()->for($workspace)->smtp()->create(['id' => $this->settingId('team_mail'), 'description' => 'team_mail']);
 
-        $this->runWorkflow($this->publishedWorkflow($this->emailGraph(['credential' => 'team_mail', 'format' => 'html']), $workspace), ['email' => 'ada@example.com', 'id' => 7]);
+        $this->runWorkflow($this->publishedWorkflow($this->emailGraph(['credential' => $this->settingId('team_mail'), 'format' => 'html']), $workspace), ['email' => 'ada@example.com', 'id' => 7]);
 
         Mail::assertSent(WorkflowEmail::class, fn (WorkflowEmail $mail) => $mail->mailer === "workspace_smtp_{$credential->id}" && $mail->isHtml);
         $this->assertSame($credential->config['host'], config("mail.mailers.workspace_smtp_{$credential->id}.host"));
@@ -83,12 +83,12 @@ class MessagingNodesTest extends TestCase
     {
         Mail::fake();
         $workspace = Workspace::factory()->create();
-        Credential::factory()->for($workspace)->create(['key' => 'api']);
+        Credential::factory()->for($workspace)->create(['id' => $this->settingId('api'), 'description' => 'api']);
 
-        $execution = $this->runWorkflow($this->publishedWorkflow($this->emailGraph(['credential' => 'api']), $workspace), ['email' => 'ada@example.com', 'id' => 7]);
+        $execution = $this->runWorkflow($this->publishedWorkflow($this->emailGraph(['credential' => $this->settingId('api')]), $workspace), ['email' => 'ada@example.com', 'id' => 7]);
 
         Mail::assertNothingSent();
-        $this->assertSame('SMTP server "api" was not found in this workspace\'s authentication settings.', $execution->error['message']);
+        $this->assertSame('The SMTP server chosen on this node no longer exists. Choose another in the node\'s settings.', $execution->error['message']);
     }
 
     public function test_send_notification_notifies_active_recipients_in_the_app_and_by_email(): void
@@ -169,7 +169,7 @@ class MessagingNodesTest extends TestCase
         $this->fakeChatHost();
         Http::fake(['hooks.example.com/*' => Http::response('ok')]);
         $workspace = Workspace::factory()->create();
-        Credential::factory()->for($workspace)->chatWebhook($service)->create(['key' => 'ops']);
+        Credential::factory()->for($workspace)->chatWebhook($service)->create(['id' => $this->settingId('ops'), 'description' => 'ops']);
 
         $execution = $this->runChatMessage($workspace, 'Order {{ trigger.id }} shipped', ['id' => 7]);
 
@@ -182,7 +182,7 @@ class MessagingNodesTest extends TestCase
         $this->fakeChatHost();
         Http::fake(['hooks.example.com/*' => Http::response('', 202)]);
         $workspace = Workspace::factory()->create();
-        Credential::factory()->for($workspace)->chatWebhook('teams')->create(['key' => 'ops']);
+        Credential::factory()->for($workspace)->chatWebhook('teams')->create(['id' => $this->settingId('ops'), 'description' => 'ops']);
 
         $this->runChatMessage($workspace, 'Deploy done');
 
@@ -196,7 +196,7 @@ class MessagingNodesTest extends TestCase
         $this->fakeChatHost();
         Http::fake(['hooks.example.com/*' => Http::response('invalid_payload', 400)]);
         $workspace = Workspace::factory()->create();
-        Credential::factory()->for($workspace)->chatWebhook()->create(['key' => 'ops']);
+        Credential::factory()->for($workspace)->chatWebhook()->create(['id' => $this->settingId('ops'), 'description' => 'ops']);
 
         $execution = $this->runChatMessage($workspace, 'Hello');
 
@@ -208,7 +208,7 @@ class MessagingNodesTest extends TestCase
     {
         Http::fake();
         $workspace = Workspace::factory()->create();
-        Credential::factory()->for($workspace)->chatWebhook(url: 'http://127.0.0.1/hook')->create(['key' => 'ops']);
+        Credential::factory()->for($workspace)->chatWebhook(url: 'http://127.0.0.1/hook')->create(['id' => $this->settingId('ops'), 'description' => 'ops']);
 
         $execution = $this->runChatMessage($workspace, 'Hello');
 
@@ -220,11 +220,11 @@ class MessagingNodesTest extends TestCase
     {
         Http::fake();
         $workspace = Workspace::factory()->create();
-        Credential::factory()->for($workspace)->create(['key' => 'ops']);
+        Credential::factory()->for($workspace)->create(['id' => $this->settingId('ops'), 'description' => 'ops']);
 
         $execution = $this->runChatMessage($workspace, 'Hello');
 
-        $this->assertSame('Chat webhook "ops" was not found in this workspace\'s authentication settings.', $execution->error['message']);
+        $this->assertSame('The chat webhook chosen on this node no longer exists. Choose another in the node\'s settings.', $execution->error['message']);
         Http::assertNothingSent();
     }
 
@@ -234,7 +234,7 @@ class MessagingNodesTest extends TestCase
     private function runChatMessage(Workspace $workspace, string $message, array $input = []): Execution
     {
         return $this->runWorkflow($this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'chat' => ['core.chat_message', ['credential' => 'ops', 'message' => $message]]],
+            ['start' => 'core.manual_trigger', 'chat' => ['core.chat_message', ['credential' => $this->settingId('ops'), 'message' => $message]]],
             ['start->chat'],
         ), $workspace), $input);
     }

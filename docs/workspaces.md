@@ -68,7 +68,7 @@ If you delete a secret, workflows that use it fail until it's replaced.
 
 Authentication settings are reusable sign-in details for other systems. Nodes pick them from a list instead of you typing credentials into each one, and their secret fields are encrypted and masked like secrets.
 
-Click **Add authentication**, choose a **Type**, and give it a **Key** and an optional **Description**.
+Click **Add authentication**, choose a **Type**, and give it a **Description**, such as `Billing API token`. Nodes list settings by their description, so each one in a workspace must be different.
 
 | Type | Used by | Fields |
 |---|---|---|
@@ -90,7 +90,7 @@ GitHub, Google and OAuth 2.0 settings connect to an account instead of holding a
 - **On this page:** choose **Add authentication**, pick **GitHub** or **Google**, and choose **Connect GitHub** (or **Connect Google**). You come back here with the new account listed.
 - **From a node:** in the editor, select a GitHub or Google node and choose **Connect GitHub** under its account field (**Connect another GitHub account** if one is already connected). You come back to the same node with the new account filled in.
 
-Either way, you approve the connection at the provider, and wag.run names the setting after the account, such as `github_octocat`. On this page you can then **Reconnect** it (to connect a different account, or after access was revoked at the provider), change its key or description, or delete it. Only workspace admins can connect accounts; on a node, others see a note asking them to ask an admin. If the install's OAuth app isn't set up yet, the form and the node say which settings to add instead of showing the button.
+Either way, you approve the connection at the provider, and wag.run describes the setting by the account, such as `GitHub (octocat)`. On this page you can then **Reconnect** it (to connect a different account, or after access was revoked at the provider), change its description, or delete it. Only workspace admins can connect accounts; on a node, others see a note asking them to ask an admin. If the install's OAuth app isn't set up yet, the form and the node say which settings to add instead of showing the button.
 
 **OAuth 2.0** settings are added under **Add authentication**, with the provider's app details. When you save one, wag.run sends you to the provider to approve the connection, then back to **Authentication**, where the setting shows the account it's connected as.
 

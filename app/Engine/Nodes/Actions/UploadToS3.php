@@ -96,7 +96,7 @@ class UploadToS3 extends Node
         $credential = $context->credential($context->input('credential'));
 
         if (! $credential || $credential->type !== 's3') {
-            return NodeResult::fail(__('nodes.s3_upload.storage_not_found', ['key' => $context->input('credential')]), retryable: false);
+            return NodeResult::fail(__('nodes.s3_upload.storage_not_found'), retryable: false);
         }
 
         $key = ltrim(trim((string) $context->input('key')), '/');

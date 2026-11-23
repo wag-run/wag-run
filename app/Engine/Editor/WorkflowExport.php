@@ -2,15 +2,21 @@
 
 namespace App\Engine\Editor;
 
+use App\Engine\Definitions\Field;
+use App\Engine\Graph\GraphNode;
 use App\Engine\Graph\WorkflowGraph;
+use App\Engine\NodeRegistry;
 use App\Enums\ConcurrencyPolicy;
 use App\Models\Workflow;
+use App\Models\Workspace;
 use Illuminate\Validation\ValidationException;
 
 /**
  * The JSON format workflows import and export in. It carries the draft graph
- * and settings, never secret or authentication values: nodes reference those
- * by key, so the importing workspace must define them.
+ * and settings, never secret or authentication values. Nodes reference
+ * secrets by key, so the importing workspace must define them, and
+ * authentication settings by their UUID, which only matches in the workspace
+ * the workflow came from: elsewhere the field is left empty to choose again.
  */
 class WorkflowExport
 {
@@ -32,6 +38,36 @@ class WorkflowExport
             'retention_days' => $workflow->retention_days,
             'graph' => $workflow->draft()->toArray(),
         ];
+    }
+
+    /**
+     * $graph with every authentication setting field that names a setting
+     * this workspace doesn't have left empty.
+     */
+    public static function withOwnCredentials(WorkflowGraph $graph, Workspace $workspace): WorkflowGraph
+    {
+        $registry = app(NodeRegistry::class);
+        $own = $workspace->credentials()->pluck('id')->all();
+
+        foreach ($graph->nodes as $node) {
+            if (! $registry->has($node->type)) {
+                continue;
+            }
+
+            $config = $node->config;
+
+            foreach ($registry->make($node->type)->inputs() as $field) {
+                if ($field->type === Field::CREDENTIAL && filled($config[$field->name] ?? null) && ! in_array($config[$field->name], $own, true)) {
+                    unset($config[$field->name]);
+                }
+            }
+
+            if ($config !== $node->config) {
+                $graph = $graph->withNode(new GraphNode($node->id, $node->type, $node->name, $config, $node->retry, $node->position, $node->errorPath));
+            }
+        }
+
+        return $graph;
     }
 
     /**

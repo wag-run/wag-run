@@ -19,9 +19,7 @@ new class extends Component {
     public Workspace $workspace;
 
     #[Locked]
-    public ?int $editingId = null;
-
-    public string $key = '';
+    public ?string $editingId = null;
 
     public string $type = 'api_token';
 
@@ -43,7 +41,7 @@ new class extends Component {
     #[Computed]
     public function credentials()
     {
-        return $this->workspace->credentials()->orderBy('key')->get();
+        return $this->workspace->credentials()->orderBy('description')->get();
     }
 
     /**
@@ -107,7 +105,7 @@ new class extends Component {
         Flux::modal('credential-form')->show();
     }
 
-    public function edit(int $id): void
+    public function edit(string $id): void
     {
         $this->authorize('manage-credentials', $this->workspace);
 
@@ -116,7 +114,6 @@ new class extends Component {
 
         $this->resetForm();
         $this->editingId = $credential->id;
-        $this->key = $credential->key;
         $this->type = $credential->type;
         $this->description = (string) $credential->description;
         $this->config = collect($type->defaults())
@@ -134,11 +131,10 @@ new class extends Component {
         $existing = $this->editingId ? $this->workspace->credentials()->findOrFail($this->editingId) : null;
 
         $this->validate([
-            'key' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z_][A-Za-z0-9_]*$/',
-                Rule::unique('credentials', 'key')->where('workspace_id', $this->workspace->id)->ignore($this->editingId)],
             'type' => ['required', Rule::in($existing ? [$existing->type] : array_keys(array_filter($registry->all(), fn (CredentialType $type) => ! ($type instanceof OAuthCredentialType && $type->connectsFromNodes()))))],
-            'description' => ['nullable', 'string', 'max:255'],
-        ], ['key.regex' => __('common.use_letters_numbers_and_underscores')]);
+            'description' => ['required', 'string', 'max:255',
+                Rule::unique('credentials', 'description')->where('workspace_id', $this->workspace->id)->ignore($this->editingId)],
+        ], ['description.unique' => __('workspaces.credentials.another_setting_has_this_description')]);
 
         $type = $registry->get($this->type);
         $secretFields = $type->secretFieldNames();
@@ -165,9 +161,8 @@ new class extends Component {
         $credential = $existing ?? new Credential;
         $credential->workspace_id = $this->workspace->id;
         $credential->fill([
-            'key' => $this->key,
             'type' => $type->key(),
-            'description' => $this->description ?: null,
+            'description' => trim($this->description),
             'config' => $config,
         ])->save();
 
@@ -188,7 +183,7 @@ new class extends Component {
      * Return one secret field of a setting to the browser, and audit the reveal.
      */
     #[Renderless]
-    public function reveal(int $id, string $field): ?string
+    public function reveal(string $id, string $field): ?string
     {
         $this->authorize('reveal-secrets', $this->workspace);
 
@@ -201,7 +196,7 @@ new class extends Component {
         return $credential->config[$field] ?? null;
     }
 
-    public function delete(int $id): void
+    public function delete(string $id): void
     {
         $this->authorize('manage-credentials', $this->workspace);
 
@@ -214,7 +209,7 @@ new class extends Component {
 
     protected function resetForm(): void
     {
-        $this->reset('editingId', 'key', 'type', 'description');
+        $this->reset('editingId', 'type', 'description');
         $this->config = $this->selectedType()->defaults();
         $this->resetValidation();
     }
@@ -243,7 +238,7 @@ new class extends Component {
 
     <flux:table>
         <flux:table.columns>
-            <flux:table.column>{{ __('common.key') }}</flux:table.column>
+            <flux:table.column>{{ __('common.description') }}</flux:table.column>
             <flux:table.column>{{ __('common.type') }}</flux:table.column>
             <flux:table.column>{{ __('common.settings') }}</flux:table.column>
             <flux:table.column sticky class="bg-white dark:bg-zinc-800"></flux:table.column>
@@ -253,10 +248,7 @@ new class extends Component {
                 @php($credentialType = $credential->credentialType())
                 <flux:table.row :key="$credential->id">
                     <flux:table.cell class="min-w-32 whitespace-normal">
-                        <span class="font-mono wrap-anywhere">{{ $credential->key }}</span>
-                        @if (filled($credential->description))
-                            <flux:text class="mt-0.5 text-xs">{{ $credential->description }}</flux:text>
-                        @endif
+                        <span class="font-medium text-zinc-800 wrap-anywhere dark:text-white">{{ $credential->description }}</span>
                     </flux:table.cell>
                     <flux:table.cell><flux:badge size="sm">{{ $credentialType->label() }}</flux:badge></flux:table.cell>
                     <flux:table.cell class="min-w-64 whitespace-normal">
@@ -266,7 +258,7 @@ new class extends Component {
                                 <dd class="min-w-0 wrap-anywhere">
                                     @if ($field->secret)
                                         @if ($this->canManage)
-                                            <x-revealable-value :reveal="'reveal('.$credential->id.', \''.$field->name.'\')'" :can-reveal="true" />
+                                            <x-revealable-value :reveal="'reveal(\''.$credential->id.'\', \''.$field->name.'\')'" :can-reveal="true" />
                                         @else
                                             <span class="font-mono">••••••••••••</span>
                                         @endif
@@ -297,8 +289,8 @@ new class extends Component {
                                         :aria-label="OAuthCredentialType::isConnected($credential) ? __('oauth.reconnect') : __('oauth.connect')" data-test="oauth-connect" />
                                 </flux:tooltip>
                             @endif
-                            <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit({{ $credential->id }})" :aria-label="__('common.edit')" />
-                            <flux:button size="sm" variant="ghost" icon="trash" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('workspaces.credentials.delete_authentication_setting'), 'message' => __('workspaces.credentials.delete_this_authentication_setting_workflows'), 'confirm' => __('common.delete')]) }}).then((ok) => ok && $wire.delete({{ $credential->id }}))" :aria-label="__('common.delete')" />
+                            <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit(@js($credential->id))" :aria-label="__('common.edit')" />
+                            <flux:button size="sm" variant="ghost" icon="trash" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('workspaces.credentials.delete_authentication_setting'), 'message' => __('workspaces.credentials.delete_this_authentication_setting_workflows'), 'confirm' => __('common.delete')]) }}).then((ok) => ok && $wire.delete(@js($credential->id)))" :aria-label="__('common.delete')" />
                         @endif
                     </flux:table.cell>
                 </flux:table.row>
@@ -336,7 +328,8 @@ new class extends Component {
                     </div>
                 @endif
             @else
-            <flux:input wire:model="key" :label="__('common.key')" class="font-mono" placeholder="github_api" required />
+            <flux:input wire:model="description" :label="__('common.description')" :placeholder="__('workspaces.credentials.description_placeholder')" required
+                :description="__('workspaces.credentials.description_help')" />
 
             @foreach ($this->selectedType()->fields() as $field)
                 <div wire:key="field-{{ $type }}-{{ $field->name }}">
@@ -355,7 +348,6 @@ new class extends Component {
                 </div>
             @endforeach
 
-            <flux:input wire:model="description" :label="__('common.description')" />
 
             @if ($this->selectedType() instanceof OAuthCredentialType)
                 @php($oauthType = $this->selectedType())

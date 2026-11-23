@@ -50,7 +50,7 @@ class Audit
             return null;
         }
 
-        foreach (['key', 'name', 'email'] as $attribute) {
+        foreach (['key', 'name', 'email', 'description'] as $attribute) {
             if (filled($subject->getAttribute($attribute))) {
                 return (string) $subject->getAttribute($attribute);
             }

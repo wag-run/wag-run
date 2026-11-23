@@ -4,6 +4,7 @@ namespace Tests\Feature\Editor;
 
 use App\Engine\Editor\WorkflowExport;
 use App\Enums\WorkspaceRole;
+use App\Models\Credential;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Models\Workspace;
@@ -48,12 +49,13 @@ class WorkflowsIndexTest extends TestCase
     public function test_export_and_import_round_trip_the_draft_and_settings(): void
     {
         $workspace = Workspace::factory()->create();
+        Credential::factory()->for($workspace)->create(['id' => $this->settingId('shop'), 'description' => 'shop']);
         $editor = User::factory()->memberOf($workspace, WorkspaceRole::Editor)->create();
         $source = Workflow::factory()->for($workspace)->create([
             'name' => 'Nightly sync',
             'concurrency' => 'skip',
             'retention_days' => 14,
-            'draft_graph' => $this->graph(['start' => 'core.manual_trigger', 'call' => ['core.http_request', ['url' => 'https://x.test', 'credential' => 'shop']]], ['start->call']),
+            'draft_graph' => $this->graph(['start' => 'core.manual_trigger', 'call' => ['core.http_request', ['url' => 'https://x.test', 'credential' => $this->settingId('shop')]]], ['start->call']),
         ]);
 
         $response = $this->actingAs($editor)->get(route('workspaces.workflows.export', [$workspace, $source]));
@@ -75,6 +77,14 @@ class WorkflowsIndexTest extends TestCase
         $this->assertEquals($source->draft()->toArray(), $imported->draft()->toArray());
         $this->assertNull($imported->published_version_id, 'imports arrive as drafts');
         $this->assertDatabaseHas('audit_logs', ['action' => 'workflow.imported', 'subject_id' => $imported->id]);
+
+        $elsewhere = Workspace::factory()->create();
+        Livewire::actingAs(User::factory()->memberOf($elsewhere, WorkspaceRole::Editor)->create())
+            ->test('pages::workflows.index', ['workspace' => $elsewhere])
+            ->set('import', UploadedFile::fake()->createWithContent('nightly.workflow.json', $json))
+            ->call('importFile');
+
+        $this->assertSame(['url' => 'https://x.test'], $elsewhere->workflows()->sole()->draft()->node('call')->config, 'a setting from another workspace is left to choose again');
     }
 
     public function test_rejects_files_that_are_not_workflow_exports(): void

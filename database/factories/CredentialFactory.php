@@ -18,14 +18,13 @@ class CredentialFactory extends Factory
     {
         return [
             'workspace_id' => Workspace::factory(),
-            'key' => fake()->unique()->regexify('[a-z]{6}_[a-z]{4}'),
             'type' => 'api_token',
             'config' => [
                 'header' => 'Authorization',
                 'prefix' => 'Bearer',
                 'token' => fake()->sha256(),
             ],
-            'description' => null,
+            'description' => fake()->unique()->words(3, true),
         ];
     }
 

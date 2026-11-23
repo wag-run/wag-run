@@ -72,7 +72,7 @@ new class extends Component {
 
         $data = WorkflowExport::parse((string) file_get_contents($this->import->getRealPath()));
 
-        $workflow = $workflows->create($this->workspace, $data['name'], Auth::user(), $data['graph']);
+        $workflow = $workflows->create($this->workspace, $data['name'], Auth::user(), WorkflowExport::withOwnCredentials($data['graph'], $this->workspace));
         $workflow->forceFill([
             'description' => $data['description'],
             'concurrency' => $data['concurrency'],
