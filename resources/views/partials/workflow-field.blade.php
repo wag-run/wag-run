@@ -48,6 +48,59 @@
     @elseif ($options === [] && $field->type === Field::CREDENTIAL)
         <flux:text class="text-xs">{{ __('workflows.editor.add_one_under_authentication_first') }}</flux:text>
     @endif
+@elseif ($field->type === Field::CRON)
+    @php
+        $expression = trim((string) $value);
+        $timezone = trim((string) (($values ?? [])['timezone'] ?? '')) ?: 'UTC';
+        $cronDescription = \App\Support\CronDescription::describe($expression);
+        $knownTimezone = in_array($timezone, timezone_identifiers_list(), true);
+        $nextRuns = \App\Support\CronDescription::nextRuns($expression, $timezone);
+        $presets = [
+            '*/15 * * * *' => __('nodes.cron.preset_every_15_minutes'),
+            '0 * * * *' => __('nodes.cron.preset_every_hour'),
+            '0 9 * * *' => __('nodes.cron.preset_every_day_at_9'),
+            '0 9 * * 1-5' => __('nodes.cron.preset_weekdays_at_9'),
+            '0 9 * * 1' => __('nodes.cron.preset_mondays_at_9'),
+            '0 0 1 * *' => __('nodes.cron.preset_first_of_the_month'),
+        ];
+    @endphp
+    <div class="space-y-2" data-test="cron-field">
+        <flux:input class="font-mono" wire:model.live.debounce.400ms="{{ $model }}" :label="$field->label" :description="$field->description" placeholder="0 9 * * 1-5" />
+        <flux:dropdown position="bottom" align="start">
+            <flux:button size="xs" variant="subtle" icon="clock" data-test="cron-presets">{{ __('nodes.cron.presets') }}</flux:button>
+            <flux:menu>
+                @foreach ($presets as $presetExpression => $presetLabel)
+                    <flux:menu.item data-cron="{{ $presetExpression }}" x-on:click="$wire.set(@js($model), $el.dataset.cron)">
+                        <span>{{ $presetLabel }}</span>
+                        <span class="ms-auto ps-3 font-mono text-[10px] text-zinc-400">{{ $presetExpression }}</span>
+                    </flux:menu.item>
+                @endforeach
+            </flux:menu>
+        </flux:dropdown>
+        @if ($expression !== '')
+            <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-700 dark:bg-zinc-800/50" data-test="cron-preview">
+                @if (! \App\Support\CronDescription::isValid($expression))
+                    <p class="text-red-600 dark:text-red-400">{{ __('nodes.cron.not_a_valid_cron_expression') }}</p>
+                @else
+                    @if ($cronDescription)
+                        <p class="font-medium text-zinc-800 dark:text-zinc-100" data-test="cron-description">{{ $cronDescription }}</p>
+                    @endif
+                    @if (! $knownTimezone)
+                        <p class="text-red-600 dark:text-red-400">{{ __('nodes.cron.unknown_time_zone', ['timezone' => $timezone]) }}</p>
+                    @elseif ($nextRuns === [])
+                        <p class="text-red-600 dark:text-red-400">{{ __('nodes.cron.this_schedule_never_runs') }}</p>
+                    @else
+                        <p @class(['text-zinc-500', 'mt-2' => $cronDescription])>{{ __('nodes.cron.next_runs_in_timezone', ['timezone' => $timezone]) }}</p>
+                        <ul class="mt-1 space-y-0.5 font-mono text-zinc-600 dark:text-zinc-300">
+                            @foreach ($nextRuns as $run)
+                                <li>{{ $run->locale(app()->getLocale())->isoFormat('ddd D MMM YYYY, HH:mm') }}</li>
+                            @endforeach
+                        </ul>
+                    @endif
+                @endif
+            </div>
+        @endif
+    </div>
 @elseif ($field->type === Field::USERS)
     <flux:checkbox.group wire:model.live="{{ $model }}" :label="$field->label" :description="$field->description">
         <div class="max-h-48 space-y-2 overflow-y-auto rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">

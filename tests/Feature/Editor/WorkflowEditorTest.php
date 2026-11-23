@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\Workflow;
 use App\Models\Workspace;
 use App\Services\Workflows;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -316,6 +317,36 @@ class WorkflowEditorTest extends TestCase
 
         $editor->set('form.body_type', 'raw')->assertDontSeeHtml('data-test="json-editor"');
         $this->assertSame('{"id": {{ trigger.id }}}', $workflow->refresh()->draft()->node('fetch')->config['body']);
+    }
+
+    public function test_a_cron_schedule_is_put_into_words_with_its_next_runs_and_offers_presets(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-27 15:00', 'UTC'));
+        [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
+            ['tick' => ['core.schedule_trigger', ['mode' => 'cron', 'cron' => '0 9 * * 1-5', 'timezone' => 'America/New_York']]],
+        ));
+        $editor = $this->editor($workspace, $workflow, $user)->call('selectNode', 'tick');
+
+        $editor->assertSeeHtml('data-test="cron-presets"')
+            ->assertSee('At 09:00 on weekdays')
+            ->assertSee('Next runs (America/New_York)')
+            ->assertSee('Mon 30 Nov 2026, 09:00');
+
+        $editor->set('form.cron', 'every day')->assertSee('Not a valid cron expression.')->assertDontSee('Next runs');
+        $editor->set('form.cron', '0 9 * * *')->set('form.timezone', 'Mars/Olympus')->assertSee('Every day at 09:00')->assertSee('Mars/Olympus is not a time zone');
+    }
+
+    public function test_publishing_refuses_an_invalid_cron_expression_or_time_zone(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
+            ['tick' => ['core.schedule_trigger', ['mode' => 'cron', 'cron' => 'every day', 'timezone' => 'Mars/Olympus']]],
+        ));
+
+        $this->editor($workspace, $workflow, $user)->call('publish')->assertSet('publishErrors', [
+            'Node "tick": Not a valid cron expression. Use five parts: minute, hour, day of the month, month and day of the week.',
+            'Node "tick": Mars/Olympus is not a time zone this server knows, such as Europe/London or America/New_York.',
+        ]);
+        $this->assertNull($workflow->refresh()->published_version_id);
     }
 
     public function test_the_run_button_explains_itself_only_when_the_draft_differs_from_the_published_version(): void

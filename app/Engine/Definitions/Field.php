@@ -45,11 +45,19 @@ final readonly class Field
     public const SCHEMA = 'schema';
 
     /**
+     * A five-part cron expression. The editor puts it into words and lists
+     * its next runs, in the time zone of a sibling field named "timezone".
+     */
+    public const CRON = 'cron';
+
+    /**
      * @param  array<int|string, string>  $options  value => label, for select fields
      * @param  list<string>  $credentialTypes  allowed authentication types, for credential fields
      * @param  list<Field>  $fields  item fields, for list fields
      * @param  array<string, string|list<string>>  $visibleWhen  shown and saved only while each named
      *                                                           sibling field has one of these values
+     * @param  array<string, string|list<string>>  $jsonWhen  edited and checked as JSON while each named
+     *                                                        sibling field has one of these values
      */
     public function __construct(
         public string $name,

@@ -8,6 +8,7 @@ use App\Engine\Node;
 use App\Engine\NodeContext;
 use App\Engine\NodeResult;
 use App\Enums\NodeKind;
+use App\Support\CronDescription;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Cron\CronExpression;
@@ -48,7 +49,7 @@ class ScheduleTrigger extends Node
         return [
             new Field('mode', __('common.run'), Field::SELECT, required: true, default: 'interval', options: ['interval' => __('nodes.schedule_trigger.every_n_minutes'), 'cron' => __('nodes.schedule_trigger.on_a_cron_schedule')]),
             new Field('interval_minutes', __('nodes.schedule_trigger.every_minutes'), Field::NUMBER, default: 60, visibleWhen: ['mode' => 'interval']),
-            new Field('cron', __('nodes.schedule_trigger.cron_expression'), Field::TEXT, required: true, description: __('nodes.schedule_trigger.such_as_0_9_1'), visibleWhen: ['mode' => 'cron']),
+            new Field('cron', __('nodes.schedule_trigger.cron_expression'), Field::CRON, required: true, description: __('nodes.schedule_trigger.such_as_0_9_1'), visibleWhen: ['mode' => 'cron']),
             new Field('timezone', __('nodes.schedule_trigger.time_zone'), Field::TEXT, default: 'UTC', visibleWhen: ['mode' => 'cron']),
         ];
     }
@@ -56,6 +57,34 @@ class ScheduleTrigger extends Node
     public function outputs(array $config = []): array
     {
         return [new Output('scheduled_at', __('nodes.schedule_trigger.scheduled_time'), 'string')];
+    }
+
+    /**
+     * A cron schedule that is not a valid expression, or whose time zone is
+     * unknown, would never run.
+     *
+     * @param  array<string, mixed>  $config
+     * @return list<string>
+     */
+    public function configProblems(array $config): array
+    {
+        if (($config['mode'] ?? 'interval') !== 'cron') {
+            return [];
+        }
+
+        $problems = [];
+        $cron = (string) ($config['cron'] ?? '');
+        $timezone = trim((string) ($config['timezone'] ?? '')) ?: 'UTC';
+
+        if (trim($cron) !== '' && ! CronDescription::isValid($cron)) {
+            $problems[] = __('nodes.cron.not_a_valid_cron_expression');
+        }
+
+        if (! in_array($timezone, timezone_identifiers_list(), true)) {
+            $problems[] = __('nodes.cron.unknown_time_zone', ['timezone' => $timezone]);
+        }
+
+        return $problems;
     }
 
     public function execute(NodeContext $context): NodeResult
