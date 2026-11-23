@@ -38,7 +38,7 @@ Your **Inbox** is in the account menu at the bottom of the sidebar. It collects 
 
 The editor opens with three areas:
 
-- **Node palette** on the left. Click a node to add it after the selected one, or drag it onto the canvas.
+- **Node palette** on the left. Click a node to add it after the selected one or drag it onto the canvas.
 - **Canvas** in the middle, where you arrange and connect nodes.
 - **Settings panel** on the right, which shows the selected node's settings, or the workflow's settings when nothing is selected.
 

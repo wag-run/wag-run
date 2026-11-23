@@ -9,7 +9,7 @@ return [
         'add_sticky_note' => 'Add sticky note',
         'back_to_workflows' => 'Back to workflows',
         'backoff_s' => 'Backoff (s)',
-        'click_or_drag_to_add' => 'Click a node to add it after the selected one, or drag it onto the canvas.',
+        'click_or_drag_to_add' => 'Click a node to add it after the selected one or drag it onto the canvas.',
         'concurrent_runs' => 'Concurrent runs',
         'copied_n_nodes' => 'Copied :count node.|Copied :count nodes.',
         'copy' => 'Copy',
