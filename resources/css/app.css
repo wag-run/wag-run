@@ -97,6 +97,11 @@ select:focus[data-flux-control] {
     @apply size-4;
 } */
 
+/* Film-grain texture over a surface's background colour, as on the sidebar */
+.wag-noise {
+    background-image: url('../images/noise.svg');
+}
+
 /* Workflow editor canvas nodes */
 .flow-container .flow-node:has(.wag-node) {
     --flow-node-padding: 0;
