@@ -84,6 +84,11 @@ class GraphValidator
             }
 
             $source = $graph->node($edge->source);
+            $target = $graph->node($edge->target);
+
+            if ($this->registry->has($target->type) && $this->registry->make($target->type)->kind() === NodeKind::Note) {
+                $errors[] = __('workflows.editor.notes_cannot_be_connected');
+            }
 
             if (! $this->registry->has($source->type)) {
                 continue;

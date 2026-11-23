@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Runs;
 
+use App\Engine\Editor\CanvasMapper;
 use App\Enums\ExecutionStatus;
 use App\Enums\StepStatus;
 use App\Enums\WorkspaceRole;
@@ -150,5 +151,38 @@ class ExecutionPagesTest extends TestCase
         $this->assertSame(ExecutionStatus::Cancelled, $execution->status);
         $this->assertSame($editor->id, $execution->cancelled_by);
         $this->assertSame(StepStatus::Cancelled, $this->stepFor($execution, 'nap')->status);
+    }
+
+    public function test_a_dot_travels_along_the_connection_into_an_active_step_until_it_finishes(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $editor = User::factory()->memberOf($workspace, WorkspaceRole::Editor)->create();
+        $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(['start' => 'start', 'nap' => 'pause', 'after' => 'emit'], ['start->nap', 'nap->after']), $workspace));
+        $this->assertSame(StepStatus::Waiting, $this->stepFor($execution, 'nap')->status);
+
+        $page = Livewire::actingAs($editor)->test('pages::executions.show', ['workspace' => $workspace, 'execution' => $execution]);
+
+        $edges = collect($page->instance()->canvas['edges'])->keyBy('id');
+        $this->assertSame('dot', $edges['e0']['animated']);
+        $this->assertFalse($edges['e1']['animated']);
+
+        $this->stepFor($execution, 'nap')->update(['status' => StepStatus::Complete]);
+        $execution->update(['status' => ExecutionStatus::Complete]);
+
+        $page->call('refreshRun')
+            ->assertDispatched('flow:update', targets: ['edges' => ['e0' => ['animated' => false]]]);
+    }
+
+    public function test_the_run_page_and_the_editor_draw_connections_the_same_way(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $editor = User::factory()->memberOf($workspace, WorkspaceRole::Editor)->create();
+        $workflow = $this->branchingWorkflow($workspace);
+        $execution = $this->runWorkflow($workflow);
+
+        $runEdges = Livewire::actingAs($editor)->test('pages::executions.show', ['workspace' => $workspace, 'execution' => $execution])->instance()->canvas['edges'];
+        $editorEdges = Livewire::actingAs($editor)->test('pages::workflows.edit', ['workspace' => $workspace, 'workflow' => $workflow])->instance()->canvas['edges'];
+
+        $this->assertSame([CanvasMapper::EDGE_TYPE], array_values(array_unique([...array_column($runEdges, 'type'), ...array_column($editorEdges, 'type')])));
     }
 }

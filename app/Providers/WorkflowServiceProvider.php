@@ -6,6 +6,7 @@ use App\Engine\Events\ExecutionFinished;
 use App\Engine\Node;
 use App\Engine\NodeRegistry;
 use App\Engine\Nodes\Actions;
+use App\Engine\Nodes\Note;
 use App\Engine\Nodes\Triggers;
 use App\Engine\Templates\ExpressionTemplateEngine;
 use App\Engine\Templates\TemplateEngine;
@@ -36,6 +37,7 @@ class WorkflowServiceProvider extends ServiceProvider
         Actions\RunWorkflow::class,
         Actions\Wait::class,
         Actions\Compose::class,
+        Actions\Filter::class,
         Actions\LlmCall::class,
         Actions\Merge::class,
         Actions\Approval::class,
@@ -43,6 +45,8 @@ class WorkflowServiceProvider extends ServiceProvider
         Actions\Terminate::class,
         Actions\SendEmail::class,
         Actions\SendNotification::class,
+        Actions\ChatMessage::class,
+        Note::class,
     ];
 
     public function register(): void

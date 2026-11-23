@@ -16,6 +16,17 @@ return [
         'token_sent_in_a_request' => 'A token sent in a request header, such as a bearer token.',
         'value_prefix' => 'Value prefix',
     ],
+    'chat_webhook' => [
+        'an_incoming_webhook_url' => 'An incoming-webhook URL that Chat message nodes post to.',
+        'chat_webhook' => 'Chat webhook',
+        'discord' => 'Discord',
+        'google_chat' => 'Google Chat',
+        'service' => 'Service',
+        'slack' => 'Slack (or Mattermost)',
+        'teams' => 'Microsoft Teams (Workflows webhook)',
+        'the_url_the_chat_app' => 'The incoming-webhook URL the chat app gives you. Anyone with it can post to the channel, so it is kept secret.',
+        'webhook_url' => 'Webhook URL',
+    ],
     'http_basic' => [
         'http_basic' => 'HTTP Basic',
         'username' => 'Username',

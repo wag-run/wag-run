@@ -6,6 +6,7 @@ use App\Engine\Graph\GraphEdge;
 use App\Engine\Graph\GraphNode;
 use App\Engine\Graph\WorkflowGraph;
 use App\Engine\NodeRegistry;
+use App\Engine\Nodes\Note;
 use App\Enums\NodeKind;
 
 /**
@@ -17,6 +18,13 @@ use App\Enums\NodeKind;
 class CanvasMapper
 {
     public const TARGET_HANDLE = 'in';
+
+    /**
+     * How connections are drawn, in the editor and on run pages alike. Each
+     * mapped edge carries it, and both canvases pass it as their default for
+     * connections drawn in the browser.
+     */
+    public const EDGE_TYPE = 'bezier';
 
     public function __construct(protected NodeRegistry $registry) {}
 
@@ -38,6 +46,21 @@ class CanvasMapper
     {
         $known = $this->registry->has($node->type);
         $definition = $known ? $this->registry->make($node->type) : null;
+
+        if ($definition?->kind() === NodeKind::Note) {
+            return [
+                'id' => $node->id,
+                'position' => $node->position,
+                'connectable' => false,
+                'data' => [
+                    'isNote' => true,
+                    'text' => (string) ($node->config['text'] ?? ''),
+                    'color' => in_array($node->config['color'] ?? null, Note::COLORS, true) ? $node->config['color'] : 'yellow',
+                    'icon' => $definition->icon(),
+                    'ports' => [],
+                ],
+            ];
+        }
 
         return [
             'id' => $node->id,
@@ -67,6 +90,7 @@ class CanvasMapper
             'sourceHandle' => $edge->sourcePort,
             'target' => $edge->target,
             'targetHandle' => self::TARGET_HANDLE,
+            'type' => self::EDGE_TYPE,
             'label' => in_array($edge->sourcePort, ['main'], true) ? null : $this->portLabel($edge->sourcePort, $source),
             'class' => $edge->sourcePort === 'error' ? 'wag-edge-error' : null,
             'animated' => false,

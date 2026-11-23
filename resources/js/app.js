@@ -106,6 +106,22 @@ document.addEventListener('alpine:init', () => {
 });
 
 /**
+ * Whether the workflow editor shows its settings panel (the workflow's
+ * settings, or the selected node's). The choice is remembered in this
+ * browser.
+ */
+document.addEventListener('alpine:init', () => {
+    window.Alpine.store('editorLayout', {
+        settings: localStorage.getItem('wag.settingsPanel') !== 'hidden',
+
+        toggleSettings() {
+            this.settings = ! this.settings;
+            localStorage.setItem('wag.settingsPanel', this.settings ? 'shown' : 'hidden');
+        },
+    });
+});
+
+/**
  * A delete button that sits on each selected connection in the workflow
  * editor, following it as the canvas pans, zooms or nodes move.
  */

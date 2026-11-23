@@ -2,15 +2,20 @@
 
 namespace Tests\Feature\Nodes;
 
+use App\Enums\ExecutionStatus;
 use App\Mail\WorkflowEmail;
 use App\Models\Credential;
+use App\Models\Execution;
 use App\Models\Organization;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Notifications\WorkflowNotification;
+use App\Support\HostResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\RunsWorkflows;
 use Tests\TestCase;
 
@@ -141,5 +146,107 @@ class MessagingNodesTest extends TestCase
 
         Notification::assertNothingSent();
         $this->assertSame('None of the recipients has an active account in this organization.', $execution->error['message']);
+    }
+
+    /**
+     * @return array<string, array{string, array<string, mixed>}>
+     */
+    public static function chatServices(): array
+    {
+        return [
+            'slack' => ['slack', ['text' => 'Order 7 shipped']],
+            'discord' => ['discord', ['content' => 'Order 7 shipped']],
+            'google chat' => ['google_chat', ['text' => 'Order 7 shipped']],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    #[DataProvider('chatServices')]
+    public function test_chat_message_posts_the_payload_each_service_expects(string $service, array $payload): void
+    {
+        $this->fakeChatHost();
+        Http::fake(['hooks.example.com/*' => Http::response('ok')]);
+        $workspace = Workspace::factory()->create();
+        Credential::factory()->for($workspace)->chatWebhook($service)->create(['key' => 'ops']);
+
+        $execution = $this->runChatMessage($workspace, 'Order {{ trigger.id }} shipped', ['id' => 7]);
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://hooks.example.com/services/T000/B000/secret' && $request->data() === $payload);
+        $this->assertSame(['service' => $service, 'status' => 200], $this->stepFor($execution, 'chat')->output);
+    }
+
+    public function test_chat_message_sends_teams_an_adaptive_card(): void
+    {
+        $this->fakeChatHost();
+        Http::fake(['hooks.example.com/*' => Http::response('', 202)]);
+        $workspace = Workspace::factory()->create();
+        Credential::factory()->for($workspace)->chatWebhook('teams')->create(['key' => 'ops']);
+
+        $this->runChatMessage($workspace, 'Deploy done');
+
+        Http::assertSent(fn ($request) => $request['type'] === 'message'
+            && $request['attachments'][0]['contentType'] === 'application/vnd.microsoft.card.adaptive'
+            && $request['attachments'][0]['content']['body'] === [['type' => 'TextBlock', 'text' => 'Deploy done', 'wrap' => true]]);
+    }
+
+    public function test_chat_message_reports_what_the_service_answered_without_the_webhook_url(): void
+    {
+        $this->fakeChatHost();
+        Http::fake(['hooks.example.com/*' => Http::response('invalid_payload', 400)]);
+        $workspace = Workspace::factory()->create();
+        Credential::factory()->for($workspace)->chatWebhook()->create(['key' => 'ops']);
+
+        $execution = $this->runChatMessage($workspace, 'Hello');
+
+        $this->assertSame('The chat service answered 400: invalid_payload', $execution->error['message']);
+        $this->assertStringNotContainsString('B000/secret', json_encode($this->stepFor($execution, 'chat')->getAttributes()));
+    }
+
+    public function test_chat_message_refuses_a_webhook_on_an_internal_address(): void
+    {
+        Http::fake();
+        $workspace = Workspace::factory()->create();
+        Credential::factory()->for($workspace)->chatWebhook(url: 'http://127.0.0.1/hook')->create(['key' => 'ops']);
+
+        $execution = $this->runChatMessage($workspace, 'Hello');
+
+        $this->assertSame(ExecutionStatus::Failed, $execution->status);
+        Http::assertNothingSent();
+    }
+
+    public function test_chat_message_fails_when_the_chat_webhook_is_missing(): void
+    {
+        Http::fake();
+        $workspace = Workspace::factory()->create();
+        Credential::factory()->for($workspace)->create(['key' => 'ops']);
+
+        $execution = $this->runChatMessage($workspace, 'Hello');
+
+        $this->assertSame('Chat webhook "ops" was not found in this workspace\'s authentication settings.', $execution->error['message']);
+        Http::assertNothingSent();
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     */
+    private function runChatMessage(Workspace $workspace, string $message, array $input = []): Execution
+    {
+        return $this->runWorkflow($this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger', 'chat' => ['core.chat_message', ['credential' => 'ops', 'message' => $message]]],
+            ['start->chat'],
+        ), $workspace), $input);
+    }
+
+    private function fakeChatHost(): void
+    {
+        $this->app->instance(HostResolver::class, new class extends HostResolver
+        {
+            public function resolve(string $host): array
+            {
+                return $host === 'hooks.example.com' ? ['93.184.215.20'] : parent::resolve($host);
+            }
+        });
     }
 }

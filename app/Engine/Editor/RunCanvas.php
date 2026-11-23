@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\Blade;
 /**
  * The canvas for one run: the graph of the version the run was pinned to,
  * with each node showing how its latest step ended. A node with no step row
- * was on a path the run never took and shows as "not run".
+ * was on a path the run never took and shows as "not run". While the run is
+ * in progress, a dot travels along each connection into a step that is
+ * queued, running or waiting.
  */
 class RunCanvas
 {
@@ -27,15 +29,49 @@ class RunCanvas
     {
         $canvas = $this->mapper->toCanvas($execution->version->toGraph());
         $statuses = $this->statuses($steps);
+        $active = array_flip($this->activeEdges($execution, $canvas['edges'], $statuses));
+
+        foreach ($canvas['edges'] as $index => $edge) {
+            if (isset($active[$edge['id']])) {
+                $canvas['edges'][$index]['animated'] = 'dot';
+            }
+        }
 
         foreach ($canvas['nodes'] as $index => $node) {
+            $canvas['nodes'][$index]['draggable'] = false;
+
+            if ($node['data']['isNote'] ?? false) {
+                continue;
+            }
+
             $canvas['nodes'][$index]['data'] = [...$node['data'], ...$this->statusData($statuses[$node['id']] ?? self::NOT_RUN)];
             $canvas['nodes'][$index]['data']['iconHtml'] = Blade::render('<flux:icon :icon="$icon" variant="mini" class="size-4" />', ['icon' => $node['data']['icon']]);
-            $canvas['nodes'][$index]['draggable'] = false;
             $canvas['nodes'][$index]['connectable'] = false;
         }
 
         return $canvas;
+    }
+
+    /**
+     * The connections the run is on now: into a step that is queued,
+     * running or waiting, from a node that has run. None once the run ends.
+     *
+     * @param  list<array<string, mixed>>  $edges  canvas edges
+     * @param  array<string, string>  $statuses  from statuses()
+     * @return list<string> edge ids
+     */
+    public function activeEdges(Execution $execution, array $edges, array $statuses): array
+    {
+        if (! $execution->isInProgress()) {
+            return [];
+        }
+
+        $moving = [StepStatus::Pending->value, StepStatus::Running->value, StepStatus::Waiting->value];
+
+        return array_values(array_map(
+            fn (array $edge) => $edge['id'],
+            array_filter($edges, fn (array $edge) => in_array($statuses[$edge['target']] ?? null, $moving, true) && isset($statuses[$edge['source']])),
+        ));
     }
 
     /**
@@ -62,9 +98,6 @@ class RunCanvas
         ];
     }
 
-    /**
-     * "Iteration 3" for a step inside a loop, from its scope key.
-     */
     /**
      * "Iteration 3", or "Iteration 2 › 3" inside nested loops, for a step's
      * whole scope.

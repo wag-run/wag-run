@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Nodes;
 
+use App\Engine\Graph\GraphValidator;
+use App\Engine\Graph\WorkflowGraph;
 use App\Engine\NodeRegistry;
 use App\Enums\ExecutionStatus;
 use App\Enums\NodeKind;
@@ -24,7 +26,7 @@ class FlowNodesTest extends TestCase
         $registry = app(NodeRegistry::class);
         $types = array_map(fn (string $class) => $class::type(), WorkflowServiceProvider::BUILT_IN_NODES);
 
-        $this->assertCount(18, array_unique($types));
+        $this->assertCount(21, array_unique($types));
         $this->assertSame(4, count($registry->ofKind(NodeKind::Trigger)));
 
         foreach ($types as $type) {
@@ -278,5 +280,61 @@ class FlowNodesTest extends TestCase
         $this->assertSame(StepStatus::Failed, $this->stepFor($execution, 'call')->status);
         $this->assertSame('The workflow to trigger does not exist in this workspace.', $execution->error['message']);
         $this->assertSame(0, $foreign->executions()->count());
+    }
+
+    public function test_filter_keeps_the_items_that_match_and_lists_the_rest(): void
+    {
+        $workflow = $this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger', 'keep' => ['core.filter', ['items' => '{{ trigger.orders }}', 'condition' => '{{ item.amount > 100 and index < 2 }}']]],
+            ['start->keep'],
+        ));
+
+        $execution = $this->runWorkflow($workflow, ['orders' => [['amount' => 50], ['amount' => 150], ['amount' => 300]]]);
+
+        $this->assertSame(
+            ['items' => [['amount' => 150]], 'count' => 1, 'removed' => [['amount' => 50], ['amount' => 300]]],
+            $this->stepFor($execution, 'keep')->output,
+        );
+    }
+
+    public function test_filter_inside_a_for_each_still_reaches_the_loop_item_as_loop_item(): void
+    {
+        $workflow = $this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger',
+                'each' => ['core.for_loop', ['items' => '{{ trigger.limits }}']],
+                'keep' => ['core.filter', ['items' => '{{ trigger.amounts }}', 'condition' => '{{ item > loop.item }}']]],
+            ['start->each', 'each:item->keep'],
+        ));
+
+        $execution = $this->runWorkflow($workflow, ['limits' => [10, 20], 'amounts' => [5, 15, 25]]);
+
+        $this->assertSame(
+            [[15, 25], [25]],
+            $execution->steps()->where('node_id', 'keep')->orderBy('id')->get()->map(fn ($step) => $step->output['items'])->all(),
+        );
+    }
+
+    public function test_filter_fails_when_it_is_not_given_a_list(): void
+    {
+        $workflow = $this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger', 'keep' => ['core.filter', ['items' => '{{ trigger.order }}', 'condition' => '{{ item.amount > 100 }}']]],
+            ['start->keep'],
+        ));
+
+        $execution = $this->runWorkflow($workflow, ['order' => ['amount' => 150]]);
+
+        $this->assertSame(ExecutionStatus::Failed, $execution->status);
+        $this->assertSame('The list to filter is array, not a list.', $execution->error['message']);
+    }
+
+    public function test_publishing_refuses_a_filter_whose_list_or_condition_is_not_one_placeholder(): void
+    {
+        $problems = app(GraphValidator::class)->validate(WorkflowGraph::fromArray($this->graph(
+            ['start' => 'core.manual_trigger', 'keep' => ['core.filter', ['items' => 'orders', 'condition' => 'item.amount > 100']]],
+            ['start->keep'],
+        )));
+
+        $this->assertContains('Node "keep": its list must be one {{ }} placeholder, such as {{ nodes.fetch.output.body.items }}.', $problems);
+        $this->assertContains('Node "keep": its condition must be one {{ }} placeholder, such as {{ item.amount > 100 }}.', $problems);
     }
 }

@@ -108,6 +108,57 @@ select:focus[data-flux-control] {
     @apply w-[220px] text-start text-sm;
 }
 
+/* The dot that travels along a connection into a running step */
+.flow-container {
+    --flow-edge-dot-duration: 1.2s;
+}
+
+/* Sticky notes: canvas-only nodes with no handles */
+.flow-container .flow-node:has(.wag-note) {
+    --flow-node-padding: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.wag-note {
+    @apply w-[240px] rounded-md px-3 py-2.5 text-start text-sm opacity-85 shadow-sm ring-1;
+}
+
+.wag-note-text {
+    @apply max-h-80 overflow-hidden break-words whitespace-pre-wrap;
+}
+
+.wag-note-text.is-empty {
+    @apply italic opacity-60;
+}
+
+.wag-note-yellow {
+    @apply bg-amber-100 text-amber-950 ring-amber-300 dark:bg-amber-200 dark:ring-amber-400;
+}
+
+.wag-note-blue {
+    @apply bg-sky-100 text-sky-950 ring-sky-300 dark:bg-sky-200 dark:ring-sky-400;
+}
+
+.wag-note-green {
+    @apply bg-emerald-100 text-emerald-950 ring-emerald-300 dark:bg-emerald-200 dark:ring-emerald-400;
+}
+
+.wag-note-pink {
+    @apply bg-pink-100 text-pink-950 ring-pink-300 dark:bg-pink-200 dark:ring-pink-400;
+}
+
+.wag-note-gray {
+    @apply bg-zinc-100 text-zinc-900 ring-zinc-300 dark:bg-zinc-300 dark:ring-zinc-400;
+}
+
+.flow-container .flow-node.selected:has(.wag-note) .wag-note,
+.flow-container .flow-node:has(.wag-note):focus-visible .wag-note {
+    @apply ring-2 ring-accent;
+}
+
 .wag-node-header {
     @apply flex items-center gap-2 border-b border-zinc-200 px-3 py-2 dark:border-zinc-700;
 }

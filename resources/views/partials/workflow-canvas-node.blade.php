@@ -1,8 +1,15 @@
 {{--
     The Alpine template for one node on the WireFlow canvas, shared by the
     editor and the run view. node.data comes from CanvasMapper; the run view
-    adds status and statusLabel.
+    adds status and statusLabel. Sticky notes (node.data.isNote) draw as a
+    note with no handles.
 --}}
+<template x-if="node.data.isNote">
+    <div class="wag-note" :class="'wag-note-' + node.data.color" data-test="sticky-note">
+        <div class="wag-note-text" x-text="node.data.text || @js(__('workflows.edit.empty_note'))" :class="{ 'is-empty': ! node.data.text }"></div>
+    </div>
+</template>
+<template x-if="! node.data.isNote">
 <div class="wag-node" :class="{ 'is-trigger': node.data.isTrigger, 'is-unknown': node.data.unknown, ['run-' + node.data.status]: !! node.data.status }">
     <template x-if="! node.data.isTrigger">
         <div x-flow-handle:target.left="'in'"></div>
@@ -32,3 +39,4 @@
         </template>
     </div>
 </div>
+</template>

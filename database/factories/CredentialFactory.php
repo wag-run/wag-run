@@ -53,6 +53,14 @@ class CredentialFactory extends Factory
         ]);
     }
 
+    public function chatWebhook(string $service = 'slack', string $url = 'https://hooks.example.com/services/T000/B000/secret'): static
+    {
+        return $this->state(fn () => [
+            'type' => 'chat_webhook',
+            'config' => ['service' => $service, 'url' => $url],
+        ]);
+    }
+
     public function aiProvider(string $provider = 'anthropic'): static
     {
         return $this->state(fn () => [

@@ -30,10 +30,18 @@ new class extends Component {
      */
     public array $drawnStatuses = [];
 
+    /**
+     * Connections last drawn with a moving dot.
+     *
+     * @var list<string>
+     */
+    public array $drawnActiveEdges = [];
+
     public function mount(): void
     {
         $this->execution->loadMissing(['workflow', 'version', 'triggeredBy', 'cancelledBy']);
         $this->drawnStatuses = app(RunCanvas::class)->statuses($this->steps);
+        $this->drawnActiveEdges = app(RunCanvas::class)->activeEdges($this->execution, $this->canvas['edges'], $this->drawnStatuses);
     }
 
     /**
@@ -194,7 +202,18 @@ new class extends Component {
             }
         }
 
+        $active = $runCanvas->activeEdges($this->execution, $this->canvas['edges'], $statuses);
+        $changed = [
+            ...array_fill_keys(array_diff($active, $this->drawnActiveEdges), ['animated' => 'dot']),
+            ...array_fill_keys(array_diff($this->drawnActiveEdges, $active), ['animated' => false]),
+        ];
+
+        if ($changed !== []) {
+            $this->flowUpdate(['edges' => $changed]);
+        }
+
         $this->drawnStatuses = $statuses;
+        $this->drawnActiveEdges = $active;
     }
 
     /**
@@ -273,7 +292,7 @@ new class extends Component {
                 :minimap="false"
                 :fit-view-on-init="true"
                 :edges-reconnectable="false"
-                default-edge-type="smoothstep"
+                :default-edge-type="\App\Engine\Editor\CanvasMapper::EDGE_TYPE"
                 background="dots"
                 container-height="fill"
                 class="h-full"

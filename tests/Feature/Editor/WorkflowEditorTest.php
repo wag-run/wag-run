@@ -2,6 +2,9 @@
 
 namespace Tests\Feature\Editor;
 
+use App\Engine\Editor\RunCanvas;
+use App\Engine\Graph\GraphValidator;
+use App\Engine\Graph\WorkflowGraph;
 use App\Enums\WorkspaceRole;
 use App\Models\User;
 use App\Models\Workflow;
@@ -394,5 +397,55 @@ class WorkflowEditorTest extends TestCase
         $this->assertSame('Renamed', $workflow->name);
         $this->assertSame('skip', $workflow->concurrency->value);
         $this->assertSame(7, $workflow->retention_days);
+    }
+
+    public function test_a_sticky_note_goes_where_the_canvas_was_clicked_and_its_text_and_color_save(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor();
+
+        $editor = $this->editor($workspace, $workflow, $user)
+            ->call('selectNode', 'check')
+            ->call('addNode', 'core.note', ['x' => 500, 'y' => 400])
+            ->assertSet('selected', 'note')
+            ->set('form.text', "Ask finance before\nchanging the limit")
+            ->set('form.color', 'blue');
+
+        $graph = $workflow->refresh()->draft_graph;
+        $note = collect($graph['nodes'])->firstWhere('id', 'note');
+        $this->assertSame(['text' => "Ask finance before\nchanging the limit", 'color' => 'blue'], $note['config']);
+        $this->assertEquals(['x' => 390, 'y' => 370], $note['position']);
+        $this->assertSame([], collect($graph['edges'])->filter(fn (array $edge) => $edge['target'] === 'note')->all());
+
+        $canvasNote = collect($editor->instance()->canvas['nodes'])->firstWhere('id', 'note');
+        $this->assertTrue($canvasNote['data']['isNote']);
+        $this->assertSame("Ask finance before\nchanging the limit", $canvasNote['data']['text']);
+        $this->assertFalse($canvasNote['connectable']);
+    }
+
+    public function test_sticky_notes_cannot_be_connected_and_never_run(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
+            ['start' => 'core.manual_trigger', 'fetch' => ['core.http_request', ['url' => 'https://api.example.com']], 'note' => ['core.note', ['text' => 'Hi']]],
+            ['start->fetch'],
+        ));
+
+        $this->editor($workspace, $workflow, $user)
+            ->call('canConnect', 'fetch', 'note', 'main', 'in')
+            ->assertReturned(['allowed' => false, 'reason' => 'Sticky notes cannot be connected.']);
+
+        $this->assertContains('Sticky notes cannot be connected.', app(GraphValidator::class)->validate(WorkflowGraph::fromArray($this->graph(
+            ['start' => 'core.manual_trigger', 'note' => ['core.note', ['text' => 'Hi']]],
+            ['start->note'],
+        ))));
+
+        $published = $this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger', 'done' => ['core.compose', ['template' => 'ok']], 'note' => ['core.note', ['text' => 'Hi']]],
+            ['start->done'],
+        ), $workspace);
+        $execution = $this->runWorkflow($published);
+
+        $this->assertSame(['start', 'done'], $this->nodesRun($execution));
+        $runNote = collect(app(RunCanvas::class)->toCanvas($execution->refresh(), $execution->steps)['nodes'])->firstWhere('id', 'note');
+        $this->assertArrayNotHasKey('status', $runNote['data']);
     }
 }

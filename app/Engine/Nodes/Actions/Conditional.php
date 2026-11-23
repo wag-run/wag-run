@@ -67,6 +67,17 @@ class Conditional extends Node
         return str_starts_with($text, '{{') && str_ends_with($text, '}}') && substr_count($text, '{{') === 1;
     }
 
+    /**
+     * Whether a condition's value counts as true: "false", "no", "off", "0"
+     * and empty text count as false, like PHP's false values.
+     */
+    public static function isTrue(mixed $value): bool
+    {
+        return is_string($value)
+            ? (filter_var(trim($value), FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE) ?? trim($value) !== '')
+            : (bool) $value;
+    }
+
     public function outputs(array $config = []): array
     {
         return [new Output('result', __('nodes.conditional.result'), 'boolean')];
@@ -79,10 +90,7 @@ class Conditional extends Node
 
     public function execute(NodeContext $context): NodeResult
     {
-        $value = $context->input('condition');
-        $result = is_string($value)
-            ? (filter_var(trim($value), FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE) ?? trim($value) !== '')
-            : (bool) $value;
+        $result = static::isTrue($context->input('condition'));
 
         return NodeResult::complete(['result' => $result], $result ? 'true' : 'false');
     }

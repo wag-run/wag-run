@@ -42,6 +42,10 @@ class ConnectionRules
             return __('workflows.editor.turn_on_show_on_error_path', ['name' => $from->name]);
         }
 
+        if ($this->registry->make($to->type)->kind() === NodeKind::Note) {
+            return __('workflows.editor.notes_cannot_be_connected');
+        }
+
         if ($this->registry->make($to->type)->kind() === NodeKind::Trigger) {
             return __('workflows.editor.triggers_start_a_workflow_so');
         }

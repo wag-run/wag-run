@@ -119,9 +119,15 @@ class NodeContext
         return $this->workspace()->credentials()->where('key', $key)->first();
     }
 
-    public function render(string $template): mixed
+    /**
+     * Render a template against the run's data, with $extra on top, such as
+     * the item a Filter is checking.
+     *
+     * @param  array<string, mixed>  $extra
+     */
+    public function render(string $template, array $extra = []): mixed
     {
-        return $this->templates->render($template, $this->data);
+        return $this->templates->render($template, [...$this->data, ...$extra]);
     }
 
     /**

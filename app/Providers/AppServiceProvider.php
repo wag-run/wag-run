@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Credentials\CredentialTypeRegistry;
 use App\Credentials\Types\AiProvider;
 use App\Credentials\Types\ApiToken;
+use App\Credentials\Types\ChatWebhook;
 use App\Credentials\Types\HttpBasic;
 use App\Credentials\Types\Smtp;
 use App\Enums\WorkspacePermission;
@@ -32,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
             $registry->register(new ApiToken);
             $registry->register(new AiProvider);
             $registry->register(new Smtp);
+            $registry->register(new ChatWebhook);
 
             return $registry;
         });
