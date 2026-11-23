@@ -60,15 +60,15 @@ class HttpRequestTest extends TestCase
         Credential::factory()->for($workspace)->create(['id' => $this->settingId('shop'), 'description' => 'shop', 'config' => ['header' => 'Authorization', 'prefix' => 'Bearer', 'token' => 'tok_123456']]);
         $workflow = $this->httpWorkflow([
             'method' => 'POST',
-            'url' => 'https://api.example.com/orders/{{ trigger.id }}',
+            'url' => 'https://api.example.com/orders/{{ trigger.values.id }}',
             'credential' => $this->settingId('shop'),
             'query' => ['expand' => 'items'],
             'headers' => ['X-Request' => 'run-{{ execution.id }}'],
             'body_type' => 'json',
-            'body' => '{"note": "{{ trigger.note }}"}',
+            'body' => '{"note": "{{ trigger.values.note }}"}',
         ], $workspace);
 
-        $execution = $this->runWorkflow($workflow, ['id' => 7, 'note' => 'rush']);
+        $execution = $this->runWorkflow($workflow, ['values' => ['id' => 7, 'note' => 'rush']]);
 
         Http::assertSent(fn (Request $request) => $request->method() === 'POST'
             && $request->url() === 'https://api.example.com/orders/7?expand=items'

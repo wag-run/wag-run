@@ -13,7 +13,7 @@ class ConfigFormTest extends TestCase
         $task = app(NodeRegistry::class)->make('core.task');
         $config = [
             'assignee' => '01a2058d-4e48-77b6-8ca9-574fcc05f03a',
-            'title' => 'Check {{ trigger.id }}',
+            'title' => 'Check {{ trigger.values.id }}',
             'fields' => [['name' => 'size', 'label' => 'Size', 'type' => 'select', 'required' => true, 'options' => ['s' => 'Small', 'l' => 'Large']]],
             'timeout_hours' => 48,
             'email' => false,

@@ -78,9 +78,9 @@ class ExecutionPagesTest extends TestCase
         $workspace = Workspace::factory()->create();
         $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
         $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'each' => ['core.for_loop', ['items' => '{{ trigger.names }}']], 'greet' => ['core.compose', ['template' => 'Hi {{ item }}']]],
+            ['start' => ['core.webhook_trigger', ['method' => 'POST', 'verification' => 'none']], 'each' => ['core.for_loop', ['items' => '{{ trigger.body.names }}']], 'greet' => ['core.compose', ['template' => 'Hi {{ item }}']]],
             ['start->each', 'each:item->greet'],
-        ), $workspace), ['names' => ['Ada', 'Grace', 'Linus']]);
+        ), $workspace), ['body' => ['names' => ['Ada', 'Grace', 'Linus']]]);
         $greetings = $execution->steps()->where('node_id', 'greet')->orderBy('id')->get();
 
         $page = Livewire::actingAs($viewer)->test('pages::executions.show', ['workspace' => $workspace, 'execution' => $execution])

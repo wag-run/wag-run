@@ -35,9 +35,9 @@ class LlmCallTest extends TestCase
     public function test_returns_free_text_for_a_templated_prompt(): void
     {
         AnonymousAgent::fake(['A short summary.']);
-        $workflow = $this->llmWorkflow(['system' => 'Be brief.', 'prompt' => 'Summarize order {{ trigger.id }}']);
+        $workflow = $this->llmWorkflow(['system' => 'Be brief.', 'prompt' => 'Summarize order {{ trigger.values.id }}']);
 
-        $execution = $this->runWorkflow($workflow, ['id' => 42]);
+        $execution = $this->runWorkflow($workflow, ['values' => ['id' => 42]]);
 
         $this->assertSame(ExecutionStatus::Complete, $execution->status);
         $this->assertSame('A short summary.', $this->stepFor($execution, 'ask')->output['text']);

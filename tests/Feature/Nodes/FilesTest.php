@@ -99,12 +99,12 @@ class FilesTest extends TestCase
     {
         $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger',
-                'make' => ['core.create_file', ['name' => 'pixel.png', 'content' => '{{ trigger.image }}', 'encoding' => 'base64']],
-                'note' => ['core.create_file', ['name' => 'note.txt', 'content' => 'Hello {{ trigger.who }}']],
+                'make' => ['core.create_file', ['name' => 'pixel.png', 'content' => '{{ trigger.values.image }}', 'encoding' => 'base64']],
+                'note' => ['core.create_file', ['name' => 'note.txt', 'content' => 'Hello {{ trigger.values.who }}']],
                 'same' => ['core.compose', ['template' => '{{ nodes.make.output.file }}']],
                 'read' => ['core.compose', ['template' => '{{ text(nodes.note.output.file) }} / {{ base64(nodes.make.output.file) }} / {{ nodes.make.output.file.name }}']]],
             ['start->make', 'make->note', 'note->same', 'same->read'],
-        ), null), ['image' => base64_encode(self::PNG), 'who' => 'Ada']);
+        ), null), ['values' => ['image' => base64_encode(self::PNG), 'who' => 'Ada']]);
 
         $png = $this->fileOf($execution, 'make');
         $this->assertSame(['image/png', self::PNG], [$png->mime, $this->bytes($png)]);
@@ -130,9 +130,9 @@ class FilesTest extends TestCase
         $other = app(WorkflowFiles::class)->store(Workspace::factory()->create(), null, 'secret plans', 'plans.txt');
 
         $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'read' => ['core.compose', ['template' => '{{ text(trigger.file) }}']]],
+            ['start' => 'core.manual_trigger', 'read' => ['core.compose', ['template' => '{{ text(trigger.values.file) }}']]],
             ['start->read'],
-        )), ['file' => $other]);
+        )), ['values' => ['file' => $other]]);
 
         $this->assertSame(ExecutionStatus::Failed, $execution->status);
         $this->assertStringContainsString('That file was not found in this workspace.', $execution->error['message']);

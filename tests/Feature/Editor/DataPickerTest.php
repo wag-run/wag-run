@@ -46,7 +46,7 @@ class DataPickerTest extends TestCase
     public function test_offers_the_loop_item_inside_a_loop_and_hides_loop_body_outputs_after_it(): void
     {
         $graph = WorkflowGraph::fromArray($this->graph(
-            ['start' => 'core.manual_trigger', 'each' => ['core.for_loop', ['items' => '{{ trigger.items }}']], 'body' => 'core.compose', 'after' => 'core.compose'],
+            ['start' => ['core.webhook_trigger', ['method' => 'POST', 'verification' => 'none']], 'each' => ['core.for_loop', ['items' => '{{ trigger.body.items }}']], 'body' => 'core.compose', 'after' => 'core.compose'],
             ['start->each', 'each:item->body', 'each:done->after'],
         ));
 

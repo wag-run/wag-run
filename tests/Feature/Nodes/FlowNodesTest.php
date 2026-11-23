@@ -39,25 +39,25 @@ class FlowNodesTest extends TestCase
     public function test_conditional_follows_the_path_its_expression_chooses(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'check' => ['core.conditional', ['condition' => '{{ trigger.amount > 100 and trigger.currency == "EUR" }}']],
+            ['start' => 'core.manual_trigger', 'check' => ['core.conditional', ['condition' => '{{ trigger.values.amount > 100 and trigger.values.currency == "EUR" }}']],
                 'big' => ['core.compose', ['template' => 'big']], 'small' => ['core.compose', ['template' => 'small']]],
             ['start->check', 'check:true->big', 'check:false->small'],
         ));
 
-        $this->assertSame(['start', 'check', 'big'], $this->nodesRun($this->runWorkflow($workflow, ['amount' => 250, 'currency' => 'EUR'])));
-        $this->assertSame(['start', 'check', 'small'], $this->nodesRun($this->runWorkflow($workflow, ['amount' => 250, 'currency' => 'USD'])));
+        $this->assertSame(['start', 'check', 'big'], $this->nodesRun($this->runWorkflow($workflow, ['values' => ['amount' => 250, 'currency' => 'EUR']])));
+        $this->assertSame(['start', 'check', 'small'], $this->nodesRun($this->runWorkflow($workflow, ['values' => ['amount' => 250, 'currency' => 'USD']])));
     }
 
     public function test_for_loop_runs_its_body_per_item_with_the_item_in_templates(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'each' => ['core.for_loop', ['items' => '{{ trigger.orders }}']],
+            ['start' => ['core.webhook_trigger', ['method' => 'POST', 'verification' => 'none']], 'each' => ['core.for_loop', ['items' => '{{ trigger.body.orders }}']],
                 'line' => ['core.compose', ['template' => '{{ item.qty * item.price }}']],
                 'total' => ['core.compose', ['template' => "{{ sum(column(column(nodes.each.output.results, 'line'), 'value')) }}"]]],
             ['start->each', 'each:item->line', 'each:done->total'],
         ));
 
-        $execution = $this->runWorkflow($workflow, ['orders' => [['qty' => 2, 'price' => 5], ['qty' => 1, 'price' => 7]]]);
+        $execution = $this->runWorkflow($workflow, ['body' => ['orders' => [['qty' => 2, 'price' => 5], ['qty' => 1, 'price' => 7]]]]);
 
         $this->assertSame(ExecutionStatus::Complete, $execution->status);
         $this->assertSame([10, 7], $execution->steps()->where('node_id', 'line')->orderBy('id')->get()->map(fn ($step) => $step->output['value'])->all());
@@ -67,11 +67,11 @@ class FlowNodesTest extends TestCase
     public function test_for_loop_refuses_a_value_that_is_not_a_list(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'each' => ['core.for_loop', ['items' => '{{ trigger.name }}']]],
+            ['start' => 'core.manual_trigger', 'each' => ['core.for_loop', ['items' => '{{ trigger.values.name }}']]],
             ['start->each'],
         ));
 
-        $execution = $this->runWorkflow($workflow, ['name' => 'not a list']);
+        $execution = $this->runWorkflow($workflow, ['values' => ['name' => 'not a list']]);
 
         $this->assertSame(ExecutionStatus::Failed, $execution->status);
         $this->assertSame('Items must be a list.', $execution->error['message']);
@@ -110,12 +110,12 @@ class FlowNodesTest extends TestCase
     {
         $workflow = $this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger',
-                'route' => ['core.switch', ['value' => '{{ trigger.plan }}', 'ignore_case' => $ignoreCase, 'cases' => [['value' => 'free'], ['value' => 'pro'], ['value' => 'pro']]]],
+                'route' => ['core.switch', ['value' => '{{ trigger.values.plan }}', 'ignore_case' => $ignoreCase, 'cases' => [['value' => 'free'], ['value' => 'pro'], ['value' => 'pro']]]],
                 'a' => 'core.compose', 'b' => 'core.compose', 'c' => 'core.compose', 'other' => 'core.compose'],
             ['start->route', 'route:case_1->a', 'route:case_2->b', 'route:case_3->c', 'route:default->other'],
         ));
 
-        $execution = $this->runWorkflow($workflow, ['plan' => $plan]);
+        $execution = $this->runWorkflow($workflow, ['values' => ['plan' => $plan]]);
 
         $this->assertSame(['start', 'route', $expected], $this->nodesRun($execution));
     }
@@ -140,25 +140,25 @@ class FlowNodesTest extends TestCase
     public function test_wait_until_a_past_time_continues_immediately(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'nap' => ['core.wait', ['mode' => 'until', 'until' => '{{ trigger.at }}']]],
+            ['start' => 'core.manual_trigger', 'nap' => ['core.wait', ['mode' => 'until', 'until' => '{{ trigger.values.at }}']]],
             ['start->nap'],
         ));
 
-        $this->assertSame(ExecutionStatus::Complete, $this->runWorkflow($workflow, ['at' => '2020-01-01 00:00'])->status);
+        $this->assertSame(ExecutionStatus::Complete, $this->runWorkflow($workflow, ['values' => ['at' => '2020-01-01 00:00']])->status);
     }
 
     public function test_compose_builds_values_from_templates_expressions_and_json(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger',
-                'greeting' => ['core.compose', ['template' => 'Hi {{ title(trigger.name) }} from {{ vars.team }}']],
-                'math' => ['core.compose', ['template' => '{{ round(trigger.amount * 1.2, 2) }}']],
-                'json' => ['core.compose', ['template' => '{"id": {{ trigger.id }}, "ok": true}', 'parse_json' => true]]],
+                'greeting' => ['core.compose', ['template' => 'Hi {{ title(trigger.values.name) }} from {{ vars.team }}']],
+                'math' => ['core.compose', ['template' => '{{ round(trigger.values.amount * 1.2, 2) }}']],
+                'json' => ['core.compose', ['template' => '{"id": {{ trigger.values.id }}, "ok": true}', 'parse_json' => true]]],
             ['start->greeting', 'greeting->math', 'math->json'],
         ));
         $workflow->workspace->variables()->create(['key' => 'team', 'value' => 'Ops']);
 
-        $execution = $this->runWorkflow($workflow, ['name' => 'ada lovelace', 'amount' => 10.5, 'id' => 7]);
+        $execution = $this->runWorkflow($workflow, ['values' => ['name' => 'ada lovelace', 'amount' => 10.5, 'id' => 7]]);
 
         $this->assertSame('Hi Ada Lovelace from Ops', $this->stepFor($execution, 'greeting')->output['value']);
         $this->assertSame(12.6, $this->stepFor($execution, 'math')->output['value']);
@@ -168,7 +168,7 @@ class FlowNodesTest extends TestCase
     public function test_template_errors_fail_the_step_without_retrying(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'bad' => ['core.wait', ['mode' => 'until', 'until' => '{{ nope(trigger.at) }}'], ['max_retries' => 3]]],
+            ['start' => 'core.manual_trigger', 'bad' => ['core.wait', ['mode' => 'until', 'until' => '{{ nope(trigger.values.at) }}'], ['max_retries' => 3]]],
             ['start->bad'],
         ));
 
@@ -181,11 +181,11 @@ class FlowNodesTest extends TestCase
     public function test_terminate_ends_the_run_with_its_status_and_output(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'stop' => ['core.terminate', ['status' => 'cancelled', 'output' => 'stopped for {{ trigger.reason }}']], 'never' => 'core.compose'],
+            ['start' => 'core.manual_trigger', 'stop' => ['core.terminate', ['status' => 'cancelled', 'output' => 'stopped for {{ trigger.values.reason }}']], 'never' => 'core.compose'],
             ['start->stop'],
         ));
 
-        $execution = $this->runWorkflow($workflow, ['reason' => 'duplicate']);
+        $execution = $this->runWorkflow($workflow, ['values' => ['reason' => 'duplicate']]);
 
         $this->assertSame(ExecutionStatus::Cancelled, $execution->status);
         $this->assertSame('stopped for duplicate', $execution->output);
@@ -346,11 +346,11 @@ class FlowNodesTest extends TestCase
     public function test_filter_keeps_the_items_that_match_and_lists_the_rest(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'keep' => ['core.filter', ['items' => '{{ trigger.orders }}', 'condition' => '{{ item.amount > 100 and index < 2 }}']]],
+            ['start' => ['core.webhook_trigger', ['method' => 'POST', 'verification' => 'none']], 'keep' => ['core.filter', ['items' => '{{ trigger.body.orders }}', 'condition' => '{{ item.amount > 100 and index < 2 }}']]],
             ['start->keep'],
         ));
 
-        $execution = $this->runWorkflow($workflow, ['orders' => [['amount' => 50], ['amount' => 150], ['amount' => 300]]]);
+        $execution = $this->runWorkflow($workflow, ['body' => ['orders' => [['amount' => 50], ['amount' => 150], ['amount' => 300]]]]);
 
         $this->assertSame(
             ['items' => [['amount' => 150]], 'count' => 1, 'removed' => [['amount' => 50], ['amount' => 300]]],
@@ -361,13 +361,13 @@ class FlowNodesTest extends TestCase
     public function test_filter_inside_a_for_each_still_reaches_the_loop_item_as_loop_item(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger',
-                'each' => ['core.for_loop', ['items' => '{{ trigger.limits }}']],
-                'keep' => ['core.filter', ['items' => '{{ trigger.amounts }}', 'condition' => '{{ item > loop.item }}']]],
+            ['start' => ['core.webhook_trigger', ['method' => 'POST', 'verification' => 'none']],
+                'each' => ['core.for_loop', ['items' => '{{ trigger.body.limits }}']],
+                'keep' => ['core.filter', ['items' => '{{ trigger.body.amounts }}', 'condition' => '{{ item > loop.item }}']]],
             ['start->each', 'each:item->keep'],
         ));
 
-        $execution = $this->runWorkflow($workflow, ['limits' => [10, 20], 'amounts' => [5, 15, 25]]);
+        $execution = $this->runWorkflow($workflow, ['body' => ['limits' => [10, 20], 'amounts' => [5, 15, 25]]]);
 
         $this->assertSame(
             [[15, 25], [25]],
@@ -378,11 +378,11 @@ class FlowNodesTest extends TestCase
     public function test_filter_fails_when_it_is_not_given_a_list(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'keep' => ['core.filter', ['items' => '{{ trigger.order }}', 'condition' => '{{ item.amount > 100 }}']]],
+            ['start' => ['core.webhook_trigger', ['method' => 'POST', 'verification' => 'none']], 'keep' => ['core.filter', ['items' => '{{ trigger.body.order }}', 'condition' => '{{ item.amount > 100 }}']]],
             ['start->keep'],
         ));
 
-        $execution = $this->runWorkflow($workflow, ['order' => ['amount' => 150]]);
+        $execution = $this->runWorkflow($workflow, ['body' => ['order' => ['amount' => 150]]]);
 
         $this->assertSame(ExecutionStatus::Failed, $execution->status);
         $this->assertSame('The list to filter is array, not a list.', $execution->error['message']);

@@ -26,7 +26,7 @@ class ApprovalAndTaskTest extends TestCase
     {
         return $this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger',
-                'approve' => ['core.approval', ['approvers' => [$approver->id], 'title' => 'Refund {{ trigger.amount }}', 'message' => 'For {{ trigger.customer }}']],
+                'approve' => ['core.approval', ['approvers' => [$approver->id], 'title' => 'Refund {{ trigger.values.amount }}', 'message' => 'For {{ trigger.values.customer }}']],
                 'refund' => ['core.compose', ['template' => 'refunded']],
                 'decline' => ['core.compose', ['template' => 'declined']],
                 'escalate' => ['core.compose', ['template' => '{{ error.message }}']]],
@@ -40,7 +40,7 @@ class ApprovalAndTaskTest extends TestCase
         $approver = User::factory()->orgMember()->create();
         $workflow = $this->approvalWorkflow($approver);
 
-        $execution = $this->runWorkflow($workflow, ['amount' => 120, 'customer' => 'Acme']);
+        $execution = $this->runWorkflow($workflow, ['values' => ['amount' => 120, 'customer' => 'Acme']]);
         $assignment = Assignment::sole();
 
         $this->assertSame(ExecutionStatus::Waiting, $execution->status);
@@ -209,7 +209,7 @@ class ApprovalAndTaskTest extends TestCase
         $this->freezeSecond();
         $approver = User::factory()->orgMember()->create();
         $workflow = $this->approvalWorkflow($approver);
-        $this->runWorkflow($workflow, ['amount' => 120, 'customer' => 'Acme']);
+        $this->runWorkflow($workflow, ['values' => ['amount' => 120, 'customer' => 'Acme']]);
         $assignment = Assignment::sole();
 
         $mail = (new AssignmentNotification($assignment, ['mail']))->toMail($approver);

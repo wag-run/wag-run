@@ -31,9 +31,9 @@ class MessagingNodesTest extends TestCase
     {
         return $this->graph(
             ['start' => 'core.manual_trigger', 'mail' => ['core.send_email', [
-                'to' => '{{ trigger.email }}, ops@example.com',
-                'subject' => 'Order {{ trigger.id }} shipped',
-                'body' => 'Hi {{ trigger.name }}',
+                'to' => '{{ trigger.values.email }}, ops@example.com',
+                'subject' => 'Order {{ trigger.values.id }} shipped',
+                'body' => 'Hi {{ trigger.values.name }}',
                 ...$config,
             ]]],
             ['start->mail'],
@@ -46,7 +46,7 @@ class MessagingNodesTest extends TestCase
         User::factory()->orgAdmin()->create();
         Organization::current()->update(['mail' => ['host' => 'smtp.acme.test', 'port' => 465, 'encryption' => 'ssl', 'from_address' => 'robot@acme.test', 'from_name' => 'Acme']]);
 
-        $execution = $this->runWorkflow($this->publishedWorkflow($this->emailGraph(['bcc' => 'audit@example.com', 'reply_to' => 'help@acme.test'])), ['email' => 'ada@example.com', 'id' => 7, 'name' => 'Ada']);
+        $execution = $this->runWorkflow($this->publishedWorkflow($this->emailGraph(['bcc' => 'audit@example.com', 'reply_to' => 'help@acme.test'])), ['values' => ['email' => 'ada@example.com', 'id' => 7, 'name' => 'Ada']]);
 
         Mail::assertSent(WorkflowEmail::class, fn (WorkflowEmail $mail) => $mail->mailer === 'organization'
             && $mail->hasTo('ada@example.com') && $mail->hasTo('ops@example.com') && $mail->hasBcc('audit@example.com')
@@ -62,7 +62,7 @@ class MessagingNodesTest extends TestCase
         $workspace = Workspace::factory()->create();
         $credential = Credential::factory()->for($workspace)->smtp()->create(['id' => $this->settingId('team_mail'), 'description' => 'team_mail']);
 
-        $this->runWorkflow($this->publishedWorkflow($this->emailGraph(['credential' => $this->settingId('team_mail'), 'format' => 'html']), $workspace), ['email' => 'ada@example.com', 'id' => 7]);
+        $this->runWorkflow($this->publishedWorkflow($this->emailGraph(['credential' => $this->settingId('team_mail'), 'format' => 'html']), $workspace), ['values' => ['email' => 'ada@example.com', 'id' => 7]]);
 
         Mail::assertSent(WorkflowEmail::class, fn (WorkflowEmail $mail) => $mail->mailer === "workspace_smtp_{$credential->id}" && $mail->isHtml);
         $this->assertSame($credential->config['host'], config("mail.mailers.workspace_smtp_{$credential->id}.host"));
@@ -73,7 +73,7 @@ class MessagingNodesTest extends TestCase
     {
         Mail::fake();
 
-        $execution = $this->runWorkflow($this->publishedWorkflow($this->emailGraph([])), ['email' => 'not-an-address', 'id' => 7]);
+        $execution = $this->runWorkflow($this->publishedWorkflow($this->emailGraph([])), ['values' => ['email' => 'not-an-address', 'id' => 7]]);
 
         Mail::assertNothingSent();
         $this->assertSame('"not-an-address" is not a valid email address.', $execution->error['message']);
@@ -85,7 +85,7 @@ class MessagingNodesTest extends TestCase
         $workspace = Workspace::factory()->create();
         Credential::factory()->for($workspace)->create(['id' => $this->settingId('api'), 'description' => 'api']);
 
-        $execution = $this->runWorkflow($this->publishedWorkflow($this->emailGraph(['credential' => $this->settingId('api')]), $workspace), ['email' => 'ada@example.com', 'id' => 7]);
+        $execution = $this->runWorkflow($this->publishedWorkflow($this->emailGraph(['credential' => $this->settingId('api')]), $workspace), ['values' => ['email' => 'ada@example.com', 'id' => 7]]);
 
         Mail::assertNothingSent();
         $this->assertSame('The SMTP server chosen on this node no longer exists. Choose another in the node\'s settings.', $execution->error['message']);
@@ -101,13 +101,13 @@ class MessagingNodesTest extends TestCase
         $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger', 'notify' => ['core.send_notification', [
                 'recipients' => [$ada->id, $grace->id, $gone->id],
-                'title' => 'Order {{ trigger.id }} needs a look',
+                'title' => 'Order {{ trigger.values.id }} needs a look',
                 'message' => 'It is over budget.',
-                'link' => 'https://shop.example.com/orders/{{ trigger.id }}',
+                'link' => 'https://shop.example.com/orders/{{ trigger.values.id }}',
                 'email' => true,
             ]]],
             ['start->notify'],
-        ), $workspace), ['id' => 7]);
+        ), $workspace), ['values' => ['id' => 7]]);
 
         foreach ([$ada, $grace] as $user) {
             Notification::assertSentTo($user, WorkflowNotification::class, fn (WorkflowNotification $notification, array $channels) => $channels === ['database']
@@ -171,7 +171,7 @@ class MessagingNodesTest extends TestCase
         $workspace = Workspace::factory()->create();
         Credential::factory()->for($workspace)->chatWebhook($service)->create(['id' => $this->settingId('ops'), 'description' => 'ops']);
 
-        $execution = $this->runChatMessage($workspace, 'Order {{ trigger.id }} shipped', ['id' => 7]);
+        $execution = $this->runChatMessage($workspace, 'Order {{ trigger.values.id }} shipped', ['id' => 7]);
 
         Http::assertSent(fn ($request) => $request->url() === 'https://hooks.example.com/services/T000/B000/secret' && $request->data() === $payload);
         $this->assertSame(['service' => $service, 'status' => 200], $this->stepFor($execution, 'chat')->output);
@@ -236,7 +236,7 @@ class MessagingNodesTest extends TestCase
         return $this->runWorkflow($this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger', 'chat' => ['core.chat_message', ['credential' => $this->settingId('ops'), 'message' => $message]]],
             ['start->chat'],
-        ), $workspace), $input);
+        ), $workspace), ['values' => $input]);
     }
 
     private function fakeChatHost(): void

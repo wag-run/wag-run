@@ -16,7 +16,7 @@ class TemplateEngineTest extends TestCase
     private function data(): array
     {
         return [
-            'trigger' => ['name' => 'ada', 'qty' => 3],
+            'trigger' => ['values' => ['name' => 'ada', 'qty' => 3]],
             'nodes' => ['fetch' => ['output' => ['status' => 200, 'body' => ['items' => [['id' => 1], ['id' => 2]], 'tags' => ['vip', 'new']]]]],
             'vars' => ['region' => 'eu'],
             'item' => ['price' => 9.5],
@@ -32,7 +32,7 @@ class TemplateEngineTest extends TestCase
     {
         $this->assertSame(
             'Hello Ada, 2 items in eu: 1,2 (VIP)',
-            $this->engine()->render("Hello {{ capitalize(trigger.name) }}, {{ length(nodes.fetch.output.body.items) }} items in {{ vars.region }}: {{ join(column(nodes.fetch.output.body.items, 'id'), ',') }} ({{ 'vip' in nodes.fetch.output.body.tags ? 'VIP' : 'standard' }})", $this->data()),
+            $this->engine()->render("Hello {{ capitalize(trigger.values.name) }}, {{ length(nodes.fetch.output.body.items) }} items in {{ vars.region }}: {{ join(column(nodes.fetch.output.body.items, 'id'), ',') }} ({{ 'vip' in nodes.fetch.output.body.tags ? 'VIP' : 'standard' }})", $this->data()),
         );
     }
 
@@ -40,14 +40,14 @@ class TemplateEngineTest extends TestCase
     {
         $this->assertSame(
             '[] [true] [["vip","new"]] [none]',
-            $this->engine()->render("[{{ nodes.skipped.output.id }}] [{{ trigger.qty > 2 }}] [{{ nodes.fetch.output.body.tags }}] [{{ trigger.missing ?? 'none' }}]", $this->data()),
+            $this->engine()->render("[{{ nodes.skipped.output.id }}] [{{ trigger.values.qty > 2 }}] [{{ nodes.fetch.output.body.tags }}] [{{ trigger.values.missing ?? 'none' }}]", $this->data()),
         );
     }
 
     public function test_a_single_expression_template_returns_the_value_itself(): void
     {
         $this->assertSame([['id' => 1], ['id' => 2]], $this->engine()->render('{{ nodes.fetch.output.body.items }}', $this->data()));
-        $this->assertSame(28.5, $this->engine()->render(' {{ item.price * trigger.qty }} ', $this->data()));
+        $this->assertSame(28.5, $this->engine()->render(' {{ item.price * trigger.values.qty }} ', $this->data()));
         $this->assertNull($this->engine()->render('{{ nodes.missing.output }}', $this->data()));
     }
 
@@ -61,9 +61,9 @@ class TemplateEngineTest extends TestCase
         $this->assertSame('plain {text} {% if x %}', $this->engine()->render('plain {text} {% if x %}', $this->data()));
     }
 
-    #[TestWith(['Hello {{ trigger.name'])]
+    #[TestWith(['Hello {{ trigger.values.name'])]
     #[TestWith(['{{ constant("PHP_VERSION") }}'])]
-    #[TestWith(['{{ trigger.name|upper }}'])]
+    #[TestWith(['{{ trigger.values.name|upper }}'])]
     public function test_refuses_unclosed_placeholders_and_expressions_it_cannot_run(string $template): void
     {
         $this->expectException(TemplateError::class);
@@ -87,7 +87,7 @@ class TemplateEngineTest extends TestCase
             'default for empty' => ["default('', 'n/a')", 'n/a'],
             'date' => ["date('2026-11-22T10:00:00Z', 'j M Y')", '22 Nov 2026'],
             'number format' => ['number_format(1234.5, 2)', '1,234.50'],
-            'format' => ["format('%s has %d', trigger.name, trigger.qty)", 'ada has 3'],
+            'format' => ["format('%s has %d', trigger.values.name, trigger.values.qty)", 'ada has 3'],
             'url encode' => ["url_encode({q: 'a b', page: 2})", 'q=a%20b&page=2'],
             'escape' => ["escape('<b>')", '&lt;b&gt;'],
         ];
@@ -103,7 +103,7 @@ class TemplateEngineTest extends TestCase
     {
         $engine = $this->engine();
 
-        $this->assertTrue($engine->evaluate('nodes.fetch.output.status == 200 and trigger.qty > 2', $this->data()));
+        $this->assertTrue($engine->evaluate('nodes.fetch.output.status == 200 and trigger.values.qty > 2', $this->data()));
         $this->assertTrue($engine->evaluate("'vip' in nodes['fetch']['output']['body']['tags']", $this->data()));
         $this->assertSame(2, $engine->evaluate('length(nodes.fetch.output.body.items)', $this->data()));
         $this->assertSame([['id' => 1], ['id' => 2]], $engine->evaluate('nodes.fetch.output.body.items', $this->data()));

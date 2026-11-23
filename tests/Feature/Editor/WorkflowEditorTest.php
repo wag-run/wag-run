@@ -233,14 +233,14 @@ class WorkflowEditorTest extends TestCase
             ->assertSet('form.url', 'https://api.example.com')
             ->set('nodeName', 'Fetch order')
             ->set('form.method', 'POST')
-            ->set('form.headers', [['key' => 'X-Order', 'value' => '{{ trigger.id }}'], ['key' => '', 'value' => 'ignored']])
+            ->set('form.headers', [['key' => 'X-Order', 'value' => '{{ trigger.values.id }}'], ['key' => '', 'value' => 'ignored']])
             ->set('retry.max_retries', 3)
             ->assertHasNoErrors();
 
         $node = $workflow->refresh()->draft()->node('fetch');
         $this->assertSame('Fetch order', $node->name);
         $this->assertSame('POST', $node->config['method']);
-        $this->assertSame(['X-Order' => '{{ trigger.id }}'], $node->config['headers']);
+        $this->assertSame(['X-Order' => '{{ trigger.values.id }}'], $node->config['headers']);
         $this->assertSame(['max_retries' => 3, 'backoff_seconds' => 30], $node->retry);
     }
 
@@ -308,7 +308,7 @@ class WorkflowEditorTest extends TestCase
     public function test_a_json_body_gets_the_json_editor_and_a_raw_body_a_plain_textarea(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
-            ['start' => 'core.manual_trigger', 'fetch' => ['core.http_request', ['url' => 'https://api.example.com', 'body_type' => 'json', 'body' => '{"id": {{ trigger.id }}}']]],
+            ['start' => 'core.manual_trigger', 'fetch' => ['core.http_request', ['url' => 'https://api.example.com', 'body_type' => 'json', 'body' => '{"id": {{ trigger.values.id }}}']]],
             ['start->fetch'],
         ));
         $editor = $this->editor($workspace, $workflow, $user)->call('selectNode', 'fetch');
@@ -316,7 +316,7 @@ class WorkflowEditorTest extends TestCase
         $editor->assertSeeHtml('data-test="json-editor"')->assertSeeHtml('data-test="json-format"')->assertSeeHtml('data-test="data-picker"');
 
         $editor->set('form.body_type', 'raw')->assertDontSeeHtml('data-test="json-editor"');
-        $this->assertSame('{"id": {{ trigger.id }}}', $workflow->refresh()->draft()->node('fetch')->config['body']);
+        $this->assertSame('{"id": {{ trigger.values.id }}}', $workflow->refresh()->draft()->node('fetch')->config['body']);
     }
 
     public function test_a_cron_schedule_is_put_into_words_with_its_next_runs_and_offers_presets(): void

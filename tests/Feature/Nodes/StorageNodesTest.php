@@ -77,7 +77,7 @@ class StorageNodesTest extends TestCase
         return $this->runWorkflow($this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger', 'upload' => ['core.s3_upload', ['credential' => $this->settingId('backups'), ...$config]]],
             ['start->upload'],
-        ), $workspace), $input);
+        ), $workspace), ['values' => $input]);
     }
 
     public function test_uploads_templated_content_to_the_key_on_amazon_s3(): void
@@ -87,8 +87,8 @@ class StorageNodesTest extends TestCase
         Credential::factory()->for($workspace)->s3()->create(['id' => $this->settingId('backups'), 'description' => 'backups']);
 
         $execution = $this->runUpload($workspace, [
-            'key' => '/opnsense/{{ trigger.host }}.xml',
-            'content' => '{{ trigger.xml }}',
+            'key' => '/opnsense/{{ trigger.values.host }}.xml',
+            'content' => '{{ trigger.values.xml }}',
             'content_type' => 'application/xml',
         ], ['host' => 'fw1', 'xml' => '<opnsense><system/></opnsense>']);
 

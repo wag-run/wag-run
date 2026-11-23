@@ -34,9 +34,9 @@ class GitHubActionsTest extends TestCase
     private function runAction(string $type, array $config, array $input = []): ExecutionStep
     {
         $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'act' => [$type, ['credential' => $this->settingId('github'), 'repository' => '{{ trigger.repo }}', ...$config], ['max_retries' => 1, 'backoff_seconds' => 0]]],
+            ['start' => 'core.manual_trigger', 'act' => [$type, ['credential' => $this->settingId('github'), 'repository' => '{{ trigger.values.repo }}', ...$config], ['max_retries' => 1, 'backoff_seconds' => 0]]],
             ['start->act'],
-        ), $this->workspace), ['repo' => 'https://github.com/acme/app', ...$input]);
+        ), $this->workspace), ['values' => ['repo' => 'https://github.com/acme/app', ...$input]]);
 
         return $this->stepFor($execution, 'act');
     }
@@ -45,7 +45,7 @@ class GitHubActionsTest extends TestCase
     {
         Http::fake(['api.github.com/repos/acme/app/issues' => Http::response(['id' => 1, 'number' => 42, 'html_url' => 'https://github.com/acme/app/issues/42'], 201)]);
 
-        $step = $this->runAction('github.create_issue', ['title' => 'Deploy of {{ trigger.tag }} failed', 'labels' => 'bug, ops', 'assignees' => ''], ['tag' => 'v1']);
+        $step = $this->runAction('github.create_issue', ['title' => 'Deploy of {{ trigger.values.tag }} failed', 'labels' => 'bug, ops', 'assignees' => ''], ['tag' => 'v1']);
 
         $this->assertSame(['number' => 42, 'url' => 'https://github.com/acme/app/issues/42', 'id' => 1], $step->output);
         Http::assertSent(fn (Request $request) => $request->data() === ['title' => 'Deploy of v1 failed', 'labels' => ['bug', 'ops']]
@@ -104,10 +104,10 @@ class GitHubActionsTest extends TestCase
                 'credential' => $this->settingId('google'),
                 'spreadsheet' => 'https://docs.google.com/spreadsheets/d/1AbC_d-9/edit#gid=0',
                 'sheet' => 'Orders',
-                'values' => [['value' => '{{ trigger.id }}'], ['value' => '{{ trigger.total }}'], ['value' => 'paid']],
+                'values' => [['value' => '{{ trigger.values.id }}'], ['value' => '{{ trigger.values.total }}'], ['value' => 'paid']],
             ]]],
             ['start->add'],
-        ), $this->workspace), ['id' => 991, 'total' => 12.5]);
+        ), $this->workspace), ['values' => ['id' => 991, 'total' => 12.5]]);
 
         $this->assertSame(['range' => "'Orders'!A5:C5", 'rows' => 1], $this->stepFor($execution, 'add')->output);
         Http::assertSent(fn (Request $request) => str_starts_with($request->url(), 'https://sheets.googleapis.com/v4/spreadsheets/1AbC_d-9/values/%27Orders%27:append?')
