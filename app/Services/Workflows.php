@@ -144,7 +144,9 @@ class Workflows
 
     protected function newVersion(Workflow $workflow, WorkflowGraph $graph, ?User $publisher, ?string $note): WorkflowVersion
     {
-        $number = (int) $workflow->versions()->lockForUpdate()->max('number') + 1;
+        Workflow::query()->lockForUpdate()->find($workflow->id);
+
+        $number = (int) $workflow->versions()->max('number') + 1;
 
         $version = $workflow->versions()->create([
             'number' => $number,
