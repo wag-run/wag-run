@@ -129,7 +129,7 @@ Note that form answers are under `trigger.values`, while a manual trigger's inpu
 
 ## GitHub
 
-Three triggers start a workflow on a GitHub repository's events: **New tag**, **New release** and **Actions run failed**. They're under **Triggers › Other apps › GitHub** in the palette. Each needs a **GitHub account**, a [GitHub authentication setting](workspaces.md#connecting-an-account) connected to an account that can see the repository, and the **Repository**, as `owner/name`.
+Three triggers start a workflow on a GitHub repository's events: **New tag**, **New release** and **Actions run failed**. They're under **Triggers › Other apps › GitHub** in the palette. Each needs a **GitHub account** that can see the repository, which you can connect right from the node with **Connect GitHub** (see [Connecting an account](workspaces.md#connecting-an-account)), and the **Repository**, as `owner/name`.
 
 ### Polling or a webhook
 

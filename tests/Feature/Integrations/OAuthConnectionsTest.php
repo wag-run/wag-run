@@ -6,11 +6,13 @@ use App\Enums\WorkspaceRole;
 use App\Models\AuditLog;
 use App\Models\Credential;
 use App\Models\User;
+use App\Models\Workflow;
 use App\Models\Workspace;
 use App\Support\HostResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\Concerns\RunsWorkflows;
 use Tests\TestCase;
@@ -48,41 +50,124 @@ class OAuthConnectionsTest extends TestCase
         return ['url' => strtok($location, '?'), ...$query];
     }
 
-    public function test_saving_a_github_setting_connects_it_through_oauth(): void
+    private function issueWorkflow(): Workflow
     {
-        Livewire::actingAs($this->admin)
-            ->test('pages::workspaces.credentials', ['workspace' => $this->workspace])
-            ->set('type', 'github')
-            ->set('key', 'github')
-            ->call('save')
-            ->assertRedirect(route('workspaces.credentials.connect', [$this->workspace, Credential::sole()]));
+        return Workflow::factory()->for($this->workspace)->create(['draft_graph' => $this->graph(
+            ['start' => 'core.manual_trigger', 'issue' => ['github.create_issue', ['title' => 'Hi']]],
+            ['start->issue'],
+        )]);
+    }
 
-        $query = $this->connect(Credential::sole());
+    private function editor(Workflow $workflow, ?User $user = null): Testable
+    {
+        return Livewire::actingAs($user ?? $this->admin)->test('pages::workflows.edit', ['workspace' => $this->workspace, 'workflow' => $workflow]);
+    }
 
+    /**
+     * @return array<string, string>
+     */
+    private function authorizeQuery(string $location): array
+    {
+        parse_str((string) parse_url($location, PHP_URL_QUERY), $query);
+
+        return ['url' => strtok($location, '?'), ...$query];
+    }
+
+    public function test_connecting_github_from_a_node_creates_the_setting_and_fills_it_in(): void
+    {
+        $workflow = $this->issueWorkflow();
+
+        $location = $this->editor($workflow)
+            ->call('selectNode', 'issue')
+            ->assertSee('data-test="connect-account"', false)
+            ->assertSee('Connect GitHub')
+            ->call('connectAccount', 'credential')
+            ->effects['redirect'];
+
+        $query = $this->authorizeQuery($location);
         $this->assertSame('https://github.com/login/oauth/authorize', $query['url']);
         $this->assertSame('gh-client', $query['client_id']);
         $this->assertSame('repo admin:repo_hook', $query['scope']);
         $this->assertSame(route('integrations.oauth.callback', 'github'), $query['redirect_uri']);
         $this->assertSame('S256', $query['code_challenge_method']);
+        $this->assertSame(0, Credential::count(), 'nothing is saved until GitHub approves');
 
         Http::fake([
             'github.com/login/oauth/access_token' => Http::response(['access_token' => 'gho_new', 'scope' => 'repo,admin:repo_hook', 'token_type' => 'bearer']),
             'api.github.com/user' => Http::response(['login' => 'octocat']),
         ]);
 
-        $this->get(route('integrations.oauth.callback', ['type' => 'github', 'state' => $query['state'], 'code' => 'abc']))
-            ->assertRedirect(route('workspaces.credentials', $this->workspace))
-            ->assertSessionHas('oauth_status', 'github is connected as octocat.');
+        $this->actingAs($this->admin)->get(route('integrations.oauth.callback', ['type' => 'github', 'state' => $query['state'], 'code' => 'abc']))
+            ->assertRedirect(route('workspaces.workflows.edit', [$this->workspace, $workflow]))
+            ->assertSessionHas('oauth_status', 'github_octocat is connected as octocat.')
+            ->assertSessionHas('editor_select_node', 'issue');
 
         Http::assertSent(fn (Request $request) => $request->url() === 'https://github.com/login/oauth/access_token'
             && $request['code'] === 'abc'
             && $request['client_secret'] === 'gh-secret'
             && strlen($request['code_verifier']) === 64);
         $credential = Credential::sole();
+        $this->assertSame(['github_octocat', 'github'], [$credential->key, $credential->type]);
         $this->assertSame('gho_new', $credential->config['access_token']);
-        $this->assertSame('octocat', $credential->config['account']);
         $this->assertSame(['gho_new'], $credential->secretValues());
+        $this->assertSame('github_octocat', $workflow->refresh()->draft()->node('issue')->config['credential']);
         $this->assertSame(['credential.created', 'credential.connected'], AuditLog::query()->orderBy('id')->pluck('action')->all());
+
+        $this->withSession(['editor_select_node' => 'issue', 'oauth_status' => 'github_octocat is connected as octocat.']);
+        $this->editor($workflow)
+            ->assertSet('selected', 'issue')
+            ->assertSet('form.credential', 'github_octocat')
+            ->assertSee('Connect another GitHub account')
+            ->assertSee('data-test="connection-result"', false);
+    }
+
+    public function test_a_second_account_with_the_same_name_gets_its_own_key(): void
+    {
+        Credential::factory()->for($this->workspace)->oauth()->create(['key' => 'github_octocat']);
+        $location = $this->editor($this->issueWorkflow())->call('selectNode', 'issue')->call('connectAccount', 'credential')->effects['redirect'];
+        Http::fake([
+            'github.com/login/oauth/access_token' => Http::response(['access_token' => 'gho_two']),
+            'api.github.com/user' => Http::response(['login' => 'octocat']),
+        ]);
+
+        $this->actingAs($this->admin)->get(route('integrations.oauth.callback', ['type' => 'github', 'state' => $this->authorizeQuery($location)['state'], 'code' => 'abc']));
+
+        $this->assertSame(['github_octocat', 'github_octocat_2'], Credential::query()->orderBy('id')->pluck('key')->all());
+    }
+
+    public function test_only_people_who_manage_authentication_can_connect_from_a_node(): void
+    {
+        $editor = User::factory()->memberOf($this->workspace, WorkspaceRole::Editor)->create();
+
+        $this->editor($this->issueWorkflow(), $editor)
+            ->call('selectNode', 'issue')
+            ->assertDontSee('data-test="connect-account"', false)
+            ->assertSee('Ask a workspace admin to connect a GitHub account.')
+            ->call('connectAccount', 'credential')
+            ->assertForbidden();
+    }
+
+    public function test_the_node_says_what_to_set_when_the_app_is_missing_from_the_environment(): void
+    {
+        config(['services.github' => ['client_id' => null, 'client_secret' => null]]);
+
+        $this->editor($this->issueWorkflow())
+            ->call('selectNode', 'issue')
+            ->assertDontSee('data-test="connect-account"', false)
+            ->assertSee('Connecting GitHub isn\'t set up on this install yet. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in the environment first.')
+            ->call('connectAccount', 'credential')
+            ->assertNotFound();
+    }
+
+    public function test_the_authentication_page_leaves_github_and_google_to_the_nodes(): void
+    {
+        $page = Livewire::actingAs($this->admin)->test('pages::workspaces.credentials', ['workspace' => $this->workspace]);
+
+        $this->assertSame([], array_intersect(['github', 'google'], array_keys($page->instance()->types())));
+        $this->assertContains('oauth2', array_keys($page->instance()->types()));
+
+        $page->set('type', 'github')->set('key', 'github')->call('save')->assertHasErrors(['type' => 'in']);
+        $this->assertSame(0, Credential::count());
     }
 
     public function test_a_callback_from_another_attempt_or_a_declined_consent_is_refused(): void
@@ -103,7 +188,7 @@ class OAuthConnectionsTest extends TestCase
         $this->assertSame([], $credential->refresh()->config);
     }
 
-    public function test_an_app_missing_from_the_environment_is_explained(): void
+    public function test_reconnecting_needs_the_app_set_up_in_the_environment(): void
     {
         config(['services.github' => ['client_id' => null, 'client_secret' => null]]);
         $credential = Credential::factory()->for($this->workspace)->create(['key' => 'github', 'type' => 'github', 'config' => []]);
@@ -111,11 +196,6 @@ class OAuthConnectionsTest extends TestCase
         $this->actingAs($this->admin)->get(route('workspaces.credentials.connect', [$this->workspace, $credential]))
             ->assertRedirect(route('workspaces.credentials', $this->workspace))
             ->assertSessionHas('oauth_error', 'The GitHub app isn\'t set up on this install yet. An administrator needs to set GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET in the environment.');
-
-        Livewire::actingAs($this->admin)
-            ->test('pages::workspaces.credentials', ['workspace' => $this->workspace])
-            ->set('type', 'github')
-            ->assertSee('data-test="oauth-not-configured"', false);
     }
 
     public function test_editors_cannot_connect_settings(): void

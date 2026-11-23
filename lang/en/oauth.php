@@ -11,6 +11,7 @@ return [
     'connection_attempt_expired' => 'This connection attempt expired or was started by someone else. Try connecting again.',
     'could_not_connect' => 'Couldn\'t connect',
     'not_an_oauth_setting' => ':key isn\'t an OAuth authentication setting.',
+    'not_allowed_to_connect' => 'Only workspace admins can connect accounts.',
     'not_connected' => 'The :key authentication setting isn\'t connected yet. Connect it on the workspace\'s Authentication page.',
     'not_connected_short' => 'Not connected',
     'provider_declined' => 'The provider didn\'t allow the connection: :message',

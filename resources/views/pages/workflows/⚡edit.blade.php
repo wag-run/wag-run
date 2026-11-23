@@ -1,5 +1,7 @@
 <?php
 
+use App\Credentials\CredentialTypeRegistry;
+use App\Credentials\OAuthCredentialType;
 use App\Engine\Definitions\Field;
 use App\Engine\Editor\CanvasMapper;
 use App\Engine\Editor\ConfigForm;
@@ -16,6 +18,7 @@ use App\Models\Workflow;
 use App\Models\WorkflowVersion;
 use App\Models\Workspace;
 use App\Services\ManualRuns;
+use App\Services\OAuthConnections;
 use App\Services\Workflows;
 use App\Support\Audit;
 use ArtisanFlow\WireFlow\Concerns\WithWireFlow;
@@ -37,6 +40,13 @@ new class extends Component {
     public Workflow $workflow;
 
     public ?string $selected = null;
+
+    /**
+     * The result of connecting an account from a node, shown once after the provider sends the person back.
+     *
+     * @var array{variant: string, text: string}|null
+     */
+    public ?array $connectionResult = null;
 
     public string $nodeName = '';
 
@@ -130,6 +140,46 @@ new class extends Component {
         $this->retentionDays = $this->workflow->retention_days ?? $this->workspace->effectiveRetentionDays();
         $this->customRunLimit = $this->workflow->max_runs_per_minute !== null;
         $this->maxRunsPerMinute = $this->workflow->max_runs_per_minute ?? \App\Models\Organization::current()?->max_runs_per_minute ?? \App\Engine\Engine::DEFAULT_MAX_RUNS_PER_MINUTE;
+
+        if (session()->has('oauth_status') || session()->has('oauth_error')) {
+            $this->connectionResult = session()->has('oauth_error')
+                ? ['variant' => 'danger', 'text' => (string) session('oauth_error')]
+                : ['variant' => 'success', 'text' => (string) session('oauth_status')];
+        }
+
+        if (is_string($node = session('editor_select_node'))) {
+            $this->selectNode($node);
+        }
+    }
+
+    /**
+     * Whether the person can connect accounts from a node's account field:
+     * they must be able to edit the workflow and manage the workspace's
+     * authentication settings.
+     */
+    #[Computed]
+    public function canConnectAccounts(): bool
+    {
+        return $this->canEdit && Auth::user()->can('manage-credentials', $this->workspace);
+    }
+
+    /**
+     * Connect a new account for the selected node's account field, such as
+     * a GitHub account: off to the provider, and back to this node with the
+     * new setting filled in.
+     */
+    public function connectAccount(string $fieldName, OAuthConnections $connections): void
+    {
+        $this->authorize('edit-workflows', $this->workspace);
+        $this->authorize('manage-credentials', $this->workspace);
+
+        $field = collect($this->definition?->inputs() ?? [])->first(fn (Field $field) => $field->name === $fieldName && $field->type === Field::CREDENTIAL);
+        $registry = app(CredentialTypeRegistry::class);
+        $type = $field && count($field->credentialTypes) === 1 && $registry->has($field->credentialTypes[0]) ? $registry->get($field->credentialTypes[0]) : null;
+
+        abort_unless($this->selected && $type instanceof OAuthCredentialType && $type->connectsFromNodes() && $type->isConfigured(), 404);
+
+        $this->redirect($connections->beginForNode($type, $this->workflow, $this->selected, $fieldName, Auth::user()));
     }
 
     #[Computed]
@@ -1373,6 +1423,11 @@ new class extends Component {
                     </div>
                 </div>
 
+                @if ($connectionResult)
+                    <flux:callout class="mb-4" :variant="$connectionResult['variant']" :icon="$connectionResult['variant'] === 'danger' ? 'exclamation-triangle' : 'check-circle'"
+                        :heading="$connectionResult['text']" data-test="connection-result" />
+                @endif
+
                 <fieldset class="space-y-4" @disabled(! $this->canEdit)>
                     <flux:input wire:model.live.debounce.600ms="nodeName" :label="__('common.name')" />
                     <flux:text class="text-xs">{{ __('workflows.edit.reference_its_output_as') }} <code class="rounded bg-zinc-100 px-1 dark:bg-zinc-800">nodes.{{ $selected }}.output</code></flux:text>
@@ -1380,7 +1435,7 @@ new class extends Component {
                     @foreach ($definition->inputs() as $field)
                         @continue(! $field->isVisible($form, $definition->inputs()))
                         <div wire:key="field-{{ $selected }}-{{ $field->name }}">
-                            @include('partials.workflow-field', ['field' => $field, 'model' => 'form.'.$field->name, 'value' => $form[$field->name] ?? null, 'choices' => $this->choices, 'picker' => $this->picker])
+                            @include('partials.workflow-field', ['field' => $field, 'model' => 'form.'.$field->name, 'value' => $form[$field->name] ?? null, 'choices' => $this->choices, 'picker' => $this->picker, 'canConnectAccounts' => $this->canConnectAccounts])
                         </div>
                     @endforeach
 

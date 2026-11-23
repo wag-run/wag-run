@@ -103,6 +103,10 @@ return [
     'editor' => [
         'add_a_trigger_to_start' => 'Add a trigger to start the workflow.',
         'add_one_under_authentication_first' => 'Add one under Authentication first.',
+        'ask_an_admin_to_connect' => 'Ask a workspace admin to connect a :provider account.',
+        'connect_another_provider_account' => 'Connect another :provider account',
+        'connect_provider' => 'Connect :provider',
+        'provider_not_set_up' => 'Connecting :provider isn\'t set up on this install yet. Set :keys in the environment first.',
         'attempt' => 'Attempt',
         'connect_this_node_to_a' => 'Connect this node to a trigger to see its data.',
         'connection_id_points_to_a' => 'Connection [:id] points to a node that does not exist.',

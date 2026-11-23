@@ -46,12 +46,20 @@ new class extends Component {
     }
 
     /**
+     * The types the form offers. Accounts of providers set up in the
+     * environment, such as GitHub, are connected from a node's account field
+     * instead, so they are left out unless the setting being edited is one.
+     *
      * @return array<string, CredentialType>
      */
     #[Computed]
     public function types(): array
     {
-        return app(CredentialTypeRegistry::class)->all();
+        return array_filter(
+            app(CredentialTypeRegistry::class)->all(),
+            fn (CredentialType $type, string $key) => ! ($type instanceof OAuthCredentialType && $type->connectsFromNodes()) || ($this->editingId && $key === $this->type),
+            ARRAY_FILTER_USE_BOTH,
+        );
     }
 
     #[Computed]
@@ -109,7 +117,7 @@ new class extends Component {
         $this->validate([
             'key' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z_][A-Za-z0-9_]*$/',
                 Rule::unique('credentials', 'key')->where('workspace_id', $this->workspace->id)->ignore($this->editingId)],
-            'type' => ['required', Rule::in(array_keys($registry->all()))],
+            'type' => ['required', Rule::in($existing ? [$existing->type] : array_keys($this->types))],
             'description' => ['nullable', 'string', 'max:255'],
         ], ['key.regex' => __('common.use_letters_numbers_and_underscores')]);
 
@@ -206,6 +214,8 @@ new class extends Component {
             </x-slot:actions>
         @endif
     </x-page-heading>
+
+    <flux:text class="-mt-2 mb-4 text-sm">{{ __('workspaces.credentials.github_and_google_accounts_are_connected') }}</flux:text>
 
     @if (session('oauth_status'))
         <flux:callout class="mb-4" variant="success" icon="check-circle" :heading="session('oauth_status')" data-test="oauth-status" />
@@ -312,12 +322,10 @@ new class extends Component {
 
             @if ($this->selectedType() instanceof OAuthCredentialType)
                 @php($oauthType = $this->selectedType())
-                @if (! $oauthType->hasUserUrls() && ! $oauthType->isConfigured())
-                    <flux:callout variant="warning" icon="exclamation-triangle" :heading="__('oauth.app_not_set_up', ['provider' => $oauthType->label(), 'keys' => implode(', ', $oauthType->environmentKeys())])" data-test="oauth-not-configured" />
-                @else
-                    <flux:text class="text-sm">{{ __('oauth.after_saving_you_go_to', ['provider' => $oauthType->label()]) }}</flux:text>
+                <flux:text class="text-sm">{{ __('oauth.after_saving_you_go_to', ['provider' => $oauthType->label()]) }}</flux:text>
+                @if ($oauthType->hasUserUrls())
+                    <flux:input :label="__('oauth.callback_url')" :value="$oauthType->callbackUrl()" readonly copyable :description="__('oauth.register_this_callback_url')" />
                 @endif
-                <flux:input :label="__('oauth.callback_url')" :value="$oauthType->callbackUrl()" readonly copyable :description="__('oauth.register_this_callback_url')" />
             @endif
 
             <div class="flex justify-end gap-2">

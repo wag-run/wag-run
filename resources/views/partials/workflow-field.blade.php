@@ -30,7 +30,22 @@
             <flux:select.option :value="$optionValue">{{ $optionLabel }}</flux:select.option>
         @endforeach
     </flux:select>
-    @if ($options === [] && $field->type === Field::CREDENTIAL)
+    @php
+        $registry = app(\App\Credentials\CredentialTypeRegistry::class);
+        $oauthType = $field->type === Field::CREDENTIAL && count($field->credentialTypes) === 1 && $registry->has($field->credentialTypes[0])
+            ? $registry->get($field->credentialTypes[0])
+            : null;
+        $oauthType = $oauthType instanceof \App\Credentials\OAuthCredentialType && $oauthType->connectsFromNodes() ? $oauthType : null;
+    @endphp
+    @if ($oauthType && ! $oauthType->isConfigured())
+        <flux:text class="text-xs" data-test="oauth-not-set-up">{{ __('workflows.editor.provider_not_set_up', ['provider' => $oauthType->label(), 'keys' => implode(' and ', $oauthType->environmentKeys())]) }}</flux:text>
+    @elseif ($oauthType && ($canConnectAccounts ?? false))
+        <flux:button size="sm" icon="link" wire:click="connectAccount('{{ $field->name }}')" data-test="connect-account">
+            {{ $options === [] ? __('workflows.editor.connect_provider', ['provider' => $oauthType->label()]) : __('workflows.editor.connect_another_provider_account', ['provider' => $oauthType->label()]) }}
+        </flux:button>
+    @elseif ($oauthType && $options === [])
+        <flux:text class="text-xs">{{ __('workflows.editor.ask_an_admin_to_connect', ['provider' => $oauthType->label()]) }}</flux:text>
+    @elseif ($options === [] && $field->type === Field::CREDENTIAL)
         <flux:text class="text-xs">{{ __('workflows.editor.add_one_under_authentication_first') }}</flux:text>
     @endif
 @elseif ($field->type === Field::USERS)

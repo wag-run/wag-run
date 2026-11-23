@@ -123,7 +123,7 @@ return [
         'checking_every_few_minutes' => 'Checking every few minutes',
         'comment' => 'Comment',
         'commit_sha' => 'Commit SHA',
-        'connect_one_under_authentication' => 'Connect a GitHub account under Authentication.',
+        'connect_one_under_authentication' => 'The GitHub account the node acts as.',
         'connection_not_found' => 'GitHub authentication setting ":key" not found.',
         'could_not_reach_github' => 'Couldn\'t reach GitHub: :message',
         'create_issue' => 'Create issue',
@@ -173,7 +173,7 @@ return [
     'google_sheets' => [
         'add_row' => 'Add row to sheet',
         'add_row_description' => 'Adds a row to a Google Sheets spreadsheet.',
-        'connect_one_under_authentication' => 'Connect a Google account under Authentication.',
+        'connect_one_under_authentication' => 'The Google account the node acts as.',
         'connection_not_found' => 'Google authentication setting ":key" not found.',
         'could_not_reach_google' => 'Couldn\'t reach Google: :message',
         'google' => 'Google',

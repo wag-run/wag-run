@@ -3,8 +3,12 @@
 namespace App\Services;
 
 use App\Credentials\OAuthCredentialType;
+use App\Engine\Graph\GraphNode;
+use App\Enums\WorkspacePermission;
 use App\Models\Credential;
 use App\Models\User;
+use App\Models\Workflow;
+use App\Models\Workspace;
 use App\Support\AddressAllowlist;
 use App\Support\Audit;
 use App\Support\NetworkGuard;
@@ -19,10 +23,15 @@ use Throwable;
 /**
  * Connects OAuth authentication settings and keeps their tokens fresh.
  *
- * Connecting is the authorization code flow with PKCE. The setting is saved
- * first, so the session only holds the state of the attempt: which setting,
- * who started it and the PKCE verifier. Client secrets never leave the
- * setting or the environment.
+ * Connecting is the authorization code flow with PKCE. It starts one of two
+ * ways: from a saved setting on the Authentication page (to connect it or
+ * connect it again), or from a node's account field in the editor, for a
+ * provider whose app is set up in the environment, such as GitHub. Then the
+ * setting is created only once the provider approves, named after the
+ * account, and filled into the node.
+ *
+ * The session only holds the attempt: who started it, where, and the PKCE
+ * verifier. Client secrets never leave the setting or the environment.
  */
 class OAuthConnections
 {
@@ -33,70 +42,88 @@ class OAuthConnections
      */
     protected const EXPIRY_MARGIN = 60;
 
-    public function __construct(protected NetworkGuard $guard) {}
+    public function __construct(
+        protected NetworkGuard $guard,
+        protected Workflows $workflows,
+    ) {}
 
     /**
-     * Start connecting $credential: remember the attempt and return the
+     * Start connecting a saved setting: remember the attempt and return the
      * provider's consent page to send the person to.
      */
     public function begin(Credential $credential, User $user): string
     {
-        $type = $this->typeOf($credential);
-        $state = Str::random(40);
-        $verifier = Str::random(64);
-
-        session()->put(self::SESSION_KEY.'.'.$state, [
-            'credential_id' => $credential->id,
-            'user_id' => $user->id,
-            'verifier' => $verifier,
-            'expires_at' => now()->addMinutes(10)->getTimestamp(),
-        ]);
-
-        $query = http_build_query([
-            'response_type' => 'code',
-            'client_id' => $type->clientId($credential->config),
-            'redirect_uri' => $type->callbackUrl(),
-            'scope' => implode(' ', $type->scopes($credential->config)),
-            'state' => $state,
-            'code_challenge' => rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '='),
-            'code_challenge_method' => 'S256',
-            ...$type->authorizeParameters(),
-        ]);
-        $url = $type->authorizeUrl($credential->config);
-
-        return $url.(str_contains($url, '?') ? '&' : '?').$query;
+        return $this->start($this->typeOf($credential), $credential->workspace, $user, $credential->config, ['credential_id' => $credential->id]);
     }
 
     /**
-     * The setting a callback with this state is for, if the attempt is still
-     * open, so a failure can send the person back to its workspace.
+     * Start connecting a new account of $type for a node's account field. On
+     * success the new setting is filled into that field.
      */
-    public function pendingCredential(string $state): ?Credential
+    public function beginForNode(OAuthCredentialType $type, Workflow $workflow, string $nodeId, string $field, User $user): string
+    {
+        return $this->start($type, $workflow->workspace, $user, [], [
+            'workflow_id' => $workflow->id,
+            'node_id' => $nodeId,
+            'field' => $field,
+        ]);
+    }
+
+    /**
+     * Where to send the person back to after the callback with this state:
+     * the node they started from, the workspace's Authentication page, or
+     * the dashboard when the attempt is unknown.
+     */
+    public function returnUrl(string $state): string
     {
         $pending = session()->get(self::SESSION_KEY.'.'.$state);
+        $workspace = is_array($pending) ? Workspace::query()->whereKey($pending['workspace_id'])->first() : null;
 
-        return is_array($pending) ? Credential::query()->whereKey($pending['credential_id'])->first() : null;
+        if (! $workspace) {
+            return route('dashboard');
+        }
+
+        $workflow = isset($pending['workflow_id']) ? $workspace->workflows()->whereKey($pending['workflow_id'])->first() : null;
+
+        return $workflow
+            ? route('workspaces.workflows.edit', [$workspace, $workflow])
+            : route('workspaces.credentials', $workspace);
     }
 
     /**
      * Finish connecting: check the provider's callback, swap its code for
-     * tokens and save them on the setting.
+     * tokens and save them, on the setting the attempt started from or on a
+     * new one. An attempt started from a node fills the new setting into
+     * it, and flashes the node's id as "editor_select_node".
      *
-     * @throws RuntimeException when the attempt is unknown or expired, the person declined, or the provider refused the code
+     * @throws RuntimeException when the attempt is unknown, expired or no longer allowed, the person declined, or the provider refused the code
      */
     public function complete(string $typeKey, Request $request, User $user): Credential
     {
         $pending = session()->pull(self::SESSION_KEY.'.'.$request->query('state', ''));
-        $credential = is_array($pending) ? Credential::query()->whereKey($pending['credential_id'])->first() : null;
+        $workspace = is_array($pending) ? Workspace::query()->whereKey($pending['workspace_id'])->first() : null;
 
-        if (! $credential || $pending['user_id'] !== $user->id || $pending['expires_at'] < now()->getTimestamp() || $credential->type !== $typeKey) {
+        if (! $workspace || $pending['user_id'] !== $user->id || $pending['expires_at'] < now()->getTimestamp() || $pending['type'] !== $typeKey) {
             throw new RuntimeException(__('oauth.connection_attempt_expired'));
+        }
+
+        if (! $user->hasWorkspacePermission($workspace, WorkspacePermission::ManageCredentials)) {
+            throw new RuntimeException(__('oauth.not_allowed_to_connect'));
         }
 
         if (filled($request->query('error'))) {
             throw new RuntimeException(__('oauth.provider_declined', ['message' => (string) ($request->query('error_description') ?: $request->query('error'))]));
         }
 
+        $credential = isset($pending['credential_id'])
+            ? $workspace->credentials()->whereKey($pending['credential_id'])->first()
+            : (new Credential(['type' => $typeKey, 'config' => []]))->setRelation('workspace', $workspace);
+
+        if (! $credential || $credential->type !== $typeKey) {
+            throw new RuntimeException(__('oauth.connection_attempt_expired'));
+        }
+
+        $credential->workspace_id = $workspace->id;
         $type = $this->typeOf($credential);
         $tokens = $this->requestTokens($credential, [
             'grant_type' => 'authorization_code',
@@ -111,12 +138,99 @@ class OAuthConnections
             $account = null;
         }
 
+        $created = ! $credential->exists;
+
+        if ($created) {
+            $credential->key = $this->freeKey($workspace, $type->key().(filled($account) ? '_'.$account : ''));
+        }
+
         $credential->config = [...$credential->config, ...$this->connection($tokens, null), 'account' => $account];
         $credential->save();
 
-        Audit::record('credential.connected', $credential, $credential->workspace, ['type' => $credential->type, 'account' => $account]);
+        if ($created) {
+            Audit::record('credential.created', $credential, $workspace, ['type' => $credential->type]);
+        }
+
+        Audit::record('credential.connected', $credential, $workspace, ['type' => $credential->type, 'account' => $account]);
+
+        if (isset($pending['workflow_id'])) {
+            $this->fillIntoNode($workspace, $pending, $credential);
+        }
 
         return $credential;
+    }
+
+    /**
+     * @param  array<string, mixed>  $config  the setting's config, for a provider configured on it
+     * @param  array<string, mixed>  $attempt  where the attempt started: credential_id, or workflow_id, node_id and field
+     */
+    protected function start(OAuthCredentialType $type, Workspace $workspace, User $user, array $config, array $attempt): string
+    {
+        $state = Str::random(40);
+        $verifier = Str::random(64);
+
+        session()->put(self::SESSION_KEY.'.'.$state, [
+            ...$attempt,
+            'type' => $type->key(),
+            'workspace_id' => $workspace->id,
+            'user_id' => $user->id,
+            'verifier' => $verifier,
+            'expires_at' => now()->addMinutes(10)->getTimestamp(),
+        ]);
+
+        $query = http_build_query([
+            'response_type' => 'code',
+            'client_id' => $type->clientId($config),
+            'redirect_uri' => $type->callbackUrl(),
+            'scope' => implode(' ', $type->scopes($config)),
+            'state' => $state,
+            'code_challenge' => rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '='),
+            'code_challenge_method' => 'S256',
+            ...$type->authorizeParameters(),
+        ]);
+        $url = $type->authorizeUrl($config);
+
+        return $url.(str_contains($url, '?') ? '&' : '?').$query;
+    }
+
+    /**
+     * Set the node's account field to the new setting, if the node is still
+     * in the draft, and have the editor open it.
+     *
+     * @param  array<string, mixed>  $pending
+     */
+    protected function fillIntoNode(Workspace $workspace, array $pending, Credential $credential): void
+    {
+        $workflow = $workspace->workflows()->whereKey($pending['workflow_id'])->first();
+        $graph = $workflow?->draft();
+
+        if (! $workflow || ! $graph || ! $graph->has($pending['node_id'])) {
+            return;
+        }
+
+        $node = $graph->node($pending['node_id']);
+        $this->workflows->saveDraft($workflow, $graph->withNode(new GraphNode(
+            $node->id, $node->type, $node->name, [...$node->config, $pending['field'] => $credential->key], $node->retry, $node->position, $node->errorPath,
+        )));
+
+        session()->flash('editor_select_node', $node->id);
+    }
+
+    /**
+     * $base as a setting key that is free in the workspace: letters, numbers
+     * and underscores, with _2, _3 and so on added when it is taken.
+     */
+    protected function freeKey(Workspace $workspace, string $base): string
+    {
+        $base = trim((string) preg_replace('/[^A-Za-z0-9_]+/', '_', $base), '_');
+        $base = preg_match('/^[A-Za-z_]/', $base) ? $base : 'oauth_'.$base;
+        $key = $base;
+
+        for ($suffix = 2; $workspace->credentials()->where('key', $key)->exists(); $suffix++) {
+            $key = "{$base}_{$suffix}";
+        }
+
+        return $key;
     }
 
     /**

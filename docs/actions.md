@@ -176,7 +176,7 @@ If the storage service refuses the upload, the step fails with its status and me
 
 ## GitHub
 
-These nodes work on a GitHub repository as the account a [GitHub authentication setting](workspaces.md#connecting-an-account) is connected to. Each has a **GitHub account** and a **Repository**, as `owner/name` or the repository's URL. A placeholder works in **Repository**, such as `{{ trigger.repository }}` after a [GitHub trigger](triggers.md#github).
+These nodes work on a GitHub repository as a connected GitHub account. Each has a **GitHub account**, which you can connect right from the node with **Connect GitHub** (see [Connecting an account](workspaces.md#connecting-an-account)), and a **Repository**, as `owner/name` or the repository's URL. A placeholder works in **Repository**, such as `{{ trigger.repository }}` after a [GitHub trigger](triggers.md#github).
 
 If GitHub refuses the request, the step fails with GitHub's message. Only server errors and rate limits are retried.
 
@@ -208,11 +208,11 @@ Outputs: `workflow` and `ref`.
 
 ### Add row to sheet
 
-Adds a row after the last one in a Google Sheets sheet, as the account a [Google authentication setting](workspaces.md#connecting-an-account) is connected to.
+Adds a row after the last one in a Google Sheets sheet, as a connected Google account. Connect one right from the node with **Connect Google** (see [Connecting an account](workspaces.md#connecting-an-account)).
 
 | Setting | What it does |
 |---|---|
-| **Google account** | The Google authentication setting to use |
+| **Google account** | The connected Google account to use |
 | **Spreadsheet** | The spreadsheet's URL or ID |
 | **Sheet** | The sheet's name, `Sheet1` by default |
 | **Values** | One value per column, starting from the first. Values are entered as if typed, so numbers and dates are recognised. |

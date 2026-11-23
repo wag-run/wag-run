@@ -19,6 +19,7 @@ return [
         'delete_this_authentication_setting_workflows' => 'Delete this authentication setting? Workflows that use it will fail until it is replaced.',
         'edit_authentication' => 'Edit authentication',
         'no_authentication_settings_yet' => 'No authentication settings yet.',
+        'github_and_google_accounts_are_connected' => 'GitHub and Google accounts are connected from the nodes that use them, with the Connect button under their account field. Once connected, they\'re listed here.',
         'reusable_credentials_this_workspace_s' => 'Reusable credentials this workspace\'s workflows use to call other systems.',
     ],
     'members' => [

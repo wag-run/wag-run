@@ -12,7 +12,8 @@ use RuntimeException;
 
 /**
  * Connects an OAuth authentication setting: sends the person to the
- * provider, and takes them back to the workspace's Authentication page.
+ * provider, and takes them back to where they started, the workspace's
+ * Authentication page or a node in the editor.
  */
 class OAuthConnectionController extends Controller
 {
@@ -31,16 +32,15 @@ class OAuthConnectionController extends Controller
 
     public function callback(Request $request, string $type, OAuthConnections $connections): RedirectResponse
     {
-        $pending = $connections->pendingCredential((string) $request->query('state', ''));
+        $returnUrl = $connections->returnUrl((string) $request->query('state', ''));
 
         try {
             $credential = $connections->complete($type, $request, $request->user());
         } catch (RuntimeException $e) {
-            return ($pending ? redirect()->route('workspaces.credentials', $pending->workspace) : redirect()->route('dashboard'))
-                ->with('oauth_error', $e->getMessage());
+            return redirect()->to($returnUrl)->with('oauth_error', $e->getMessage());
         }
 
-        return redirect()->route('workspaces.credentials', $credential->workspace)
+        return redirect()->to($returnUrl)
             ->with('oauth_status', __('oauth.connected', ['key' => $credential->key, 'account' => $credential->config['account'] ?? $credential->credentialType()->label()]));
     }
 }

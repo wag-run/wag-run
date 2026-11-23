@@ -93,6 +93,16 @@ abstract class OAuthCredentialType extends CredentialType implements HttpAuthent
     }
 
     /**
+     * Whether accounts are connected from a node's account field in the
+     * editor, rather than added on the Authentication page: true for a
+     * provider whose app is set up in the environment.
+     */
+    public function connectsFromNodes(): bool
+    {
+        return ! $this->hasUserUrls();
+    }
+
+    /**
      * The environment variables that set up this provider's app, to tell
      * an administrator what is missing.
      *
