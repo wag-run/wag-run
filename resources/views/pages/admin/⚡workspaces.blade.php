@@ -125,7 +125,7 @@ new class extends Component {
     <flux:modal name="workspace-form" class="md:w-md">
         <form wire:submit="save" class="space-y-6">
             <flux:heading size="lg">{{ $editingId ? __('admin.workspaces.rename_workspace') : __('admin.workspaces.new_workspace') }}</flux:heading>
-            <flux:input wire:model="name" :label="__('common.name')" required />
+            <flux:input wire:model="name" :label="__('common.name')" required autofocus data-test="workspace-name" />
             <div class="flex justify-end gap-2">
                 <flux:modal.close><flux:button variant="ghost">{{ __('common.cancel') }}</flux:button></flux:modal.close>
                 <flux:button type="submit" variant="primary">{{ __('common.save') }}</flux:button>

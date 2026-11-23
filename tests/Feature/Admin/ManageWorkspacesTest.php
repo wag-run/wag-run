@@ -55,6 +55,15 @@ class ManageWorkspacesTest extends TestCase
         );
     }
 
+    public function test_the_workspace_form_focuses_the_name(): void
+    {
+        $admin = User::factory()->orgAdmin()->create();
+
+        $html = Livewire::actingAs($admin)->test('pages::admin.workspaces')->call('create')->html();
+
+        $this->assertMatchesRegularExpression('/<input(?=[^>]*\\bautofocus\\b)(?=[^>]*data-test="workspace-name")[^>]*>/', $html);
+    }
+
     public function test_slugs_stay_unique_for_duplicate_names(): void
     {
         $first = Workspace::factory()->create(['name' => 'Sales']);
