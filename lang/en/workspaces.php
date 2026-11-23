@@ -2,7 +2,14 @@
 
 return [
     'audit' => [
+        'all_actions' => 'All actions',
         'changes_to_this_workspace_s' => 'Changes to this workspace\'s workflows, secrets, authentication and membership, and every secret reveal.',
+        'every_audited_change_in_the' => 'Every audited change in the organization, across all workspaces.',
+        'invitations' => 'Invitations',
+        'membership' => 'Membership',
+        'organization_settings' => 'Organization settings',
+        'show_log_for' => 'Show the log for',
+        'sign_in' => 'Sign-in',
     ],
     'credentials' => [
         'delete_authentication_setting' => 'Delete authentication setting?',

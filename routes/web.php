@@ -6,6 +6,7 @@ use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\WorkflowExportController;
 use App\Http\Controllers\WorkflowFileController;
 use App\Http\Middleware\RememberCurrentWorkspace;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard')->name('home');
@@ -73,7 +74,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::livewire('settings', 'pages::admin.settings')->name('settings');
             Route::livewire('sign-in-providers', 'pages::admin.sign-in-providers')->name('sign-in-providers');
             Route::livewire('email', 'pages::admin.email')->name('email');
-            Route::livewire('audit', 'pages::admin.audit')->name('audit');
+            Route::get('audit', function (Request $request) {
+                $workspaces = $request->user()->accessibleWorkspaces();
+                $workspace = $workspaces->firstWhere('id', $request->user()->current_workspace_id) ?? $workspaces->first();
+
+                return $workspace
+                    ? redirect()->route('workspaces.audit', [$workspace, 'scope' => 'organization'])
+                    : redirect()->route('admin.workspaces');
+            })->name('audit');
         });
 });
 

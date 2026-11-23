@@ -1,14 +1,6 @@
 <?php
 
 return [
-    'audit' => [
-        'all_actions' => 'All actions',
-        'every_audited_change_in_the' => 'Every audited change in the organization, across all workspaces.',
-        'invitations' => 'Invitations',
-        'membership' => 'Membership',
-        'organization_settings' => 'Organization settings',
-        'title' => 'Audit log',
-    ],
     'email' => [
         'email_settings_saved' => 'Email settings saved.',
         'if_you_can_read_this' => 'If you can read this, your email settings work.',

@@ -93,4 +93,4 @@ Admins can change these under **Settings**:
 
 **Audit log** lists changes to this workspace: workflows created, imported, published, rolled back or deleted; variables, secrets and authentication settings created, changed, deleted or revealed; members added, removed or given a new role; and invitations. Each entry shows who did it and when.
 
-Admins can read it. Organization admins can see the audit log for the whole organization under **Organization → Audit log**.
+Admins can read it. The dropdown at the top switches between the workspaces whose log you can read, and the action filter narrows entries by type. Organization admins also see **Organization**: every entry in the organization, including those that belong to no workspace, such as sign-ins (with how each person signed in), users promoted or deactivated, single sign-on, organization settings, and deleted workspaces.
