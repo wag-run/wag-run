@@ -1,0 +1,146 @@
+# Getting started
+
+This guide walks you through signing in, finding your way around, and building your first workflow: a large-order alert that checks an amount and notifies you when it is over a limit. It takes about ten minutes.
+
+You need an account in a wag.run organization and the **Editor** or **Admin** role in a workspace. If you can't see **Workflows** in the sidebar, ask a workspace admin to change your role.
+
+## 1. Sign in
+
+Open your wag.run address and sign in with your email and password, a passkey, or a sign-in provider button such as **Sign in with Okta** if your organization has one set up.
+
+- **Invited by email?** Open the invitation link to create your account and join. Invitations expire, so ask for a new one if yours no longer works.
+- **First person on a new install?** Register an account. The first account becomes the organization admin.
+
+Once you're in, open **Settings** from the account menu at the bottom of the sidebar to add a passkey or turn on two-factor authentication.
+
+## 2. Find your way around
+
+The sidebar shows the current workspace at the top. Use it to switch workspaces. Below it:
+
+| Item | What it's for |
+|---|---|
+| **Overview** | The workspace's workflows and the approvals and tasks waiting on you |
+| **Workflows** | Create, import and open workflows |
+| **Runs** | Every run in the workspace, newest first, filterable by status |
+| **Inbox** | Approvals and tasks assigned to you, with a count when something is waiting |
+| **Variables**, **Secrets**, **Authentication** | Shared values and sign-in details your workflows use |
+| **Members**, **Settings**, **Audit log** | Workspace administration (Admins) |
+
+Organization admins also see an **Organization** section for users, workspaces, sign-in and email settings.
+
+**Notifications**, in the account menu, lists failed runs of workflows you own and approvals and tasks assigned to you. A red dot on your avatar means something is unread.
+
+> **Tip:** If your workspace has the demo workflows (**Refund approval**, **Order status updates**, **New hire onboarding** and **Daily post digest**), open one to see a finished workflow before building your own.
+
+## 3. Create a workflow
+
+1. Go to **Workflows** and click **New workflow**.
+2. Name it `Large order alert` and click **Create and open**.
+
+The editor opens with three areas:
+
+- **Node palette** on the left. Click a node to add it after the selected one, or drag it onto the canvas.
+- **Canvas** in the middle, where you arrange and connect nodes.
+- **Settings panel** on the right, which shows the selected node's settings, or the workflow's settings when nothing is selected.
+
+Your changes save to a draft as you go. The toolbar shows **Draft saved** with the time.
+
+## 4. Add a trigger
+
+Every workflow starts with a trigger. This one will be started by hand.
+
+1. In the palette, click **Manual**.
+2. With the node selected, find **Inputs to ask for** in the settings panel and click **Add** twice to add two inputs:
+
+   | Key | Label | Type | Required |
+   |---|---|---|---|
+   | `customer` | Customer | Text | Yes |
+   | `amount` | Amount | Number | Yes |
+
+Whoever runs the workflow fills in these inputs. Later nodes can read them as `trigger.customer` and `trigger.amount`.
+
+## 5. Add a condition
+
+1. With the trigger selected, click **Conditional logic** in the palette. It's added and connected after the trigger.
+2. Set **Condition** to:
+
+   ```text
+   {{ trigger.amount > 500 }}
+   ```
+
+The node now has two outputs, **true** and **false**. A condition must be one `{{ }}` placeholder that is true or false, and publishing is refused if it isn't.
+
+## 6. Send a notification
+
+1. Drag **Send notification** from the palette onto the canvas.
+2. Drag from the condition's **true** output to the new node's input to connect them.
+3. In its settings:
+   - **Recipients**: choose yourself.
+   - **Title**: `Large order from {{ trigger.customer }}`
+   - **Message**: `{{ trigger.customer }} placed an order for {{ number_format(trigger.amount, 2) }}.`
+
+Instead of typing placeholders, you can click **Insert data** on a field and pick a value from the trigger or an earlier node.
+
+Leave the **false** output unconnected. When the amount is 500 or less, the run takes that output and finishes there.
+
+## 7. Test the draft
+
+Try the workflow before publishing it.
+
+1. Click **Test draft** in the toolbar. (Once the workflow is published, **Test draft** moves into the menu next to **Run**.)
+2. Enter a customer and an amount over 500, then click **Start test run**.
+
+A test run does everything a real run does, including sending emails and calling other services, so be careful with workflows that contact people outside your team.
+
+You land on the run page. The canvas shows how far the run got, and you can click any step to see its input, output and any error. You should also have a new notification.
+
+Run another test with an amount under 500. This time the run stops after the condition and no notification is sent.
+
+If something is wrong, the editor lists what to fix under **Fix these before testing the draft**.
+
+## 8. Publish and run
+
+1. Back in the editor, click **Publish**. The workflow becomes version 1, and the toolbar shows **Published v1**.
+2. Click **Run**, which now appears in the toolbar, fill in the inputs, and click **Start run**.
+
+This time the run uses the published version. You can also start it from **Run manually** on the **Workflows** list.
+
+From now on, your edits go into a new draft. The published version keeps running unchanged until you publish again. If you change your mind, use **Discard draft** to go back to the published version.
+
+## 9. Follow your runs
+
+**Runs** in the sidebar lists every run in the workspace, with its trigger, status, start time and duration. Open one to see it on the canvas:
+
+- Each step shows its status. Click it for its input, output and error, and each attempt if it was retried.
+- A waiting run shows what it's waiting for, such as **Resumes** with a time for a Wait node, or **Times out** for an approval.
+- Editors and Admins can **Cancel run** while it's running or waiting.
+
+Run logs are kept for the workspace's retention period, then removed.
+
+## 10. Try an approval
+
+To see people in the loop, add an approval before the notification:
+
+1. Right-click the connection from **true** to **Send notification** and choose **Delete connection**.
+2. Select the condition node and click **Approval** in the palette. It's added and connected to the **true** output.
+3. Set **Approvers** to yourself, **Approvals needed** to `1`, and **Title** to `Approve order for {{ trigger.customer }}`.
+4. Connect the approval's **approved** output to **Send notification**.
+5. Test the draft with an amount over 500.
+
+The run's status changes to **Waiting**. Open **Inbox** in the sidebar, open the request, and click **Approve**. The run continues and sends the notification. Click **Reject** instead, and it continues down the **rejected** output.
+
+## Keyboard shortcuts in the editor
+
+| Action | Shortcut |
+|---|---|
+| Undo | ⌘Z or Ctrl+Z |
+| Redo | ⇧⌘Z or Ctrl+Y |
+| Copy, cut, paste | ⌘C, ⌘X, ⌘V |
+| Delete selected | ⌫ |
+
+Right-click a node or the canvas for the same actions.
+
+## Next steps
+
+- Read the [overview](README.md) for the concepts behind workspaces, versions, runs and placeholders.
+- Open the demo workflows to see webhooks, forms, schedules, loops, tasks and error handling working together.

@@ -80,6 +80,18 @@ abstract class Node
     }
 
     /**
+     * Problems with this node's settings that would make it misbehave,
+     * beyond missing required fields, reported when publishing or testing.
+     *
+     * @param  array<string, mixed>  $config
+     * @return list<string>
+     */
+    public function configProblems(array $config): array
+    {
+        return [];
+    }
+
+    /**
      * How the editor labels one of this node's output ports, or null for
      * the default label.
      *

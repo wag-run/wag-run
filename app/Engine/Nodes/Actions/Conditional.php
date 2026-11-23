@@ -10,8 +10,10 @@ use App\Engine\NodeResult;
 use App\Enums\NodeKind;
 
 /**
- * Routes the flow down "true" or "false" by evaluating an ExpressionLanguage
- * condition. Only one path runs.
+ * Routes the flow down "true" or "false". The condition is one {{ }}
+ * placeholder, such as {{ trigger.amount > 100 }}; publishing refuses
+ * anything else, since plain text would always count as true. Only one
+ * path runs.
  */
 class Conditional extends Node
 {
@@ -48,9 +50,21 @@ class Conditional extends Node
     public function inputs(): array
     {
         return [
-            new Field('condition', __('nodes.conditional.condition'), Field::TEXT, required: true, expression: true,
-                description: __('nodes.conditional.expression_such_as_nodes_fetch')),
+            new Field('condition', __('nodes.conditional.condition'), Field::TEXT, required: true, templated: true,
+                description: __('nodes.conditional.one_placeholder_such_as')),
         ];
+    }
+
+    public function configProblems(array $config): array
+    {
+        $condition = trim((string) ($config['condition'] ?? ''));
+
+        return $condition === '' || static::isOnePlaceholder($condition) ? [] : [__('nodes.conditional.condition_must_be_one_placeholder')];
+    }
+
+    public static function isOnePlaceholder(string $text): bool
+    {
+        return str_starts_with($text, '{{') && str_ends_with($text, '}}') && substr_count($text, '{{') === 1;
     }
 
     public function outputs(array $config = []): array
@@ -65,7 +79,10 @@ class Conditional extends Node
 
     public function execute(NodeContext $context): NodeResult
     {
-        $result = (bool) $context->input('condition');
+        $value = $context->input('condition');
+        $result = is_string($value)
+            ? (filter_var(trim($value), FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE) ?? trim($value) !== '')
+            : (bool) $value;
 
         return NodeResult::complete(['result' => $result], $result ? 'true' : 'false');
     }

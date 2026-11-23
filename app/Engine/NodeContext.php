@@ -124,11 +124,6 @@ class NodeContext
         return $this->templates->render($template, $this->data);
     }
 
-    public function evaluate(string $expression): mixed
-    {
-        return $this->templates->evaluate($expression, $this->data);
-    }
-
     /**
      * Tell the sweep this long-running step's worker is still alive.
      */
@@ -139,10 +134,6 @@ class NodeContext
 
     protected function resolve(Field $field, mixed $value): mixed
     {
-        if ($field->expression && is_string($value) && trim($value) !== '') {
-            return $this->evaluate($value);
-        }
-
         if ($field->templated) {
             return $this->renderDeep($value);
         }

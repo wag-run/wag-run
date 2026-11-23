@@ -27,7 +27,7 @@ class WorkflowEditorTest extends TestCase
         $workspace = Workspace::factory()->create();
         $user = User::factory()->memberOf($workspace, $role)->create();
         $workflow = Workflow::factory()->for($workspace)->create(['draft_graph' => $graph ?? $this->graph(
-            ['start' => 'core.manual_trigger', 'fetch' => ['core.http_request', ['url' => 'https://api.example.com']], 'check' => ['core.conditional', ['condition' => 'true']]],
+            ['start' => 'core.manual_trigger', 'fetch' => ['core.http_request', ['url' => 'https://api.example.com']], 'check' => ['core.conditional', ['condition' => '{{ true }}']]],
             ['start->fetch', 'fetch->check'],
         )]);
 
@@ -85,7 +85,7 @@ class WorkflowEditorTest extends TestCase
             ->call('addNode', 'core.compose');
 
         $graph = $workflow->refresh()->draft();
-        $this->assertSame('template', $graph->node('compose')->config['mode']);
+        $this->assertSame(['parse_json' => false], $graph->node('compose')->config);
         $this->assertTrue($graph->hasEdge('check', 'true', 'compose'));
         $this->assertTrue($graph->hasEdge('check', 'false', 'compose_2'), 'the second node takes the next free output');
     }
@@ -187,7 +187,7 @@ class WorkflowEditorTest extends TestCase
     public function test_refuses_connections_with_a_reason(string $source, string $port, string $target, string $reason): void
     {
         $graph = $this->graph(
-            ['start' => 'core.manual_trigger', 'fetch' => ['core.http_request', ['url' => 'x']], 'check' => ['core.conditional', ['condition' => 'true']]],
+            ['start' => 'core.manual_trigger', 'fetch' => ['core.http_request', ['url' => 'x']], 'check' => ['core.conditional', ['condition' => '{{ true }}']]],
             ['start->fetch', 'fetch->check'],
         );
         $graph['nodes'][1]['name'] = 'HTTP call';
@@ -243,7 +243,7 @@ class WorkflowEditorTest extends TestCase
     public function test_the_error_path_is_shown_only_when_turned_on_and_turning_it_off_drops_its_connections(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
-            ['start' => 'core.manual_trigger', 'fetch' => ['core.http_request', ['url' => 'x']], 'check' => ['core.conditional', ['condition' => 'true']], 'compose' => 'core.compose'],
+            ['start' => 'core.manual_trigger', 'fetch' => ['core.http_request', ['url' => 'x']], 'check' => ['core.conditional', ['condition' => '{{ true }}']], 'compose' => 'core.compose'],
             ['start->fetch', 'fetch->check', 'fetch:error->compose'],
         ));
         $editor = $this->editor($workspace, $workflow, $user);
@@ -289,16 +289,16 @@ class WorkflowEditorTest extends TestCase
         $this->editor($workspace, $workflow, $user)->assertSet('choices.workflows', [$other->id => 'Billing']);
     }
 
-    public function test_compose_offers_the_data_picker_in_both_modes(): void
+    public function test_compose_and_conditions_offer_the_data_picker_which_inserts_placeholders(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
-            ['start' => 'core.manual_trigger', 'build' => ['core.compose', ['mode' => 'template', 'template' => 'Hi']]],
-            ['start->build'],
+            ['start' => 'core.manual_trigger', 'build' => ['core.compose', ['template' => 'Hi']], 'check' => ['core.conditional', ['condition' => '{{ true }}']]],
+            ['start->build', 'build->check'],
         ));
-        $editor = $this->editor($workspace, $workflow, $user)->call('selectNode', 'build');
+        $editor = $this->editor($workspace, $workflow, $user);
 
-        $editor->assertSeeHtml('data-test="data-picker"');
-        $editor->set('form.mode', 'expression')->assertSeeHtml('data-test="data-picker"');
+        $editor->call('selectNode', 'build')->assertSeeHtml('data-test="data-picker"')->assertSeeHtml('data-token="{{ execution.id }}"');
+        $editor->call('selectNode', 'check')->assertSeeHtml('data-test="data-picker"')->assertSeeHtml('data-token="{{ nodes.build.output.value }}"');
     }
 
     public function test_the_run_button_explains_itself_only_when_the_draft_differs_from_the_published_version(): void

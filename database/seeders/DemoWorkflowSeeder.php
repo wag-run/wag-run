@@ -64,7 +64,7 @@ class DemoWorkflowSeeder extends Seeder
                     ['name' => 'reason', 'label' => 'Reason', 'type' => 'textarea', 'required' => false],
                 ],
             ]),
-            $this->node('check', 'core.conditional', 'Over 100?', 300, 200, ['condition' => 'trigger.amount > 100']),
+            $this->node('check', 'core.conditional', 'Over 100?', 300, 200, ['condition' => '{{ trigger.amount > 100 }}']),
             $this->node('approve', 'core.approval', 'Manager approval', 600, 80, [
                 'approvers' => [$admin->id, $editor->id],
                 'required_approvals' => 1,
@@ -73,7 +73,6 @@ class DemoWorkflowSeeder extends Seeder
                 'timeout_hours' => 48,
             ], errorPath: true),
             $this->node('auto', 'core.compose', 'Auto-approve', 600, 360, [
-                'mode' => 'template',
                 'template' => 'Refund of {{ trigger.amount }} approved automatically.',
             ]),
             $this->node('approved_email', 'core.send_email', 'Tell customer: approved', 960, 120, [
@@ -196,7 +195,6 @@ class DemoWorkflowSeeder extends Seeder
             ]),
             $this->node('join', 'core.merge', 'Both done', 920, 200),
             $this->node('summary', 'core.compose', 'Summary', 1200, 200, [
-                'mode' => 'template',
                 'template' => '{{ trigger.values.name }} onboarded: welcome email sent to {{ join(nodes.welcome.output.to, ", ") }}.',
             ]),
         ], [
@@ -229,7 +227,6 @@ class DemoWorkflowSeeder extends Seeder
             ]),
             $this->node('each', 'core.for_loop', 'Each post', 600, 200, ['items' => '{{ nodes.fetch.output.body }}']),
             $this->node('line', 'core.compose', 'Format post', 900, 80, [
-                'mode' => 'template',
                 'template' => '{{ item.id }}. {{ capitalize(item.title) }}',
             ]),
             $this->node('digest', 'core.send_notification', 'Send digest', 900, 320, [

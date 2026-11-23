@@ -2,9 +2,9 @@
     /** @var \App\Engine\Definitions\Field $field */
     use App\Engine\Definitions\Field;
 
-    $pickable = $field->templated || $field->expression;
+    $pickable = $field->templated;
     $description = $field->description
-        ?? ($field->expression ? __('workflows.editor.expression') : ($field->templated ? __('workflows.editor.use_placeholders_to_insert_data') : null));
+        ?? ($field->templated ? __('workflows.editor.use_placeholders_to_insert_data') : null);
 @endphp
 
 @if ($field->type === Field::BOOLEAN)
@@ -58,7 +58,7 @@
                     <div class="min-w-0 flex-1" x-data="wagInsert">
                         <flux:input size="sm" class="font-mono" x-ref="input" wire:model.live.debounce.600ms="{{ $model }}.{{ $index }}.value" :placeholder="__('workflows.editor.value')" />
                         @if ($pickable)
-                            @include('partials.workflow-picker', ['picker' => $picker, 'expression' => $field->expression])
+                            @include('partials.workflow-picker', ['picker' => $picker])
                         @endif
                     </div>
                     <flux:button size="sm" variant="ghost" icon="x-mark" class="shrink-0" wire:click="removeRow('{{ $field->name }}', {{ $index }})" :aria-label="__('common.remove')" />
@@ -108,7 +108,7 @@
                 wire:model.live.debounce.600ms="{{ $model }}" :label="$field->label" :description="$description" />
         @endif
         @if ($pickable)
-            @include('partials.workflow-picker', ['picker' => $picker, 'expression' => $field->expression])
+            @include('partials.workflow-picker', ['picker' => $picker])
         @endif
     </div>
 @endif

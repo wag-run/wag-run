@@ -37,7 +37,7 @@ class FlowNodesTest extends TestCase
     public function test_conditional_follows_the_path_its_expression_chooses(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'check' => ['core.conditional', ['condition' => 'trigger.amount > 100 and trigger.currency == "EUR"']],
+            ['start' => 'core.manual_trigger', 'check' => ['core.conditional', ['condition' => '{{ trigger.amount > 100 and trigger.currency == "EUR" }}']],
                 'big' => ['core.compose', ['template' => 'big']], 'small' => ['core.compose', ['template' => 'small']]],
             ['start->check', 'check:true->big', 'check:false->small'],
         ));
@@ -50,7 +50,7 @@ class FlowNodesTest extends TestCase
     {
         $workflow = $this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger', 'each' => ['core.for_loop', ['items' => '{{ trigger.orders }}']],
-                'line' => ['core.compose', ['mode' => 'expression', 'expression' => 'item.qty * item.price']],
+                'line' => ['core.compose', ['template' => '{{ item.qty * item.price }}']],
                 'total' => ['core.compose', ['template' => "{{ sum(column(column(nodes.each.output.results, 'line'), 'value')) }}"]]],
             ['start->each', 'each:item->line', 'each:done->total'],
         ));
@@ -150,7 +150,7 @@ class FlowNodesTest extends TestCase
         $workflow = $this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger',
                 'greeting' => ['core.compose', ['template' => 'Hi {{ title(trigger.name) }} from {{ vars.team }}']],
-                'math' => ['core.compose', ['mode' => 'expression', 'expression' => 'round(trigger.amount * 1.2, 2)']],
+                'math' => ['core.compose', ['template' => '{{ round(trigger.amount * 1.2, 2) }}']],
                 'json' => ['core.compose', ['template' => '{"id": {{ trigger.id }}, "ok": true}', 'parse_json' => true]]],
             ['start->greeting', 'greeting->math', 'math->json'],
         ));

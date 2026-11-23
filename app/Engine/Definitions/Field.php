@@ -5,10 +5,9 @@ namespace App\Engine\Definitions;
 /**
  * An input a node expects: one configurable field in the editor.
  *
- * Templated fields are text whose {{ expression }} placeholders are filled
- * in from the run's data before the node sees them; expression fields are
- * one expression. Both use the same expression language. Plain fields are
- * passed as is.
+ * Templated fields are text whose {{ }} placeholders are filled in from the
+ * run's data before the node sees them; a field that is a single
+ * placeholder keeps the value's type. Plain fields are passed as is.
  */
 final readonly class Field
 {
@@ -60,7 +59,6 @@ final readonly class Field
         public mixed $default = null,
         public ?string $description = null,
         public bool $templated = false,
-        public bool $expression = false,
         public array $options = [],
         public array $credentialTypes = [],
         public array $fields = [],
@@ -104,7 +102,6 @@ final readonly class Field
             'default' => $this->default,
             'description' => $this->description,
             'templated' => $this->templated,
-            'expression' => $this->expression,
             'options' => $this->options,
             'credential_types' => $this->credentialTypes,
             'fields' => array_map(fn (Field $field) => $field->toArray(), $this->fields),

@@ -10,9 +10,10 @@ use App\Engine\NodeResult;
 use App\Enums\NodeKind;
 
 /**
- * Builds a value from earlier outputs and workspace values with text that
- * has {{ }} placeholders, or with one expression, and returns it for later
- * nodes to use.
+ * Builds a value from earlier outputs and workspace values and returns it
+ * for later nodes to use: text with {{ }} placeholders, or a single
+ * placeholder, which keeps its type ({{ item.price * item.quantity }} is a
+ * number, {{ nodes.fetch.output.body.items }} a list).
  */
 class Compose extends Node
 {
@@ -49,9 +50,7 @@ class Compose extends Node
     public function inputs(): array
     {
         return [
-            new Field('mode', __('nodes.compose.build_with'), Field::SELECT, required: true, default: 'template', options: ['template' => __('nodes.compose.text_with_placeholders'), 'expression' => __('nodes.compose.expression')]),
-            new Field('template', __('nodes.compose.template'), Field::TEXTAREA, templated: true, description: __('nodes.compose.text_such_as_order_trigger'), visibleWhen: ['mode' => 'template']),
-            new Field('expression', __('nodes.compose.expression'), Field::TEXT, expression: true, description: __('nodes.compose.such_as_item_price_item'), visibleWhen: ['mode' => 'expression']),
+            new Field('template', __('nodes.compose.value'), Field::TEXTAREA, templated: true, description: __('nodes.compose.text_with_placeholders_or_one')),
             new Field('parse_json', __('nodes.compose.parse_the_result_as_json'), Field::BOOLEAN, default: false),
         ];
     }
@@ -63,9 +62,7 @@ class Compose extends Node
 
     public function execute(NodeContext $context): NodeResult
     {
-        $value = $context->config('mode') === 'expression'
-            ? $context->input('expression')
-            : $context->input('template', '');
+        $value = $context->input('template', '');
 
         if ($context->config('parse_json') && is_string($value)) {
             $decoded = json_decode($value, true);

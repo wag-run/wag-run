@@ -28,9 +28,9 @@ Built with Laravel 13, Livewire 4, Flux and [WireFlow](https://github.com/getart
 
 Fields that accept data use `{{ }}` placeholders, such as `Order {{ trigger.id }} shipped`. A field that is a single placeholder keeps the value's type, so `{{ nodes.fetch.output.body.items }}` is a list, not text.
 
-Conditions and Compose's expression mode take one expression without braces, such as `trigger.amount > 100 and 'vip' in trigger.tags`.
+A condition is one placeholder that is true or false, such as `{{ trigger.amount > 100 and 'vip' in trigger.tags }}`. Publishing refuses a condition without the braces, which would otherwise always count as true.
 
-Both use [Symfony ExpressionLanguage](https://symfony.com/doc/current/reference/formats/expression_language.html) with helper functions such as `upper`, `title`, `join`, `split`, `column`, `sum`, `default`, `date`, `number_format` and `json_decode`. A path into missing data, like `nodes.skipped.output.id`, reads as null instead of failing.
+Placeholders use [Symfony ExpressionLanguage](https://symfony.com/doc/current/reference/formats/expression_language.html) with helper functions such as `upper`, `title`, `join`, `split`, `column`, `sum`, `default`, `date`, `number_format` and `json_decode`. A path into missing data, like `nodes.skipped.output.id`, reads as null instead of failing.
 
 ## Getting started
 

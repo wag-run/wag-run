@@ -53,6 +53,10 @@ class GraphValidator
 
             $inputs = $definition->inputs();
 
+            foreach ($definition->configProblems($node->config) as $problem) {
+                $errors[] = __('workflows.editor.node_name_problem', ['name' => $node->name, 'problem' => $problem]);
+            }
+
             foreach ($inputs as $field) {
                 $value = $node->config[$field->name] ?? $field->default;
 
