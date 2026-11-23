@@ -78,9 +78,9 @@ abstract class GitHubTrigger extends Node implements EventTrigger
         return 'code-bracket-square';
     }
 
-    public function category(): string
+    public function paletteGroup(): array
     {
-        return __('common.event_in_other_app');
+        return [__('common.triggers'), __('common.other_apps'), __('nodes.github.github')];
     }
 
     public function inputs(): array

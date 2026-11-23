@@ -347,25 +347,47 @@ new class extends Component {
     }
 
     /**
-     * The palette's nodes by group, groups of triggers first. Sticky notes are left out: they are added from the canvas's context menu.
+     * The palette's folders, keyed by their path joined with " › " ('' for
+     * the top level), with groups of triggers first. Each lists the groups
+     * nested in it, with how many nodes each holds, and the nodes directly
+     * in it. Sticky notes are left out: they are added from the canvas's
+     * context menu.
      *
-     * @return array<string, list<array{type: string, label: string, description: string, icon: string}>>
+     * @return array<string, array{name: string, groups: list<array{key: string, name: string, icon: string, count: int}>, items: list<array{type: string, label: string, description: string, icon: string}>}>
      */
     #[Computed]
     public function palette(): array
     {
-        $groups = ['triggers' => [], 'actions' => []];
+        $entries = ['triggers' => [], 'actions' => []];
 
         foreach (app(NodeRegistry::class)->all() as $type => $node) {
             if ($node->kind() === NodeKind::Note) {
                 continue;
             }
 
-            $kind = $node->kind() === NodeKind::Trigger ? 'triggers' : 'actions';
-            $groups[$kind][$node->category()][] = ['type' => $type, 'label' => $node->label(), 'description' => $node->description(), 'icon' => $node->icon()];
+            $entries[$node->kind() === NodeKind::Trigger ? 'triggers' : 'actions'][] = [
+                $node->paletteGroup(),
+                ['type' => $type, 'label' => $node->label(), 'description' => $node->description(), 'icon' => $node->icon()],
+            ];
         }
 
-        return [...$groups['triggers'], ...$groups['actions']];
+        $folders = ['' => ['name' => '', 'groups' => [], 'items' => []]];
+
+        foreach ([...$entries['triggers'], ...$entries['actions']] as [$path, $item]) {
+            $parent = '';
+
+            foreach ($path as $depth => $name) {
+                $key = implode(' › ', array_slice($path, 0, $depth + 1));
+                $folders[$key] ??= ['name' => $name, 'groups' => [], 'items' => []];
+                $folders[$parent]['groups'][$key] ??= ['key' => $key, 'name' => $name, 'icon' => $item['icon'], 'count' => 0];
+                $folders[$parent]['groups'][$key]['count']++;
+                $parent = $key;
+            }
+
+            $folders[$parent]['items'][] = $item;
+        }
+
+        return array_map(fn (array $folder) => [...$folder, 'groups' => array_values($folder['groups'])], $folders);
     }
 
     #[Computed]
@@ -1124,40 +1146,30 @@ new class extends Component {
             {{-- Two levels: the groups, then the nodes of the open group. Searching lists matching nodes from every group. --}}
             <aside class="w-56 shrink-0 overflow-y-auto border-e border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900" data-test="palette"
                 x-data="{
-                    group: null,
+                    folder: '',
                     query: '',
                     matches(text) { return text.toLowerCase().includes(this.query.trim().toLowerCase()) },
                     anyMatches(texts) { return texts.some(text => this.matches(text)) },
+                    up() { this.folder = this.folder.split(' › ').slice(0, -1).join(' › ') },
                 }"
-                x-on:keydown.escape="query ? (query = '') : (group = null)">
+                x-on:keydown.escape="query ? (query = '') : up()">
                 <flux:input size="sm" icon="magnifying-glass" x-model="query" :placeholder="__('workflows.edit.search_nodes')" clearable class="mb-3" data-test="palette-search" />
 
-                {{-- Level one: the groups --}}
-                <div x-show="! query && group === null" data-test="palette-groups">
-                    @foreach ($this->palette as $group => $items)
-                        <button type="button" wire:key="palette-group-{{ $loop->index }}" x-on:click="group = @js($group)"
-                            class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-start text-sm hover:bg-zinc-200/70 dark:hover:bg-zinc-800"
-                            data-test="palette-group">
-                            <flux:icon :icon="$items[0]['icon']" variant="mini" class="size-4 text-zinc-500" />
-                            <span class="flex-1 truncate">{{ $group }}</span>
-                            <span class="text-xs text-zinc-500 dark:text-zinc-400">{{ count($items) }}</span>
-                            <flux:icon.chevron-right variant="micro" class="size-3.5 text-zinc-400" />
-                        </button>
-                    @endforeach
-                </div>
-
-                {{-- Level two: the open group's nodes, or every match while searching --}}
-                <button type="button" x-show="! query && group !== null" x-cloak x-on:click="group = null"
+                {{-- Back up one level, named after the open folder --}}
+                <button type="button" x-show="! query && folder !== ''" x-cloak x-on:click="up()"
                     class="mb-2 flex w-full items-center gap-1 rounded-md px-2 py-1.5 text-start text-xs font-medium uppercase tracking-wide text-zinc-600 hover:bg-zinc-200/70 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                     data-test="palette-back">
                     <flux:icon.chevron-left variant="micro" class="size-3.5" />
-                    <span x-text="group"></span>
+                    <span x-text="folder.split(' › ').pop()"></span>
                 </button>
-                @foreach ($this->palette as $group => $items)
-                    <div wire:key="palette-items-{{ $loop->index }}" x-cloak
-                        x-show="query ? anyMatches(@js(array_map(fn (array $item): string => $item['label'].' '.$item['description'], $items))) : group === @js($group)">
-                        <flux:heading size="sm" x-show="query" class="mt-3 mb-1 text-xs uppercase tracking-wide text-zinc-600 dark:text-zinc-400">{{ $group }}</flux:heading>
-                        @foreach ($items as $item)
+
+                {{-- The open folder's nodes, then the groups inside it; while searching, every match under its folder's path --}}
+                @foreach ($this->palette as $key => $folder)
+                    <div wire:key="palette-folder-{{ $loop->index }}" @if ($key !== '') x-cloak @endif
+                        x-show="query ? anyMatches(@js(array_map(fn (array $item): string => $item['label'].' '.$item['description'], $folder['items']))) : folder === @js($key)"
+                        data-test="palette-folder" data-folder="{{ $key }}">
+                        <flux:heading size="sm" x-show="query" class="mt-3 mb-1 text-xs uppercase tracking-wide text-zinc-600 dark:text-zinc-400">{{ $key }}</flux:heading>
+                        @foreach ($folder['items'] as $item)
                             <button type="button" wire:key="palette-{{ $item['type'] }}" wire:click="addNode('{{ $item['type'] }}')" title="{{ $item['description'] }}"
                                 x-show="! query || matches(@js($item['label'].' '.$item['description']))"
                                 x-flow-draggable="@js(['type' => $item['type']])"
@@ -1167,9 +1179,19 @@ new class extends Component {
                                 <span>{{ $item['label'] }}</span>
                             </button>
                         @endforeach
+                        @foreach ($folder['groups'] as $group)
+                            <button type="button" wire:key="palette-group-{{ $group['key'] }}" x-show="! query" x-on:click="folder = @js($group['key'])"
+                                class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-start text-sm hover:bg-zinc-200/70 dark:hover:bg-zinc-800"
+                                data-test="palette-group">
+                                <flux:icon :icon="$group['icon']" variant="mini" class="size-4 text-zinc-500" />
+                                <span class="flex-1 truncate">{{ $group['name'] }}</span>
+                                <span class="text-xs text-zinc-500 dark:text-zinc-400">{{ $group['count'] }}</span>
+                                <flux:icon.chevron-right variant="micro" class="size-3.5 text-zinc-400" />
+                            </button>
+                        @endforeach
                     </div>
                 @endforeach
-                <flux:text x-show="query && ! anyMatches(@js(collect($this->palette)->flatten(1)->map(fn (array $item): string => $item['label'].' '.$item['description'])->all()))" x-cloak class="px-2 text-xs">
+                <flux:text x-show="query && ! anyMatches(@js(collect($this->palette)->pluck('items')->flatten(1)->map(fn (array $item): string => $item['label'].' '.$item['description'])->all()))" x-cloak class="px-2 text-xs">
                     {{ __('workflows.edit.no_matching_nodes') }}
                 </flux:text>
 

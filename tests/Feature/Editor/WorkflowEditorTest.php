@@ -416,16 +416,18 @@ class WorkflowEditorTest extends TestCase
             ->assertSee(__('workflows.edit.add_sticky_note'));
     }
 
-    public function test_the_palette_groups_triggers_on_other_apps_events_after_the_other_triggers(): void
+    public function test_the_palette_nests_other_apps_triggers_under_triggers(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor();
 
         $palette = $this->editor($workspace, $workflow, $user)->instance()->palette();
-        $types = fn (string $group) => array_column($palette[$group], 'type');
+        $types = fn (string $folder) => array_column($palette[$folder]['items'], 'type');
 
-        $this->assertSame(['Triggers', 'Event in other app'], array_slice(array_keys($palette), 0, 2));
+        $this->assertSame('Triggers', $palette['']['groups'][0]['name']);
+        $this->assertSame(['key' => 'Triggers › Other apps', 'name' => 'Other apps', 'icon' => 'tag', 'count' => 3], $palette['Triggers']['groups'][0]);
         $this->assertSame(['core.manual_trigger', 'core.webhook_trigger', 'core.schedule_trigger', 'core.form_trigger'], $types('Triggers'));
-        $this->assertSame(['github.new_tag', 'github.new_release', 'github.workflow_run_failed'], $types('Event in other app'));
+        $this->assertSame([], $types('Triggers › Other apps'));
+        $this->assertSame(['github.new_tag', 'github.new_release', 'github.workflow_run_failed'], $types('Triggers › Other apps › GitHub'));
         $this->assertContains('github.create_issue', $types('GitHub'));
     }
 

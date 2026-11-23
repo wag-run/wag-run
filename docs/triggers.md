@@ -129,7 +129,7 @@ Note that form answers are under `trigger.values`, while a manual trigger's inpu
 
 ## GitHub
 
-Three triggers start a workflow on a GitHub repository's events: **New GitHub tag**, **New GitHub release** and **GitHub Actions run failed**. They're under **Event in other app** in the palette. Each needs a **GitHub account**, a [GitHub authentication setting](workspaces.md#connecting-an-account) connected to an account that can see the repository, and the **Repository**, as `owner/name`.
+Three triggers start a workflow on a GitHub repository's events: **New tag**, **New release** and **Actions run failed**. They're under **Triggers › Other apps › GitHub** in the palette. Each needs a **GitHub account**, a [GitHub authentication setting](workspaces.md#connecting-an-account) connected to an account that can see the repository, and the **Repository**, as `owner/name`.
 
 ### Polling or a webhook
 
@@ -140,7 +140,7 @@ Three triggers start a workflow on a GitHub repository's events: **New GitHub ta
 
 Under **Trigger URLs** in the [workflow settings](editor.md#workflow-settings), each GitHub trigger shows when it last checked or whether its webhook is registered, and what's wrong if it isn't working. Runs it starts show **Another app** as their trigger.
 
-### New GitHub tag
+### New tag
 
 Fires when a tag is pushed. Polling checks the 100 tags GitHub lists first.
 
@@ -151,7 +151,7 @@ Fires when a tag is pushed. Polling checks the 100 tags GitHub lists first.
 | `trigger.repository` | `owner/name` |
 | `trigger.url` | The tag on GitHub |
 
-### New GitHub release
+### New release
 
 Fires when a release is published. Drafts don't count until they're published. Turn off **Include pre-releases** to skip pre-releases.
 
@@ -165,7 +165,7 @@ Fires when a release is published. Drafts don't count until they're published. T
 | `trigger.published_at` | When it was published |
 | `trigger.repository` | `owner/name` |
 
-### GitHub Actions run failed
+### Actions run failed
 
 Fires when a GitHub Actions run fails. Set **Actions workflow** (its name, such as `CI`, or its file name, such as `ci.yml`) or **Branch** to only hear about some runs.
 

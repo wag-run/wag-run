@@ -41,6 +41,17 @@ abstract class Node
     }
 
     /**
+     * Where the node sits in the editor's palette: its group, then any
+     * groups nested inside it, such as Triggers › Other apps › GitHub.
+     *
+     * @return non-empty-list<string>
+     */
+    public function paletteGroup(): array
+    {
+        return [$this->category()];
+    }
+
+    /**
      * A Heroicon name for the editor.
      */
     public function icon(): string
