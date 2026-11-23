@@ -5,6 +5,7 @@ return [
         'auth' => [
             'oidc_linked' => 'Sign-in provider linked',
             'oidc_registered' => 'Account created by sign-in provider',
+            'signed_in' => 'Signed in',
         ],
         'credential' => [
             'created' => 'Authentication setting created',

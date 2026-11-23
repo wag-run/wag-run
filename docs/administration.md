@@ -72,4 +72,4 @@ When **Send through my SMTP server** is off, email uses the server's own mail co
 
 ## Audit log
 
-**Organization → Audit log** lists every audited change across the organization, newest first: workflows, variables, secrets and authentication settings in every workspace, secret reveals, workspace and membership changes, invitations, user changes, sign-in provider changes, and organization and email settings. Filter it by action or by workspace.
+**Workspace → Audit log** is also where organization admins read the whole organization's log. Pick **Organization** in the dropdown at the top to see every audited change across the organization, newest first: workflows, variables, secrets and authentication settings in every workspace, secret reveals, workspace and membership changes, invitations, sign-ins, user changes, sign-in provider changes, and organization and email settings. Filter it by action. See [Audit log](workspaces.md#audit-log).

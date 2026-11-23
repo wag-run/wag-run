@@ -116,9 +116,6 @@
                         <flux:sidebar.item icon="envelope" :href="route('admin.email')" :current="request()->routeIs('admin.email')" wire:navigate>
                             {{ __('admin.email.title') }}
                         </flux:sidebar.item>
-                        <flux:sidebar.item icon="clipboard-document-list" :href="route('admin.audit')" :current="request()->routeIs('admin.audit')" wire:navigate>
-                            {{ __('common.audit_log') }}
-                        </flux:sidebar.item>
                     </flux:sidebar.group>
                 @endif
             </flux:sidebar.nav>
