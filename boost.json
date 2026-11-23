@@ -6,6 +6,10 @@
     "guidelines": true,
     "mcp": true,
     "nightwatch": false,
+    "packages": [
+        "getartisanflow/wireflow",
+        "livewire/blaze"
+    ],
     "sail": false,
     "skills": [
         "infer-conventions",
@@ -16,6 +20,9 @@
         "testing-best-practices",
         "fluxui-development",
         "livewire-development",
-        "tailwindcss-development"
+        "tailwindcss-development",
+        "alpineflow-development",
+        "wireflow-development",
+        "blaze-optimize"
     ]
 }
