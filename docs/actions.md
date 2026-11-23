@@ -285,7 +285,7 @@ Posts a message to a Slack, Microsoft Teams, Discord or Google Chat channel, thr
 
 Outputs: `service` and `status` (the HTTP status the chat service answered with).
 
-To get a webhook address, add an incoming webhook to the channel in the chat app: an incoming webhook app in Slack or Mattermost, a **Workflows** webhook in Microsoft Teams, an **Integrations → Webhooks** entry in Discord, or **Apps & integrations → Webhooks** in Google Chat. Then save it in wag.run as a chat webhook.
+To get a webhook address, add an incoming webhook to the channel in the chat app, then save it in wag.run as a chat webhook. [Chat webhooks](chat-webhooks.md) has the steps for each app.
 
 ## People
 

@@ -11,6 +11,7 @@ wag.run is a workflow automation app for teams. You build a workflow on a visual
 | [Triggers](triggers.md) | Manual, webhook, schedule, form and GitHub triggers |
 | [Actions](actions.md) | Every action node: flow, data, integrations, AI, messaging and people |
 | [Data and placeholders](data-and-placeholders.md) | Using earlier outputs, the data picker, `{{ }}` expressions and helper functions |
+| [Chat webhooks](chat-webhooks.md) | Getting an incoming webhook from Slack, Mattermost, Microsoft Teams, Discord and Google Chat for the Chat message action |
 | [Approvals, tasks and the Inbox](people.md) | Bringing people into a run, and responding to requests |
 | [Runs](runs.md) | Test runs, the run page, statuses, retries, error paths, concurrency and log retention |
 | [Workspaces](workspaces.md) | Members and roles, variables, secrets, authentication settings, workspace settings and the audit log |

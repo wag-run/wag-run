@@ -76,7 +76,7 @@ Click **Add authentication**, choose a **Type**, and give it a **Key** and an op
 | **API token** | HTTP call | **Header name** (defaults to `Authorization`), **Value prefix** (defaults to `Bearer`; leave it empty to send the token alone) and **Token** |
 | **AI provider** | LLM call | **Provider**, **API key** (not needed for a local Ollama server) and **Base URL** (optional, but needed for an OpenAI-compatible endpoint) |
 | **SMTP server** | Send email | **Host**, **Port**, **Encryption**, **Username**, **Password**, **From address** and **From name**. Lets a workspace send email through its own server instead of the organization's. |
-| **Chat webhook** | Chat message | **Service** (Slack or Mattermost, Microsoft Teams, Discord, or Google Chat) and **Webhook URL** |
+| **Chat webhook** | Chat message | **Service** (Slack or Mattermost, Microsoft Teams, Discord, or Google Chat) and **Webhook URL**. See [Chat webhooks](chat-webhooks.md) for getting one from each app. |
 | **GitHub** | GitHub nodes, HTTP call | None: you connect a GitHub account |
 | **Google** | Google Sheets nodes, HTTP call | None: you connect a Google account |
 | **OAuth 2.0** | HTTP call | **Authorization URL**, **Token URL**, **Client ID**, **Client secret** and **Scopes**, from the OAuth app you registered with the provider |
