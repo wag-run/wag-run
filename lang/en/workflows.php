@@ -101,6 +101,9 @@ return [
         'you_can_view_this_workflow' => 'You can view this workflow but not edit it.',
     ],
     'editor' => [
+        'format_json' => 'Format',
+        'not_valid_json' => 'Not valid JSON: :error',
+        'valid_json' => 'Valid JSON',
         'add_a_trigger_to_start' => 'Add a trigger to start the workflow.',
         'add_one_under_authentication_first' => 'Add one under Authentication first.',
         'ask_an_admin_to_connect' => 'Ask a workspace admin to connect a :provider account.',

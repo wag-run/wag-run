@@ -145,6 +145,7 @@ Makes an HTTP request.
 | **Authentication** | Optional. An **HTTP Basic** or **API token** setting from the workspace's [authentication settings](workspaces.md#authentication). |
 | **Query parameters** and **Headers** | Keys and values to send |
 | **Body** | **None**, **JSON**, **Form fields** or **Raw text** |
+| **JSON or raw body** | For **JSON**, a JSON editor: it says whether the JSON is valid as you type, and **Format** indents it. Placeholders count as values, so `{"id": {{ trigger.id }}}` is valid. |
 | **Timeout (s)** | How long to wait for an answer. Defaults to 30. |
 | **Follow redirects** | Follow up to 5 redirects. On by default. |
 | **Fail on an error status (4xx or 5xx)** | On by default. Turn it off to handle error responses yourself, for example with a condition on `status`. |

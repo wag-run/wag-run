@@ -114,6 +114,8 @@
             <flux:button size="sm" icon="plus" wire:click="addRow('{{ $field->name }}')">{{ __('common.add') }}</flux:button>
         </div>
     </flux:field>
+@elseif ($field->isJson($values ?? []))
+    @include('partials.json-editor', ['model' => $model, 'label' => $field->label, 'description' => $description, 'picker' => $pickable ? $picker : null])
 @else
     <div x-data="wagInsert">
         @if ($field->type === Field::TEXTAREA)

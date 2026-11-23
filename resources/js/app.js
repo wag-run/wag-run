@@ -11,28 +11,156 @@ document.addEventListener('alpine:init', () => {
  * that command fires tells Livewire the value changed. Where the command is
  * unavailable, the text is set directly, which undo does not see.
  */
+const insertsText = {
+    field() {
+        const root = this.$refs.input;
+
+        return root?.matches('input, textarea') ? root : root?.querySelector('input, textarea');
+    },
+
+    insert(text, start = null, end = null) {
+        const field = this.field();
+
+        if (! field) {
+            return;
+        }
+
+        start ??= field.selectionStart ?? field.value.length;
+        end ??= field.selectionEnd ?? field.value.length;
+
+        field.focus();
+        field.setSelectionRange(start, end);
+
+        if (document.execCommand?.('insertText', false, text)) {
+            return;
+        }
+
+        field.setRangeText(text, start, end, 'end');
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+    },
+};
+
 document.addEventListener('alpine:init', () => {
-    window.Alpine.data('wagInsert', () => ({
-        insert(text) {
-            const root = this.$refs.input;
-            const field = root?.matches('input, textarea') ? root : root?.querySelector('input, textarea');
+    window.Alpine.data('wagInsert', () => ({ ...insertsText }));
+});
 
-            if (! field) {
+/**
+ * Swaps each {{ }} placeholder in JSON text for a stand-in that parses: a
+ * placeholder inside a string becomes plain text, one in place of a value
+ * becomes a string. restore() puts the placeholders back into text made
+ * from the masked JSON.
+ */
+function maskPlaceholders(text) {
+    const placeholders = [];
+    let masked = '';
+    let inString = false;
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+
+        if (char === '{' && text[i + 1] === '{') {
+            const close = text.indexOf('}}', i + 2);
+
+            if (close !== -1) {
+                const id = placeholders.push(text.slice(i, close + 2)) - 1;
+                masked += inString ? `__wagp${id}__` : `"__wagb${id}__"`;
+                i = close + 1;
+
+                continue;
+            }
+        }
+
+        if (inString && char === '\\') {
+            masked += char + (text[i + 1] ?? '');
+            i++;
+
+            continue;
+        }
+
+        if (char === '"') {
+            inString = ! inString;
+        }
+
+        masked += char;
+    }
+
+    return {
+        masked,
+        restore: (json) => json
+            .replace(/"__wagb(\d+)__"/g, (match, id) => placeholders[id])
+            .replace(/__wagp(\d+)__/g, (match, id) => placeholders[id]),
+    };
+}
+
+/**
+ * A textarea for JSON (partials/json-editor): it checks the JSON as it
+ * changes, keeps the line's indentation on Enter (one level more after an
+ * opening bracket) and formats it on request. Formatting goes in as if
+ * typed, so undo restores the text from before.
+ */
+document.addEventListener('alpine:init', () => {
+    window.Alpine.data('wagJsonEditor', () => ({
+        ...insertsText,
+        state: 'empty',
+        error: '',
+
+        init() {
+            this.$nextTick(() => this.check());
+        },
+
+        parse() {
+            const { masked, restore } = maskPlaceholders(this.field()?.value ?? '');
+
+            return { value: JSON.parse(masked), restore };
+        },
+
+        check() {
+            if ((this.field()?.value ?? '').trim() === '') {
+                this.state = 'empty';
+
                 return;
             }
 
-            const start = field.selectionStart ?? field.value.length;
-            const end = field.selectionEnd ?? field.value.length;
+            try {
+                this.parse();
+                this.state = 'valid';
+            } catch (error) {
+                this.state = 'invalid';
+                this.error = error.message;
+            }
+        },
 
-            field.focus();
-            field.setSelectionRange(start, end);
+        format() {
+            const field = this.field();
 
-            if (document.execCommand?.('insertText', false, text)) {
+            try {
+                const { value, restore } = this.parse();
+                const formatted = restore(JSON.stringify(value, null, 2));
+
+                if (formatted !== field.value) {
+                    this.insert(formatted, 0, field.value.length);
+                }
+
+                this.check();
+            } catch (error) {
+                this.state = 'invalid';
+                this.error = error.message;
+            }
+        },
+
+        newLine(event) {
+            const field = this.field();
+
+            if (event.target !== field || event.shiftKey || event.isComposing) {
                 return;
             }
 
-            field.setRangeText(text, start, end, 'end');
-            field.dispatchEvent(new Event('input', { bubbles: true }));
+            const before = field.value.slice(0, field.selectionStart);
+            const indent = before.slice(before.lastIndexOf('\n') + 1).match(/^\s*/)[0];
+            const opens = /[[{]\s*$/.test(before);
+
+            event.preventDefault();
+            this.insert('\n' + indent + (opens ? '  ' : ''));
         },
     }));
 });

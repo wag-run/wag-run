@@ -88,7 +88,7 @@ class HttpRequest extends Node
                 'none' => __('nodes.http_request.none'), 'json' => __('nodes.http_request.json'), 'form' => __('common.form_fields'), 'raw' => __('nodes.http_request.raw_text'), 'file' => __('nodes.http_request.a_file'),
             ]),
             new Field('file', __('nodes.http_request.file'), Field::TEXT, templated: true, description: __('nodes.http_request.file_help'), visibleWhen: ['body_type' => 'file']),
-            new Field('body', __('nodes.http_request.json_or_raw_body'), Field::TEXTAREA, templated: true, visibleWhen: ['body_type' => ['json', 'raw']]),
+            new Field('body', __('nodes.http_request.json_or_raw_body'), Field::TEXTAREA, templated: true, visibleWhen: ['body_type' => ['json', 'raw']], jsonWhen: ['body_type' => 'json']),
             new Field('form', __('common.form_fields'), Field::KEY_VALUE, templated: true, description: __('nodes.http_request.form_files_help'), visibleWhen: ['body_type' => 'form']),
             new Field('timeout', __('common.timeout_seconds'), Field::NUMBER, default: 30),
             new Field('follow_redirects', __('nodes.http_request.follow_redirects'), Field::BOOLEAN, default: true),

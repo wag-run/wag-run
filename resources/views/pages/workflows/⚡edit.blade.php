@@ -1436,7 +1436,7 @@ new class extends Component {
                     @foreach ($definition->inputs() as $field)
                         @continue(! $field->isVisible($form, $definition->inputs()))
                         <div wire:key="field-{{ $selected }}-{{ $field->name }}">
-                            @include('partials.workflow-field', ['field' => $field, 'model' => 'form.'.$field->name, 'value' => $form[$field->name] ?? null, 'choices' => $this->choices, 'picker' => $this->picker, 'canConnectAccounts' => $this->canConnectAccounts])
+                            @include('partials.workflow-field', ['field' => $field, 'model' => 'form.'.$field->name, 'value' => $form[$field->name] ?? null, 'values' => $form, 'choices' => $this->choices, 'picker' => $this->picker, 'canConnectAccounts' => $this->canConnectAccounts])
                         </div>
                     @endforeach
 
@@ -1550,9 +1550,11 @@ new class extends Component {
                 <flux:text class="mt-1">{{ __('workflows.edit.a_test_run_uses_the_draft') }}</flux:text>
             </div>
             @if ($this->testTriggerName !== null)
-                <flux:textarea wire:model="testPayload" rows="10" class="font-mono" data-test="test-payload"
-                    :label="__('workflows.edit.sample_data_for_name', ['name' => $this->testTriggerName])"
-                    :description="__('workflows.edit.what_the_trigger_receives')" />
+                <div data-test="test-payload">
+                    @include('partials.json-editor', ['model' => 'testPayload', 'live' => false, 'rows' => 10,
+                        'label' => __('workflows.edit.sample_data_for_name', ['name' => $this->testTriggerName]),
+                        'description' => __('workflows.edit.what_the_trigger_receives')])
+                </div>
             @else
                 @include('partials.form-fields', ['fields' => $this->testFields, 'model' => 'testValues'])
             @endif

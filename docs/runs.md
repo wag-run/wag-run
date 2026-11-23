@@ -15,7 +15,7 @@ A test run uses the **draft** instead of the published version, so you can try c
 1. In the editor, click **Test draft**. Once the workflow has been published, it's in the menu next to **Run**.
 2. Give the trigger something to work with:
    - For a **Manual** trigger, fill in its inputs.
-   - For other triggers, enter sample data as JSON, in the shape the trigger would receive. For a webhook, that could be `{"body": {"order_id": 1042}}`.
+   - For other triggers, enter sample data as JSON, in the shape the trigger would receive. For a webhook, that could be `{"body": {"order_id": 1042}}`. The editor says whether the JSON is valid, and **Format** indents it.
 3. Click **Start test run**.
 
 A test run does everything a real run does, **including sending emails, posting messages and calling other services**. It's marked **Test** in the run list.

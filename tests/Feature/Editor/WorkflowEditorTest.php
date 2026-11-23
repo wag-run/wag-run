@@ -304,6 +304,20 @@ class WorkflowEditorTest extends TestCase
         $editor->call('selectNode', 'check')->assertSeeHtml('data-test="data-picker"')->assertSeeHtml('data-token="{{ nodes.build.output.value }}"');
     }
 
+    public function test_a_json_body_gets_the_json_editor_and_a_raw_body_a_plain_textarea(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
+            ['start' => 'core.manual_trigger', 'fetch' => ['core.http_request', ['url' => 'https://api.example.com', 'body_type' => 'json', 'body' => '{"id": {{ trigger.id }}}']]],
+            ['start->fetch'],
+        ));
+        $editor = $this->editor($workspace, $workflow, $user)->call('selectNode', 'fetch');
+
+        $editor->assertSeeHtml('data-test="json-editor"')->assertSeeHtml('data-test="json-format"')->assertSeeHtml('data-test="data-picker"');
+
+        $editor->set('form.body_type', 'raw')->assertDontSeeHtml('data-test="json-editor"');
+        $this->assertSame('{"id": {{ trigger.id }}}', $workflow->refresh()->draft()->node('fetch')->config['body']);
+    }
+
     public function test_the_run_button_explains_itself_only_when_the_draft_differs_from_the_published_version(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(['start' => 'core.manual_trigger'], []));

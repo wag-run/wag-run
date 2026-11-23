@@ -63,6 +63,7 @@ final readonly class Field
         public array $credentialTypes = [],
         public array $fields = [],
         public array $visibleWhen = [],
+        public array $jsonWhen = [],
     ) {}
 
     /**
@@ -74,7 +75,29 @@ final readonly class Field
      */
     public function isVisible(array $values, array $siblings = []): bool
     {
-        foreach ($this->visibleWhen as $name => $allowed) {
+        return $this->siblingsMatch($this->visibleWhen, $values, $siblings);
+    }
+
+    /**
+     * Whether the editor edits this field as JSON: a JSON field always, any
+     * other while its sibling fields have the values $jsonWhen names.
+     *
+     * @param  array<string, mixed>  $values
+     * @param  list<Field>  $siblings
+     */
+    public function isJson(array $values, array $siblings = []): bool
+    {
+        return $this->type === self::JSON || ($this->jsonWhen !== [] && $this->siblingsMatch($this->jsonWhen, $values, $siblings));
+    }
+
+    /**
+     * @param  array<string, string|list<string>>  $conditions
+     * @param  array<string, mixed>  $values
+     * @param  list<Field>  $siblings
+     */
+    private function siblingsMatch(array $conditions, array $values, array $siblings): bool
+    {
+        foreach ($conditions as $name => $allowed) {
             $value = $values[$name] ?? null;
 
             if ($value === null || $value === '') {
@@ -106,6 +129,7 @@ final readonly class Field
             'credential_types' => $this->credentialTypes,
             'fields' => array_map(fn (Field $field) => $field->toArray(), $this->fields),
             'visible_when' => $this->visibleWhen,
+            'json_when' => $this->jsonWhen,
         ];
     }
 }
