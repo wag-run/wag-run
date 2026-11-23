@@ -4,7 +4,7 @@ This page covers running wag.run from a checkout on your own machine, for workin
 
 ## Prerequisites
 
-- **PHP 8.3 or newer**, with the `pdo_sqlite` extension. 8.4 is what the Docker image runs, so it's the safest choice.
+- **PHP 8.4 or newer**, with the `pdo_sqlite` extension.
 - **[Composer](https://getcomposer.org)**
 - **Node.js** and npm. The Docker image builds assets with Node 26.
 - **Git**
