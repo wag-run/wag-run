@@ -408,17 +408,19 @@ class WorkflowEditorTest extends TestCase
             ->call('addNode', 'core.note', ['x' => 500, 'y' => 400])
             ->assertSet('selected', 'note')
             ->set('form.text', "Ask finance before\nchanging the limit")
-            ->set('form.color', 'blue');
+            ->set('form.color', 'blue')
+            ->set('form.opacity', '50');
 
         $graph = $workflow->refresh()->draft_graph;
         $note = collect($graph['nodes'])->firstWhere('id', 'note');
-        $this->assertSame(['text' => "Ask finance before\nchanging the limit", 'color' => 'blue'], $note['config']);
+        $this->assertSame(['text' => "Ask finance before\nchanging the limit", 'color' => 'blue', 'opacity' => '50'], $note['config']);
         $this->assertEquals(['x' => 390, 'y' => 370], $note['position']);
         $this->assertSame([], collect($graph['edges'])->filter(fn (array $edge) => $edge['target'] === 'note')->all());
 
         $canvasNote = collect($editor->instance()->canvas['nodes'])->firstWhere('id', 'note');
         $this->assertTrue($canvasNote['data']['isNote']);
         $this->assertSame("Ask finance before\nchanging the limit", $canvasNote['data']['text']);
+        $this->assertSame(50, $canvasNote['data']['opacity']);
         $this->assertFalse($canvasNote['connectable']);
     }
 
@@ -447,5 +449,46 @@ class WorkflowEditorTest extends TestCase
         $this->assertSame(['start', 'done'], $this->nodesRun($execution));
         $runNote = collect(app(RunCanvas::class)->toCanvas($execution->refresh(), $execution->steps)['nodes'])->firstWhere('id', 'note');
         $this->assertArrayNotHasKey('status', $runNote['data']);
+    }
+
+    public function test_sticky_note_text_is_shown_as_markdown_without_scripts_or_unsafe_links(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
+            ['start' => 'core.manual_trigger', 'note' => ['core.note', ['text' => "# Refunds\n**Ask** finance\nfirst\n\n- [x] checked\n\n[Policy](https://wiki.example.com/refunds) <script>alert(1)</script> [trap](javascript:alert(1))"]]],
+        ));
+
+        $html = collect($this->editor($workspace, $workflow, $user)->instance()->canvas['nodes'])->firstWhere('id', 'note')['data']['html'];
+
+        $this->assertStringContainsString('<h1>Refunds</h1>', $html);
+        $this->assertStringContainsString("<strong>Ask</strong> finance<br>\nfirst", $html);
+        $this->assertStringContainsString('<input checked="" disabled="" type="checkbox"> checked', $html);
+        $this->assertStringContainsString('<a rel="noopener noreferrer" target="_blank" href="https://wiki.example.com/refunds">Policy</a>', $html);
+        $this->assertStringNotContainsString('<script', $html);
+        $this->assertStringNotContainsString('javascript:', $html);
+    }
+
+    public function test_a_sticky_note_takes_a_preset_or_a_hex_color_and_anything_else_falls_back_to_yellow(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
+            ['start' => 'core.manual_trigger', 'note' => ['core.note', ['text' => 'Hi']]],
+        ));
+        $editor = $this->editor($workspace, $workflow, $user)->call('selectNode', 'note');
+        $colorOf = fn () => collect($editor->instance()->canvas['nodes'])->firstWhere('id', 'note')['data'];
+
+        $editor->set('form.color', 'blue');
+        unset($editor->instance()->canvas);
+        $this->assertSame(['blue', null], [$colorOf()['color'], $colorOf()['custom']]);
+
+        $editor->set('form.color', '#1E3A8A');
+        unset($editor->instance()->canvas);
+        $this->assertSame(['fill' => '#1e3a8a', 'line' => '#9aa6ca', 'ink' => '#fafaf9'], $colorOf()['custom']);
+
+        $editor->set('form.color', '#FFF');
+        unset($editor->instance()->canvas);
+        $this->assertSame(['fill' => '#ffffff', 'line' => '#ffffff', 'ink' => '#1c1917'], $colorOf()['custom']);
+
+        $editor->set('form.color', 'red');
+        unset($editor->instance()->canvas);
+        $this->assertSame(['yellow', null], [$colorOf()['color'], $colorOf()['custom']]);
     }
 }

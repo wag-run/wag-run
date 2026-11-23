@@ -2,15 +2,22 @@
     The Alpine template for one node on the WireFlow canvas, shared by the
     editor and the run view. node.data comes from CanvasMapper; the run view
     adds status and statusLabel. Sticky notes (node.data.isNote) draw as a
-    note with no handles.
+    note with no handles. Double-clicking a node dispatches wag-open-node,
+    which the editor answers by opening that node's settings.
 --}}
 <template x-if="node.data.isNote">
-    <div class="wag-note" :class="'wag-note-' + node.data.color" data-test="sticky-note">
-        <div class="wag-note-text" x-text="node.data.text || @js(__('workflows.edit.empty_note'))" :class="{ 'is-empty': ! node.data.text }"></div>
+    <div class="wag-note" :class="node.data.custom ? 'wag-note-custom' : 'wag-note-' + node.data.color"
+        :style="{ opacity: (node.data.opacity ?? 50) / 100, ...(node.data.custom ? { backgroundColor: node.data.custom.fill, color: node.data.custom.ink, '--tw-ring-color': node.data.custom.line } : {}) }" data-test="sticky-note" x-on:dblclick.stop="$dispatch('wag-open-node', { id: node.id })">
+        <template x-if="node.data.html">
+            <div class="wag-note-text" x-html="node.data.html"></div>
+        </template>
+        <template x-if="! node.data.html">
+            <div class="wag-note-text is-empty">{{ __('workflows.edit.empty_note') }}</div>
+        </template>
     </div>
 </template>
 <template x-if="! node.data.isNote">
-<div class="wag-node" :class="{ 'is-trigger': node.data.isTrigger, 'is-unknown': node.data.unknown, ['run-' + node.data.status]: !! node.data.status }">
+<div class="wag-node" x-on:dblclick.stop="$dispatch('wag-open-node', { id: node.id })" :class="{ 'is-trigger': node.data.isTrigger, 'is-unknown': node.data.unknown, ['run-' + node.data.status]: !! node.data.status }">
     <template x-if="! node.data.isTrigger">
         <div x-flow-handle:target.left="'in'"></div>
     </template>

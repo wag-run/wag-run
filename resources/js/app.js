@@ -54,7 +54,19 @@ window.addEventListener('flux-toast', (event) => {
  * the user is typing in a field or a dialog is open.
  */
 document.addEventListener('alpine:init', () => {
-    window.Alpine.data('wagEditorShortcuts', (canEdit) => ({
+    window.Alpine.data('wagEditorShortcuts', (canEdit, deleteLabels = {}) => ({
+        /**
+         * Ask before deleting nodes, however the deletion started: the
+         * Delete key, a context menu or the settings panel.
+         */
+        confirmNodeDelete(count) {
+            return this.$confirm({
+                title: count === 1 ? deleteLabels.one : deleteLabels.many.replace(':count', count),
+                message: deleteLabels.message,
+                confirm: deleteLabels.confirm,
+            });
+        },
+
         canvas() {
             const container = this.$root.querySelector('.flow-container');
 
@@ -108,15 +120,33 @@ document.addEventListener('alpine:init', () => {
 /**
  * Whether the workflow editor shows its settings panel (the workflow's
  * settings, or the selected node's). The choice is remembered in this
- * browser.
+ * browser. Opening a node's settings (or the workflow's, from the canvas
+ * menu) while the panel is hidden shows it only until the next click on
+ * the canvas; using the panel's own button keeps the choice.
  */
 document.addEventListener('alpine:init', () => {
     window.Alpine.store('editorLayout', {
         settings: localStorage.getItem('wag.settingsPanel') !== 'hidden',
+        settingsForNode: false,
 
         toggleSettings() {
             this.settings = ! this.settings;
+            this.settingsForNode = false;
             localStorage.setItem('wag.settingsPanel', this.settings ? 'shown' : 'hidden');
+        },
+
+        showSettingsForNode() {
+            if (! this.settings) {
+                this.settings = true;
+                this.settingsForNode = true;
+            }
+        },
+
+        nodeDeselected() {
+            if (this.settingsForNode) {
+                this.settings = false;
+                this.settingsForNode = false;
+            }
         },
     });
 });

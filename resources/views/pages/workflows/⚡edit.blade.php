@@ -19,6 +19,7 @@ use App\Services\ManualRuns;
 use App\Services\Workflows;
 use App\Support\Audit;
 use ArtisanFlow\WireFlow\Concerns\WithWireFlow;
+use ArtisanFlow\WireFlow\View\Components\WireFlow;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
@@ -298,6 +299,29 @@ new class extends Component {
     }
 
     /**
+     * Canvas options. The editor handles copy, cut, paste, undo and redo
+     * itself; editors also drop nodes from the palette, and deleting nodes
+     * with the keyboard asks first.
+     *
+     * @return array<string, mixed>
+     */
+    #[Computed]
+    public function canvasConfig(): array
+    {
+        $config = ['keyboardShortcuts' => ['copy' => null, 'paste' => null, 'cut' => null, 'undo' => null, 'redo' => null]];
+
+        if (! $this->canEdit) {
+            return $config;
+        }
+
+        return [
+            ...$config,
+            'onDrop' => WireFlow::js('(event) => { if (event.data?.type) { $wire.addNode(event.data.type, event.position) } }'),
+            'onBeforeDelete' => WireFlow::js('(change) => change.nodes.length === 0 ? change : Alpine.$data(document.querySelector("[data-editor-root]")).confirmNodeDelete(change.nodes.length).then((ok) => ok ? change : false)'),
+        ];
+    }
+
+    /**
      * @return array{nodes: list<array<string, mixed>>, edges: list<array<string, mixed>>}
      */
     #[Computed]
@@ -394,6 +418,7 @@ new class extends Component {
     {
         $this->selected = null;
         $this->form = [];
+        $this->dispatch('wag-node-deselected');
     }
 
     /**
@@ -976,7 +1001,8 @@ new class extends Component {
     }
 }; ?>
 
-<div class="-m-6 flex h-screen flex-col lg:-m-8" x-data="wagEditorShortcuts(@js($this->canEdit))" x-on:keydown.window="onKeydown($event)">
+<div class="-m-6 flex h-screen flex-col lg:-m-8" x-data="wagEditorShortcuts(@js($this->canEdit), @js(['one' => __('workflows.edit.delete_node_question'), 'many' => __('workflows.edit.delete_count_nodes_question'), 'message' => __('workflows.edit.delete_nodes_message'), 'confirm' => __('workflows.edit.delete')]))" data-editor-root
+    x-on:wag-open-node="$wire.selectNode($event.detail.id); $store.editorLayout.showSettingsForNode()" x-on:wag-node-deselected.window="$store.editorLayout.nodeDeselected()" x-on:keydown.window="onKeydown($event)">
     {{-- Top bar --}}
     <div class="flex flex-wrap items-center gap-3 border-b border-zinc-200 bg-white px-4 py-2 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:button size="sm" variant="ghost" icon="arrow-left" :href="route('workspaces.workflows', $workspace)" wire:navigate :aria-label="__('workflows.edit.back_to_workflows')" />
@@ -1059,10 +1085,15 @@ new class extends Component {
         </flux:callout>
     @endif
 
-    <div class="flex min-h-0 flex-1">
+    <div class="relative flex min-h-0 flex-1">
+        {{-- The settings panel's toggle stays in the same corner whether the panel is open or closed --}}
+        <flux:button size="sm" variant="ghost" icon="panel-right" class="absolute! end-2 top-2 z-20" x-on:click="$store.editorLayout.toggleSettings()" data-test="settings-panel-toggle"
+            x-bind:aria-label="$store.editorLayout.settings ? @js(__('workflows.edit.hide_settings_panel')) : @js(__('workflows.edit.show_settings_panel'))"
+            x-bind:title="$store.editorLayout.settings ? @js(__('workflows.edit.hide_settings_panel')) : @js(__('workflows.edit.show_settings_panel'))" />
+
         {{-- Palette --}}
         @if ($this->canEdit)
-            <aside class="w-56 shrink-0 overflow-y-auto border-e border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900">
+            <aside class="w-56 shrink-0 overflow-y-auto border-e border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900" data-test="palette">
                 @foreach ($this->palette as $group => $items)
                     <flux:heading size="sm" class="mt-3 mb-1 first:mt-0 text-xs uppercase tracking-wide text-zinc-500">{{ $group }}</flux:heading>
                     @foreach ($items as $item)
@@ -1083,8 +1114,6 @@ new class extends Component {
         <div class="relative min-w-0 flex-1" x-data="{ showMinimap: localStorage.getItem('wag.minimap') !== 'hidden' }"
             x-init="$watch('showMinimap', value => localStorage.setItem('wag.minimap', value ? 'shown' : 'hidden'))"
             :class="{ 'wag-minimap-hidden': ! showMinimap }">
-            <flux:button size="sm" icon="panel-right" class="absolute! end-3 top-3 z-10" x-show="! $store.editorLayout.settings" x-cloak x-on:click="$store.editorLayout.toggleSettings()"
-                :aria-label="__('workflows.edit.show_settings_panel')" :title="__('workflows.edit.show_settings_panel')" data-test="show-settings-panel" />
             <button type="button" class="wag-minimap-toggle" x-on:click="showMinimap = ! showMinimap" data-test="minimap-toggle"
                 :title="showMinimap ? @js(__('workflows.edit.hide_minimap')) : @js(__('workflows.edit.show_minimap'))"
                 :aria-label="showMinimap ? @js(__('workflows.edit.hide_minimap')) : @js(__('workflows.edit.show_minimap'))"
@@ -1101,10 +1130,7 @@ new class extends Component {
                 :fit-view-on-init="true"
                 :edges-reconnectable="false"
                 :default-edge-type="\App\Engine\Editor\CanvasMapper::EDGE_TYPE"
-                :config="$this->canEdit ? [
-                    'keyboardShortcuts' => ['copy' => null, 'paste' => null, 'cut' => null, 'undo' => null, 'redo' => null],
-                    'onDrop' => \ArtisanFlow\WireFlow\View\Components\WireFlow::js('(event) => { if (event.data?.type) { $wire.addNode(event.data.type, event.position) } }'),
-                ] : ['keyboardShortcuts' => ['copy' => null, 'paste' => null, 'cut' => null, 'undo' => null, 'redo' => null]]"
+                :config="$this->canvasConfig"
                 background="dots"
                 container-height="fill"
                 class="h-full"
@@ -1135,10 +1161,16 @@ new class extends Component {
                             <kbd class="wag-kbd">{{ __('workflows.edit.cut_keys') }}</kbd>
                         </button>
                         <button type="button" class="wag-menu-item is-danger" data-test="node-menu-delete"
-                            @click="removeNodes(selectedNodes.has(contextMenu.node.id) ? [...selectedNodes] : [contextMenu.node.id]); closeContextMenu()">
+                            @click="const ids = selectedNodes.has(contextMenu.node.id) ? [...selectedNodes] : [contextMenu.node.id]; closeContextMenu(); confirmNodeDelete(ids.length).then((ok) => ok && removeNodes(ids))">
                             <flux:icon.trash variant="micro" />
                             <span class="flex-1">{{ __('workflows.edit.delete') }}</span>
                             <kbd class="wag-kbd">{{ __('workflows.edit.delete_keys') }}</kbd>
+                        </button>
+                        <div class="wag-menu-separator" role="separator"></div>
+                        <button type="button" class="wag-menu-item" data-test="node-menu-settings"
+                            @click="$wire.selectNode(contextMenu.node.id); $store.editorLayout.showSettingsForNode(); closeContextMenu()">
+                            <flux:icon.adjustments-horizontal variant="micro" />
+                            <span class="flex-1">{{ __('workflows.edit.node_settings') }}</span>
                         </button>
                     </x-flow-context-menu>
 
@@ -1153,7 +1185,7 @@ new class extends Component {
                             <span class="flex-1">{{ __('workflows.edit.cut') }}</span>
                             <kbd class="wag-kbd">{{ __('workflows.edit.cut_keys') }}</kbd>
                         </button>
-                        <button type="button" class="wag-menu-item is-danger" @click="removeNodes([...selectedNodes]); removeEdges([...selectedEdges]); closeContextMenu()">
+                        <button type="button" class="wag-menu-item is-danger" @click="const nodes = [...selectedNodes], edges = [...selectedEdges]; closeContextMenu(); (nodes.length ? confirmNodeDelete(nodes.length) : Promise.resolve(true)).then((ok) => { if (ok) { removeNodes(nodes); removeEdges(edges) } })">
                             <flux:icon.trash variant="micro" />
                             <span class="flex-1">{{ __('workflows.edit.delete') }}</span>
                             <kbd class="wag-kbd">{{ __('workflows.edit.delete_keys') }}</kbd>
@@ -1161,11 +1193,6 @@ new class extends Component {
                     </x-flow-context-menu>
 
                     <x-flow-context-menu scope="pane" class="wag-menu" x-on:pointerdown.stop x-on:mousedown.stop>
-                        <button type="button" class="wag-menu-item" data-test="pane-menu-add-note"
-                            @click="$wire.addNode('core.note', contextMenu.position); closeContextMenu()">
-                            <flux:icon.pencil-square variant="micro" />
-                            <span class="flex-1">{{ __('workflows.edit.add_sticky_note') }}</span>
-                        </button>
                         <button type="button" class="wag-menu-item" data-test="pane-menu-paste" :disabled="! $wire.hasClipboard"
                             @click="$wire.pasteNodes(contextMenu.position); closeContextMenu()">
                             <flux:icon.clipboard-document variant="micro" />
@@ -1181,6 +1208,17 @@ new class extends Component {
                             <flux:icon.arrow-uturn-right variant="micro" />
                             <span class="flex-1">{{ __('workflows.edit.redo') }}</span>
                             <kbd class="wag-kbd">{{ __('workflows.edit.redo_keys') }}</kbd>
+                        </button>
+                        <div class="wag-menu-separator" role="separator"></div>
+                        <button type="button" class="wag-menu-item" data-test="pane-menu-add-note"
+                            @click="$wire.addNode('core.note', contextMenu.position); closeContextMenu()">
+                            <flux:icon.pencil-square variant="micro" />
+                            <span class="flex-1">{{ __('workflows.edit.add_sticky_note') }}</span>
+                        </button>
+                        <button type="button" class="wag-menu-item" data-test="pane-menu-workflow-settings"
+                            @click="closeContextMenu(); $wire.deselect().then(() => $store.editorLayout.showSettingsForNode())">
+                            <flux:icon.adjustments-horizontal variant="micro" />
+                            <span class="flex-1">{{ __('workflows.edit.workflow_settings') }}</span>
                         </button>
                     </x-flow-context-menu>
 
@@ -1205,9 +1243,7 @@ new class extends Component {
         </div>
 
         {{-- Inspector --}}
-        <aside class="relative w-96 shrink-0 overflow-y-auto border-s border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900" data-test="inspector" x-show="$store.editorLayout.settings">
-            <flux:button size="sm" variant="ghost" icon="panel-right" class="absolute! end-2 top-2" x-on:click="$store.editorLayout.toggleSettings()"
-                :aria-label="__('workflows.edit.hide_settings_panel')" :title="__('workflows.edit.hide_settings_panel')" data-test="hide-settings-panel" />
+        <aside class="w-96 shrink-0 overflow-y-auto border-s border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900" data-test="inspector" x-show="$store.editorLayout.settings">
             @if ($this->selectedNode() && $this->definition?->kind() === NodeKind::Note)
                 @php($definition = $this->definition)
                 <div class="mb-4 flex items-start justify-between gap-2 pe-8" data-test="note-inspector">
@@ -1215,15 +1251,27 @@ new class extends Component {
                         <flux:heading>{{ $definition->label() }}</flux:heading>
                         <flux:text class="text-xs">{{ $definition->description() }}</flux:text>
                     </div>
-                    @if ($this->canEdit)
-                        <flux:button size="sm" variant="ghost" icon="trash" wire:click="deleteSelected" :aria-label="__('workflows.edit.delete_node')" />
-                    @endif
                 </div>
                 <fieldset class="space-y-4" @disabled(! $this->canEdit)>
-                    <flux:textarea wire:model.live.debounce.600ms="form.text" :label="__('nodes.note.text')" rows="8" data-test="note-text" />
-                    <flux:select wire:model.live="form.color" :label="__('nodes.note.color')">
-                        @foreach (\App\Engine\Nodes\Note::COLORS as $color)
-                            <flux:select.option :value="$color">{{ __("nodes.note.{$color}") }}</flux:select.option>
+                    <flux:textarea wire:model.live.debounce.600ms="form.text" :label="__('nodes.note.text')" :description="__('nodes.note.markdown_works')" rows="8" data-test="note-text" />
+                    {{-- A preset, or Custom with a color picker and a hex code --}}
+                    <div class="space-y-2" x-data="{ color: $wire.entangle('form.color').live, presets: @js(\App\Engine\Nodes\Note::COLORS), get preset() { return this.presets.includes(this.color) ? this.color : 'custom' } }">
+                        <flux:select :label="__('nodes.note.color')" x-bind:value="preset" data-test="note-color"
+                            x-on:change="color = $event.target.value === 'custom' ? (presets.includes(color) ? '#fde68a' : color) : $event.target.value">
+                            @foreach (\App\Engine\Nodes\Note::COLORS as $color)
+                                <flux:select.option :value="$color">{{ __("nodes.note.{$color}") }}</flux:select.option>
+                            @endforeach
+                            <flux:select.option value="custom">{{ __('nodes.note.custom') }}</flux:select.option>
+                        </flux:select>
+                        <div class="flex items-center gap-2" x-show="preset === 'custom'" x-cloak>
+                            <input type="color" class="h-10 w-12 shrink-0 cursor-pointer rounded-lg border border-zinc-200 bg-transparent p-1 dark:border-white/10"
+                                x-bind:value="/^#[0-9a-f]{6}$/i.test(color) ? color : '#fde68a'" x-on:change="color = $event.target.value" aria-label="{{ __('nodes.note.color') }}" />
+                            <flux:input class="font-mono" x-bind:value="color" x-on:change="color = $event.target.value.trim()" :aria-label="__('nodes.note.hex_code')" placeholder="#fde68a" data-test="note-hex" />
+                        </div>
+                    </div>
+                    <flux:select wire:model.live="form.opacity" :label="__('nodes.note.opacity')" data-test="note-opacity">
+                        @foreach (\App\Engine\Nodes\Note::OPACITIES as $percent)
+                            <flux:select.option :value="$percent">{{ $percent }}%</flux:select.option>
                         @endforeach
                     </flux:select>
                 </fieldset>
@@ -1234,9 +1282,6 @@ new class extends Component {
                         <flux:heading>{{ $definition->label() }}</flux:heading>
                         <flux:text class="text-xs">{{ $definition->description() }}</flux:text>
                     </div>
-                    @if ($this->canEdit)
-                        <flux:button size="sm" variant="ghost" icon="trash" wire:click="deleteSelected" :aria-label="__('workflows.edit.delete_node')" />
-                    @endif
                 </div>
 
                 <fieldset class="space-y-4" @disabled(! $this->canEdit)>
@@ -1277,7 +1322,7 @@ new class extends Component {
             @elseif ($this->selectedNode())
                 <flux:callout variant="danger" icon="exclamation-triangle" class="mt-8">{{ __('workflows.edit.this_node_s_type_is') }}</flux:callout>
                 @if ($this->canEdit)
-                    <flux:button class="mt-3" size="sm" icon="trash" wire:click="deleteSelected">{{ __('workflows.edit.delete_node') }}</flux:button>
+                    <flux:button class="mt-3" size="sm" icon="trash" x-on:click="confirmNodeDelete(1).then((ok) => ok && $wire.deleteSelected())">{{ __('workflows.edit.delete_node') }}</flux:button>
                 @endif
             @else
                 <flux:heading class="pe-8">{{ __('workflows.edit.workflow_settings') }}</flux:heading>

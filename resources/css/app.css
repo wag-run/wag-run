@@ -122,12 +122,84 @@ select:focus[data-flux-control] {
     box-shadow: none;
 }
 
+/* The outline is a step lighter than the fill, so it reads as a lit edge
+   at any opacity. */
 .wag-note {
-    @apply w-[240px] rounded-md px-3 py-2.5 text-start text-sm opacity-85 shadow-sm ring-1;
+    @apply w-[240px] rounded-md px-3 py-2.5 text-start text-sm shadow-sm ring-2;
 }
 
 .wag-note-text {
-    @apply max-h-80 overflow-hidden break-words whitespace-pre-wrap;
+    @apply max-h-80 overflow-hidden break-words;
+}
+
+/* Markdown in sticky notes, compact enough for a 240px note */
+.wag-note-text > * + * {
+    @apply mt-1.5;
+}
+
+.wag-note-text h1 {
+    @apply text-base font-semibold;
+}
+
+.wag-note-text h2,
+.wag-note-text h3,
+.wag-note-text h4,
+.wag-note-text h5,
+.wag-note-text h6 {
+    @apply font-semibold;
+}
+
+.wag-note-text strong {
+    @apply font-semibold;
+}
+
+.wag-note-text a {
+    @apply underline underline-offset-2;
+}
+
+.wag-note-text ul {
+    @apply list-disc ps-4;
+}
+
+.wag-note-text ol {
+    @apply list-decimal ps-4;
+}
+
+.wag-note-text li:has(> input[type='checkbox']) {
+    @apply -ms-4 list-none;
+}
+
+.wag-note-text input[type='checkbox'] {
+    @apply me-1 align-middle;
+}
+
+.wag-note-text code {
+    @apply rounded bg-black/10 px-1 font-mono text-[0.85em];
+}
+
+.wag-note-text pre {
+    @apply overflow-hidden rounded bg-black/10 p-1.5;
+}
+
+.wag-note-text pre code {
+    @apply bg-transparent p-0;
+}
+
+.wag-note-text blockquote {
+    @apply border-s-2 border-current/30 ps-2 opacity-80;
+}
+
+.wag-note-text hr {
+    @apply border-current/20;
+}
+
+.wag-note-text table {
+    @apply w-full text-xs;
+}
+
+.wag-note-text th,
+.wag-note-text td {
+    @apply border border-current/20 px-1;
 }
 
 .wag-note-text.is-empty {
@@ -135,28 +207,30 @@ select:focus[data-flux-control] {
 }
 
 .wag-note-yellow {
-    @apply bg-amber-100 text-amber-950 ring-amber-300 dark:bg-amber-200 dark:ring-amber-400;
+    @apply bg-amber-200 text-amber-950 ring-amber-50;
 }
 
 .wag-note-blue {
-    @apply bg-sky-100 text-sky-950 ring-sky-300 dark:bg-sky-200 dark:ring-sky-400;
+    @apply bg-sky-200 text-sky-950 ring-sky-50;
 }
 
 .wag-note-green {
-    @apply bg-emerald-100 text-emerald-950 ring-emerald-300 dark:bg-emerald-200 dark:ring-emerald-400;
+    @apply bg-emerald-200 text-emerald-950 ring-emerald-50;
 }
 
 .wag-note-pink {
-    @apply bg-pink-100 text-pink-950 ring-pink-300 dark:bg-pink-200 dark:ring-pink-400;
+    @apply bg-pink-200 text-pink-950 ring-pink-50;
 }
 
 .wag-note-gray {
-    @apply bg-zinc-100 text-zinc-900 ring-zinc-300 dark:bg-zinc-300 dark:ring-zinc-400;
+    @apply bg-zinc-300 text-zinc-900 ring-zinc-100;
 }
 
-.flow-container .flow-node.selected:has(.wag-note) .wag-note,
-.flow-container .flow-node:has(.wag-note):focus-visible .wag-note {
-    @apply ring-2 ring-accent;
+/* A selected note gets an accent outline just outside its own, drawn on the
+   canvas wrapper so the note's opacity does not fade it. */
+.flow-container .flow-node.flow-node-selected:has(.wag-note),
+.flow-container .flow-node:has(.wag-note):focus-visible {
+    @apply rounded-md outline-2 outline-offset-4 outline-accent;
 }
 
 .wag-node-header {
@@ -207,6 +281,10 @@ select:focus[data-flux-control] {
 
 .wag-kbd {
     @apply ms-4 font-sans text-xs text-zinc-400;
+}
+
+.wag-menu-separator {
+    @apply my-1 h-px bg-zinc-200 dark:bg-zinc-700;
 }
 
 .wag-menu-item.is-danger {
