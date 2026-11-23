@@ -246,20 +246,24 @@ new class extends Component {
             <flux:table.column>{{ __('common.key') }}</flux:table.column>
             <flux:table.column>{{ __('common.type') }}</flux:table.column>
             <flux:table.column>{{ __('common.settings') }}</flux:table.column>
-            <flux:table.column>{{ __('common.description') }}</flux:table.column>
-            <flux:table.column></flux:table.column>
+            <flux:table.column sticky class="bg-white dark:bg-zinc-800"></flux:table.column>
         </flux:table.columns>
         <flux:table.rows>
             @forelse ($this->credentials as $credential)
                 @php($credentialType = $credential->credentialType())
                 <flux:table.row :key="$credential->id">
-                    <flux:table.cell class="font-mono">{{ $credential->key }}</flux:table.cell>
+                    <flux:table.cell class="min-w-32 whitespace-normal">
+                        <span class="font-mono wrap-anywhere">{{ $credential->key }}</span>
+                        @if (filled($credential->description))
+                            <flux:text class="mt-0.5 text-xs">{{ $credential->description }}</flux:text>
+                        @endif
+                    </flux:table.cell>
                     <flux:table.cell><flux:badge size="sm">{{ $credentialType->label() }}</flux:badge></flux:table.cell>
-                    <flux:table.cell>
-                        <dl class="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1 text-sm">
+                    <flux:table.cell class="min-w-64 whitespace-normal">
+                        <dl class="grid max-w-md grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1 text-sm">
                             @foreach ($credentialType->fields() as $field)
-                                <dt class="text-zinc-500">{{ $field->label }}</dt>
-                                <dd>
+                                <dt class="whitespace-nowrap text-zinc-500">{{ $field->label }}</dt>
+                                <dd class="min-w-0 wrap-anywhere">
                                     @if ($field->secret)
                                         @if ($this->canManage)
                                             <x-revealable-value :reveal="'reveal('.$credential->id.', \''.$field->name.'\')'" :can-reveal="true" />
@@ -274,8 +278,8 @@ new class extends Component {
                                 </dd>
                             @endforeach
                             @if ($credentialType instanceof OAuthCredentialType)
-                                <dt class="text-zinc-500">{{ __('oauth.account') }}</dt>
-                                <dd>
+                                <dt class="whitespace-nowrap text-zinc-500">{{ __('oauth.account') }}</dt>
+                                <dd class="min-w-0 wrap-anywhere">
                                     @if (OAuthCredentialType::isConnected($credential))
                                         <span data-test="oauth-account">{{ $credential->config['account'] ?? __('oauth.connected_short') }}</span>
                                     @else
@@ -285,12 +289,13 @@ new class extends Component {
                             @endif
                         </dl>
                     </flux:table.cell>
-                    <flux:table.cell>{{ $credential->description }}</flux:table.cell>
-                    <flux:table.cell align="end">
+                    <flux:table.cell align="end" sticky class="whitespace-nowrap bg-white dark:bg-zinc-800">
                         @if ($this->canManage)
                             @if ($credentialType instanceof OAuthCredentialType)
-                                <flux:button size="sm" variant="ghost" icon="arrow-path" :href="route('workspaces.credentials.connect', [$workspace, $credential])"
-                                    data-test="oauth-connect">{{ OAuthCredentialType::isConnected($credential) ? __('oauth.reconnect') : __('oauth.connect') }}</flux:button>
+                                <flux:tooltip :content="OAuthCredentialType::isConnected($credential) ? __('oauth.reconnect') : __('oauth.connect')">
+                                    <flux:button size="sm" variant="ghost" icon="arrow-path" :href="route('workspaces.credentials.connect', [$workspace, $credential])"
+                                        :aria-label="OAuthCredentialType::isConnected($credential) ? __('oauth.reconnect') : __('oauth.connect')" data-test="oauth-connect" />
+                                </flux:tooltip>
                             @endif
                             <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit({{ $credential->id }})" :aria-label="__('common.edit')" />
                             <flux:button size="sm" variant="ghost" icon="trash" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('workspaces.credentials.delete_authentication_setting'), 'message' => __('workspaces.credentials.delete_this_authentication_setting_workflows'), 'confirm' => __('common.delete')]) }}).then((ok) => ok && $wire.delete({{ $credential->id }}))" :aria-label="__('common.delete')" />
@@ -299,7 +304,7 @@ new class extends Component {
                 </flux:table.row>
             @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="5" class="text-center text-zinc-500">{{ __('workspaces.credentials.no_authentication_settings_yet') }}</flux:table.cell>
+                    <flux:table.cell colspan="4" class="text-center text-zinc-500">{{ __('workspaces.credentials.no_authentication_settings_yet') }}</flux:table.cell>
                 </flux:table.row>
             @endforelse
         </flux:table.rows>

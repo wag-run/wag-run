@@ -4,7 +4,7 @@
      the given Livewire method; the value is fetched on demand and never kept in
      component state. --}}
 <div x-data="{ value: null, shown: false, loading: false }" class="flex items-center gap-1">
-    <span class="font-mono text-sm" x-show="! shown">••••••••••••</span>
+    <span class="font-mono text-sm whitespace-nowrap" x-show="! shown">••••••••••••</span>
     <span class="font-mono text-sm break-all" x-show="shown" x-text="value" x-cloak></span>
 
     @if ($canReveal)
