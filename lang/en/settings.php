@@ -1,6 +1,34 @@
 <?php
 
 return [
+    'api_tokens' => [
+        'access' => 'Access',
+        'add_this_url_to_an' => 'Add this URL to an AI assistant such as Claude as a custom connector. It asks you to sign in and approve it.',
+        'anything_using_this_token' => 'Anything using this token stops working right away.',
+        'api_url' => 'API URL',
+        'app_disconnected' => 'App disconnected.',
+        'connected_ago' => 'Connected :ago',
+        'connected_apps' => 'Connected apps',
+        'copy_it_now' => 'Copy it now. You won\'t be able to see it again. Send it as a bearer token: Authorization: Bearer <token>.',
+        'create_token' => 'Create token',
+        'created_ago' => 'created :ago',
+        'disconnect' => 'Disconnect',
+        'disconnect_app' => 'Disconnect app?',
+        'expires_on' => 'expires :date',
+        'heading' => 'API and MCP',
+        'mcp_server_url' => 'MCP server URL',
+        'name_placeholder' => 'Deploy script',
+        'no_connected_apps' => 'No apps connected yet.',
+        'no_tokens_yet' => 'No tokens yet.',
+        'revoke_token' => 'Revoke token?',
+        'subheading' => 'Start and inspect runs from scripts, other apps and AI assistants',
+        'the_app_loses_access' => 'The app loses access right away. It can connect again only if you approve it again.',
+        'title' => 'API tokens',
+        'token_created' => 'Token created',
+        'token_revoked' => 'Token revoked.',
+        'tokens_act_as_you' => 'A token acts as you, with your role in each workspace. It expires after a year.',
+        'your_tokens' => 'Your tokens',
+    ],
     'appearance' => [
         'appearance_settings' => 'Appearance settings',
         'dark' => 'Dark',
@@ -17,6 +45,7 @@ return [
         'you_are_the_last_organization' => 'You are the last organization admin. Promote another admin before deleting your account.',
     ],
     'layout' => [
+        'api_tokens' => 'API tokens',
         'security' => 'Security',
     ],
     'profile' => [

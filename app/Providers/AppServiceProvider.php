@@ -12,6 +12,7 @@ use App\Credentials\Types\Smtp;
 use App\Enums\WorkspacePermission;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\WorkflowApi;
 use App\Services\WorkflowFiles;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\DevCommands;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -53,6 +55,19 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         $this->configureAuthorization();
         $this->configureDevCommands();
+        $this->configurePassport();
+    }
+
+    /**
+     * Personal access tokens for the REST API, with one scope per kind of
+     * access, and the consent screen MCP clients such as Claude show when
+     * they connect through OAuth.
+     */
+    protected function configurePassport(): void
+    {
+        Passport::tokensCan(WorkflowApi::scopes());
+        Passport::authorizationView(fn (array $parameters) => response()->view('mcp.authorize', $parameters));
+        Passport::personalAccessTokensExpireIn(now()->addYear());
     }
 
     /**

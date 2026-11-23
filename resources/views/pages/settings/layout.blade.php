@@ -4,6 +4,7 @@
             <flux:navlist.item :href="route('profile.edit')" wire:navigate>{{ __('common.profile') }}</flux:navlist.item>
             <flux:navlist.item :href="route('security.edit')" wire:navigate>{{ __('settings.layout.security') }}</flux:navlist.item>
             <flux:navlist.item :href="route('appearance.edit')" wire:navigate>{{ __('common.appearance') }}</flux:navlist.item>
+            <flux:navlist.item :href="route('api-tokens.edit')" wire:navigate>{{ __('settings.layout.api_tokens') }}</flux:navlist.item>
         </flux:navlist>
     </div>
 

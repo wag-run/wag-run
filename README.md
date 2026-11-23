@@ -15,6 +15,7 @@ Built with Laravel 13, Livewire 4, Flux and [WireFlow](https://github.com/getart
 - **Runs**: a live view of each run on the canvas with every step's input, output and error. Retention is configurable per organization, workspace and workflow.
 - **Workspaces and roles**: Admin, Editor, Viewer and Guest roles per workspace, plus organization admins. Variables, encrypted secrets and reusable authentication settings (HTTP basic, API token, AI provider, SMTP) belong to a workspace.
 - **Sign-in**: email and password, passkeys, two-factor authentication, and OpenID Connect providers.
+- **API and MCP server**: start and inspect runs from scripts with personal access tokens, or connect an AI assistant such as Claude to the MCP server through OAuth.
 - **Audit log** of changes to workflows, secrets, members and settings.
 
 ## Concepts

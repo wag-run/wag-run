@@ -99,7 +99,7 @@ Two Docker volumes hold everything:
 | Volume | What's in it |
 |---|---|
 | `wag_database` | The PostgreSQL database: workflows, runs, users and settings |
-| `wag_storage` | The app's own files, including the generated `APP_KEY` |
+| `wag_storage` | The app's own files, including the generated `APP_KEY` and the keys that sign API tokens (`oauth-private.key` and `oauth-public.key`) |
 
 Back up both. To dump the database:
 
@@ -107,7 +107,7 @@ Back up both. To dump the database:
 docker compose exec db pg_dump -U wag wag > backup.sql
 ```
 
-If you set `APP_KEY` yourself, keep a copy of it with your backups.
+If you set `APP_KEY` yourself, keep a copy of it with your backups. If the API token keys are lost, new ones are generated on the next start, and everyone's API tokens and connected AI assistants stop working until they're created or connected again.
 
 ## Upgrading
 

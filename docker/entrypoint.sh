@@ -38,6 +38,13 @@ if [ -z "${APP_KEY:-}" ]; then
     export APP_KEY
 fi
 
+# The keys that sign API and MCP access tokens, kept in the storage volume.
+# Changing them signs everyone's tokens out.
+if [ -z "${PASSPORT_PRIVATE_KEY:-}" ] && [ ! -s storage/oauth-private.key ]; then
+    php artisan passport:keys --no-interaction
+    echo "Generated the API token signing keys and saved them in the storage volume. Back them up." >&2
+fi
+
 if [ "${DB_CONNECTION:-}" = "sqlite" ] && [ ! -e "$DB_DATABASE" ]; then
     mkdir -p "$(dirname "$DB_DATABASE")"
     touch "$DB_DATABASE"

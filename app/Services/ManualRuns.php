@@ -60,11 +60,15 @@ class ManualRuns
     }
 
     /**
+     * Start a run of the published version. $triggerType records where the
+     * request came from ("manual" in the app, "api" over the API or MCP), and
+     * $startedBy the run that asked for it, if one of this install's runs did.
+     *
      * @param  array<string, mixed>  $values
      *
      * @throws ValidationException when the values do not match the trigger's inputs
      */
-    public function start(Workflow $workflow, User $user, array $values = []): Execution
+    public function start(Workflow $workflow, User $user, array $values = [], string $triggerType = 'manual', ?Execution $startedBy = null): Execution
     {
         if (! $workflow->publishedVersion) {
             throw ValidationException::withMessages(['run' => __('workflows.publish_the_workflow_before_running')]);
@@ -73,7 +77,7 @@ class ManualRuns
         $trigger = $this->manualTrigger($workflow);
         $input = $trigger ? $this->validatedInput($workflow, $trigger, $values) : [];
 
-        return $this->engine->start($workflow, $input, $user, 'manual', $trigger?->id);
+        return $this->engine->start($workflow, $input, $user, $triggerType, $trigger?->id, startedBy: $startedBy);
     }
 
     /**

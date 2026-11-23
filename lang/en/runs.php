@@ -45,6 +45,7 @@ return [
         'schedule' => 'Schedule',
         'form' => 'Form',
         'workflow' => 'Another workflow',
+        'api' => 'API',
     ],
     'test' => 'Test',
     'test_run' => 'Test run',

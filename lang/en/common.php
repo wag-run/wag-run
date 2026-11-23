@@ -22,6 +22,7 @@ return [
     'continue' => 'Continue',
     'dashboard' => 'Dashboard',
     'delete' => 'Delete',
+    'done' => 'Done',
     'delete_account' => 'Delete account',
     'description' => 'Description',
     'details' => 'Details',

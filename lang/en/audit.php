@@ -2,6 +2,13 @@
 
 return [
     'actions' => [
+        'api_app' => [
+            'disconnected' => 'App disconnected from the API',
+        ],
+        'api_token' => [
+            'created' => 'API token created',
+            'revoked' => 'API token revoked',
+        ],
         'auth' => [
             'oidc_linked' => 'Sign-in provider linked',
             'oidc_registered' => 'Account created by sign-in provider',
