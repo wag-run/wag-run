@@ -16,6 +16,8 @@ new class extends Component {
 
     public int|string $maxChainDepth = 10;
 
+    public int|string $maxRunsPerMinute = 60;
+
     public function mount(): void
     {
         $organization = Organization::current();
@@ -25,6 +27,7 @@ new class extends Component {
         $this->keepForever = $organization->default_retention_days === null;
         $this->defaultRetentionDays = $organization->default_retention_days ?? 30;
         $this->maxChainDepth = $organization->max_chain_depth;
+        $this->maxRunsPerMinute = $organization->max_runs_per_minute;
     }
 
     public function save(): void
@@ -35,6 +38,7 @@ new class extends Component {
             'name' => ['required', 'string', 'max:100'],
             'defaultRetentionDays' => [$this->keepForever ? 'nullable' : 'required', 'integer', 'min:1', 'max:3650'],
             'maxChainDepth' => ['required', 'integer', 'min:1', 'max:100'],
+            'maxRunsPerMinute' => ['required', 'integer', 'min:1', 'max:10000'],
         ]);
 
         $organization = Organization::current();
@@ -43,6 +47,7 @@ new class extends Component {
             'registration_open' => $this->registrationOpen,
             'default_retention_days' => $this->keepForever ? null : $this->defaultRetentionDays,
             'max_chain_depth' => (int) $this->maxChainDepth,
+            'max_runs_per_minute' => (int) $this->maxRunsPerMinute,
         ]);
 
         if ($organization->isDirty()) {
@@ -88,6 +93,8 @@ new class extends Component {
             <flux:heading>{{ __('admin.settings.workflow_chains') }}</flux:heading>
             <flux:input wire:model="maxChainDepth" type="number" min="1" max="100" :label="__('admin.settings.maximum_chain_depth')"
                 :description="__('admin.settings.how_many_runs_deep_a')" class="max-w-48" data-test="max-chain-depth" />
+            <flux:input wire:model="maxRunsPerMinute" type="number" min="1" max="10000" :label="__('admin.settings.maximum_runs_per_minute')"
+                :description="__('admin.settings.how_many_runs_one_workflow')" class="max-w-48" data-test="max-runs-per-minute" />
         </div>
 
         <flux:button type="submit" variant="primary">{{ __('common.save_settings') }}</flux:button>

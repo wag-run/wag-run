@@ -390,6 +390,11 @@ class WorkflowEditorTest extends TestCase
             ->set('concurrency', 'skip')
             ->set('customRetention', true)
             ->set('retentionDays', 7)
+            ->set('customRunLimit', true)
+            ->set('maxRunsPerMinute', '0')
+            ->call('saveSettings')
+            ->assertHasErrors(['maxRunsPerMinute' => 'min'])
+            ->set('maxRunsPerMinute', '200')
             ->call('saveSettings')
             ->assertHasNoErrors();
 
@@ -397,6 +402,7 @@ class WorkflowEditorTest extends TestCase
         $this->assertSame('Renamed', $workflow->name);
         $this->assertSame('skip', $workflow->concurrency->value);
         $this->assertSame(7, $workflow->retention_days);
+        $this->assertSame(200, $workflow->max_runs_per_minute);
     }
 
     public function test_the_palette_leaves_out_sticky_notes_which_come_from_the_context_menu(): void

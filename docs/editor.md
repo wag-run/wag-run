@@ -89,6 +89,7 @@ Click an empty part of the canvas, or right-click it and choose **Workflow setti
   - **One at a time, skip new runs**: the new run is recorded as **Skipped** and doesn't start.
   - **One at a time, new run cancels the previous**: the running one is cancelled and the new one starts.
 - **Override log retention**: keep this workflow's run logs for a different number of days than the workspace default.
+- **Override run limit**: let this workflow start a different number of runs a minute than the organization default (60). See [Runs per minute](runs.md#runs-per-minute).
 - **Trigger URLs**: the addresses of the workflow's webhook and form triggers. They appear once the workflow is published.
 
 Click **Save settings** to apply them. Workflow settings take effect immediately and aren't part of the draft.

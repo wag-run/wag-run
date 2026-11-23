@@ -64,7 +64,7 @@ A waiting run shows what it's waiting for: **Resumes** with a time for a **Wait*
 | **Waiting** | Paused on a Wait, an approval, a task, or another workflow it started |
 | **Complete** | Finished |
 | **Failed** | A step failed and nothing handled the error, or a **Terminate** node ended it as failed |
-| **Cancelled** | Someone cancelled it, a newer run replaced it, a **Terminate** node ended it as cancelled, or it was too many levels deep in a chain of workflows starting workflows |
+| **Cancelled** | Someone cancelled it, a newer run replaced it, a **Terminate** node ended it as cancelled, it was too many levels deep in a chain of workflows starting workflows, or its workflow had already started too many [runs that minute](#runs-per-minute) |
 | **Skipped** | Never started, because the workflow runs one at a time and another run was going |
 
 When a run fails, the owner of the workflow gets an item in their [Inbox](people.md#the-inbox).
@@ -104,6 +104,12 @@ By default, a workflow can have any number of runs going at once. To change that
 - **One at a time, new run cancels the previous**: a new run cancels the one that's going. Good when only the latest data matters.
 
 A run counts as going while it is **Running** or **Waiting**.
+
+## Runs per minute
+
+Each workflow can start up to 60 runs a minute. Runs past the limit are recorded as **Cancelled** with the reason, and don't do anything. This keeps a loop from running away, such as a workflow that creates a GitHub tag and is itself triggered by new tags.
+
+An organization admin sets the default under **Organization → Sign-in & defaults → Maximum runs per minute**. To give one workflow a different limit, turn on **Override run limit** in its [workflow settings](editor.md#workflow-settings). Test runs don't count toward the limit.
 
 ## How long runs are kept
 

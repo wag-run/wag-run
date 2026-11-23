@@ -68,6 +68,10 @@ new class extends Component {
 
     public ?int $retentionDays = null;
 
+    public bool $customRunLimit = false;
+
+    public int|string|null $maxRunsPerMinute = null;
+
     /**
      * @var list<string>
      */
@@ -124,6 +128,8 @@ new class extends Component {
         $this->concurrency = $this->workflow->concurrency->value;
         $this->customRetention = $this->workflow->retention_days !== null;
         $this->retentionDays = $this->workflow->retention_days ?? $this->workspace->effectiveRetentionDays();
+        $this->customRunLimit = $this->workflow->max_runs_per_minute !== null;
+        $this->maxRunsPerMinute = $this->workflow->max_runs_per_minute ?? \App\Models\Organization::current()?->max_runs_per_minute ?? \App\Engine\Engine::DEFAULT_MAX_RUNS_PER_MINUTE;
     }
 
     #[Computed]
@@ -768,6 +774,7 @@ new class extends Component {
             'description' => ['nullable', 'string', 'max:2000'],
             'concurrency' => ['required', \Illuminate\Validation\Rule::enum(ConcurrencyPolicy::class)],
             'retentionDays' => [$this->customRetention ? 'required' : 'nullable', 'integer', 'min:1', 'max:3650'],
+            'maxRunsPerMinute' => [$this->customRunLimit ? 'required' : 'nullable', 'integer', 'min:1', 'max:10000'],
         ]);
 
         $this->workflow->fill([
@@ -775,6 +782,7 @@ new class extends Component {
             'description' => $this->description ?: null,
             'concurrency' => $this->concurrency,
             'retention_days' => $this->customRetention ? $this->retentionDays : null,
+            'max_runs_per_minute' => $this->customRunLimit ? (int) $this->maxRunsPerMinute : null,
         ]);
 
         if ($this->workflow->isDirty()) {
@@ -1400,6 +1408,11 @@ new class extends Component {
                         <flux:switch wire:model.live="customRetention" :label="__('workflows.edit.override_log_retention')" />
                         @if ($customRetention)
                             <flux:input type="number" min="1" wire:model="retentionDays" :label="__('workflows.edit.keep_execution_logs_for_days')" />
+                        @endif
+                        <flux:switch wire:model.live="customRunLimit" :label="__('workflows.edit.override_run_limit')" />
+                        @if ($customRunLimit)
+                            <flux:input type="number" min="1" max="10000" wire:model="maxRunsPerMinute" :label="__('workflows.edit.maximum_runs_per_minute')"
+                                :description="__('workflows.edit.runs_past_it_are_cancelled')" data-test="max-runs-per-minute" />
                         @endif
                         @if ($this->canEdit)
                             <flux:button type="submit" size="sm" variant="primary">{{ __('common.save_settings') }}</flux:button>

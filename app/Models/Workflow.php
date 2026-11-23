@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $description
  * @property ConcurrencyPolicy $concurrency
  * @property int|null $retention_days
+ * @property int|null $max_runs_per_minute overrides the organization's default when set
  * @property array<string, mixed> $draft_graph
  * @property Carbon|null $draft_updated_at
  * @property int|null $published_version_id
@@ -31,7 +32,7 @@ use Illuminate\Support\Carbon;
  * @property-read User|null $owner
  * @property-read WorkflowVersion|null $publishedVersion
  */
-#[Fillable(['name', 'description', 'concurrency', 'retention_days', 'draft_graph', 'owner_id'])]
+#[Fillable(['name', 'description', 'concurrency', 'retention_days', 'max_runs_per_minute', 'draft_graph', 'owner_id'])]
 class Workflow extends Model
 {
     /** @use HasFactory<WorkflowFactory> */
@@ -42,6 +43,7 @@ class Workflow extends Model
         return [
             'concurrency' => ConcurrencyPolicy::class,
             'retention_days' => 'integer',
+            'max_runs_per_minute' => 'integer',
             'draft_graph' => 'array',
             'draft_updated_at' => 'datetime',
         ];

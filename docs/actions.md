@@ -93,7 +93,7 @@ Outputs:
 - **Wait for it to finish**: `output`, the output of the last node on each path of the other workflow, keyed by node id. If the other run fails or is cancelled, this step fails.
 - **Start it and move on**: `execution_id` and `status` of the run it started.
 
-The other run shows **Another workflow** as its trigger and links back to this run. Chains of workflows starting workflows stop at the organization's **Maximum chain depth** (10 by default), so workflows that start each other can't loop forever.
+The other run shows **Another workflow** as its trigger and links back to this run. Chains of workflows starting workflows stop at the organization's **Maximum chain depth** (10 by default), so workflows that start each other can't loop forever. The same goes for an **HTTP call** to one of this install's own webhook URLs: the run it starts counts as one level deeper in the chain.
 
 ### Terminate
 

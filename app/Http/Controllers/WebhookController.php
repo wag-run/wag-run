@@ -7,6 +7,7 @@ use App\Models\WorkflowTrigger;
 use App\Models\Workspace;
 use App\Services\WorkflowFiles;
 use App\Support\AddressAllowlist;
+use App\Support\RunChain;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -47,7 +48,11 @@ class WebhookController extends Controller
             return response()->json(['message' => $e->getMessage()], 413);
         }
 
-        $execution = $engine->start($trigger->workflow, $payload, triggerType: 'webhook', triggerNodeId: $trigger->node_id);
+        $execution = $engine->start($trigger->workflow, $payload, triggerType: 'webhook', triggerNodeId: $trigger->node_id, startedBy: RunChain::from($request));
+
+        if (($execution->error['code'] ?? null) === Engine::RUN_LIMIT_REACHED) {
+            return response()->json(['execution_id' => $execution->id, 'status' => $execution->status->value, 'message' => $execution->error['message']], 429, ['Retry-After' => '60']);
+        }
 
         return response()->json(['execution_id' => $execution->id, 'status' => $execution->status->value], 202);
     }
@@ -90,9 +95,6 @@ class WebhookController extends Controller
     }
 
     /**
-     * @return array<string, mixed>
-     */
-    /**
      * What the trigger receives. Uploaded files arrive as files; so does a
      * body that is not text, such as an image posted as is.
      *
@@ -118,7 +120,7 @@ class WebhookController extends Controller
         return array_filter([
             'method' => $request->method(),
             'headers' => collect($request->headers->all())
-                ->except(['cookie', 'authorization', 'x-webhook-token', 'x-signature'])
+                ->except(['cookie', 'authorization', 'x-webhook-token', 'x-signature', strtolower(RunChain::HEADER)])
                 ->map(fn (array $values) => implode(', ', $values))
                 ->all(),
             'query' => $request->query(),

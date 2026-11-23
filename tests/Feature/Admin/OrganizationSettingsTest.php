@@ -59,4 +59,21 @@ class OrganizationSettingsTest extends TestCase
 
         $this->assertSame(4, Organization::current()->max_chain_depth);
     }
+
+    public function test_org_admin_sets_the_default_run_limit(): void
+    {
+        $admin = User::factory()->orgAdmin()->create();
+
+        Livewire::actingAs($admin)
+            ->test('pages::admin.settings')
+            ->assertSet('maxRunsPerMinute', 60)
+            ->set('maxRunsPerMinute', '0')
+            ->call('save')
+            ->assertHasErrors(['maxRunsPerMinute' => 'min'])
+            ->set('maxRunsPerMinute', '120')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame(120, Organization::current()->max_runs_per_minute);
+    }
 }

@@ -17,6 +17,7 @@ use App\Models\Workflow;
 use App\Models\WorkflowVersion;
 use App\Services\WorkflowFiles;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -26,6 +27,14 @@ use RuntimeException;
 class Engine
 {
     public const DEFAULT_MAX_CHAIN_DEPTH = 10;
+
+    public const DEFAULT_MAX_RUNS_PER_MINUTE = 60;
+
+    /**
+     * The error code on a run cancelled because its workflow started too
+     * many runs in the last minute.
+     */
+    public const RUN_LIMIT_REACHED = 'run_limit_reached';
 
     public function __construct(
         protected Coordinator $coordinator,
@@ -46,6 +55,11 @@ class Engine
      * ($startedBy), is one level deeper in the chain. Past the organization's
      * maximum chain depth the run is created already cancelled, which stops
      * loops such as A starting B starting A.
+     *
+     * A workflow may also start only so many runs a minute (its own limit, or
+     * the organization's). Runs past it are created already cancelled too,
+     * which slows down loops the chain cannot see, such as a workflow whose
+     * action fires its own trigger in another app. Test runs do not count.
      *
      * @param  array<string, mixed>  $input
      */
@@ -92,17 +106,21 @@ class Engine
                 'started_at' => now(),
             ];
 
-            $maxDepth = Organization::current()->max_chain_depth ?? self::DEFAULT_MAX_CHAIN_DEPTH;
+            $organization = Organization::current();
+            $maxDepth = $organization->max_chain_depth ?? self::DEFAULT_MAX_CHAIN_DEPTH;
 
             if ($chainDepth > $maxDepth) {
-                $stopped = Execution::create([...$attributes, 'status' => ExecutionStatus::Cancelled, 'finished_at' => now(), 'error' => [
-                    'message' => __('engine.chain_depth_limit_reached', ['max' => $maxDepth]),
-                ]]);
+                return $this->stop($attributes, ['message' => __('engine.chain_depth_limit_reached', ['max' => $maxDepth])]);
+            }
 
-                DB::afterCommit(fn () => event(new ExecutionFinished($stopped)));
-                $this->coordinator->notifyParent($stopped);
+            $maxRuns = $workflow->max_runs_per_minute ?? $organization->max_runs_per_minute ?? self::DEFAULT_MAX_RUNS_PER_MINUTE;
+            $limiterKey = 'workflow-runs:'.$workflow->id;
 
-                return $stopped;
+            if (! $isTest && RateLimiter::tooManyAttempts($limiterKey, $maxRuns)) {
+                return $this->stop($attributes, [
+                    'message' => __('engine.run_limit_reached', ['max' => $maxRuns]),
+                    'code' => self::RUN_LIMIT_REACHED,
+                ]);
             }
 
             if (! $isTest && $inProgress->isNotEmpty() && $workflow->concurrency === ConcurrencyPolicy::SkipIfRunning) {
@@ -120,6 +138,10 @@ class Engine
                 }
             }
 
+            if (! $isTest) {
+                RateLimiter::hit($limiterKey, 60);
+            }
+
             $execution = Execution::create([...$attributes, 'status' => ExecutionStatus::Running]);
             $this->files->claim($execution, $input);
             $this->coordinator->startAt($execution, $triggerNodeId);
@@ -130,6 +152,23 @@ class Engine
         $this->files->claim($execution, $input);
 
         return $execution;
+    }
+
+    /**
+     * Record a run that is stopped before it starts, and tell the run
+     * waiting on it, if any.
+     *
+     * @param  array<string, mixed>  $attributes
+     * @param  array{message: string, code?: string}  $error
+     */
+    protected function stop(array $attributes, array $error): Execution
+    {
+        $stopped = Execution::create([...$attributes, 'status' => ExecutionStatus::Cancelled, 'finished_at' => now(), 'error' => $error]);
+
+        DB::afterCommit(fn () => event(new ExecutionFinished($stopped)));
+        $this->coordinator->notifyParent($stopped);
+
+        return $stopped;
     }
 
     /**

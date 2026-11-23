@@ -28,6 +28,8 @@ return [
         'when_off_people_join_only' => 'When off, people join only by invitation. New accounts join as organization Members with no workspace access.',
         'how_many_runs_deep_a' => 'How many runs deep a chain of workflows starting other workflows can go. A run past it is cancelled, which stops workflows that start each other in a loop.',
         'maximum_chain_depth' => 'Maximum chain depth',
+        'maximum_runs_per_minute' => 'Maximum runs per minute',
+        'how_many_runs_one_workflow' => 'How many runs one workflow can start in a minute, unless the workflow sets its own limit. Runs past it are cancelled, which slows down a workflow that keeps firing its own trigger through another app.',
         'title' => 'Sign-in & defaults',
         'workflow_chains' => 'Workflow chains',
     ],

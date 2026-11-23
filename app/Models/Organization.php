@@ -23,10 +23,11 @@ use Illuminate\Support\Carbon;
  * @property array<string, mixed>|null $settings
  * @property array{host?: string, port?: int, encryption?: string, username?: string|null, password?: string|null, from_address?: string, from_name?: string|null}|null $mail
  * @property int $max_chain_depth
+ * @property int $max_runs_per_minute
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'default_retention_days', 'registration_open', 'settings', 'mail', 'max_chain_depth'])]
+#[Fillable(['name', 'default_retention_days', 'registration_open', 'settings', 'mail', 'max_chain_depth', 'max_runs_per_minute'])]
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */
@@ -40,6 +41,7 @@ class Organization extends Model
             'settings' => 'array',
             'mail' => 'encrypted:array',
             'max_chain_depth' => 'integer',
+            'max_runs_per_minute' => 'integer',
         ];
     }
 

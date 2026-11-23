@@ -12,6 +12,7 @@ use App\Enums\NodeKind;
 use App\Services\WorkflowFiles;
 use App\Support\AddressAllowlist;
 use App\Support\NetworkGuard;
+use App\Support\RunChain;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Uri;
 use GuzzleHttp\Psr7\UriResolver;
@@ -208,6 +209,10 @@ class HttpRequest extends Node
                 'curl' => [CURLOPT_RESOLVE => ["{$target['host']}:{$target['port']}:{$ip}"]],
             ])
             ->withHeaders(array_filter((array) $context->input('headers', []), fn ($value, $key) => $key !== '', ARRAY_FILTER_USE_BOTH));
+
+        if (RunChain::isOwnHost($target['host'])) {
+            $request->withHeaders([RunChain::HEADER => RunChain::headerFor($context->execution)]);
+        }
 
         if ($query = array_filter((array) $context->input('query', []), fn ($value, $key) => $key !== '', ARRAY_FILTER_USE_BOTH)) {
             $request->withQueryParameters($query);
