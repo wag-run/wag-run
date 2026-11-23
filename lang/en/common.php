@@ -75,7 +75,6 @@ return [
     'save_settings' => 'Save settings',
     'secrets' => 'Secrets',
     'settings' => 'Settings',
-    'sign_in_and_defaults' => 'Sign-in & defaults',
     'sign_in_providers' => 'Sign-in providers',
     'status' => 'Status',
     'submit' => 'Submit',

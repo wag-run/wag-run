@@ -66,7 +66,7 @@ new class extends Component {
 }; ?>
 
 <section class="w-full">
-    <x-page-heading :heading="__('common.sign_in_and_defaults')" :subheading="__('admin.settings.organization_wide_settings_workspaces_and')" />
+    <x-page-heading :heading="__('admin.settings.title')" :subheading="__('admin.settings.organization_wide_settings_workspaces_and')" />
 
     <form wire:submit="save" class="max-w-2xl space-y-10">
         <flux:input wire:model="name" :label="__('admin.settings.organization_name')" required />

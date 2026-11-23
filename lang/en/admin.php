@@ -30,7 +30,7 @@ return [
         'maximum_chain_depth' => 'Maximum chain depth',
         'maximum_runs_per_minute' => 'Maximum runs per minute',
         'how_many_runs_one_workflow' => 'How many runs one workflow can start in a minute, unless the workflow sets its own limit. Runs past it are cancelled, which slows down a workflow that keeps firing its own trigger through another app.',
-        'title' => 'Sign-in & defaults',
+        'title' => 'Organization settings',
         'workflow_chains' => 'Workflow chains',
     ],
     'sign_in_providers' => [

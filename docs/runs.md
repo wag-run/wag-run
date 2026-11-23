@@ -109,12 +109,12 @@ A run counts as going while it is **Running** or **Waiting**.
 
 Each workflow can start up to 60 runs a minute. Runs past the limit are recorded as **Cancelled** with the reason, and don't do anything. This keeps a loop from running away, such as a workflow that creates a GitHub tag and is itself triggered by new tags.
 
-An organization admin sets the default under **Organization → Sign-in & defaults → Maximum runs per minute**. To give one workflow a different limit, turn on **Override run limit** in its [workflow settings](editor.md#workflow-settings). Test runs don't count toward the limit.
+An organization admin sets the default under **Organization → Settings → Maximum runs per minute**. To give one workflow a different limit, turn on **Override run limit** in its [workflow settings](editor.md#workflow-settings). Test runs don't count toward the limit.
 
 ## How long runs are kept
 
 Run logs are deleted once they're older than the retention period, checked every hour. Completed, failed, cancelled and skipped runs are all removed the same way. Runs still going are never removed. The period is set at three levels, and the most specific one wins:
 
-1. **The organization's default**, under **Organization → Sign-in & defaults**. 30 days unless changed, or keep forever.
+1. **The organization's default**, under **Organization → Settings**. 30 days unless changed, or keep forever.
 2. **The workspace**, under **Settings**, which can use its own period.
 3. **The workflow**, under its workflow settings, with **Override log retention**.

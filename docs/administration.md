@@ -23,9 +23,9 @@ The first account registered on a new install becomes an organization admin. Adm
 
 A deactivated person can't be chosen as an approver, assignee or notification recipient, and workflows they own no longer notify them of failed runs.
 
-## Sign-in & defaults
+## Organization settings
 
-**Organization → Sign-in & defaults** holds organization-wide settings. Workspaces and workflows can override the defaults.
+**Organization → Settings** holds organization-wide settings. Workspaces and workflows can override the defaults.
 
 | Setting | What it does |
 |---|---|

@@ -108,7 +108,7 @@
                             {{ __('common.users') }}
                         </flux:sidebar.item>
                         <flux:sidebar.item icon="adjustments-horizontal" :href="route('admin.settings')" :current="request()->routeIs('admin.settings')" wire:navigate>
-                            {{ __('common.sign_in_and_defaults') }}
+                            {{ __('common.settings') }}
                         </flux:sidebar.item>
                         <flux:sidebar.item icon="finger-print" :href="route('admin.sign-in-providers')" :current="request()->routeIs('admin.sign-in-providers')" wire:navigate>
                             {{ __('common.sign_in_providers') }}

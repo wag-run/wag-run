@@ -29,6 +29,16 @@ class OrganizationSettingsTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'organization.settings_updated']);
     }
 
+    public function test_the_page_is_called_organization_settings_and_listed_as_settings(): void
+    {
+        $admin = User::factory()->orgAdmin()->create();
+
+        $this->actingAs($admin)->get(route('admin.settings'))
+            ->assertOk()
+            ->assertSeeInOrder(['<title>', 'Organization settings - '], false)
+            ->assertDontSee('Sign-in &amp; defaults', false);
+    }
+
     public function test_requires_a_retention_period_unless_kept_forever(): void
     {
         $admin = User::factory()->orgAdmin()->create();
