@@ -31,15 +31,14 @@ return new class extends Migration
         });
 
         Schema::create('credentials', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->foreignId('workspace_id')->constrained()->cascadeOnDelete();
-            $table->string('key');
             $table->string('type', 50);
             $table->text('config');
-            $table->string('description')->nullable();
+            $table->string('description');
             $table->timestamps();
 
-            $table->unique(['workspace_id', 'key']);
+            $table->unique(['workspace_id', 'description']);
         });
 
         Schema::create('audit_logs', function (Blueprint $table) {
