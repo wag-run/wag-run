@@ -1,6 +1,24 @@
 <?php
 
 return [
+    'github' => [
+        'description' => 'A GitHub account, connected through OAuth, for the GitHub nodes and HTTP calls to the GitHub API.',
+        'label' => 'GitHub',
+    ],
+    'google' => [
+        'description' => 'A Google account, connected through OAuth, for the Google Sheets nodes and HTTP calls to Google APIs.',
+        'label' => 'Google',
+    ],
+    'oauth2' => [
+        'authorize_url' => 'Authorization URL',
+        'client_id' => 'Client ID',
+        'client_secret' => 'Client secret',
+        'description' => 'Any OAuth 2.0 provider. HTTP calls send its access token as a bearer token.',
+        'label' => 'OAuth 2.0',
+        'scopes' => 'Scopes',
+        'separated_by_spaces' => 'Separated by spaces.',
+        'token_url' => 'Token URL',
+    ],
     'ai_provider' => [
         'api_key' => 'API key',
         'api_key_for_an_llm' => 'An API key for an LLM provider, used by the LLM call node.',

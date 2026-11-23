@@ -77,6 +77,17 @@ Click **Add authentication**, choose a **Type**, and give it a **Key** and an op
 | **AI provider** | LLM call | **Provider**, **API key** (not needed for a local Ollama server) and **Base URL** (optional, but needed for an OpenAI-compatible endpoint) |
 | **SMTP server** | Send email | **Host**, **Port**, **Encryption**, **Username**, **Password**, **From address** and **From name**. Lets a workspace send email through its own server instead of the organization's. |
 | **Chat webhook** | Chat message | **Service** (Slack or Mattermost, Microsoft Teams, Discord, or Google Chat) and **Webhook URL** |
+| **GitHub** | GitHub nodes, HTTP call | None: you connect a GitHub account |
+| **Google** | Google Sheets nodes, HTTP call | None: you connect a Google account |
+| **OAuth 2.0** | HTTP call | **Authorization URL**, **Token URL**, **Client ID**, **Client secret** and **Scopes**, from the OAuth app you registered with the provider |
+
+### Connecting an account
+
+GitHub, Google and OAuth 2.0 settings connect to an account instead of holding a password. When you save one, wag.run sends you to the provider to approve the connection, then back to **Authentication**, where the setting shows the account it's connected as. Use **Reconnect** to connect a different account, or after access was revoked at the provider.
+
+The connection acts as the account that approved it, so use an account with access to everything the workflows need, such as a bot account. wag.run refreshes the access token on its own when the provider gives it a refresh token, as Google does. An HTTP call that uses one of these settings sends its access token as a bearer token.
+
+GitHub and Google are available once an administrator has set up the install's OAuth apps (see [Connecting GitHub and Google](self-hosting.md#connecting-github-and-google)). For an OAuth 2.0 setting, register an app with the provider using the **Callback URL** shown in the form. Its token URL follows the same [internal-address rules](#workspace-settings) as an HTTP call.
 
 Admins manage authentication settings. Others in the workspace see only their names and types. Admins can reveal a secret field, and each reveal is recorded in the audit log.
 

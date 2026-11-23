@@ -6,6 +6,9 @@ use App\Credentials\CredentialTypeRegistry;
 use App\Credentials\Types\AiProvider;
 use App\Credentials\Types\ApiToken;
 use App\Credentials\Types\ChatWebhook;
+use App\Credentials\Types\GenericOAuth;
+use App\Credentials\Types\GitHubOAuth;
+use App\Credentials\Types\GoogleOAuth;
 use App\Credentials\Types\HttpBasic;
 use App\Credentials\Types\S3Storage;
 use App\Credentials\Types\Smtp;
@@ -41,6 +44,9 @@ class AppServiceProvider extends ServiceProvider
             $registry->register(new Smtp);
             $registry->register(new ChatWebhook);
             $registry->register(new S3Storage);
+            $registry->register(new GitHubOAuth);
+            $registry->register(new GoogleOAuth);
+            $registry->register(new GenericOAuth);
 
             return $registry;
         });

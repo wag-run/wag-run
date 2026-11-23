@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * A reusable workspace authentication setting (HTTP Basic, API token, AI
- * provider key, and later OAuth). The whole config is encrypted at rest.
+ * provider key, OAuth connection). The whole config is encrypted at rest.
  *
  * @property int $id
  * @property int $workspace_id
@@ -42,23 +42,13 @@ class Credential extends Model
     }
 
     /**
-     * The config values of fields marked secret, for redaction.
+     * The secret values in the config, for redaction.
      *
      * @return list<string>
      */
     public function secretValues(): array
     {
-        $values = [];
-
-        foreach ($this->credentialType()->fields() as $field) {
-            $value = $this->config[$field->name] ?? null;
-
-            if ($field->secret && is_string($value) && $value !== '') {
-                $values[] = $value;
-            }
-        }
-
-        return $values;
+        return $this->credentialType()->secretValues($this->config);
     }
 
     /**

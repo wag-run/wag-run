@@ -4,7 +4,8 @@ namespace App\Credentials;
 
 /**
  * A kind of reusable workspace authentication setting. Integrations add their
- * own types (OAuth later) by registering a subclass with the registry.
+ * own types by registering a subclass with the registry; OAuth types extend
+ * {@see OAuthCredentialType}.
  */
 abstract class CredentialType
 {
@@ -63,5 +64,38 @@ abstract class CredentialType
             fn (CredentialField $field) => $field->name,
             array_filter($this->fields(), fn (CredentialField $field) => $field->secret),
         ));
+    }
+
+    /**
+     * The secret values in a config of this type, for redaction.
+     *
+     * @param  array<string, mixed>  $config
+     * @return list<string>
+     */
+    public function secretValues(array $config): array
+    {
+        $values = [];
+
+        foreach ($this->secretFieldNames() as $name) {
+            $value = $config[$name] ?? null;
+
+            if (is_string($value) && $value !== '') {
+                $values[] = $value;
+            }
+        }
+
+        return $values;
+    }
+
+    /**
+     * Config values the settings form doesn't edit, kept when someone saves
+     * the setting, such as the tokens an OAuth connection got.
+     *
+     * @param  array<string, mixed>  $config
+     * @return array<string, mixed>
+     */
+    public function keptOnSave(array $config): array
+    {
+        return [];
     }
 }

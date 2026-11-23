@@ -15,6 +15,7 @@ return [
             'signed_in' => 'Signed in',
         ],
         'credential' => [
+            'connected' => 'Authentication setting connected',
             'created' => 'Authentication setting created',
             'updated' => 'Authentication setting updated',
             'deleted' => 'Authentication setting deleted',

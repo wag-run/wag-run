@@ -1,6 +1,7 @@
 <?php
 
 use App\Credentials\CredentialType;
+use App\Credentials\OAuthCredentialType;
 use App\Credentials\CredentialTypeRegistry;
 use App\Models\Credential;
 use App\Models\Workspace;
@@ -122,9 +123,11 @@ new class extends Component {
                 $rules["config.{$name}"] = ['nullable', 'string', 'max:4000'];
             }
         }
-        $this->validate($rules, [], collect($type->fields())->mapWithKeys(fn ($f) => ["config.{$f->name}" => $f->label])->all());
+        if ($rules !== []) {
+            $this->validate($rules, [], collect($type->fields())->mapWithKeys(fn ($f) => ["config.{$f->name}" => $f->label])->all());
+        }
 
-        $config = [];
+        $config = $keepingSecrets ? $type->keptOnSave($existing->config) : [];
         foreach ($type->fields() as $field) {
             $value = $this->config[$field->name] ?? null;
             $config[$field->name] = $field->secret && blank($value) && $keepingSecrets
@@ -142,6 +145,12 @@ new class extends Component {
         ])->save();
 
         Audit::record($existing ? 'credential.updated' : 'credential.created', $credential, $this->workspace, ['type' => $type->key()]);
+
+        if ($type instanceof OAuthCredentialType && ! OAuthCredentialType::isConnected($credential)) {
+            $this->redirectRoute('workspaces.credentials.connect', [$this->workspace, $credential]);
+
+            return;
+        }
 
         Flux::modal('credential-form')->close();
         Flux::toast(variant: 'success', text: __('workspaces.credentials.authentication_setting_saved'));
@@ -198,6 +207,13 @@ new class extends Component {
         @endif
     </x-page-heading>
 
+    @if (session('oauth_status'))
+        <flux:callout class="mb-4" variant="success" icon="check-circle" :heading="session('oauth_status')" data-test="oauth-status" />
+    @endif
+    @if (session('oauth_error'))
+        <flux:callout class="mb-4" variant="danger" icon="exclamation-triangle" :heading="__('oauth.could_not_connect')" :text="session('oauth_error')" data-test="oauth-error" />
+    @endif
+
     <flux:table>
         <flux:table.columns>
             <flux:table.column>{{ __('common.key') }}</flux:table.column>
@@ -230,11 +246,25 @@ new class extends Component {
                                     @endif
                                 </dd>
                             @endforeach
+                            @if ($credentialType instanceof OAuthCredentialType)
+                                <dt class="text-zinc-500">{{ __('oauth.account') }}</dt>
+                                <dd>
+                                    @if (OAuthCredentialType::isConnected($credential))
+                                        <span data-test="oauth-account">{{ $credential->config['account'] ?? __('oauth.connected_short') }}</span>
+                                    @else
+                                        <flux:badge size="sm" color="amber">{{ __('oauth.not_connected_short') }}</flux:badge>
+                                    @endif
+                                </dd>
+                            @endif
                         </dl>
                     </flux:table.cell>
                     <flux:table.cell>{{ $credential->description }}</flux:table.cell>
                     <flux:table.cell align="end">
                         @if ($this->canManage)
+                            @if ($credentialType instanceof OAuthCredentialType)
+                                <flux:button size="sm" variant="ghost" icon="arrow-path" :href="route('workspaces.credentials.connect', [$workspace, $credential])"
+                                    data-test="oauth-connect">{{ OAuthCredentialType::isConnected($credential) ? __('oauth.reconnect') : __('oauth.connect') }}</flux:button>
+                            @endif
                             <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit({{ $credential->id }})" :aria-label="__('common.edit')" />
                             <flux:button size="sm" variant="ghost" icon="trash" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('workspaces.credentials.delete_authentication_setting'), 'message' => __('workspaces.credentials.delete_this_authentication_setting_workflows'), 'confirm' => __('common.delete')]) }}).then((ok) => ok && $wire.delete({{ $credential->id }}))" :aria-label="__('common.delete')" />
                         @endif
@@ -279,6 +309,16 @@ new class extends Component {
             @endforeach
 
             <flux:input wire:model="description" :label="__('common.description')" />
+
+            @if ($this->selectedType() instanceof OAuthCredentialType)
+                @php($oauthType = $this->selectedType())
+                @if (! $oauthType->hasUserUrls() && ! $oauthType->isConfigured())
+                    <flux:callout variant="warning" icon="exclamation-triangle" :heading="__('oauth.app_not_set_up', ['provider' => $oauthType->label(), 'keys' => implode(', ', $oauthType->environmentKeys())])" data-test="oauth-not-configured" />
+                @else
+                    <flux:text class="text-sm">{{ __('oauth.after_saving_you_go_to', ['provider' => $oauthType->label()]) }}</flux:text>
+                @endif
+                <flux:input :label="__('oauth.callback_url')" :value="$oauthType->callbackUrl()" readonly copyable :description="__('oauth.register_this_callback_url')" />
+            @endif
 
             <div class="flex justify-end gap-2">
                 <flux:modal.close><flux:button variant="ghost">{{ __('common.cancel') }}</flux:button></flux:modal.close>

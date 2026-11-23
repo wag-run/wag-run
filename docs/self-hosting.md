@@ -58,12 +58,24 @@ docker compose up -d
 | `TRUSTED_PROXIES` | empty | Your reverse proxy's IP addresses or CIDR ranges, comma-separated, or `*` if the app can only be reached through the proxy |
 | `SESSION_SECURE_COOKIE` | `false` | Set to `true` once the site is served over HTTPS |
 | `MAIL_MAILER`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS` | `log` | SMTP settings for outgoing email. You can set email up in the app instead, under **Organization → Email**. |
+| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | empty | Your GitHub OAuth app, so workspaces can connect GitHub accounts. See [Connecting GitHub and Google](#connecting-github-and-google). |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | empty | Your Google OAuth client, so workspaces can connect Google accounts |
 | `APP_NAME` | `wag.run` | The name shown in the app and in emails |
 | `QUEUE_WORKERS` | `2` | How many workers run workflow steps at once |
 | `LOG_LEVEL` | `info` | How much the app logs |
 | `APP_MEMORY_LIMIT`, `DB_MEMORY_LIMIT` | `1g` | Memory limit for each container |
 
 Until email is set up, outgoing mail is written to the log instead of sent.
+
+## Connecting GitHub and Google
+
+Workspaces connect GitHub and Google accounts through OAuth, using an app you register with each provider. Each install needs its own, because the provider sends people back to your install's address.
+
+**GitHub:** under **Settings → Developer settings → OAuth Apps** on GitHub, choose **New OAuth app**. Set the **Homepage URL** to your `APP_URL` and the **Authorization callback URL** to `APP_URL/integrations/oauth/github/callback`, such as `https://wag.example.com/integrations/oauth/github/callback`. Copy the client ID, generate a client secret, and set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`.
+
+**Google:** in the Google Cloud console, enable the Google Sheets API, set up the OAuth consent screen, then create an **OAuth client ID** of type **Web application**. Add `APP_URL/integrations/oauth/google/callback` as an **Authorized redirect URI**. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+
+Apply the settings with `docker compose up -d`. Until a provider is set up, its authentication type explains what's missing.
 
 ## HTTPS
 

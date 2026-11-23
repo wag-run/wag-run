@@ -3,12 +3,14 @@
 namespace App\Engine\Nodes\Actions;
 
 use App\Credentials\HttpAuthenticator;
+use App\Credentials\OAuthCredentialType;
 use App\Engine\Definitions\Field;
 use App\Engine\Definitions\Output;
 use App\Engine\Node;
 use App\Engine\NodeContext;
 use App\Engine\NodeResult;
 use App\Enums\NodeKind;
+use App\Services\OAuthConnections;
 use App\Services\WorkflowFiles;
 use App\Support\AddressAllowlist;
 use App\Support\NetworkGuard;
@@ -227,7 +229,11 @@ class HttpRequest extends Node
                 throw new RuntimeException(__('nodes.http_request.authentication_key_cannot_be_used', ['key' => $credential->key]));
             }
 
-            $request = $type->authenticate($request, $credential->config);
+            $config = $type instanceof OAuthCredentialType
+                ? [...$credential->config, 'access_token' => app(OAuthConnections::class)->accessToken($credential)]
+                : $credential->config;
+
+            $request = $type->authenticate($request, $config);
         }
 
         return $request;

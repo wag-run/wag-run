@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\OAuthConnectionController;
 use App\Http\Controllers\OidcController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\WorkflowExportController;
@@ -26,6 +27,8 @@ Route::middleware(['guest', 'throttle:30,1'])->prefix('auth/oidc/{provider}')->n
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::get('integrations/oauth/{type}/callback', [OAuthConnectionController::class, 'callback'])
+        ->middleware('throttle:30,1')->name('integrations.oauth.callback');
     Route::livewire('inbox', 'pages::inbox.index')->name('inbox');
     Route::get('notifications', fn () => redirect()->route('inbox'))->name('notifications');
 
@@ -57,6 +60,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->middleware('can:view-secrets,workspace')->name('secrets');
             Route::livewire('authentication', 'pages::workspaces.credentials')
                 ->middleware('can:view-credentials,workspace')->name('credentials');
+            Route::get('authentication/{credential}/connect', [OAuthConnectionController::class, 'connect'])
+                ->middleware('can:manage-credentials,workspace')->name('credentials.connect');
             Route::livewire('members', 'pages::workspaces.members')
                 ->middleware('can:view-members,workspace')->name('members');
             Route::livewire('settings', 'pages::workspaces.settings')

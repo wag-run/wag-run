@@ -87,4 +87,24 @@ class CredentialFactory extends Factory
             'config' => ['provider' => $provider, 'api_key' => 'sk-'.fake()->sha256(), 'base_url' => null],
         ]);
     }
+
+    /**
+     * An OAuth setting already connected, for "github", "google" or "oauth2".
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public function oauth(string $type = 'github', array $overrides = []): static
+    {
+        return $this->state(fn () => [
+            'type' => $type,
+            'config' => [
+                'access_token' => 'gho_access',
+                'refresh_token' => null,
+                'expires_at' => null,
+                'scopes' => null,
+                'account' => 'octocat',
+                ...$overrides,
+            ],
+        ]);
+    }
 }
