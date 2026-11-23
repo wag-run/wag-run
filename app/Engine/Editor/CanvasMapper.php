@@ -55,7 +55,10 @@ class CanvasMapper
                 'data' => [
                     'isNote' => true,
                     'text' => (string) ($node->config['text'] ?? ''),
-                    'color' => in_array($node->config['color'] ?? null, Note::COLORS, true) ? $node->config['color'] : 'yellow',
+                    'html' => Note::html((string) ($node->config['text'] ?? '')),
+                    'color' => $color = Note::color($node->config['color'] ?? 'yellow'),
+                    'custom' => str_starts_with($color, '#') ? Note::customColors($color) : null,
+                    'opacity' => (int) (in_array((string) ($node->config['opacity'] ?? ''), Note::OPACITIES, true) ? $node->config['opacity'] : Note::DEFAULT_OPACITY),
                     'icon' => $definition->icon(),
                     'ports' => [],
                 ],
