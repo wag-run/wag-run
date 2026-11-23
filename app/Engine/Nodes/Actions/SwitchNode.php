@@ -54,7 +54,7 @@ class SwitchNode extends Node
             new Field('cases', __('nodes.switch.cases'), Field::LIST, required: true, default: [['value' => '']], description: __('nodes.switch.each_case_gets_its_own'), fields: [
                 new Field('value', __('nodes.switch.matches'), Field::TEXT),
             ]),
-            new Field('ignore_case', __('nodes.switch.ignore_upper_and_lower_case'), Field::BOOLEAN, default: false),
+            new Field('ignore_case', __('nodes.switch.case_insensitive'), Field::BOOLEAN, default: false),
         ];
     }
 

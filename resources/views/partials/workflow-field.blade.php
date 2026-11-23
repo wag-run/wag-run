@@ -52,14 +52,16 @@
         <div class="space-y-2">
             @foreach ((array) $value as $index => $row)
                 <div class="flex items-start gap-2" wire:key="{{ $model }}-{{ $index }}">
-                    <flux:input size="sm" class="w-28 font-mono" wire:model.live.debounce.600ms="{{ $model }}.{{ $index }}.key" :placeholder="__('workflows.editor.key')" />
+                    <div class="w-28 shrink-0">
+                        <flux:input size="sm" class="font-mono" wire:model.live.debounce.600ms="{{ $model }}.{{ $index }}.key" :placeholder="__('workflows.editor.key')" />
+                    </div>
                     <div class="min-w-0 flex-1" x-data="wagInsert">
                         <flux:input size="sm" class="font-mono" x-ref="input" wire:model.live.debounce.600ms="{{ $model }}.{{ $index }}.value" :placeholder="__('workflows.editor.value')" />
                         @if ($pickable)
                             @include('partials.workflow-picker', ['picker' => $picker, 'expression' => $field->expression])
                         @endif
                     </div>
-                    <flux:button size="sm" variant="ghost" icon="x-mark" wire:click="removeRow('{{ $field->name }}', {{ $index }})" :aria-label="__('common.remove')" />
+                    <flux:button size="sm" variant="ghost" icon="x-mark" class="shrink-0" wire:click="removeRow('{{ $field->name }}', {{ $index }})" :aria-label="__('common.remove')" />
                 </div>
             @endforeach
             <flux:button size="sm" icon="plus" wire:click="addRow('{{ $field->name }}')">{{ __('common.add') }}</flux:button>

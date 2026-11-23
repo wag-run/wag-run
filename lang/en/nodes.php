@@ -187,7 +187,7 @@ return [
         'cases' => 'Cases',
         'default' => 'default',
         'each_case_gets_its_own' => 'Each case gets its own output. The first case equal to the value runs; "default" runs when none is.',
-        'ignore_upper_and_lower_case' => 'Ignore upper and lower case',
+        'case_insensitive' => 'Case insensitive',
         'matched_case' => 'Matched case',
         'matched_output' => 'Matched output',
         'matches' => 'Equals',
