@@ -9,7 +9,7 @@ You need an account in a wag.run organization and the **Editor** or **Admin** ro
 Open your wag.run address and sign in with your email and password, a passkey, or a sign-in provider button such as **Sign in with Okta** if your organization has one set up.
 
 - **Invited by email?** Open the invitation link to create your account and join. Invitations expire, so ask for a new one if yours no longer works.
-- **First person on a new install?** Register an account. The first account becomes the organization admin.
+- **First person on a new install?** Register an account. The first account becomes the organization admin. To set up an install, see [Self-hosting](self-hosting.md).
 
 Once you're in, open **Settings** from the account menu at the bottom of the sidebar to add a passkey or turn on two-factor authentication.
 
@@ -22,13 +22,12 @@ The sidebar shows the current workspace at the top. Use it to switch workspaces.
 | **Overview** | The workspace's workflows and the approvals and tasks waiting on you |
 | **Workflows** | Create, import and open workflows |
 | **Runs** | Every run in the workspace, newest first, filterable by status |
-| **Inbox** | Approvals and tasks assigned to you, with a count when something is waiting |
 | **Variables**, **Secrets**, **Authentication** | Shared values and sign-in details your workflows use |
 | **Members**, **Settings**, **Audit log** | Workspace administration (Admins) |
 
 Organization admins also see an **Organization** section for users, workspaces, sign-in and email settings.
 
-**Notifications**, in the account menu, lists failed runs of workflows you own and approvals and tasks assigned to you. A red dot on your avatar means something is unread.
+Your **Inbox** is in the account menu at the bottom of the sidebar. It collects approvals and tasks assigned to you, failed runs of workflows you own, and messages from workflows, across all your workspaces. A red dot on your avatar means something in it is unread.
 
 > **Tip:** If your workspace has the demo workflows (**Refund approval**, **Order status updates**, **New hire onboarding** and **Daily post digest**), open one to see a finished workflow before building your own.
 
@@ -92,7 +91,7 @@ Try the workflow before publishing it.
 
 A test run does everything a real run does, including sending emails and calling other services, so be careful with workflows that contact people outside your team.
 
-You land on the run page. The canvas shows how far the run got, and you can click any step to see its input, output and any error. You should also have a new notification.
+You land on the run page. The canvas shows how far the run got, and you can click any step to see its input, output and any error. You should also have a new item in your Inbox.
 
 Run another test with an amount under 500. This time the run stops after the condition and no notification is sent.
 
@@ -127,7 +126,7 @@ To see people in the loop, add an approval before the notification:
 4. Connect the approval's **approved** output to **Send notification**.
 5. Test the draft with an amount over 500.
 
-The run's status changes to **Waiting**. Open **Inbox** in the sidebar, open the request, and click **Approve**. The run continues and sends the notification. Click **Reject** instead, and it continues down the **rejected** output.
+The run's status changes to **Waiting**. Open **Inbox** from the account menu, open the request, and click **Approve**. The run continues and sends the notification. Click **Reject** instead, and it continues down the **rejected** output.
 
 ## Keyboard shortcuts in the editor
 
@@ -143,4 +142,5 @@ Right-click a node or the canvas for the same actions.
 ## Next steps
 
 - Read the [overview](README.md) for the concepts behind workspaces, versions, runs and placeholders.
+- Learn the rest of [the editor](editor.md), then browse the [triggers](triggers.md) and [actions](actions.md) you can build with.
 - Open the demo workflows to see webhooks, forms, schedules, loops, tasks and error handling working together.
