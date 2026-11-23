@@ -148,10 +148,13 @@ Makes an HTTP request.
 | **Timeout (s)** | How long to wait for an answer. Defaults to 30. |
 | **Follow redirects** | Follow up to 5 redirects. On by default. |
 | **Fail on an error status (4xx or 5xx)** | On by default. Turn it off to handle error responses yourself, for example with a condition on `status`. |
+| **Allow insecure connections** | Off by default. Skips checking the server's TLS certificate, for an internal server with a self-signed certificate or one that doesn't match its address. See the warning below. |
 
 Outputs: `status` (the status code), `ok` (true for a 2xx status), `headers`, and `body`, which is decoded JSON when the response is JSON, or else text. Bodies over 1 MB are cut short.
 
 HTTP calls can't reach private, loopback or link-local addresses, such as `10.0.0.5` or `localhost`, unless a workspace admin lists them in the [internal-address allowlist](workspaces.md#workspace-settings).
+
+> **Warning:** With **Allow insecure connections** on, the connection is still encrypted, but wag.run no longer checks who it's talking to. Anyone between wag.run and the server could read or change the request and the response, including any token or password sent with it. Use it only for internal servers you control. Where you can, give the server a valid certificate instead.
 
 ## AI
 
