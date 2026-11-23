@@ -17,7 +17,8 @@ use Illuminate\Validation\ValidationException;
 /**
  * Runs a workflow from inside the app. Every published workflow can be run
  * this way: from its Manual trigger when it has one, asking for the inputs
- * that trigger declares, else from its first trigger with an empty payload.
+ * that trigger declares (which the run gets under "values"), else from its
+ * first trigger with an empty payload.
  *
  * The draft can be test-run the same way without publishing it. Its run is
  * pinned to a snapshot of the draft; without a Manual trigger, the first
@@ -75,7 +76,7 @@ class ManualRuns
         }
 
         $trigger = $this->manualTrigger($workflow);
-        $input = $trigger ? $this->validatedInput($workflow, $trigger, $values) : [];
+        $input = $trigger ? ['values' => $this->validatedInput($workflow, $trigger, $values)] : [];
 
         return $this->engine->start($workflow, $input, $user, $triggerType, $trigger?->id, startedBy: $startedBy);
     }
@@ -108,7 +109,7 @@ class ManualRuns
         $trigger = $this->manualTrigger($workflow, $graph);
 
         if ($trigger) {
-            $input = $this->validatedInput($workflow, $trigger, $values, $graph);
+            $input = ['values' => $this->validatedInput($workflow, $trigger, $values, $graph)];
         } else {
             $input = trim((string) $payload) === '' ? [] : json_decode((string) $payload, true);
 

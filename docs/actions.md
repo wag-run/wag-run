@@ -14,11 +14,11 @@ Sends the run down **true** or **false**, depending on a condition.
 
 | Setting | What it does |
 |---|---|
-| **Condition** | One `{{ }}` placeholder that is true or false, such as `{{ nodes.fetch.output.status == 200 and trigger.amount > 100 }}` |
+| **Condition** | One `{{ }}` placeholder that is true or false, such as `{{ nodes.fetch.output.status == 200 and trigger.values.amount > 100 }}` |
 
 Output: `result`, true or false.
 
-Publishing is refused if the condition isn't a single placeholder. Plain text like `trigger.amount > 100`, without the braces, would otherwise always count as true.
+Publishing is refused if the condition isn't a single placeholder. Plain text like `trigger.values.amount > 100`, without the braces, would otherwise always count as true.
 
 ### Switch
 
@@ -86,7 +86,7 @@ Starts another workflow in the same workspace.
 |---|---|
 | **Workflow** | The workflow to start. It must be published, and can't be this workflow. |
 | **Mode** | **Wait for it to finish**, or **Start it and move on** |
-| **Input** | Keys and values passed to the other workflow, which it reads as `trigger.<key>` |
+| **Input** | Keys and values passed to the other workflow, which it reads as `trigger.values.<key>`, the same as a manual trigger's inputs or a form's answers. If the other workflow's first trigger is a Manual or Form trigger with **Required** inputs, give each one, or the other run and this step fail. |
 
 Outputs:
 

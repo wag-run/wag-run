@@ -2,6 +2,7 @@
 
 return [
     'child_workflow_failed' => 'The child workflow failed.',
+    'required_inputs_missing' => 'The trigger requires an input that was not given: :inputs.|The trigger requires inputs that were not given: :inputs.',
     'chain_depth_limit_reached' => 'Stopped: this run would be more than :max levels deep in a chain of workflows starting workflows. Check for workflows that start each other.',
     'child_workflow_was_cancelled' => 'The child workflow was cancelled.',
     'child_workflow_was_skipped_because' => 'The child workflow was skipped because a run was already in progress.',

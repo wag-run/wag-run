@@ -49,8 +49,8 @@ return [
     'conditional' => [
         'condition' => 'Condition',
         'conditional_logic' => 'Conditional logic',
-        'condition_must_be_one_placeholder' => 'its condition must be one {{ }} placeholder, such as {{ trigger.amount > 100 }}.',
-        'one_placeholder_such_as' => 'One {{ }} placeholder that is true or false, such as {{ nodes.fetch.output.status == 200 and trigger.amount > 100 }}.',
+        'condition_must_be_one_placeholder' => 'its condition must be one {{ }} placeholder, such as {{ trigger.values.amount > 100 }}.',
+        'one_placeholder_such_as' => 'One {{ }} placeholder that is true or false, such as {{ nodes.fetch.output.status == 200 and trigger.values.amount > 100 }}.',
         'result' => 'Result',
         'routes_the_flow_based_on' => 'Routes the flow based on a condition.',
     ],
@@ -279,6 +279,7 @@ return [
         'cannot_attach' => '":name" is :type; an LLM call can read images, PDFs and text files.',
     ],
     'manual_trigger' => [
+        'input_values' => 'Input values',
         'inputs_to_ask_for' => 'Inputs to ask for',
         'manual' => 'Manual',
         'user_runs_the_workflow_from' => 'A user runs the workflow from inside the app.',
@@ -312,7 +313,7 @@ return [
         'start_it_and_move_on' => 'Start it and move on',
         'starts_another_workflow_and_optionally' => 'Starts another workflow, and optionally waits for its outputs.',
         'trigger_other_workflow' => 'Trigger other workflow',
-        'values_passed_to_the_workflow' => 'Values passed to the workflow\'s trigger.',
+        'values_passed_to_the_workflow' => 'Values passed to the workflow, which it reads as trigger.values.<key>.',
         'wait_for_it_to_finish' => 'Wait for it to finish',
         'workflow_name_has_not_been' => 'Workflow ":name" has not been published.',
         'workflow_output' => 'Workflow output',

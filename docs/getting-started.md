@@ -56,7 +56,7 @@ Every workflow starts with a trigger. This one will be started by hand.
    | `customer` | Customer | Text | Yes |
    | `amount` | Amount | Number | Yes |
 
-Whoever runs the workflow fills in these inputs. Later nodes can read them as `trigger.customer` and `trigger.amount`.
+Whoever runs the workflow fills in these inputs. Later nodes can read them as `trigger.values.customer` and `trigger.values.amount`.
 
 ## 5. Add a condition
 
@@ -64,7 +64,7 @@ Whoever runs the workflow fills in these inputs. Later nodes can read them as `t
 2. Set **Condition** to:
 
    ```text
-   {{ trigger.amount > 500 }}
+   {{ trigger.values.amount > 500 }}
    ```
 
 The node now has two outputs, **true** and **false**. A condition must be one `{{ }}` placeholder that is true or false, and publishing is refused if it isn't.
@@ -75,8 +75,8 @@ The node now has two outputs, **true** and **false**. A condition must be one `{
 2. Drag from the condition's **true** output to the new node's input to connect them.
 3. In its settings:
    - **Recipients**: choose yourself.
-   - **Title**: `Large order from {{ trigger.customer }}`
-   - **Message**: `{{ trigger.customer }} placed an order for {{ number_format(trigger.amount, 2) }}.`
+   - **Title**: `Large order from {{ trigger.values.customer }}`
+   - **Message**: `{{ trigger.values.customer }} placed an order for {{ number_format(trigger.values.amount, 2) }}.`
 
 Instead of typing placeholders, you can click **Insert data** on a field and pick a value from the trigger or an earlier node.
 
@@ -122,7 +122,7 @@ To see people in the loop, add an approval before the notification:
 
 1. Right-click the connection from **true** to **Send notification** and choose **Delete connection**.
 2. Select the condition node and click **Approval** in the palette. It's added and connected to the **true** output.
-3. Set **Approvers** to yourself, **Approvals needed** to `1`, and **Title** to `Approve order for {{ trigger.customer }}`.
+3. Set **Approvers** to yourself, **Approvals needed** to `1`, and **Title** to `Approve order for {{ trigger.values.customer }}`.
 4. Connect the approval's **approved** output to **Send notification**.
 5. Test the draft with an amount over 500.
 

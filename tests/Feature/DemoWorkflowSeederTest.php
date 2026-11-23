@@ -51,8 +51,8 @@ class DemoWorkflowSeederTest extends TestCase
         Mail::fake();
         $this->seed(DatabaseSeeder::class);
 
-        $small = $this->start('Refund approval', ['customer' => 'Ada', 'email' => 'ada@example.com', 'amount' => 40]);
-        $large = $this->start('Refund approval', ['customer' => 'Grace', 'email' => 'grace@example.com', 'amount' => 250]);
+        $small = $this->start('Refund approval', ['values' => ['customer' => 'Ada', 'email' => 'ada@example.com', 'amount' => 40]]);
+        $large = $this->start('Refund approval', ['values' => ['customer' => 'Grace', 'email' => 'grace@example.com', 'amount' => 250]]);
 
         $this->assertSame(ExecutionStatus::Complete, $small->status);
         $this->assertSame(ExecutionStatus::Waiting, $large->status);

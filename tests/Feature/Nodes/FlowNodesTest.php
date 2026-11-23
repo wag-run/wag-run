@@ -195,16 +195,16 @@ class FlowNodesTest extends TestCase
     {
         $workspace = Workspace::factory()->create();
         $child = $this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'reply' => ['core.compose', ['template' => 'hello {{ trigger.name }}']]],
+            ['start' => 'core.manual_trigger', 'reply' => ['core.compose', ['template' => 'hello {{ trigger.values.name }}']]],
             ['start->reply'],
         ), $workspace);
         $parent = $this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'call' => ['core.run_workflow', ['workflow' => $child->id, 'mode' => 'sync', 'input' => ['name' => '{{ trigger.who }}']]],
+            ['start' => 'core.manual_trigger', 'call' => ['core.run_workflow', ['workflow' => $child->id, 'mode' => 'sync', 'input' => ['name' => '{{ trigger.values.who }}']]],
                 'use' => ['core.compose', ['template' => '{{ nodes.call.output.output.reply.value }}!']]],
             ['start->call', 'call->use'],
         ), $workspace);
 
-        $execution = $this->runWorkflow($parent, ['who' => 'grace']);
+        $execution = $this->runWorkflow($parent, ['values' => ['who' => 'grace']]);
 
         $this->assertSame('hello grace!', $this->stepFor($execution, 'use')->output['value']);
     }
@@ -225,6 +225,67 @@ class FlowNodesTest extends TestCase
         $this->assertSame(ExecutionStatus::Waiting, $childRun->status);
         $this->assertNull($childRun->parent_step_id);
         $this->assertSame($childRun->id, $this->stepFor($execution, 'call')->output['execution_id']);
+    }
+
+    public function test_trigger_other_workflow_fails_when_a_required_input_of_its_trigger_is_missing(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $fields = [['name' => 'email', 'label' => 'Email', 'type' => 'email', 'required' => true], ['name' => 'note', 'label' => 'Note', 'type' => 'text']];
+        $child = $this->publishedWorkflow($this->graph(
+            ['start' => ['core.manual_trigger', ['fields' => $fields]], 'reply' => ['core.compose', ['template' => 'hi {{ trigger.values.email }}']]],
+            ['start->reply'],
+        ), $workspace);
+        $parent = $this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger', 'call' => ['core.run_workflow', ['workflow' => $child->id, 'mode' => 'sync', 'input' => ['email' => '{{ trigger.values.email }}', 'note' => 'x']]]],
+            ['start->call'],
+        ), $workspace);
+
+        $execution = $this->runWorkflow($parent, ['values' => ['email' => '']]);
+
+        $message = 'The trigger requires an input that was not given: Email.';
+        $childRun = Execution::where('workflow_id', $child->id)->sole();
+        $this->assertSame(ExecutionStatus::Failed, $childRun->status);
+        $this->assertSame(['message' => $message, 'code' => 'required_input_missing'], $childRun->error);
+        $this->assertSame(0, $childRun->steps()->count(), 'the child fails before its first step');
+        $this->assertSame(StepStatus::Failed, $this->stepFor($execution, 'call')->status);
+        $this->assertSame(ExecutionStatus::Failed, $execution->status);
+        $this->assertSame($message, $execution->error['message']);
+
+        $this->assertSame(ExecutionStatus::Complete, $this->runWorkflow($parent, ['values' => ['email' => 'ada@example.com']])->status);
+    }
+
+    public function test_trigger_other_workflow_in_async_mode_fails_when_a_required_input_is_missing(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $child = $this->publishedWorkflow($this->graph(['start' => ['core.manual_trigger', ['fields' => [['name' => 'id', 'label' => 'Order ID', 'type' => 'text', 'required' => true]]]]]), $workspace);
+        $parent = $this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger', 'call' => ['core.run_workflow', ['workflow' => $child->id, 'mode' => 'async']]],
+            ['start->call'],
+        ), $workspace);
+
+        $execution = $this->runWorkflow($parent);
+
+        $this->assertSame(ExecutionStatus::Failed, Execution::where('workflow_id', $child->id)->sole()->status);
+        $this->assertSame(StepStatus::Failed, $this->stepFor($execution, 'call')->status);
+        $this->assertSame('The trigger requires an input that was not given: Order ID.', $execution->error['message']);
+    }
+
+    public function test_trigger_other_workflow_checks_the_required_fields_of_a_form_trigger_too(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $form = ['title' => 'Signup', 'fields' => [['name' => 'email', 'label' => 'Email', 'type' => 'email', 'required' => true]]];
+        $child = $this->publishedWorkflow($this->graph(
+            ['signup' => ['core.form_trigger', $form], 'reply' => ['core.compose', ['template' => 'hi {{ trigger.values.email }}']]],
+            ['signup->reply'],
+        ), $workspace);
+        $parent = $this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger', 'call' => ['core.run_workflow', ['workflow' => $child->id, 'mode' => 'sync', 'input' => ['email' => '{{ trigger.values.email }}']]],
+                'use' => ['core.compose', ['template' => '{{ nodes.call.output.output.reply.value }}']]],
+            ['start->call', 'call->use'],
+        ), $workspace);
+
+        $this->assertSame('The trigger requires an input that was not given: Email.', $this->runWorkflow($parent, ['values' => []])->error['message']);
+        $this->assertSame('hi ada@example.com', $this->stepFor($this->runWorkflow($parent, ['values' => ['email' => 'ada@example.com']]), 'use')->output['value']);
     }
 
     public function test_trigger_other_workflow_refuses_to_start_its_own_workflow(): void

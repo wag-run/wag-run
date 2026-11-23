@@ -16,7 +16,7 @@ Pauses the run until enough of the approvers approve, or until it's rejected. Th
 |---|---|
 | **Approvers** | Who is asked. Each gets their own request. |
 | **Approvals needed** | How many of them must approve. Defaults to 1. |
-| **Title** | What the request is called in the Inbox, such as `Refund {{ number_format(trigger.amount, 2) }} for {{ trigger.customer }}` |
+| **Title** | What the request is called in the Inbox, such as `Refund {{ number_format(trigger.values.amount, 2) }} for {{ trigger.values.customer }}` |
 | **Details** | More information for the approvers |
 | **Timeout (hours)** | How long they have to respond. Defaults to 48. |
 | **Also email the approvers** | On by default. They always get the request in their Inbox, and the email links to it. |

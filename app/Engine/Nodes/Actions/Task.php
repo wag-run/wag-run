@@ -116,6 +116,31 @@ class Task extends Node
         ));
     }
 
+    /**
+     * The labels of the required fields that $values has no answer for.
+     *
+     * @param  array<string, mixed>  $values
+     * @return list<string>
+     */
+    public static function missingRequiredFields(mixed $fields, array $values): array
+    {
+        $missing = [];
+
+        foreach (is_array($fields) ? $fields : [] as $field) {
+            if (! is_array($field) || ! filled($field['name'] ?? null) || ! ($field['required'] ?? false)) {
+                continue;
+            }
+
+            $value = $values[$field['name']] ?? null;
+
+            if ($value === null || $value === [] || (is_string($value) && trim($value) === '')) {
+                $missing[] = (string) (filled($field['label'] ?? null) ? $field['label'] : $field['name']);
+            }
+        }
+
+        return $missing;
+    }
+
     public function outputs(array $config = []): array
     {
         return [

@@ -82,7 +82,7 @@ class RestApiTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.status', 'waiting')
             ->assertJsonPath('data.trigger_type', 'api')
-            ->assertJsonPath('data.input', ['order' => 42])
+            ->assertJsonPath('data.input', ['values' => ['order' => 42]])
             ->json('data.id');
 
         $this->assertSame($user->id, Execution::find($id)->triggered_by);
@@ -95,7 +95,7 @@ class RestApiTest extends TestCase
     public function test_lists_runs_with_filters_and_cancels_one(): void
     {
         $this->actingAsMember();
-        $waiting = $this->runWorkflow($this->workflow, ['order' => 1]);
+        $waiting = $this->runWorkflow($this->workflow, ['values' => ['order' => 1]]);
         $other = $this->publishedWorkflow($this->graph(['start' => 'core.manual_trigger']), $this->workspace);
         $this->runWorkflow($other);
 

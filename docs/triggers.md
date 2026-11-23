@@ -14,15 +14,17 @@ Someone starts the run from inside wag.run: with **Run** in the editor, or **Run
 
 | Setting | What it does |
 |---|---|
-| **Key** | The name later nodes use, as in `trigger.amount`. Letters, numbers and underscores. |
+| **Key** | The name later nodes use, as in `trigger.values.amount`. Letters, numbers and underscores. |
 | **Label** | What the person sees |
 | **Type** | **Text**, **Long text**, **Number**, **Email**, **Date**, **Checkbox** or **Choice** |
 | **Required** | Whether it must be filled in |
 | **Choices** | For a **Choice** input, the options, one per line as `value=Label` |
 
-The values are available directly on `trigger`: an input with the key `amount` is `{{ trigger.amount }}`. Numbers arrive as numbers and checkboxes as true or false.
+The values are under `trigger.values`, as a form's answers are: an input with the key `amount` is `{{ trigger.values.amount }}`. Numbers arrive as numbers and checkboxes as true or false.
 
 A manual trigger with no inputs starts the run straight away.
+
+When another workflow starts this one with [Trigger other workflow](actions.md#trigger-other-workflow) and this is the workflow's first trigger, it must give every **Required** input under its key. A run missing one fails before its first step, with a message naming the missing inputs, and the step that started it fails too.
 
 ## Webhook
 
@@ -127,7 +129,7 @@ What the run receives:
 | `trigger.submitted_at` | When the form was sent |
 | `trigger.submitted_by` | The user ID of the person who sent it, for a members-only form. Empty for a public form. |
 
-Note that form answers are under `trigger.values`, while a manual trigger's inputs are directly on `trigger`.
+Form answers and a manual trigger's inputs are both under `trigger.values`. When another workflow starts this one with [Trigger other workflow](actions.md#trigger-other-workflow) and the form is the workflow's first trigger, it must give an answer for every **Required** field, the same as for a [manual trigger](#manual).
 
 ## GitHub
 

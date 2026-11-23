@@ -43,7 +43,7 @@ class TestRunsTest extends TestCase
     {
         return $this->graph(
             ['start' => ['core.manual_trigger', ['fields' => [['name' => 'who', 'label' => 'Who', 'type' => 'text', 'required' => true]]]],
-                'greet' => ['core.compose', ['template' => $greeting.' {{ trigger.who }}']]],
+                'greet' => ['core.compose', ['template' => $greeting.' {{ trigger.values.who }}']]],
             ['start->greet'],
         );
     }

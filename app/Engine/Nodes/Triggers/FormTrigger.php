@@ -64,6 +64,20 @@ class FormTrigger extends Node
         ];
     }
 
+    /**
+     * The required fields that $input has no answer for under "values". A
+     * submitted form is validated on its page; this catches runs another
+     * workflow starts.
+     *
+     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>  $input
+     * @return list<string>
+     */
+    public function missingInputs(array $config, array $input): array
+    {
+        return Task::missingRequiredFields($config['fields'] ?? [], (array) ($input['values'] ?? []));
+    }
+
     public function execute(NodeContext $context): NodeResult
     {
         return NodeResult::complete($context->triggerInput());

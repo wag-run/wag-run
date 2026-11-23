@@ -103,6 +103,19 @@ abstract class Node
     }
 
     /**
+     * For a trigger, the labels of the inputs it requires that $input lacks.
+     * A run started without them fails before its first step.
+     *
+     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>  $input
+     * @return list<string>
+     */
+    public function missingInputs(array $config, array $input): array
+    {
+        return [];
+    }
+
+    /**
      * How the editor labels one of this node's output ports, or null for
      * the default label.
      *

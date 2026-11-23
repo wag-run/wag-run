@@ -3,6 +3,7 @@
 namespace App\Engine\Nodes\Triggers;
 
 use App\Engine\Definitions\Field;
+use App\Engine\Definitions\Output;
 use App\Engine\Node;
 use App\Engine\NodeContext;
 use App\Engine\NodeResult;
@@ -12,7 +13,8 @@ use App\Services\Assignments;
 
 /**
  * Starts the workflow when a user runs it from inside the app. Any inputs it
- * declares are asked for before the run starts.
+ * declares are asked for before the run starts, and arrive under "values",
+ * as a form's answers do.
  */
 class ManualTrigger extends Node
 {
@@ -48,12 +50,26 @@ class ManualTrigger extends Node
 
     public function outputs(array $config = []): array
     {
-        return Task::outputsForFields($config['fields'] ?? []);
+        return [new Output('values', __('nodes.manual_trigger.input_values'), 'object', children: Task::outputsForFields($config['fields'] ?? []))];
     }
 
     public function execute(NodeContext $context): NodeResult
     {
         return NodeResult::complete($context->triggerInput());
+    }
+
+    /**
+     * The required inputs that $input has no value for under "values". Runs
+     * started from the app or the API are validated against rules() first;
+     * this catches runs another workflow starts.
+     *
+     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>  $input
+     * @return list<string>
+     */
+    public function missingInputs(array $config, array $input): array
+    {
+        return Task::missingRequiredFields($config['fields'] ?? [], (array) ($input['values'] ?? []));
     }
 
     /**

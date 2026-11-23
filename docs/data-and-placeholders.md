@@ -3,7 +3,7 @@
 Each node can use data from the trigger, from the nodes that ran before it, and from the workspace. You bring that data into a node's settings with **placeholders**: expressions between double braces.
 
 ```text
-Hi {{ trigger.name }}, your order of {{ length(trigger.items) }} items is on its way.
+Hi {{ trigger.values.name }}, your order of {{ length(trigger.values.items) }} items is on its way.
 ```
 
 ## The data picker
@@ -59,16 +59,16 @@ Inside the braces you can do more than read a value.
 | Arithmetic | `trigger.price * 1.2`, `trigger.total - trigger.discount`, `loop.index + 1` |
 | Comparisons | `==`, `!=`, `<`, `<=`, `>`, `>=` |
 | Logic | `and`, `or`, `not` |
-| Lists | `'vip' in trigger.tags`, `trigger.status not in ['cancelled', 'refunded']` |
+| Lists | `'vip' in trigger.values.tags`, `trigger.status not in ['cancelled', 'refunded']` |
 | Text | `trigger.first ~ ' ' ~ trigger.last` joins text. `trigger.email matches '/@example\\.com$/'` tests a regular expression. |
-| Choosing | `trigger.amount > 100 ? 'large' : 'small'` |
-| Fallbacks | `trigger.nickname ?? trigger.name` |
+| Choosing | `trigger.values.amount > 100 ? 'large' : 'small'` |
+| Fallbacks | `trigger.values.nickname ?? trigger.values.name` |
 | Literals | `'text'` or `"text"`, `42`, `true`, `false`, `null`, `[1, 2, 3]`, `{'a': 1}` |
 
 Conditions, such as those of **Conditional logic** and **Filter**, must be a single placeholder that is true or false:
 
 ```text
-{{ trigger.amount > 100 and 'vip' in trigger.tags }}
+{{ trigger.values.amount > 100 and 'vip' in trigger.values.tags }}
 ```
 
 If an expression can't be worked out, for example because of a typo, the step fails with an "Expression error" message that says what went wrong.
@@ -113,7 +113,7 @@ Call these inside placeholders, such as `{{ upper(trigger.code) }}`.
 | `slice(list, start, length)` | Part of a list or text | `slice([1, 2, 3, 4], 1, 2)` | `[2, 3]` |
 | `join(list, glue)` | Joins into text | `join(['a', 'b'], ', ')` | `a, b` |
 | `column(list, key)` | One field from each object in a list | `column(nodes.fetch.output.body.items, 'id')` | `[1, 2, 3]` |
-| `sum(list)` | Adds up the numbers | `sum(column(trigger.items, 'price'))` | `59.97` |
+| `sum(list)` | Adds up the numbers | `sum(column(trigger.values.items, 'price'))` | `59.97` |
 | `sort(list)`, `reverse(list)`, `unique(list)` | Sorts, reverses or removes duplicates | `unique([1, 1, 2])` | `[1, 2]` |
 | `merge(a, b)` | Combines two lists or objects | `merge([1], [2])` | `[1, 2]` |
 | `keys(object)`, `values(object)` | An object's keys or values | `keys({'a': 1})` | `['a']` |

@@ -11,7 +11,7 @@ use App\Enums\NodeKind;
 
 /**
  * Routes the flow down "true" or "false". The condition is one {{ }}
- * placeholder, such as {{ trigger.amount > 100 }}; publishing refuses
+ * placeholder, such as {{ trigger.values.amount > 100 }}; publishing refuses
  * anything else, since plain text would always count as true. Only one
  * path runs.
  */

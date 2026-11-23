@@ -17,7 +17,9 @@ use App\Models\Workflow;
 /**
  * Starts another workflow in the same workspace. Sync mode waits for it and
  * returns its outputs; if it fails, this node fails. Async mode starts it and
- * moves on. A workflow cannot start itself, and chains of runs starting runs
+ * moves on; it fails only when the run cannot start, such as when its
+ * trigger requires an input this node does not give. The other run gets the
+ * input under "values", as from a Manual trigger or a form. A workflow cannot start itself, and chains of runs starting runs
  * stop at the organization's maximum chain depth.
  */
 class RunWorkflow extends Node
@@ -90,12 +92,12 @@ class RunWorkflow extends Node
             return NodeResult::fail(__('nodes.run_workflow.workflow_name_has_not_been', ['name' => $workflow->name]), retryable: false);
         }
 
-        $input = is_array($context->input('input')) ? $context->input('input') : [];
+        $input = ['values' => is_array($context->input('input')) ? $context->input('input') : []];
 
         if ($context->input('mode') === 'async') {
             $execution = app(Engine::class)->start($workflow, $input, triggerType: 'workflow', startedBy: $context->execution);
 
-            if ($execution->status === ExecutionStatus::Cancelled) {
+            if ($execution->status === ExecutionStatus::Cancelled || $execution->status === ExecutionStatus::Failed) {
                 return NodeResult::fail((string) ($execution->error['message'] ?? __('engine.child_workflow_was_cancelled')), retryable: false);
             }
 

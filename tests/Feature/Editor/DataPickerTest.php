@@ -37,7 +37,7 @@ class DataPickerTest extends TestCase
 
         $paths = $this->paths($graph, 'later');
 
-        $this->assertSame(['trigger.order_id'], $paths['Trigger: start']);
+        $this->assertSame(['trigger.values', 'trigger.values.order_id'], $paths['Trigger: start']);
         $this->assertSame(['nodes.fetch.output.status', 'nodes.fetch.output.ok', 'nodes.fetch.output.headers', 'nodes.fetch.output.body', 'nodes.fetch.output.file', 'nodes.fetch.output.file.name', 'nodes.fetch.output.file.mime', 'nodes.fetch.output.file.size'], $paths['Fetch order']);
         $this->assertArrayNotHasKey('other', $paths, 'parallel paths are not offered');
         $this->assertContains('execution.id', $paths['Execution']);

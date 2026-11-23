@@ -26,7 +26,7 @@ class ManualRunTest extends TestCase
         $user = User::factory()->memberOf($workspace, $role)->create();
         $workflow = $this->publishedWorkflow($this->graph(
             ['start' => ['core.manual_trigger', ['fields' => [['name' => 'amount', 'label' => 'Amount', 'type' => 'number', 'required' => true]]]],
-                'say' => ['core.compose', ['template' => 'Refund {{ trigger.amount }}']]],
+                'say' => ['core.compose', ['template' => 'Refund {{ trigger.values.amount }}']]],
             ['start->say'],
         ), $workspace);
 
@@ -49,7 +49,7 @@ class ManualRunTest extends TestCase
         $component->assertRedirect(route('workspaces.executions.show', [$workspace, $execution]));
         $this->assertSame(ExecutionStatus::Complete, $execution->status);
         $this->assertSame($user->id, $execution->triggered_by);
-        $this->assertSame(['amount' => 120], $execution->input);
+        $this->assertSame(['values' => ['amount' => 120]], $execution->input);
         $this->assertSame(['value' => 'Refund 120'], $this->stepFor($execution, 'say')->output);
     }
 

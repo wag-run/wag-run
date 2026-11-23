@@ -36,6 +36,12 @@ class Engine
      */
     public const RUN_LIMIT_REACHED = 'run_limit_reached';
 
+    /**
+     * The error code on a run that failed before it started because its
+     * trigger requires inputs it was not given.
+     */
+    public const REQUIRED_INPUT_MISSING = 'required_input_missing';
+
     public function __construct(
         protected Coordinator $coordinator,
         protected NodeRegistry $registry,
@@ -87,7 +93,7 @@ class Engine
         $parent = $parentStep === null ? $startedBy : $parentStep->execution;
         $chainDepth = ($parent === null ? 0 : $parent->chain_depth) + 1;
 
-        $execution = DB::transaction(function () use ($workflow, $version, $isTest, $input, $user, $triggerType, $triggerNodeId, $parentStep, $chainDepth) {
+        $execution = DB::transaction(function () use ($workflow, $version, $graph, $isTest, $input, $user, $triggerType, $triggerNodeId, $parentStep, $chainDepth) {
             Workflow::query()->lockForUpdate()->find($workflow->id);
 
             $inProgress = $workflow->executions()->where('is_test', false)->whereIn('status', ExecutionStatus::inProgress())->get();
@@ -111,6 +117,15 @@ class Engine
 
             if ($chainDepth > $maxDepth) {
                 return $this->stop($attributes, ['message' => __('engine.chain_depth_limit_reached', ['max' => $maxDepth])]);
+            }
+
+            $missing = $this->missingInputs($graph->node($triggerNodeId), $input);
+
+            if ($missing !== []) {
+                return $this->stop($attributes, [
+                    'message' => trans_choice('engine.required_inputs_missing', count($missing), ['inputs' => implode(', ', $missing)]),
+                    'code' => self::REQUIRED_INPUT_MISSING,
+                ], ExecutionStatus::Failed);
             }
 
             $maxRuns = $workflow->max_runs_per_minute ?? $organization->max_runs_per_minute ?? self::DEFAULT_MAX_RUNS_PER_MINUTE;
@@ -155,15 +170,27 @@ class Engine
     }
 
     /**
-     * Record a run that is stopped before it starts, and tell the run
-     * waiting on it, if any.
+     * The labels of the inputs the run's trigger requires that $input lacks.
+     *
+     * @param  array<string, mixed>  $input
+     * @return list<string>
+     */
+    protected function missingInputs(Graph\GraphNode $trigger, array $input): array
+    {
+        return $this->registry->has($trigger->type) ? $this->registry->make($trigger->type)->missingInputs($trigger->config, $input) : [];
+    }
+
+    /**
+     * Record a run that is stopped before it starts (cancelled, or failed
+     * when what it was given cannot run), and tell the run waiting on it,
+     * if any.
      *
      * @param  array<string, mixed>  $attributes
      * @param  array{message: string, code?: string}  $error
      */
-    protected function stop(array $attributes, array $error): Execution
+    protected function stop(array $attributes, array $error, ExecutionStatus $status = ExecutionStatus::Cancelled): Execution
     {
-        $stopped = Execution::create([...$attributes, 'status' => ExecutionStatus::Cancelled, 'finished_at' => now(), 'error' => $error]);
+        $stopped = Execution::create([...$attributes, 'status' => $status, 'finished_at' => now(), 'error' => $error]);
 
         DB::afterCommit(fn () => event(new ExecutionFinished($stopped)));
         $this->coordinator->notifyParent($stopped);
