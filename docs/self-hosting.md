@@ -70,13 +70,61 @@ Until email is set up, outgoing mail is written to the log instead of sent.
 
 ## Connecting GitHub and Google
 
-Workspaces connect GitHub and Google accounts through OAuth, using an app you register with each provider. Each install needs its own, because the provider sends people back to your install's address.
+Workspaces connect GitHub and Google accounts through OAuth, for the [GitHub](triggers.md#github) and [Google](actions.md#google) nodes. Each install needs its own OAuth app with each provider, because the provider sends people back to your install's address. Until a provider is set up, its type on a workspace's **Authentication** page says which settings are missing.
 
-**GitHub:** under **Settings → Developer settings → OAuth Apps** on GitHub, choose **New OAuth app**. Set the **Homepage URL** to your `APP_URL` and the **Authorization callback URL** to `APP_URL/integrations/oauth/github/callback`, such as `https://wag.example.com/integrations/oauth/github/callback`. Copy the client ID, generate a client secret, and set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`.
+The provider only sends people's browsers back to wag.run, so connecting works even when the install isn't reachable from the internet, such as on a private network.
 
-**Google:** in the Google Cloud console, enable the Google Sheets API, set up the OAuth consent screen, then create an **OAuth client ID** of type **Web application**. Add `APP_URL/integrations/oauth/google/callback` as an **Authorized redirect URI**. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+### GitHub
 
-Apply the settings with `docker compose up -d`. Until a provider is set up, its authentication type explains what's missing.
+wag.run uses a GitHub **OAuth App**, not a GitHub App.
+
+1. Open the form for a new OAuth App. Create it under your GitHub organization, so it doesn't depend on one person's account: the organization's **Settings → Developer settings → OAuth Apps → New OAuth App**. Or, under your own account, your avatar → **Settings → Developer settings → OAuth Apps → New OAuth App**.
+2. Fill it in:
+
+   | Field | Value |
+   |---|---|
+   | **Application name** | Something people will recognize on GitHub's consent page, such as `wag.run` |
+   | **Homepage URL** | Your `APP_URL`, such as `https://wag.example.com` |
+   | **Authorization callback URL** | `APP_URL/integrations/oauth/github/callback`, such as `https://wag.example.com/integrations/oauth/github/callback` |
+   | **Enable Device Flow** | Leave it off |
+
+   The callback URL must match the address people use, including `https`. A workspace's **Add authentication** form shows it, under **Callback URL**, when you choose **GitHub**.
+3. Choose **Register application**. Copy the **Client ID**, then choose **Generate a new client secret** and copy the secret right away: GitHub shows it only once.
+4. Set them in `.env`:
+
+   ```bash
+   GITHUB_CLIENT_ID=your-client-id
+   GITHUB_CLIENT_SECRET=your-client-secret
+   ```
+
+5. Apply the settings with `docker compose up -d`.
+6. In a workspace, open **Authentication → Add authentication**, choose **GitHub**, give it a key such as `github`, and save. GitHub asks you to approve access to your repositories and their webhooks. Choose **Authorize**, and you're sent back to **Authentication**, where the setting shows the account it's connected as.
+
+If your organization restricts which OAuth Apps can see its repositories, GitHub's consent page lists it under **Organization access**. Choose **Grant**, or **Request** to ask an organization owner. Otherwise the connection can't see the organization's repositories, and the GitHub nodes fail with `404`.
+
+The connection acts as the account that approved it, with access to every repository that account can see. Consider connecting a bot account instead of your own.
+
+#### Polling or webhooks
+
+GitHub triggers can check for new events every few minutes, or register a webhook on the repository. Polling works anywhere. A webhook only works if GitHub can reach your `APP_URL`, so it doesn't work for an install on a private network, or for one on your own computer without a tunnel such as Cloudflare Tunnel or ngrok.
+
+The webhook is added to the repository, so you'll find it under the repository's **Settings → Webhooks**, not the organization's. Its **Recent Deliveries** show whether GitHub reached wag.run. If `APP_URL` changes, webhooks registered before keep the old address until the trigger's settings change and the workflow is published again.
+
+### Google
+
+1. In the [Google Cloud console](https://console.cloud.google.com), create or pick a project, then under **APIs & Services → Library** enable the **Google Sheets API**.
+2. Set up the **OAuth consent screen**. Choose **Internal** if everyone who'll connect an account is in your Google Workspace organization, otherwise **External**. Add the `.../auth/spreadsheets` scope.
+3. Under **APIs & Services → Credentials**, choose **Create credentials → OAuth client ID**, of type **Web application**. Add `APP_URL/integrations/oauth/google/callback`, such as `https://wag.example.com/integrations/oauth/google/callback`, as an **Authorized redirect URI**.
+4. Copy the client ID and secret into `.env`, then apply them with `docker compose up -d`:
+
+   ```bash
+   GOOGLE_CLIENT_ID=your-client-id
+   GOOGLE_CLIENT_SECRET=your-client-secret
+   ```
+
+5. In a workspace, add a **Google** authentication setting the same way as for GitHub.
+
+An **External** app in the **Testing** publishing status only lets the test users you list connect, and Google expires their connections after 7 days. To keep connections working, publish the app or use an **Internal** one.
 
 ## HTTPS
 
