@@ -29,6 +29,13 @@ return [
     ],
 
     /*
+    | Whether the MCP server at /mcp, and the OAuth routes MCP clients use to
+    | register and connect, are available.
+    */
+
+    'mcp_server_enabled' => (bool) env('MCP_SERVER_ENABLED', true),
+
+    /*
     | OAuth apps for workspace authentication settings. Register an app with
     | the provider, using the callback URL shown on a workspace's
     | Authentication page, then set its client id and secret here.

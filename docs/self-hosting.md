@@ -58,6 +58,7 @@ docker compose up -d
 | `TRUSTED_PROXIES` | empty | Your reverse proxy's IP addresses or CIDR ranges, comma-separated, or `*` if the app can only be reached through the proxy |
 | `SESSION_SECURE_COOKIE` | `false` | Set to `true` once the site is served over HTTPS |
 | `MAIL_MAILER`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS` | `log` | SMTP settings for outgoing email. You can set email up in the app instead, under **Organization → Email**. |
+| `MCP_SERVER_ENABLED` | `true` | Set to `false` to turn off the [MCP server](api.md) for AI assistants, and the OAuth routes they use to connect. The REST API keeps working. |
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | empty | Your GitHub OAuth app, so workspaces can connect GitHub accounts. See [Connecting GitHub and Google](#connecting-github-and-google). |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | empty | Your Google OAuth client, so workspaces can connect Google accounts |
 | `APP_NAME` | `wag.run` | The name shown in the app and in emails |

@@ -14,6 +14,7 @@ use Aws\Result;
 use Aws\S3\Exception\S3Exception;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Psr\Http\Message\RequestInterface;
 use Tests\Concerns\RunsWorkflows;
 use Tests\TestCase;
@@ -25,7 +26,7 @@ class StorageNodesTest extends TestCase
     /**
      * What each request to the storage service carried.
      *
-     * @var list<array{command: string, bucket: mixed, key: mixed, body: string, content_type: mixed, url: string}>
+     * @var list<array{command: string, bucket: mixed, key: mixed, body: string, content_type: mixed, storage_class: mixed, url: string}>
      */
     private array $sent = [];
 
@@ -59,6 +60,7 @@ class StorageNodesTest extends TestCase
                 'key' => $command['Key'],
                 'body' => (string) $command['Body'],
                 'content_type' => $command['ContentType'],
+                'storage_class' => $command['StorageClass'],
                 'url' => (string) $request->getUri(),
             ];
 
@@ -96,12 +98,44 @@ class StorageNodesTest extends TestCase
             'key' => 'opnsense/fw1.xml',
             'body' => '<opnsense><system/></opnsense>',
             'content_type' => 'application/xml',
+            'storage_class' => null,
             'url' => 'https://backups.s3.us-east-1.amazonaws.com/opnsense/fw1.xml',
         ]], $this->sent);
         $this->assertSame(
             ['bucket' => 'backups', 'key' => 'opnsense/fw1.xml', 'url' => 'https://backups.s3.us-east-1.amazonaws.com/opnsense/fw1.xml', 'size' => 30],
             $this->stepFor($execution, 'upload')->output,
         );
+    }
+
+    public function test_sends_the_chosen_storage_class_for_text_and_files(): void
+    {
+        Storage::fake('workflow_files');
+        $this->storageAnswers(fn () => new Result([]));
+        $workspace = Workspace::factory()->create();
+        Credential::factory()->for($workspace)->s3()->create(['key' => 'backups']);
+
+        $this->runUpload($workspace, ['key' => 'config.xml', 'content' => '<a/>', 'storage_class' => 'GLACIER']);
+        $this->storageAnswers(fn () => new Result([]));
+        $this->runWorkflow($this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger',
+                'make' => ['core.create_file', ['name' => 'config.tar', 'content' => 'tar bytes']],
+                'upload' => ['core.s3_upload', ['credential' => 'backups', 'key' => 'config.tar', 'content' => '{{ nodes.make.output.file }}', 'storage_class' => 'DEEP_ARCHIVE']]],
+            ['start->make', 'make->upload'],
+        ), $workspace));
+
+        $this->assertSame(['GLACIER', 'DEEP_ARCHIVE'], array_column($this->sent, 'storage_class'));
+    }
+
+    public function test_refuses_a_storage_class_it_does_not_know(): void
+    {
+        $this->storageAnswers(fn () => new Result([]));
+        $workspace = Workspace::factory()->create();
+        Credential::factory()->for($workspace)->s3()->create(['key' => 'backups']);
+
+        $execution = $this->runUpload($workspace, ['key' => 'config.xml', 'content' => '<a/>', 'storage_class' => 'COLD']);
+
+        $this->assertSame('"COLD" is not a storage class this node can use.', $execution->error['message']);
+        $this->assertSame([], $this->sent);
     }
 
     public function test_an_s3_compatible_endpoint_on_an_internal_address_needs_the_workspace_allowlist(): void

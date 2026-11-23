@@ -22,6 +22,14 @@ use RuntimeException;
  */
 class UploadToS3 extends Node
 {
+    /**
+     * Amazon S3 storage classes an upload can ask for. Other S3-compatible
+     * services may accept only some of them.
+     *
+     * @var list<string>
+     */
+    public const STORAGE_CLASSES = ['STANDARD', 'INTELLIGENT_TIERING', 'STANDARD_IA', 'ONEZONE_IA', 'GLACIER_IR', 'GLACIER', 'DEEP_ARCHIVE'];
+
     public function __construct(protected ObjectStorage $storage) {}
 
     public static function type(): string
@@ -61,6 +69,10 @@ class UploadToS3 extends Node
             new Field('key', __('nodes.s3_upload.key'), Field::TEXT, required: true, templated: true, description: __('nodes.s3_upload.key_help')),
             new Field('content', __('nodes.s3_upload.content'), Field::TEXTAREA, required: true, templated: true, description: __('nodes.s3_upload.content_help')),
             new Field('content_type', __('nodes.s3_upload.content_type'), Field::TEXT, templated: true, description: __('nodes.s3_upload.content_type_help')),
+            new Field('storage_class', __('nodes.s3_upload.storage_class'), Field::SELECT, default: '', options: [
+                '' => __('nodes.s3_upload.bucket_default'),
+                ...array_combine(self::STORAGE_CLASSES, array_map(fn (string $class) => __('nodes.s3_upload.storage_classes.'.strtolower($class)), self::STORAGE_CLASSES)),
+            ], description: __('nodes.s3_upload.storage_class_help')),
         ];
     }
 
@@ -95,18 +107,24 @@ class UploadToS3 extends Node
 
         $content = $context->input('content');
         $contentType = trim((string) $context->input('content_type')) ?: null;
+        $storageClass = (string) $context->input('storage_class') ?: null;
+
+        if ($storageClass !== null && ! in_array($storageClass, self::STORAGE_CLASSES, true)) {
+            return NodeResult::fail(__('nodes.s3_upload.unknown_storage_class', ['class' => $storageClass]), retryable: false);
+        }
+
         $allowlist = new AddressAllowlist($context->workspace()->internal_allowlist ?? []);
 
         try {
             if (WorkflowFiles::isReference($content)) {
                 $file = $context->file($content) ?? throw new RuntimeException(__('run_files.file_not_found'));
 
-                return NodeResult::complete($this->storage->putFile($credential, $allowlist, $key, $file, $contentType));
+                return NodeResult::complete($this->storage->putFile($credential, $allowlist, $key, $file, $contentType, $storageClass));
             }
 
             $content = is_array($content) ? (string) json_encode($content, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : (string) $content;
 
-            return NodeResult::complete($this->storage->put($credential, $allowlist, $key, $content, $contentType));
+            return NodeResult::complete($this->storage->put($credential, $allowlist, $key, $content, $contentType, $storageClass));
         } catch (FilesystemException $e) {
             return $this->failure($e);
         } catch (RuntimeException $e) {

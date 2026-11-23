@@ -31,10 +31,10 @@ class ObjectStorage
      *
      * @throws RuntimeException when the storage address is not allowed
      */
-    public function put(Credential $credential, AddressAllowlist $allowlist, string $key, string $contents, ?string $contentType = null): array
+    public function put(Credential $credential, AddressAllowlist $allowlist, string $key, string $contents, ?string $contentType = null, ?string $storageClass = null): array
     {
         $disk = $this->disk($credential->config, $allowlist);
-        $disk->put($key, $contents, array_filter(['ContentType' => $contentType]));
+        $disk->put($key, $contents, array_filter(['ContentType' => $contentType, 'StorageClass' => $storageClass]));
 
         return $this->written($credential, $disk, $key, strlen($contents));
     }
@@ -44,13 +44,13 @@ class ObjectStorage
      *
      * @return array{bucket: string, key: string, url: string, size: int}
      */
-    public function putFile(Credential $credential, AddressAllowlist $allowlist, string $key, WorkflowFile $file, ?string $contentType = null): array
+    public function putFile(Credential $credential, AddressAllowlist $allowlist, string $key, WorkflowFile $file, ?string $contentType = null, ?string $storageClass = null): array
     {
         $disk = $this->disk($credential->config, $allowlist);
         $stream = $this->files->readStream($file);
 
         try {
-            $disk->writeStream($key, $stream, ['ContentType' => $contentType ?? $file->mime]);
+            $disk->writeStream($key, $stream, array_filter(['ContentType' => $contentType ?? $file->mime, 'StorageClass' => $storageClass]));
         } finally {
             is_resource($stream) && fclose($stream);
         }

@@ -9,11 +9,14 @@ Both act as you. They can only do what your role allows in each workspace: a Vie
 
 ## Connecting an AI assistant
 
+The MCP server is on unless the install's administrator turned it off with `MCP_SERVER_ENABLED=false` (see [Self-hosting](self-hosting.md#settings)). When it's off, **Settings → API tokens** doesn't show its URL.
+
+
 1. Open **Settings → API tokens** and copy the **MCP server URL**. It's your install's address followed by `/mcp`, such as `https://wag.example.com/mcp`.
 2. In the assistant, add it as a custom connector or remote MCP server.
 3. The assistant opens a wag.run page asking you to sign in and approve it. Choose **Authorize**.
 
-The assistant then shows up under **Connected apps** on the same settings page. Choose **Disconnect** to take its access away.
+The assistant then shows up under **Connected apps** on the same settings page. Choose **Disconnect** to take its access away. An install accepts up to 10 new assistant registrations a minute.
 
 The assistant gets these tools:
 

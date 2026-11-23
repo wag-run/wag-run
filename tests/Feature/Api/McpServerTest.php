@@ -97,4 +97,24 @@ class McpServerTest extends TestCase
         $server->tool(StartRun::class, ['workspace' => $this->workspace->slug, 'workflow' => $this->workflow->id, 'input' => ['order' => 1]])
             ->assertHasErrors(['This token doesn\'t have the runs:write scope.']);
     }
+
+    public function test_clients_can_register_ten_times_a_minute(): void
+    {
+        $register = fn () => $this->postJson('/oauth/register', ['client_name' => 'Claude', 'redirect_uris' => ['https://claude.ai/api/mcp/auth_callback']]);
+
+        foreach (range(1, 10) as $attempt) {
+            $register()->assertSuccessful();
+        }
+
+        $register()->assertTooManyRequests();
+    }
+
+    public function test_the_settings_page_leaves_out_the_mcp_url_when_the_server_is_off(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user)->get(route('api-tokens.edit'))->assertSee('data-test="mcp-server-url"', false);
+
+        config(['services.mcp_server_enabled' => false]);
+        $this->actingAs($user)->get(route('api-tokens.edit'))->assertOk()->assertDontSee('data-test="mcp-server-url"', false);
+    }
 }

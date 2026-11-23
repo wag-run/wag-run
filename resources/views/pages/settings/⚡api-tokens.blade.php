@@ -73,8 +73,10 @@ new class extends Component {
         <div class="space-y-10">
             <div class="space-y-3">
                 <flux:input :label="__('settings.api_tokens.api_url')" :value="url('/api/v1')" readonly copyable />
-                <flux:input :label="__('settings.api_tokens.mcp_server_url')" :value="url('/mcp')" readonly copyable
-                    :description="__('settings.api_tokens.add_this_url_to_an')" />
+                @if (config('services.mcp_server_enabled'))
+                    <flux:input :label="__('settings.api_tokens.mcp_server_url')" :value="url('/mcp')" readonly copyable
+                        :description="__('settings.api_tokens.add_this_url_to_an')" data-test="mcp-server-url" />
+                @endif
             </div>
 
             <form wire:submit="create" class="space-y-4">
