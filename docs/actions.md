@@ -156,6 +156,24 @@ HTTP calls can't reach private, loopback or link-local addresses, such as `10.0.
 
 > **Warning:** With **Allow insecure connections** on, the connection is still encrypted, but wag.run no longer checks who it's talking to. Anyone between wag.run and the server could read or change the request and the response, including any token or password sent with it. Use it only for internal servers you control. Where you can, give the server a valid certificate instead.
 
+### Upload to S3
+
+Writes a file to a bucket on Amazon S3 or an S3-compatible service, such as MinIO, Cloudflare R2, Backblaze B2 or Wasabi. A file already at the same key is replaced.
+
+| Setting | What it does |
+|---|---|
+| **Storage** | An **S3-compatible storage** setting from the workspace's [authentication settings](workspaces.md#authentication). It holds the bucket, region, endpoint and access keys. |
+| **Key** | The file's path in the bucket, such as `backups/config-{{ date(now(), 'Y-m-d') }}.xml` |
+| **Content** | Text, such as `{{ nodes.fetch.output.body }}`, or a file from an earlier node, such as `{{ nodes.fetch.output.file }}` from an HTTP call that saves its response as a file. Files are uploaded byte for byte. A list or object is saved as JSON. |
+| **Content type** | Optional, such as `application/xml`. Left empty, a file keeps its own type, and text gets one guessed from the key's extension. |
+| **Storage class** | Optional. **Bucket default** unless you choose **Standard**, **Intelligent-Tiering**, **Standard-Infrequent Access**, **One Zone-Infrequent Access**, **Glacier Instant Retrieval**, **Glacier Flexible Retrieval** or **Glacier Deep Archive**. The colder classes cost less to keep but more, or longer, to read back. Other S3-compatible services may accept only some of these. |
+
+Outputs: `bucket`, `key`, `url` (the file's address) and `size` (in bytes).
+
+Like HTTP calls, an upload can't reach a storage endpoint on a private, loopback or link-local address, such as a MinIO server at `10.0.0.5`, unless a workspace admin lists it in the [internal-address allowlist](workspaces.md#workspace-settings).
+
+If the storage service refuses the upload, the step fails with its status and message. Server errors, rate limits and connection problems are retried; other refusals, such as wrong keys or a missing bucket, are not.
+
 ## GitHub
 
 These nodes work on a GitHub repository as the account a [GitHub authentication setting](workspaces.md#connecting-an-account) is connected to. Each has a **GitHub account** and a **Repository**, as `owner/name` or the repository's URL. A placeholder works in **Repository**, such as `{{ trigger.repository }}` after a [GitHub trigger](triggers.md#github).
