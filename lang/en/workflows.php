@@ -7,6 +7,7 @@ return [
     'edit' => [
         'a_test_run_uses_the_draft' => 'A test run uses the draft without publishing it. It does everything a real run does, including sending emails and calling other services. Webhooks, forms and schedules keep using the published version.',
         'add_sticky_note' => 'Add sticky note',
+        'all_nodes' => 'All nodes',
         'back_to_workflows' => 'Back to workflows',
         'backoff_s' => 'Backoff (s)',
         'click_or_drag_to_add' => 'Click a node to add it after the selected one or drag it onto the canvas.',
@@ -40,6 +41,7 @@ return [
         'live' => 'Live',
         'manual_trigger_asks_for_these' => 'The Manual trigger asks for these inputs. The run uses the published version.',
         'more_ways_to_run' => 'More ways to run',
+        'no_matching_nodes' => 'No nodes match your search.',
         'node_settings' => 'Node settings',
         'not_published_yet' => 'Not published yet.',
         'outputs' => 'Outputs',
@@ -64,6 +66,7 @@ return [
         'sample_data_for_name' => 'Sample data for :name',
         'sample_data_must_be_a_json_object' => 'The sample data must be a JSON object, such as {"body": {"id": 42}}.',
         'saving' => 'Saving…',
+        'search_nodes' => 'Search nodes',
         'select_a_node_to_configure' => 'Select a node to configure it. Add nodes from the left; drag from an output to an input to connect them. Connect one output to several nodes to run them in parallel. Right-click a connection to delete it.',
         'show_minimap' => 'Show minimap',
         'show_on_error_path' => 'Show "on error" path',

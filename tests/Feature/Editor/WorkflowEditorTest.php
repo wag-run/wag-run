@@ -399,6 +399,17 @@ class WorkflowEditorTest extends TestCase
         $this->assertSame(7, $workflow->retention_days);
     }
 
+    public function test_the_palette_leaves_out_sticky_notes_which_come_from_the_context_menu(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor();
+
+        $this->actingAs($user)->get(route('workspaces.workflows.edit', [$workspace, $workflow]))
+            ->assertOk()
+            ->assertSee('data-test="palette-core.http_request"', false)
+            ->assertDontSee('data-test="palette-core.note"', false)
+            ->assertSee(__('workflows.edit.add_sticky_note'));
+    }
+
     public function test_a_sticky_note_goes_where_the_canvas_was_clicked_and_its_text_and_color_save(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor();
