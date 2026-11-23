@@ -10,6 +10,7 @@ use App\Support\AddressAllowlist;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Symfony\Component\Mime\MimeTypes;
@@ -109,7 +110,7 @@ class WebhookController extends Controller
 
         $uploads = array_map(
             fn (mixed $upload) => is_array($upload)
-                ? array_values(array_map(fn (UploadedFile $file) => $files->storeUpload($workspace, null, $file), array_filter($upload, fn ($file) => $file instanceof UploadedFile)))
+                ? array_values(array_map(fn (UploadedFile $file) => $files->storeUpload($workspace, null, $file), Arr::flatten($upload)))
                 : $files->storeUpload($workspace, null, $upload),
             $request->allFiles(),
         );

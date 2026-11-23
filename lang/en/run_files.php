@@ -7,6 +7,7 @@ return [
     'file_not_found' => 'That file was not found in this workspace.',
     'files' => 'Files',
     'name' => 'Name',
+    'no_temporary_file' => 'Could not create a temporary file for the download.',
     'not_a_file' => 'That value is not a file.',
     'not_text' => 'That file is not text. Use base64() to read its bytes.',
     'size_in_bytes' => 'Size in bytes',

@@ -285,7 +285,7 @@ class Assignments
                 ->filter(fn (Assignment $assignment) => in_array($assignment->status, [AssignmentStatus::Approved, AssignmentStatus::Rejected], true))
                 ->map(fn (Assignment $assignment) => [
                     'user_id' => $assignment->assignee_id,
-                    'name' => $assignment->assignee?->name,
+                    'name' => $assignment->assignee->name,
                     'decision' => $assignment->response['decision'] ?? null,
                     'comment' => $assignment->response['comment'] ?? null,
                 ])

@@ -117,9 +117,15 @@ class HttpRequest extends Node
             return $options;
         }
 
-        $download = $context->input('save_as_file') ? tempnam(sys_get_temp_dir(), 'wag-download-') : null;
+        $download = null;
 
-        if ($download !== null) {
+        if ($context->input('save_as_file')) {
+            $download = tempnam(sys_get_temp_dir(), 'wag-download-');
+
+            if ($download === false) {
+                return NodeResult::fail(__('run_files.no_temporary_file'));
+            }
+
             $options['sink'] = $download;
             $limit = (int) config('workflows.files.max_bytes');
             $options['progress'] = function (int $expected, int $received) use ($limit) {
@@ -165,10 +171,10 @@ class HttpRequest extends Node
             }
         } catch (ConnectionException $e) {
             return NodeResult::fail(__('nodes.http_request.connection_failed_message', ['message' => $e->getMessage()]));
-        } catch (RuntimeException $e) {
-            return NodeResult::fail($e->getMessage(), retryable: false);
         } catch (RequestException $e) {
             return NodeResult::fail($e->getPrevious()?->getMessage() ?? $e->getMessage(), retryable: false);
+        } catch (RuntimeException $e) {
+            return NodeResult::fail($e->getMessage(), retryable: false);
         }
 
         try {

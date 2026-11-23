@@ -92,7 +92,7 @@ class Note extends Node
      */
     public static function customColors(string $hex): array
     {
-        [$red, $green, $blue] = array_map(fn (string $pair) => hexdec($pair), str_split(substr($hex, 1), 2));
+        [$red, $green, $blue] = array_map(fn (string $pair) => (int) hexdec($pair), str_split(substr($hex, 1), 2));
         $lighter = fn (int $channel) => (int) round($channel + (255 - $channel) * 0.55);
         $luminance = (0.2126 * $red + 0.7152 * $green + 0.0722 * $blue) / 255;
 

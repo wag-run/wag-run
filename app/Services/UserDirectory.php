@@ -55,7 +55,7 @@ class UserDirectory
      */
     public function passwordResetLink(User $user): string
     {
-        $token = Password::broker()->createToken($user);
+        $token = Password::createToken($user);
 
         Audit::record('user.password_reset_link_generated', $user);
 

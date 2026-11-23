@@ -45,7 +45,7 @@ final readonly class Field
     public const SCHEMA = 'schema';
 
     /**
-     * @param  array<string, string>  $options  value => label, for select fields
+     * @param  array<int|string, string>  $options  value => label, for select fields
      * @param  list<string>  $credentialTypes  allowed authentication types, for credential fields
      * @param  list<Field>  $fields  item fields, for list fields
      * @param  array<string, string|list<string>>  $visibleWhen  shown and saved only while each named

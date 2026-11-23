@@ -38,6 +38,7 @@ class SafeExpressionLanguage extends ExpressionLanguage
      * path into data that is not there (nodes.skipped.output.id) reads as
      * null instead of failing, the way templates have always behaved.
      *
+     * @param  array<int|string, string>  $names
      * @param  int-mask-of<Parser::IGNORE_*>  $flags
      */
     public function parse(Expression|string $expression, array $names, int $flags = 0): ParsedExpression

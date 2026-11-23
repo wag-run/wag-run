@@ -70,7 +70,8 @@ class Engine
             throw new InvalidArgumentException(__('engine.workflow_name_has_no_trigger', ['name' => $workflow->name]));
         }
 
-        $chainDepth = (($parentStep?->execution ?? $startedBy)?->chain_depth ?? 0) + 1;
+        $parent = $parentStep === null ? $startedBy : $parentStep->execution;
+        $chainDepth = ($parent === null ? 0 : $parent->chain_depth) + 1;
 
         $execution = DB::transaction(function () use ($workflow, $version, $isTest, $input, $user, $triggerType, $triggerNodeId, $parentStep, $chainDepth) {
             Workflow::query()->lockForUpdate()->find($workflow->id);
@@ -91,7 +92,7 @@ class Engine
                 'started_at' => now(),
             ];
 
-            $maxDepth = Organization::current()?->max_chain_depth ?? self::DEFAULT_MAX_CHAIN_DEPTH;
+            $maxDepth = Organization::current()->max_chain_depth ?? self::DEFAULT_MAX_CHAIN_DEPTH;
 
             if ($chainDepth > $maxDepth) {
                 $stopped = Execution::create([...$attributes, 'status' => ExecutionStatus::Cancelled, 'finished_at' => now(), 'error' => [

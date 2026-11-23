@@ -9,7 +9,7 @@ namespace App\Engine\Definitions;
 final readonly class Output
 {
     /**
-     * @param  'string'|'number'|'boolean'|'object'|'array'|'any'  $type
+     * @param  'string'|'number'|'boolean'|'object'|'array'|'file'|'any'  $type
      * @param  list<Output>  $children  properties of an object, or of each item of an array
      */
     public function __construct(

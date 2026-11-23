@@ -79,6 +79,10 @@ class WorkflowFiles
         $file = $this->newFile($workspace, $execution, $name, $mime ?: $this->guessMime($name, (string) file_get_contents($path, length: 2048)), $size, (string) hash_file('sha256', $path));
         $stream = fopen($path, 'rb');
 
+        if ($stream === false) {
+            throw new RuntimeException(__('run_files.file_is_missing', ['name' => $name]));
+        }
+
         try {
             Storage::disk($file->disk)->writeStream($file->path, $stream);
         } finally {
@@ -141,7 +145,7 @@ class WorkflowFiles
     {
         $disk = Storage::disk($file->disk);
 
-        return method_exists($disk, 'path') && config("filesystems.disks.{$file->disk}.driver") === 'local' ? $disk->path($file->path) : null;
+        return config("filesystems.disks.{$file->disk}.driver") === 'local' ? $disk->path($file->path) : null;
     }
 
     /**
