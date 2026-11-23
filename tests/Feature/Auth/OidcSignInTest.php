@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\AuditLog;
 use App\Models\OidcIdentity;
 use App\Models\OidcProvider;
 use App\Models\Organization;
@@ -110,6 +111,10 @@ class OidcSignInTest extends TestCase
         $this->signInWith()->assertRedirect(route('dashboard'));
 
         $this->assertAuthenticatedAs($user);
+        $this->assertSame(
+            ['method' => 'oidc', 'provider' => 'Acme ID'],
+            AuditLog::query()->where('action', 'auth.signed_in')->sole()->metadata,
+        );
         Http::assertSent(fn (Request $request) => $request->url() === self::ISSUER.'/token'
             && $request['code'] === 'code-xyz'
             && $request['code_verifier'] !== null
