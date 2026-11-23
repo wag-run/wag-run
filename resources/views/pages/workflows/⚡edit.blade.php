@@ -50,6 +50,12 @@ new class extends Component {
      */
     public array $retry = ['max_retries' => 0, 'backoff_seconds' => 30];
 
+    /**
+     * Whether the selected node retries when it fails. Turning it on starts
+     * at three retries; turning it off saves no retries.
+     */
+    public bool $retryEnabled = false;
+
     public bool $errorPath = false;
 
     public string $name = '';
@@ -410,6 +416,7 @@ new class extends Component {
             'max_retries' => $node->retry['max_retries'] ?? 0,
             'backoff_seconds' => $node->retry['backoff_seconds'] ?? 30,
         ];
+        $this->retryEnabled = (int) $this->retry['max_retries'] > 0;
         $this->errorPath = $node->errorPath;
         $this->form = $this->definition ? ConfigForm::toForm($this->definition, $node->config) : [];
         $this->resetValidation();
@@ -702,6 +709,12 @@ new class extends Component {
 
     public function updatedRetry(): void
     {
+        $this->saveSelected();
+    }
+
+    public function updatedRetryEnabled(): void
+    {
+        $this->retry['max_retries'] = $this->retryEnabled ? max(1, (int) $this->retry['max_retries'] ?: 3) : 0;
         $this->saveSelected();
     }
 
@@ -1020,10 +1033,10 @@ new class extends Component {
                     data-test="discard-draft">{{ __('workflows.edit.discard_draft') }}</flux:button>
             @endif
         @endif
-        <flux:text class="text-xs" wire:loading.remove wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,errorPath,addNode,undo,redo,cutNodes,pasteNodes,discardDraft">
+        <flux:text class="text-xs" wire:loading.remove wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,retryEnabled,errorPath,addNode,undo,redo,cutNodes,pasteNodes,discardDraft">
             {{ $workflow->draft_updated_at ? __('workflows.edit.draft_saved_time', ['time' => $workflow->draft_updated_at->diffForHumans()]) : '' }}
         </flux:text>
-        <flux:text class="text-xs" wire:loading wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,errorPath,addNode,undo,redo,cutNodes,pasteNodes,discardDraft">{{ __('workflows.edit.saving') }}</flux:text>
+        <flux:text class="text-xs" wire:loading wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,retryEnabled,errorPath,addNode,undo,redo,cutNodes,pasteNodes,discardDraft">{{ __('workflows.edit.saving') }}</flux:text>
 
         <flux:spacer />
 
@@ -1298,12 +1311,14 @@ new class extends Component {
 
                     @if ($definition->kind() === NodeKind::Action)
                         <flux:separator />
-                        <flux:heading size="sm">{{ __('workflows.edit.retries') }}</flux:heading>
-                        <div class="grid grid-cols-2 gap-3">
-                            <flux:input type="number" min="0" max="25" wire:model.live.debounce.600ms="retry.max_retries" :label="__('workflows.edit.retries')" />
-                            <flux:input type="number" min="0" wire:model.live.debounce.600ms="retry.backoff_seconds" :label="__('workflows.edit.backoff_s')" />
-                        </div>
-                        <flux:text class="text-xs">{{ __('workflows.edit.each_retry_waits_twice_as') }}</flux:text>
+                        <flux:checkbox wire:model.live="retryEnabled" :label="__('workflows.edit.retry_on_failure')" data-test="retry-toggle" />
+                        @if ($retryEnabled)
+                            <div class="grid grid-cols-2 gap-3" data-test="retry-settings">
+                                <flux:input type="number" min="1" max="25" wire:model.live.debounce.600ms="retry.max_retries" :label="__('workflows.edit.retries')" />
+                                <flux:input type="number" min="0" wire:model.live.debounce.600ms="retry.backoff_seconds" :label="__('workflows.edit.backoff_s')" />
+                            </div>
+                            <flux:text class="text-xs">{{ __('workflows.edit.each_retry_waits_twice_as') }}</flux:text>
+                        @endif
                     @endif
 
                     @if ($definition->hasErrorPort())

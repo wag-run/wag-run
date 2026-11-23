@@ -491,4 +491,24 @@ class WorkflowEditorTest extends TestCase
         unset($editor->instance()->canvas);
         $this->assertSame(['yellow', null], [$colorOf()['color'], $colorOf()['custom']]);
     }
+
+    public function test_retries_are_off_until_turned_on_and_turning_them_off_clears_them(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor();
+        $retryOf = fn () => collect($workflow->refresh()->draft_graph['nodes'])->firstWhere('id', 'fetch')['retry'] ?? null;
+
+        $editor = $this->editor($workspace, $workflow, $user)
+            ->call('selectNode', 'fetch')
+            ->assertSet('retryEnabled', false)
+            ->assertDontSeeHtml('data-test="retry-settings"')
+            ->set('retryEnabled', true)
+            ->assertSeeHtml('data-test="retry-settings"');
+        $this->assertSame(['max_retries' => 3, 'backoff_seconds' => 30], $retryOf());
+
+        $editor->set('retry.max_retries', 5)->call('deselect')->call('selectNode', 'fetch')->assertSet('retryEnabled', true);
+        $this->assertSame(5, $retryOf()['max_retries']);
+
+        $editor->set('retryEnabled', false)->assertDontSeeHtml('data-test="retry-settings"');
+        $this->assertNull($retryOf());
+    }
 }

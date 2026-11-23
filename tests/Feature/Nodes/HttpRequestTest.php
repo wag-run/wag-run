@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Nodes;
 
-use App\Engine\Nodes\Actions\HttpRequest;
 use App\Enums\ExecutionStatus;
 use App\Enums\StepStatus;
 use App\Models\Credential;
@@ -217,19 +216,5 @@ class HttpRequestTest extends TestCase
         $this->runWorkflow($this->httpWorkflow(['method' => 'GET', 'url' => 'https://api.example.com/backup', 'allow_insecure' => true]));
 
         $this->assertSame([true, false], $verified);
-    }
-
-    public function test_a_body_over_the_limit_is_cut_and_marked_truncated(): void
-    {
-        Http::fake([
-            'api.example.com/small' => Http::response('<config/>'),
-            'api.example.com/large' => Http::response(str_repeat('x', HttpRequest::MAX_BODY_BYTES + 10)),
-        ]);
-
-        $small = $this->stepFor($this->runWorkflow($this->httpWorkflow(['method' => 'GET', 'url' => 'https://api.example.com/small'])), 'call')->output;
-        $large = $this->stepFor($this->runWorkflow($this->httpWorkflow(['method' => 'GET', 'url' => 'https://api.example.com/large'])), 'call')->output;
-
-        $this->assertSame(['<config/>', false], [$small['body'], $small['truncated']]);
-        $this->assertSame([HttpRequest::MAX_BODY_BYTES, true], [strlen($large['body']), $large['truncated']]);
     }
 }

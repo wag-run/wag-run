@@ -54,6 +54,7 @@ return [
         'redo_shortcut' => 'Redo (⇧⌘Z or Ctrl+Y)',
         'reference_its_output_as' => 'Reference its output as',
         'retries' => 'Retries',
+        'retry_on_failure' => 'Retry on failure',
         'roll_back' => 'Roll back',
         'roll_back_to_version_n' => 'Roll back to version :n?',
         'rolled_back_to_version_old' => 'Rolled back to version :old as version :new.',

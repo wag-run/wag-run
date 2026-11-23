@@ -102,7 +102,6 @@ class HttpRequest extends Node
             new Output('ok', __('nodes.http_request.succeeded_2xx'), 'boolean'),
             new Output('headers', __('common.headers'), 'object'),
             new Output('body', __('common.body'), 'any', __('nodes.http_request.decoded_json_when_the_response')),
-            new Output('truncated', __('nodes.http_request.truncated'), 'boolean', __('nodes.http_request.truncated_help')),
             new Output('file', __('nodes.http_request.response_file'), 'file', __('nodes.http_request.response_file_help')),
         ];
     }
@@ -254,12 +253,12 @@ class HttpRequest extends Node
     }
 
     /**
-     * A text body over MAX_BODY_BYTES is cut to that size, and truncated
-     * says so, so a workflow can refuse to pass a partial body on. A body
-     * saved as a file, or one that is not text (an image, a zip), comes back
-     * as file instead, with no body.
+     * A text body over MAX_BODY_BYTES is cut to that size; to get all of a
+     * large body, save the response as a file. A body saved as a file, or
+     * one that is not text (an image, a zip), comes back as file instead,
+     * with no body.
      *
-     * @return array{status: int, ok: bool, headers: array<string, string>, body: mixed, truncated: bool, file: array<string, mixed>|null}
+     * @return array{status: int, ok: bool, headers: array<string, string>, body: mixed, file: array<string, mixed>|null}
      */
     protected function responseOutput(NodeContext $context, Response $response, string $url, ?string $download): array
     {
@@ -269,25 +268,23 @@ class HttpRequest extends Node
         $mime = trim(Str::before((string) $response->header('Content-Type'), ';')) ?: null;
 
         if ($download !== null) {
-            return [...$base, 'body' => null, 'truncated' => false, 'file' => $context->storeFilePath($download, $name, $mime)];
+            return [...$base, 'body' => null, 'file' => $context->storeFilePath($download, $name, $mime)];
         }
 
         $raw = $response->body();
 
         if ($raw !== '' && ! mb_check_encoding($raw, 'UTF-8')) {
-            return [...$base, 'body' => null, 'truncated' => false, 'file' => $context->storeFile($raw, $name, $mime)];
+            return [...$base, 'body' => null, 'file' => $context->storeFile($raw, $name, $mime)];
         }
 
         $isJson = Str::contains((string) $response->header('Content-Type'), 'json');
         $body = $isJson ? ($response->json() ?? $raw) : $raw;
 
-        $truncated = is_string($body) && strlen($body) > self::MAX_BODY_BYTES;
-
-        if ($truncated) {
+        if (is_string($body) && strlen($body) > self::MAX_BODY_BYTES) {
             $body = substr($body, 0, self::MAX_BODY_BYTES);
         }
 
-        return [...$base, 'body' => $body, 'truncated' => $truncated, 'file' => null];
+        return [...$base, 'body' => $body, 'file' => null];
     }
 
     /**
