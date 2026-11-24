@@ -78,7 +78,7 @@
                         @endif
                         @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewCredentials))
                             <flux:sidebar.item icon="key" :href="route('workspaces.credentials', $activeWorkspace)" :current="request()->routeIs('workspaces.credentials')" wire:navigate>
-                                {{ __('common.authentication') }}
+                                {{ __('common.credentials') }}
                             </flux:sidebar.item>
                         @endif
                         @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewMembers))

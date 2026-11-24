@@ -42,7 +42,7 @@
     @elseif ($oauthType && $options === [])
         <flux:text class="text-xs">{{ __('workflows.editor.ask_an_admin_to_connect', ['provider' => $oauthType->label()]) }}</flux:text>
     @elseif ($options === [] && $field->type === Field::CREDENTIAL)
-        <flux:text class="text-xs">{{ __('workflows.editor.add_one_under_authentication_first') }}</flux:text>
+        <flux:text class="text-xs">{{ __('workflows.editor.add_one_under_credentials_first') }}</flux:text>
     @endif
 @elseif ($field->type === Field::CRON)
     @php

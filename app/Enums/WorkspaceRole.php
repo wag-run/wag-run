@@ -24,7 +24,7 @@ enum WorkspaceRole: string
     public function description(): string
     {
         return match ($this) {
-            self::Admin => __('enums.workspace_role.manages_members_secrets_authentication_and'),
+            self::Admin => __('enums.workspace_role.manages_members_secrets_credentials_and'),
             self::Editor => __('enums.workspace_role.builds_publishes_and_runs_workflows'),
             self::Viewer => __('enums.workspace_role.sees_workflows_and_execution_logs'),
             self::Guest => __('enums.workspace_role.sees_only_the_approvals_and'),

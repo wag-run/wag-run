@@ -80,7 +80,7 @@ new class extends Component {
             @foreach ([
                 ['label' => __('common.variables'), 'count' => $this->counts['variables'], 'route' => 'workspaces.variables', 'icon' => 'variable'],
                 ['label' => __('common.secrets'), 'count' => $this->counts['secrets'], 'route' => 'workspaces.secrets', 'icon' => 'lock-closed'],
-                ['label' => __('common.authentication'), 'count' => $this->counts['credentials'], 'route' => 'workspaces.credentials', 'icon' => 'key'],
+                ['label' => __('common.credentials'), 'count' => $this->counts['credentials'], 'route' => 'workspaces.credentials', 'icon' => 'key'],
                 ['label' => __('common.members'), 'count' => $this->counts['members'], 'route' => 'workspaces.members', 'icon' => 'users'],
             ] as $card)
                 <a href="{{ route($card['route'], $workspace) }}" wire:navigate wire:key="card-{{ $card['route'] }}"

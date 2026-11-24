@@ -75,7 +75,7 @@ new class extends Component {
             'member' => __('workspaces.audit.membership'),
             'invitation' => __('workspaces.audit.invitations'),
             'secret' => __('common.secrets'),
-            'credential' => __('common.authentication'),
+            'credential' => __('common.credentials'),
             'variable' => __('common.variables'),
             'workspace' => __('common.workspaces'),
         ];

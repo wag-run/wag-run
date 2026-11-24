@@ -6,11 +6,11 @@ The first account registered on a new install becomes an organization admin. Adm
 
 ## Workspaces
 
-**Organization → Workspaces** lists every workspace with how many members, variables, secrets and authentication settings it has.
+**Organization → Workspaces** lists every workspace with how many members, variables, secrets and credentials it has.
 
 - **New workspace** creates one. Add people to it from its **Members** page. See [Members and roles](workspaces.md#members-and-roles).
 - **Rename** changes its name.
-- **Delete** removes it with all its workflows, run logs, variables, secrets and authentication settings. This can't be undone.
+- **Delete** removes it with all its workflows, run logs, variables, secrets and credentials. This can't be undone.
 
 ## Users
 
@@ -63,7 +63,7 @@ The list shows how many people have linked their account to each provider. Delet
 
 ## Email
 
-**Organization → Email** sets the SMTP server wag.run sends through: for invitations, approval and task emails, notification emails and **Send email** nodes. Workspaces can add their own SMTP server for **Send email** nodes under [Authentication](workspaces.md#authentication).
+**Organization → Email** sets the SMTP server wag.run sends through: for invitations, approval and task emails, notification emails and **Send email** nodes. Workspaces can add their own SMTP server for **Send email** nodes under [Credentials](workspaces.md#credentials).
 
 1. Turn on **Send through my SMTP server**.
 2. Enter the **Host**, **Port**, **Encryption** (**STARTTLS**, usually port 587, or **SSL/TLS**, usually port 465), **Username**, **Password**, **From address** and **From name**.
@@ -73,4 +73,4 @@ When **Send through my SMTP server** is off, email uses the server's own mail co
 
 ## Audit log
 
-**Workspace → Audit log** is also where organization admins read the whole organization's log. Pick **Organization** in the dropdown at the top to see every audited change across the organization, newest first: workflows, variables, secrets and authentication settings in every workspace, secret reveals, workspace and membership changes, invitations, sign-ins, user changes, sign-in provider changes, and organization and email settings. Filter it by action. See [Audit log](workspaces.md#audit-log).
+**Workspace → Audit log** is also where organization admins read the whole organization's log. Pick **Organization** in the dropdown at the top to see every audited change across the organization, newest first: workflows, variables, secrets and credentials in every workspace, secret reveals, workspace and membership changes, invitations, sign-ins, user changes, sign-in provider changes, and organization and email settings. Filter it by action. See [Audit log](workspaces.md#audit-log).

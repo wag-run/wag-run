@@ -65,7 +65,7 @@ class UploadToS3 extends Node
     public function inputs(): array
     {
         return [
-            new Field('credential', __('nodes.s3_upload.storage'), Field::CREDENTIAL, required: true, credentialTypes: ['s3'], description: __('nodes.s3_upload.add_one_under_authentication')),
+            new Field('credential', __('nodes.s3_upload.storage'), Field::CREDENTIAL, required: true, credentialTypes: ['s3'], description: __('nodes.s3_upload.add_one_under_credentials')),
             new Field('key', __('nodes.s3_upload.key'), Field::TEXT, required: true, templated: true, description: __('nodes.s3_upload.key_help')),
             new Field('content', __('nodes.s3_upload.content'), Field::TEXTAREA, required: true, templated: true, description: __('nodes.s3_upload.content_help')),
             new Field('content_type', __('nodes.s3_upload.content_type'), Field::TEXT, templated: true, description: __('nodes.s3_upload.content_type_help')),

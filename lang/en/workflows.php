@@ -106,7 +106,7 @@ return [
         'not_valid_json' => 'Not valid JSON: :error',
         'valid_json' => 'Valid JSON',
         'add_a_trigger_to_start' => 'Add a trigger to start the workflow.',
-        'add_one_under_authentication_first' => 'Add one under Authentication first.',
+        'add_one_under_credentials_first' => 'Add one under Credentials first.',
         'ask_an_admin_to_connect' => 'Ask a workspace admin to connect a :provider account.',
         'connect_another_provider_account' => 'Connect another :provider account',
         'connect_provider' => 'Connect :provider',
@@ -161,7 +161,7 @@ return [
     'index' => [
         'delete_workflow' => 'Delete workflow?',
         'build_workflows_from_triggers_and' => 'Build workflows from triggers and actions. Edits stay in a draft until you publish.',
-        'choose_a_workflow_json_file' => 'Choose a .workflow.json file exported from this app. It is imported as a new draft; secrets and authentication settings it references must exist in this workspace.',
+        'choose_a_workflow_json_file' => 'Choose a .workflow.json file exported from this app. It is imported as a new draft; secrets and credentials it references must exist in this workspace.',
         'create_and_open' => 'Create and open',
         'delete_name_with_its_versions' => 'Delete :name with its versions and execution history? This cannot be undone.',
         'draft_changes' => 'Draft changes',

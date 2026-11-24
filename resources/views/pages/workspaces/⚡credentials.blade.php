@@ -176,7 +176,7 @@ new class extends Component {
         }
 
         Flux::modal('credential-form')->close();
-        Flux::toast(variant: 'success', text: __('workspaces.credentials.authentication_setting_saved'));
+        Flux::toast(variant: 'success', text: __('workspaces.credentials.credential_saved'));
         $this->resetForm();
     }
 
@@ -205,7 +205,7 @@ new class extends Component {
         $credential->delete();
 
         Audit::record('credential.deleted', $credential, $this->workspace);
-        Flux::toast(text: __('workspaces.credentials.authentication_setting_deleted'));
+        Flux::toast(text: __('workspaces.credentials.credential_deleted'));
     }
 
     protected function resetForm(): void
@@ -217,15 +217,15 @@ new class extends Component {
 
     public function render()
     {
-        return $this->view()->title(__('common.authentication').' · '.$this->workspace->name);
+        return $this->view()->title(__('common.credentials').' · '.$this->workspace->name);
     }
 }; ?>
 
 <section class="w-full">
-    <x-page-heading :heading="__('common.authentication')" :subheading="__('workspaces.credentials.reusable_credentials_this_workspace_s')">
+    <x-page-heading :heading="__('common.credentials')" :subheading="__('workspaces.credentials.reusable_credentials_this_workspace_s')">
         @if ($this->canManage)
             <x-slot:actions>
-                <flux:button variant="primary" icon="plus" wire:click="create">{{ __('workspaces.credentials.add_authentication') }}</flux:button>
+                <flux:button variant="primary" icon="plus" wire:click="create">{{ __('workspaces.credentials.add_credential') }}</flux:button>
             </x-slot:actions>
         @endif
     </x-page-heading>
@@ -291,13 +291,13 @@ new class extends Component {
                                 </flux:tooltip>
                             @endif
                             <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit(@js($credential->id))" :aria-label="__('common.edit')" />
-                            <flux:button size="sm" variant="ghost" icon="trash" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('workspaces.credentials.delete_authentication_setting'), 'message' => __('workspaces.credentials.delete_this_authentication_setting_workflows'), 'confirm' => __('common.delete')]) }}).then((ok) => ok && $wire.delete(@js($credential->id)))" :aria-label="__('common.delete')" />
+                            <flux:button size="sm" variant="ghost" icon="trash" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('workspaces.credentials.delete_credential'), 'message' => __('workspaces.credentials.delete_this_credential_workflows'), 'confirm' => __('common.delete')]) }}).then((ok) => ok && $wire.delete(@js($credential->id)))" :aria-label="__('common.delete')" />
                         @endif
                     </flux:table.cell>
                 </flux:table.row>
             @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="4" class="text-center text-zinc-500">{{ __('workspaces.credentials.no_authentication_settings_yet') }}</flux:table.cell>
+                    <flux:table.cell colspan="4" class="text-center text-zinc-500">{{ __('workspaces.credentials.no_credentials_yet') }}</flux:table.cell>
                 </flux:table.row>
             @endforelse
         </flux:table.rows>
@@ -305,7 +305,7 @@ new class extends Component {
 
     <flux:modal name="credential-form" class="md:w-lg">
         <form wire:submit="save" class="space-y-6">
-            <flux:heading size="lg">{{ $editingId ? __('workspaces.credentials.edit_authentication') : __('workspaces.credentials.add_authentication') }}</flux:heading>
+            <flux:heading size="lg">{{ $editingId ? __('workspaces.credentials.edit_credential') : __('workspaces.credentials.add_credential') }}</flux:heading>
 
             <flux:select wire:model.live="type" :label="__('common.type')" :disabled="(bool) $editingId">
                 @foreach ($this->types as $typeKey => $credentialType)

@@ -94,7 +94,7 @@ new class extends Component {
             <flux:table.column>{{ __('common.members') }}</flux:table.column>
             <flux:table.column>{{ __('common.variables') }}</flux:table.column>
             <flux:table.column>{{ __('common.secrets') }}</flux:table.column>
-            <flux:table.column>{{ __('common.authentication') }}</flux:table.column>
+            <flux:table.column>{{ __('common.credentials') }}</flux:table.column>
             <flux:table.column></flux:table.column>
         </flux:table.columns>
         <flux:table.rows>

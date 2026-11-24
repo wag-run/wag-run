@@ -82,7 +82,7 @@ class LlmCallTest extends TestCase
         $execution = $this->runWorkflow($workflow);
 
         $this->assertSame(ExecutionStatus::Failed, $execution->status);
-        $this->assertSame('Choose an AI provider key from this workspace\'s authentication settings.', $execution->error['message']);
+        $this->assertSame('Choose an AI provider key from this workspace\'s credentials.', $execution->error['message']);
         AnonymousAgent::assertNeverPrompted();
     }
 }

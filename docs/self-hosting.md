@@ -70,7 +70,7 @@ Until email is set up, outgoing mail is written to the log instead of sent.
 
 ## Connecting GitHub and Google
 
-Workspaces connect GitHub and Google accounts through OAuth, for the [GitHub](triggers.md#github) and [Google](actions.md#google) nodes. Each install needs its own OAuth app with each provider, because the provider sends people back to your install's address. Until a provider is set up, the **Add authentication** form and its nodes say which settings are missing instead of showing a **Connect** button.
+Workspaces connect GitHub and Google accounts through OAuth, for the [GitHub](triggers.md#github) and [Google](actions.md#google) nodes. Each install needs its own OAuth app with each provider, because the provider sends people back to your install's address. Until a provider is set up, the **Add credential** form and its nodes say which settings are missing instead of showing a **Connect** button.
 
 The provider only sends people's browsers back to wag.run, so connecting works even when the install isn't reachable from the internet, such as on a private network.
 
@@ -98,7 +98,7 @@ wag.run uses a GitHub **OAuth App**, not a GitHub App.
    ```
 
 5. Apply the settings with `docker compose up -d`.
-6. In a workspace, open **Authentication → Add authentication**, choose **GitHub**, then **Connect GitHub**. Or select a GitHub node in the editor and choose **Connect GitHub** under its account field. GitHub asks you to approve access to your repositories and their webhooks. Choose **Authorize**, and you're sent back to where you started. See [Connecting an account](workspaces.md#connecting-an-account).
+6. In a workspace, open **Credentials → Add credential**, choose **GitHub**, then **Connect GitHub**. Or select a GitHub node in the editor and choose **Connect GitHub** under its account field. GitHub asks you to approve access to your repositories and their webhooks. Choose **Authorize**, and you're sent back to where you started. See [Connecting an account](workspaces.md#connecting-an-account).
 
 If your organization restricts which OAuth Apps can see its repositories, GitHub's consent page lists it under **Organization access**. Choose **Grant**, or **Request** to ask an organization owner. Otherwise the connection can't see the organization's repositories, and the GitHub nodes fail with `404`.
 
@@ -144,7 +144,7 @@ Requests to the app, such as webhook calls, can be up to 25 MB.
 
 ## The encryption key
 
-`APP_KEY` encrypts sessions and everything stored as secret: workspace secrets, authentication settings and the organization's SMTP password.
+`APP_KEY` encrypts sessions and everything stored as secret: workspace secrets, credentials and the organization's SMTP password.
 
 - If you leave it empty, the generated key is kept in the storage volume, so a backup of that volume includes it.
 - If you'd rather keep the key out of the volume, generate one and put it in `.env` before the first start:

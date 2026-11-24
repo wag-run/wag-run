@@ -1,12 +1,12 @@
 # Workspaces
 
-A workspace holds a team's workflows and runs, the people who work on them, and the values and sign-in details those workflows share. Each workspace is separate: a workflow can only use the variables, secrets and authentication settings of its own workspace, and can only start workflows in its own workspace.
+A workspace holds a team's workflows and runs, the people who work on them, and the values and sign-in details those workflows share. Each workspace is separate: a workflow can only use the variables, secrets and credentials of its own workspace, and can only start workflows in its own workspace.
 
 Switch workspaces with the menu at the top of the sidebar. Organization admins create, rename and delete workspaces. See [Organization administration](administration.md#workspaces).
 
 ## Overview
 
-**Overview** is the workspace's home page. It shows its workflows, the approvals and tasks waiting on you in this workspace, and shortcuts to its variables, secrets, authentication settings and members.
+**Overview** is the workspace's home page. It shows its workflows, the approvals and tasks waiting on you in this workspace, and shortcuts to its variables, secrets, credentials and members.
 
 ## Members and roles
 
@@ -16,10 +16,10 @@ Switch workspaces with the menu at the top of the sidebar. Organization admins c
 |---|:-:|:-:|:-:|:-:|
 | Answer approvals and tasks sent to them | ✓ | ✓ | ✓ | ✓ |
 | See workflows, runs and members | | ✓ | ✓ | ✓ |
-| See the names of variables, secrets and authentication settings | | ✓ | ✓ | ✓ |
+| See the names of variables, secrets and credentials | | ✓ | ✓ | ✓ |
 | Build, publish, test and run workflows, and cancel runs | | | ✓ | ✓ |
 | Add, change and delete variables | | | ✓ | ✓ |
-| Manage members, secrets and authentication settings | | | | ✓ |
+| Manage members, secrets and credentials | | | | ✓ |
 | Reveal secret values | | | | ✓ |
 | Change workspace settings and read the audit log | | | | ✓ |
 
@@ -64,11 +64,11 @@ Admins add and edit secrets. When editing, leave the value empty to keep the cur
 
 If you delete a secret, workflows that use it fail until it's replaced.
 
-## Authentication
+## Credentials
 
-Authentication settings are reusable sign-in details for other systems. Nodes pick them from a list instead of you typing credentials into each one, and their secret fields are encrypted and masked like secrets.
+Credentials are reusable sign-in details for other systems. Nodes pick them from a list instead of you typing credentials into each one, and their secret fields are encrypted and masked like secrets.
 
-Click **Add authentication**, choose a **Type**, and give it a **Description**, such as `Billing API token`. Nodes list settings by their description, so each one in a workspace must be different.
+Click **Add credential**, choose a **Type**, and give it a **Description**, such as `Billing API token`. Nodes list settings by their description, so each one in a workspace must be different.
 
 | Type | Used by | Fields |
 |---|---|---|
@@ -89,12 +89,12 @@ GitHub, Google and OAuth 2.0 settings connect to an account instead of holding a
 
 **GitHub and Google** accounts are connected with a **Connect** button, from either place:
 
-- **On this page:** choose **Add authentication**, pick **GitHub** or **Google**, and choose **Connect GitHub** (or **Connect Google**). You come back here with the new account listed.
+- **On this page:** choose **Add credential**, pick **GitHub** or **Google**, and choose **Connect GitHub** (or **Connect Google**). You come back here with the new account listed.
 - **From a node:** in the editor, select a GitHub or Google node and choose **Connect GitHub** under its account field (**Connect another GitHub account** if one is already connected). You come back to the same node with the new account filled in.
 
 Either way, you approve the connection at the provider, and wag.run describes the setting by the account, such as `GitHub (octocat)`. On this page you can then **Reconnect** it (to connect a different account, or after access was revoked at the provider), change its description, or delete it. Only workspace admins can connect accounts; on a node, others see a note asking them to ask an admin. If the install's OAuth app isn't set up yet, the form and the node say which settings to add instead of showing the button.
 
-**OAuth 2.0** settings are added under **Add authentication**, with the provider's app details. When you save one, wag.run sends you to the provider to approve the connection, then back to **Authentication**, where the setting shows the account it's connected as.
+**OAuth 2.0** settings are added under **Add credential**, with the provider's app details. When you save one, wag.run sends you to the provider to approve the connection, then back to **Credentials**, where the setting shows the account it's connected as.
 
 The connection acts as the account that approved it, so use an account with access to everything the workflows need, such as a bot account. wag.run refreshes the access token on its own when the provider gives it a refresh token, as Google does. An HTTP call that uses one of these settings sends its access token as a bearer token.
 
@@ -114,13 +114,13 @@ Every GitHub node takes any of three kinds of GitHub setting, listed together un
 2. Under **Repository permissions**, give it what the workflows need: **Contents**, **Issues** and **Pull requests** (read and write) for the actions, **Actions** (read and write) to run and watch Actions workflows, and **Webhooks** (read and write) for GitHub triggers that register a webhook.
 3. Create the app. On its settings page, copy the **App ID** (or the **Client ID**, which works too), and under **Private keys** choose **Generate a private key**. Your browser downloads a `.pem` file.
 4. Choose **Install App**, install it on your account or organization, and pick the repositories. The installation's settings page address ends in its **Installation ID**, such as `12345678` in `github.com/organizations/acme/settings/installations/12345678`.
-5. In wag.run, choose **Add authentication → GitHub App**, enter the App ID and installation ID, and paste the whole `.pem` file, including its `BEGIN` and `END` lines, into **Private key**.
+5. In wag.run, choose **Add credential → GitHub App**, enter the App ID and installation ID, and paste the whole `.pem` file, including its `BEGIN` and `END` lines, into **Private key**.
 
 wag.run uses the private key to ask GitHub for an installation token, which lasts an hour, and asks for a new one shortly before it expires.
 
-Admins manage authentication settings. Others in the workspace see only their names and types. Admins can reveal a secret field, and each reveal is recorded in the audit log.
+Admins manage credentials. Others in the workspace see only their names and types. Admins can reveal a secret field, and each reveal is recorded in the audit log.
 
-If you delete an authentication setting, workflows that use it fail until it's replaced.
+If you delete a credential, workflows that use it fail until it's replaced.
 
 ## Workspace settings
 
@@ -131,6 +131,6 @@ Admins can change these under **Settings**:
 
 ## Audit log
 
-**Audit log** lists changes to this workspace: workflows created, imported, published, rolled back or deleted; variables, secrets and authentication settings created, changed, deleted or revealed; members added, removed or given a new role; and invitations. Each entry shows who did it and when.
+**Audit log** lists changes to this workspace: workflows created, imported, published, rolled back or deleted; variables, secrets and credentials created, changed, deleted or revealed; members added, removed or given a new role; and invitations. Each entry shows who did it and when.
 
 Admins can read it. The dropdown at the top switches between the workspaces whose log you can read, and the action filter narrows entries by type. Organization admins also see **Organization**: every entry in the organization, including those that belong to no workspace, such as sign-ins (with how each person signed in), users promoted or deactivated, single sign-on, organization settings, and deleted workspaces.

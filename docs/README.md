@@ -14,7 +14,7 @@ wag.run is a workflow automation app for teams. You build a workflow on a visual
 | [Chat webhooks](chat-webhooks.md) | Getting an incoming webhook from Slack, Mattermost, Microsoft Teams, Discord and Google Chat for the Chat message action |
 | [Approvals, tasks and the Inbox](people.md) | Bringing people into a run, and responding to requests |
 | [Runs](runs.md) | Test runs, the run page, statuses, retries, error paths, concurrency and log retention |
-| [Workspaces](workspaces.md) | Members and roles, variables, secrets, authentication settings, workspace settings and the audit log |
+| [Workspaces](workspaces.md) | Members and roles, variables, secrets, credentials, workspace settings and the audit log |
 | [API and MCP server](api.md) | Personal access tokens, the REST API, and connecting AI assistants such as Claude |
 | [Organization administration](administration.md) | Users, workspaces, sign-in, sign-in providers, email and organization defaults |
 | [Self-hosting](self-hosting.md) | Running wag.run with Docker: settings, HTTPS, backups and upgrades |
@@ -38,13 +38,13 @@ The top level, with one organization per wag.run install. Organization admins ma
 
 ### Workspace
 
-Where the work happens. Each workspace has its own workflows, runs, variables, secrets, authentication settings and members. People are added to a workspace with one of four roles:
+Where the work happens. Each workspace has its own workflows, runs, variables, secrets, credentials and members. People are added to a workspace with one of four roles:
 
 | Role | Can |
 |---|---|
-| **Admin** | Everything an Editor can, plus manage members, secrets, authentication settings and workspace settings, and read the audit log |
+| **Admin** | Everything an Editor can, plus manage members, secrets, credentials and workspace settings, and read the audit log |
 | **Editor** | Build, publish, run and test workflows, cancel runs, and manage variables |
-| **Viewer** | See workflows, runs and members, and the names (not values) of variables, secrets and authentication settings |
+| **Viewer** | See workflows, runs and members, and the names (not values) of variables, secrets and credentials |
 | **Guest** | See only the approvals and tasks assigned to them |
 
 Organization admins act as Admin in every workspace.
@@ -106,10 +106,10 @@ A path to data that doesn't exist, such as the output of a branch that didn't ru
 
 The **Inbox**, in the account menu at the bottom of the sidebar, is where everything for you lands, across all your workspaces: approvals and tasks, failed runs of workflows you own, and messages that workflows send you. A red dot on your avatar means something in it is unread.
 
-### Variables, secrets and authentication
+### Variables, secrets and credentials
 
 A workspace keeps shared values its workflows use:
 
 - **Variables**: named values any workflow can read, such as a team email address or a base URL.
 - **Secrets**: sensitive values, encrypted at rest and masked in run logs.
-- **Authentication**: reusable sign-in details for other systems, such as HTTP Basic, an API token, an AI provider key, an SMTP server or a chat webhook, which nodes pick from a list.
+- **Credentials**: reusable sign-in details for other systems, such as HTTP Basic, an API token, an AI provider key, an SMTP server or a chat webhook, which nodes pick from a list.

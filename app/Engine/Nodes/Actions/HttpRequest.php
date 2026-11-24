@@ -226,7 +226,7 @@ class HttpRequest extends Node
             $type = $credential->credentialType();
 
             if (! $type instanceof HttpAuthenticator) {
-                throw new RuntimeException(__('nodes.http_request.authentication_key_cannot_be_used', ['name' => $credential->description]));
+                throw new RuntimeException(__('nodes.http_request.credential_cannot_be_used_for_http', ['name' => $credential->description]));
             }
 
             $config = $type instanceof OAuthCredentialType

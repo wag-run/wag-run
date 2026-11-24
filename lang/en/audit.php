@@ -15,11 +15,11 @@ return [
             'signed_in' => 'Signed in',
         ],
         'credential' => [
-            'connected' => 'Authentication setting connected',
-            'created' => 'Authentication setting created',
-            'updated' => 'Authentication setting updated',
-            'deleted' => 'Authentication setting deleted',
-            'revealed' => 'Authentication setting revealed',
+            'connected' => 'Credential connected',
+            'created' => 'Credential created',
+            'updated' => 'Credential updated',
+            'deleted' => 'Credential deleted',
+            'revealed' => 'Credential revealed',
         ],
         'invitation' => [
             'sent' => 'Invitation sent',

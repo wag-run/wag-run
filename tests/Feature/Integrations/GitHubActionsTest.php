@@ -109,7 +109,7 @@ class GitHubActionsTest extends TestCase
         Http::fake(['api.github.com/app/installations/789/access_tokens' => Http::response(['message' => 'Bad credentials'], 401)]);
 
         $this->assertSame(
-            'The private key of the GitHub App "Broken app" can\'t be read. Paste the whole .pem file into its authentication setting.',
+            'The private key of the GitHub App "Broken app" can\'t be read. Paste the whole .pem file into its credential.',
             $this->runAction('github.create_issue', ['credential' => $this->settingId('broken'), 'title' => 'x'])->error['message'],
         );
         $this->assertSame(

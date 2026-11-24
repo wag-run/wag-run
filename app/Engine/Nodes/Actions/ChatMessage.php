@@ -58,7 +58,7 @@ class ChatMessage extends Node
     public function inputs(): array
     {
         return [
-            new Field('credential', __('nodes.chat_message.chat_webhook'), Field::CREDENTIAL, required: true, credentialTypes: ['chat_webhook'], description: __('nodes.chat_message.add_one_under_authentication')),
+            new Field('credential', __('nodes.chat_message.chat_webhook'), Field::CREDENTIAL, required: true, credentialTypes: ['chat_webhook'], description: __('nodes.chat_message.add_one_under_credentials')),
             new Field('message', __('nodes.chat_message.message'), Field::TEXTAREA, required: true, templated: true),
         ];
     }

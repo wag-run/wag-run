@@ -11,6 +11,7 @@ return [
     'approval' => 'Approval',
     'audit_log' => 'Audit log',
     'authentication' => 'Authentication',
+    'credentials' => 'Credentials',
     'body' => 'Body',
     'are_you_sure' => 'Are you sure?',
     'cancel' => 'Cancel',

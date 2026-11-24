@@ -63,9 +63,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->middleware('can:view-variables,workspace')->name('variables');
             Route::livewire('secrets', 'pages::workspaces.secrets')
                 ->middleware('can:view-secrets,workspace')->name('secrets');
-            Route::livewire('authentication', 'pages::workspaces.credentials')
+            Route::livewire('credentials', 'pages::workspaces.credentials')
                 ->middleware('can:view-credentials,workspace')->name('credentials');
-            Route::get('authentication/{credential}/connect', [OAuthConnectionController::class, 'connect'])
+            Route::get('credentials/{credential}/connect', [OAuthConnectionController::class, 'connect'])
                 ->middleware('can:manage-credentials,workspace')->name('credentials.connect');
             Route::livewire('members', 'pages::workspaces.members')
                 ->middleware('can:view-members,workspace')->name('members');

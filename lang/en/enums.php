@@ -28,7 +28,7 @@ return [
         'builds_publishes_and_runs_workflows' => 'Builds, publishes and runs workflows.',
         'editor' => 'Editor',
         'guest' => 'Guest',
-        'manages_members_secrets_authentication_and' => 'Manages members, secrets, authentication and workspace settings.',
+        'manages_members_secrets_credentials_and' => 'Manages members, secrets, credentials and workspace settings.',
         'sees_only_the_approvals_and' => 'Sees only the approvals and tasks assigned to them.',
         'sees_workflows_and_execution_logs' => 'Sees workflows and execution logs.',
         'viewer' => 'Viewer',

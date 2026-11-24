@@ -5,7 +5,7 @@ The [Chat message](actions.md#chat-message) action posts to a channel in Slack, 
 ## How it works
 
 1. In the chat app, add an incoming webhook to the channel and copy its URL.
-2. In wag.run, open the workspace's **Authentication** page, choose **Add authentication**, and pick the **Chat webhook** type.
+2. In wag.run, open the workspace's **Credentials** page, choose **Add credential**, and pick the **Chat webhook** type.
 3. Give it a **Description**, such as `Slack #releases`, choose the **Service**, and paste the URL into **Webhook URL**.
 4. In a workflow, add a **Chat message** node, pick the setting under **Chat webhook**, and write the **Message**. Placeholders work, such as `Released {{ trigger.tag }}`.
 

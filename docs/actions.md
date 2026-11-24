@@ -142,7 +142,7 @@ Makes an HTTP request.
 |---|---|
 | **Method** | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD` or `OPTIONS` |
 | **URL** | The address, with placeholders if needed, such as `https://api.example.com/orders/{{ trigger.order_id }}` |
-| **Authentication** | Optional. An **HTTP Basic** or **API token** setting from the workspace's [authentication settings](workspaces.md#authentication). |
+| **Authentication** | Optional. An **HTTP Basic** or **API token** setting from the workspace's [credentials](workspaces.md#credentials). |
 | **Query parameters** and **Headers** | Keys and values to send |
 | **Body** | **None**, **JSON**, **Form fields** or **Raw text** |
 | **JSON or raw body** | For **JSON**, a JSON editor: it says whether the JSON is valid as you type, and **Format** indents it. Placeholders count as values, so `{"id": {{ trigger.id }}}` is valid. |
@@ -163,7 +163,7 @@ Writes a file to a bucket on Amazon S3 or an S3-compatible service, such as MinI
 
 | Setting | What it does |
 |---|---|
-| **Storage** | An **S3-compatible storage** setting from the workspace's [authentication settings](workspaces.md#authentication). It holds the bucket, region, endpoint and access keys. |
+| **Storage** | An **S3-compatible storage** setting from the workspace's [credentials](workspaces.md#credentials). It holds the bucket, region, endpoint and access keys. |
 | **Key** | The file's path in the bucket, such as `backups/config-{{ date(now(), 'Y-m-d') }}.xml` |
 | **Content** | Text, such as `{{ nodes.fetch.output.body }}`, or a file from an earlier node, such as `{{ nodes.fetch.output.file }}` from an HTTP call that saves its response as a file. Files are uploaded byte for byte. A list or object is saved as JSON. |
 | **Content type** | Optional, such as `application/xml`. Left empty, a file keeps its own type, and text gets one guessed from the key's extension. |
@@ -228,7 +228,7 @@ Sends a prompt to a large language model and returns its answer.
 
 | Setting | What it does |
 |---|---|
-| **AI provider key** | An **AI provider** setting from the workspace's [authentication settings](workspaces.md#authentication) |
+| **AI provider key** | An **AI provider** setting from the workspace's [credentials](workspaces.md#credentials) |
 | **Model** | The provider's model name, such as `claude-sonnet-5-5` |
 | **Instructions** | Optional. A system prompt that sets how the model should behave. |
 | **Prompt** | What to ask, with placeholders for data, such as `Summarize this ticket: {{ trigger.body.description }}` |
@@ -257,7 +257,7 @@ Supported providers are Anthropic, OpenAI, Google Gemini, Mistral, Groq, xAI, De
 | **Subject** | |
 | **Format** | **Plain text** or **HTML** |
 | **Body** | |
-| **SMTP server** | Optional. An **SMTP server** setting from the workspace's [authentication settings](workspaces.md#authentication). Leave it empty to send through the organization's [email settings](administration.md#email). |
+| **SMTP server** | Optional. An **SMTP server** setting from the workspace's [credentials](workspaces.md#credentials). Leave it empty to send through the organization's [email settings](administration.md#email). |
 
 Outputs: `to` (the addresses it was sent to), `subject` and `message_id`.
 
@@ -281,7 +281,7 @@ Posts a message to a Slack, Microsoft Teams, Discord or Google Chat channel, thr
 
 | Setting | What it does |
 |---|---|
-| **Chat webhook** | A **Chat webhook** setting from the workspace's [authentication settings](workspaces.md#authentication) |
+| **Chat webhook** | A **Chat webhook** setting from the workspace's [credentials](workspaces.md#credentials) |
 | **Message** | The text to post |
 
 Outputs: `service` and `status` (the HTTP status the chat service answered with).
