@@ -58,14 +58,18 @@ Email is written to the log (`MAIL_MAILER=log`) until you set up SMTP under **Or
 
 ## Self-hosting with Docker
 
-You need Docker with the Compose plugin. The app runs in one container (web server, queue workers and scheduler) next to a PostgreSQL container, both locked down by default.
+You need Docker with the Compose plugin. The app runs from a published image in one container (web server, queue workers and scheduler) next to a PostgreSQL container, both locked down by default.
 
 ```bash
-git clone https://github.com/wag-run/wag-run.git wag.run
+mkdir wag.run && cd wag.run
 ```
 
 ```bash
-cd wag.run && cp .env.docker.example .env
+curl -fsSLO https://raw.githubusercontent.com/wag-run/wag-run/main/docker-compose.yml
+```
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/wag-run/wag-run/main/.env.docker.example -o .env
 ```
 
 Generate a database password, and copy the line it prints into `.env` in place of the empty `DB_PASSWORD=`. It's the only required setting:
@@ -75,12 +79,12 @@ echo "DB_PASSWORD=$(openssl rand -hex 24)"
 ```
 
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
 
-Open <http://localhost:8080> and register. **The first account becomes the organization admin**, so do this before anyone else can reach the install.
+Open <http://localhost:8080> and register. **The first account becomes the organization admin**, so do this before anyone else can reach the install. To upgrade, run `docker compose pull && docker compose up -d`.
 
-[Self-hosting](docs/self-hosting.md) covers the rest: every setting, HTTPS behind a reverse proxy, connecting GitHub and Google, backups, upgrades, running with SQLite or without Docker, and how the containers are locked down.
+[Self-hosting](docs/self-hosting.md) covers the rest: every setting, including `WAG_VERSION` to pin a release, HTTPS behind a reverse proxy, connecting GitHub and Google, backups, upgrades, running with SQLite or without Docker, building the image yourself, and how the containers are locked down.
 
 ## Extending
 
