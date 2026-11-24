@@ -6,6 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * A trigger's state is what a trigger that listens for another app's
+     * events keeps between checks: the events a polling trigger has already
+     * seen, or the webhook a subscribed trigger registered and its signing
+     * secret. Encrypted, because of the secret.
+     */
     public function up(): void
     {
         Schema::create('assignments', function (Blueprint $table) {
@@ -37,6 +43,7 @@ return new class extends Migration
             $table->string('type', 20);
             $table->string('key', 64)->nullable()->unique();
             $table->timestamp('next_run_at')->nullable()->index();
+            $table->text('state')->nullable();
             $table->timestamps();
 
             $table->unique(['workflow_id', 'node_id']);

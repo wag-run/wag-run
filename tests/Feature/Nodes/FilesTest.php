@@ -241,6 +241,22 @@ class FilesTest extends TestCase
         $this->assertSame($execution->id, WorkflowFile::findOrFail($reference['id'])->execution_id);
     }
 
+    public function test_form_uploads_are_accepted_up_to_the_workflow_file_limit(): void
+    {
+        $workflow = Workflow::factory()->for(Workspace::factory())->create(['draft_graph' => $this->graph(['signup' => ['core.form_trigger', [
+            'title' => 'Send your scan', 'access' => 'public',
+            'fields' => [['name' => 'scan', 'label' => 'Scan', 'type' => 'file', 'required' => true]],
+        ]]])]);
+        app(Workflows::class)->publish($workflow);
+        $form = Livewire::test('pages::forms.show', ['key' => $workflow->triggers()->sole()->key]);
+
+        $form->upload('values.scan', [UploadedFile::fake()->create('scan.pdf', 40 * 1024, 'application/pdf')])
+            ->assertHasNoErrors('values.scan');
+
+        $form->upload('values.scan', [UploadedFile::fake()->create('huge.pdf', 51 * 1024, 'application/pdf')])
+            ->assertHasErrors('values.scan');
+    }
+
     public function test_a_webhook_upload_becomes_a_file_of_the_run_it_starts(): void
     {
         $workflow = Workflow::factory()->for(Workspace::factory())->create(['draft_graph' => $this->graph(['hook' => ['core.webhook_trigger', ['method' => 'POST', 'verification' => 'none']]])]);

@@ -30,7 +30,7 @@ wag.run ships as a Docker image, `ghcr.io/wag-run/wag-run`, built for both x86 (
    echo "DB_PASSWORD=$(openssl rand -hex 24)"
    ```
 
-   Copy the line it prints into `.env`, replacing the empty `DB_PASSWORD=`. This is the only setting you must fill in.
+   Copy the line it prints into `.env`, replacing the empty `DB_PASSWORD=`. This is the only setting you must fill in: until it is set, `docker compose up` stops with "Set DB_PASSWORD in .env".
 
 3. Start the containers:
 
@@ -54,7 +54,7 @@ docker compose up -d
 
 | Setting | Default | What it does |
 |---|---|---|
-| `DB_PASSWORD` | required | Password for the bundled PostgreSQL database |
+| `DB_PASSWORD` | required | Password for the bundled PostgreSQL database. Compose won't start without it. |
 | `WAG_VERSION` | `latest` | The release to run. `latest` follows every release, a minor version such as `1.2` gets only its patch updates, and an exact version such as `1.2.3` stays on it. See [Upgrading](#upgrading). |
 | `APP_KEY` | generated | Encrypts sessions and stored secrets. Left empty, one is generated on first run and kept in the storage volume as `app.key`. See [The encryption key](#the-encryption-key). |
 | `APP_URL` | `http://localhost:8080` | The address people use to reach wag.run. Webhook and form trigger links are built from it, so set it to your real address. |
@@ -64,24 +64,25 @@ docker compose up -d
 | `SESSION_SECURE_COOKIE` | `false` | Set to `true` once the site is served over HTTPS |
 | `MAIL_MAILER`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS` | `log` | SMTP settings for outgoing email. You can set email up in the app instead, under **Organization → Email**. |
 | `MCP_SERVER_ENABLED` | `true` | Set to `false` to turn off the [MCP server](api.md) for AI assistants, and the OAuth routes they use to connect. The REST API keeps working. |
-| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | empty | Your GitHub OAuth app, so workspaces can connect GitHub accounts. See [Connecting GitHub and Google](#connecting-github-and-google). |
+| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | empty | Optional. Your GitHub OAuth app, so people can connect GitHub accounts in one click. See [Connecting GitHub and Google](#connecting-github-and-google). |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | empty | Your Google OAuth client, so workspaces can connect Google accounts |
 | `APP_NAME` | `wag.run` | The name shown in the app and in emails |
 | `QUEUE_WORKERS` | `2` | How many workers run workflow steps at once |
 | `LOG_LEVEL` | `info` | How much the app logs |
+| `WORKFLOW_FILES_MAX_MB` | `50` | The largest file, in MB, that a run can receive, download or have uploaded to it. The image accepts requests up to 55 MB, so you can lower this but not raise it. |
 | `APP_MEMORY_LIMIT`, `DB_MEMORY_LIMIT` | `1g` | Memory limit for each container |
 
 Until email is set up, outgoing mail is written to the log instead of sent.
 
 ## Connecting GitHub and Google
 
-Workspaces connect GitHub and Google accounts through OAuth, for the [GitHub](triggers.md#github) and [Google](actions.md#google) nodes. Each install needs its own OAuth app with each provider, because the provider sends people back to your install's address. Until a provider is set up, the **Add credential** form and its nodes say which settings are missing instead of showing a **Connect** button.
+Workspaces connect GitHub and Google accounts through OAuth, for the [GitHub](triggers.md#github) and [Google](actions.md#google) nodes. An OAuth app is tied to one install, because the provider sends people back to that install's address. Google needs one before anyone can connect: until it's set up, the **Add credential** form and the Google nodes say which settings are missing instead of showing a **Connect** button. For GitHub, it's optional (see below).
 
 The provider only sends people's browsers back to wag.run, so connecting works even when the install isn't reachable from the internet, such as on a private network.
 
 ### GitHub
 
-wag.run uses a GitHub **OAuth App**, not a GitHub App.
+Setting up an install-wide GitHub **OAuth App** lets anyone in a workspace connect their GitHub account in one click, without any GitHub details of their own. It's optional: workspaces can also use a personal access token, a GitHub App, or a GitHub setting with its own OAuth app. See [Other ways to connect GitHub](workspaces.md#other-ways-to-connect-github).
 
 1. Open the form for a new OAuth App. Create it under your GitHub organization, so it doesn't depend on one person's account: the organization's **Settings → Developer settings → OAuth Apps → New OAuth App**. Or, under your own account, your avatar → **Settings → Developer settings → OAuth Apps → New OAuth App**.
 2. Fill it in:
@@ -103,13 +104,13 @@ wag.run uses a GitHub **OAuth App**, not a GitHub App.
    ```
 
 5. Apply the settings with `docker compose up -d`.
-6. In a workspace, open **Credentials → Add credential**, choose **GitHub**, then **Connect GitHub**. Or select a GitHub node in the editor and choose **Connect GitHub** under its account field. GitHub asks you to approve access to your repositories and their webhooks. Choose **Authorize**, and you're sent back to where you started. See [Connecting an account](workspaces.md#connecting-an-account).
+6. In a workspace, open **Credentials → Add credential**, choose **GitHub**, then **Connect GitHub**. Or select a GitHub node in the editor and choose **Connect GitHub** under its **GitHub connection** field. GitHub asks you to approve access to your repositories and their webhooks. Choose **Authorize**, and you're sent back to where you started. See [Connecting an account](workspaces.md#connecting-an-account).
 
 If your organization restricts which OAuth Apps can see its repositories, GitHub's consent page lists it under **Organization access**. Choose **Grant**, or **Request** to ask an organization owner. Otherwise the connection can't see the organization's repositories, and the GitHub nodes fail with `404`.
 
 The connection acts as the account that approved it, with access to every repository that account can see. Consider connecting a bot account instead of your own.
 
-This app is optional. Without it, workspaces can still use GitHub with a personal access token, a GitHub App, or a GitHub setting that carries its own OAuth app. See [Other ways to connect GitHub](workspaces.md#other-ways-to-connect-github).
+Without this app, the **GitHub** form asks for the client ID and secret of an app of the workspace's own, and a GitHub node with no setting chosen points to the **Credentials** page.
 
 #### Polling or webhooks
 
@@ -145,7 +146,7 @@ SESSION_SECURE_COOKIE=true
 
 Set `TRUSTED_PROXIES` to the address your proxy connects from. Without it, the app doesn't trust the proxy's forwarded headers and builds `http://` links.
 
-Requests to the app, such as webhook calls, can be up to 25 MB.
+Requests to the app, such as webhook calls and form uploads, can be up to 55 MB, and each file in them up to 50 MB (see `WORKFLOW_FILES_MAX_MB`). If your proxy limits request size, as nginx does at 1 MB by default, raise its limit to match, such as `client_max_body_size 55m;`.
 
 ## The encryption key
 

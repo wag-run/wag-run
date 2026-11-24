@@ -31,12 +31,13 @@ services:
       SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       QUEUE_WORKERS: ${QUEUE_WORKERS:-2}
+      WORKFLOW_FILES_MAX_MB: ${WORKFLOW_FILES_MAX_MB:-50}
       DB_CONNECTION: pgsql
       DB_HOST: db
       DB_PORT: 5432
       DB_DATABASE: wag
       DB_USERNAME: wag
-      DB_PASSWORD: ${DB_PASSWORD:-wag_changeme}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
       MAIL_MAILER: ${MAIL_MAILER:-log}
       MAIL_HOST: ${MAIL_HOST:-}
       MAIL_PORT: ${MAIL_PORT:-587}
@@ -74,7 +75,7 @@ services:
     environment:
       POSTGRES_DB: wag
       POSTGRES_USER: wag
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-wag_changeme}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
     volumes:
       - database:/var/lib/postgresql/data
     healthcheck:
