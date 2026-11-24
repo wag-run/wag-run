@@ -22,21 +22,6 @@ Built with Laravel 13, Livewire 4, Flux and [WireFlow](https://github.com/getart
 - **API and MCP server**: start and inspect runs from scripts with personal access tokens, or connect an AI assistant such as Claude to the MCP server through OAuth.
 - **Audit log** of changes to workflows, secrets, members and settings.
 
-## Concepts
-
-- **Organization**: one per install. Organization admins manage users, workspaces, sign-in providers, email (SMTP) and defaults.
-- **Workspace**: where workflows, runs and settings live. People are added to a workspace with a role.
-- **Workflow**: a graph of nodes. The first node is a trigger, and each node's outputs can be used by the nodes after it.
-- **Run**: one execution of a published version. Runs can start other runs; a chain of runs starting runs stops at the organization's maximum chain depth (10 by default).
-
-### Templates and expressions
-
-Fields that accept data use `{{ }}` placeholders, such as `Order {{ trigger.id }} shipped`. A field that is a single placeholder keeps the value's type, so `{{ nodes.fetch.output.body.items }}` is a list, not text.
-
-A condition is one placeholder that is true or false, such as `{{ trigger.values.amount > 100 and 'vip' in trigger.values.tags }}`. Publishing refuses a condition without the braces, which would otherwise always count as true.
-
-Placeholders use [Symfony ExpressionLanguage](https://symfony.com/doc/current/reference/formats/expression_language.html) with helper functions such as `upper`, `title`, `join`, `split`, `column`, `sum`, `default`, `date`, `number_format` and `json_decode`. A path into missing data, like `nodes.skipped.output.id`, reads as null instead of failing.
-
 ## Getting started
 
 You need Docker with the Compose plugin. The app runs from a published image in one container (web server, queue workers and scheduler) next to a PostgreSQL container.
