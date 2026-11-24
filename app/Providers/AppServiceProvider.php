@@ -66,6 +66,20 @@ class AppServiceProvider extends ServiceProvider
         $this->configureAuthorization();
         $this->configureDevCommands();
         $this->configurePassport();
+        $this->configureUploads();
+    }
+
+    /**
+     * Livewire refuses uploads over 12 MB unless told otherwise, so let form
+     * and task uploads go up to the size a workflow file may be.
+     */
+    protected function configureUploads(): void
+    {
+        config(['livewire.temporary_file_upload.rules' => [
+            'required',
+            'file',
+            'max:'.intdiv((int) config('workflows.files.max_bytes'), 1024),
+        ]]);
     }
 
     /**

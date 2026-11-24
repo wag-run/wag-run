@@ -64,6 +64,7 @@ docker compose up -d
 | `APP_NAME` | `wag.run` | The name shown in the app and in emails |
 | `QUEUE_WORKERS` | `2` | How many workers run workflow steps at once |
 | `LOG_LEVEL` | `info` | How much the app logs |
+| `WORKFLOW_FILES_MAX_MB` | `50` | The largest file, in MB, that a run can receive, download or have uploaded to it. The image accepts requests up to 55 MB, so you can lower this but not raise it. |
 | `APP_MEMORY_LIMIT`, `DB_MEMORY_LIMIT` | `1g` | Memory limit for each container |
 
 Until email is set up, outgoing mail is written to the log instead of sent.
@@ -140,7 +141,7 @@ SESSION_SECURE_COOKIE=true
 
 Set `TRUSTED_PROXIES` to the address your proxy connects from. Without it, the app doesn't trust the proxy's forwarded headers and builds `http://` links.
 
-Requests to the app, such as webhook calls, can be up to 25 MB.
+Requests to the app, such as webhook calls and form uploads, can be up to 55 MB, and each file in them up to 50 MB (see `WORKFLOW_FILES_MAX_MB`). If your proxy limits request size, as nginx does at 1 MB by default, raise its limit to match, such as `client_max_body_size 55m;`.
 
 ## The encryption key
 

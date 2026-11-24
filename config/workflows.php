@@ -13,7 +13,7 @@ return [
     */
     'files' => [
         'disk' => env('WORKFLOW_FILES_DISK', 'workflow_files'),
-        'max_bytes' => (int) env('WORKFLOW_FILES_MAX_MB', 100) * 1024 * 1024,
+        'max_bytes' => (int) env('WORKFLOW_FILES_MAX_MB', 50) * 1024 * 1024,
         'text_max_bytes' => 1024 * 1024,
     ],
 ];
