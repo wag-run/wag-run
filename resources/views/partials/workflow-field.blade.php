@@ -168,8 +168,15 @@
                     @foreach ($field->fields as $sub)
                         @continue(! $sub->isVisible((array) $row, $field->fields))
                         @if ($sub->type === Field::KEY_VALUE)
-                            <flux:textarea size="sm" rows="2" class="font-mono" wire:model.live.debounce.600ms="{{ $model }}.{{ $index }}.{{ $sub->name }}"
-                                :label="$sub->label" :description="__('workflows.editor.one_per_line_as_value')" />
+                            <div x-data="wagInsert" @class(['wag-expr relative' => $pickable])>
+                                <flux:textarea size="sm" rows="2" class="font-mono" x-ref="input" wire:model.live.debounce.600ms="{{ $model }}.{{ $index }}.{{ $sub->name }}"
+                                    :label="$sub->label" :description="__('workflows.editor.one_per_line_as_value')" />
+                                @if ($pickable)
+                                    <div wire:ignore x-ref="highlight" class="wag-expr-layer" aria-hidden="true"></div>
+                                    @include('partials.workflow-picker', ['picker' => $picker])
+                                    @include('partials.expression-preview')
+                                @endif
+                            </div>
                         @elseif ($sub->type === Field::BOOLEAN)
                             <flux:switch wire:model.live="{{ $model }}.{{ $index }}.{{ $sub->name }}" :label="$sub->label" />
                         @elseif ($sub->type === Field::SELECT)
@@ -179,7 +186,14 @@
                                 @endforeach
                             </flux:select>
                         @else
-                            <flux:input size="sm" wire:model.live.debounce.600ms="{{ $model }}.{{ $index }}.{{ $sub->name }}" :label="$sub->label" />
+                            <div x-data="wagInsert" @class(['wag-expr relative' => $pickable]) data-test="list-sub-field">
+                                <flux:input size="sm" x-ref="input" @class(['font-mono' => $pickable]) wire:model.live.debounce.600ms="{{ $model }}.{{ $index }}.{{ $sub->name }}" :label="$sub->label" />
+                                @if ($pickable)
+                                    <div wire:ignore x-ref="highlight" class="wag-expr-layer" aria-hidden="true"></div>
+                                    @include('partials.workflow-picker', ['picker' => $picker])
+                                    @include('partials.expression-preview')
+                                @endif
+                            </div>
                         @endif
                     @endforeach
                     <flux:button size="sm" variant="ghost" icon="trash" wire:click="removeRow('{{ $field->name }}', {{ $index }})">{{ __('common.remove') }}</flux:button>

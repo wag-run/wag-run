@@ -306,6 +306,21 @@ class WorkflowEditorTest extends TestCase
         $editor->assertSeeHtml('data-test="function-picker"')->assertSeeHtml('data-function="upper"')->assertSee('upper(text)');
     }
 
+    public function test_rows_of_a_templated_list_offer_the_data_picker_and_preview_but_other_lists_do_not(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
+            ['start' => 'core.manual_trigger', 'append' => ['google.append_sheet_row', ['values' => [['value' => '{{ trigger.values.name }}']]]], 'route' => ['core.switch', ['value' => 'x', 'cases' => [['value' => 'pro']]]]],
+            ['start->append', 'append->route'],
+        ));
+        $editor = $this->editor($workspace, $workflow, $user);
+
+        $editor->call('selectNode', 'append')
+            ->assertSeeHtmlInOrder(['class="wag-expr relative" data-test="list-sub-field"', 'name="form.values.0.value"', 'class="wag-expr-layer"', 'data-test="data-picker"', 'data-test="expression-preview"']);
+        $editor->call('selectNode', 'route')
+            ->assertSeeHtml('data-test="list-sub-field"')
+            ->assertDontSeeHtml('class="wag-expr relative" data-test="list-sub-field"');
+    }
+
     public function test_a_json_body_gets_the_json_editor_and_a_raw_body_a_plain_textarea(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
