@@ -21,7 +21,7 @@
     <div class="mt-1 flex flex-wrap items-center gap-2">
         <flux:button size="xs" variant="subtle" icon="code-bracket" x-on:click="format()" data-test="json-format">{{ __('workflows.editor.format_json') }}</flux:button>
         @if (isset($picker))
-            @include('partials.workflow-picker', ['picker' => $picker])
+            @include('partials.workflow-picker', ['picker' => $picker, 'inRow' => true])
         @endif
         <span class="text-xs text-green-600 dark:text-green-400" style="display: none" x-show="state === 'valid'" data-test="json-valid">{{ __('workflows.editor.valid_json') }}</span>
         <span class="text-xs text-red-600 dark:text-red-400" style="display: none" x-show="state === 'invalid'" data-test="json-invalid"
