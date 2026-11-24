@@ -1,6 +1,10 @@
+<p align="center">
+    <img src="docs/images/logo.svg" width="128" alt="wag.run logo">
+</p>
+
 # wag.run
 
-A self-hosted workflow automation app for teams. Build workflows on a visual canvas from triggers and actions, publish them as versions, and follow every run step-by-step. People participate in runs through approvals and tasks that land in their inbox.
+Self-hosted workflow automation app built for collaboration. Build workflows on a visual canvas from triggers and actions, publish them as versions, and follow every run step-by-step. People participate in runs through approvals and tasks that land in their inbox.
 
 Built with Laravel 13, Livewire 4, Flux and [WireFlow](https://github.com/getartisanflow/wireflow) for the canvas.
 
@@ -35,30 +39,7 @@ Placeholders use [Symfony ExpressionLanguage](https://symfony.com/doc/current/re
 
 ## Getting started
 
-Requirements: PHP 8.4, Composer, Node.js and npm. SQLite works out of the box.
-
-```bash
-git clone <repository-url> wag.run
-cd wag.run
-composer run setup
-php artisan db:seed
-composer run dev
-```
-
-`composer run setup` installs dependencies, creates `.env` and an app key, runs migrations and builds the frontend. `composer run dev` starts the web server, a queue listener for the `workflows` and `default` queues, the scheduler, the log viewer and Vite.
-
-The seeder creates a Default workspace, four demo workflows (refund approval, order status updates, new hire onboarding and a post digest) and two accounts, both with the password `password`:
-
-| Email | Role |
-|---|---|
-| `test@example.com` | Organization admin |
-| `editor@example.com` | Member, Editor in the Default workspace |
-
-Email is written to the log (`MAIL_MAILER=log`) until you set up SMTP under **Organization → Email**.
-
-## Self-hosting with Docker
-
-You need Docker with the Compose plugin. The app runs from a published image in one container (web server, queue workers and scheduler) next to a PostgreSQL container, both locked down by default.
+You need Docker with the Compose plugin. The app runs from a published image in one container (web server, queue workers and scheduler) next to a PostgreSQL container.
 
 ```bash
 mkdir wag.run && cd wag.run
@@ -86,12 +67,6 @@ Open <http://localhost:8080> and register. **The first account becomes the organ
 
 [Self-hosting](docs/self-hosting.md) covers the rest: every setting, including `WAG_VERSION` to pin a release, HTTPS behind a reverse proxy, connecting GitHub and Google, backups, upgrades, running with SQLite or without Docker, building the image yourself, and how the containers are locked down.
 
-## Extending
-
-Nodes are PHP classes that extend `App\Engine\Node`: they declare their inputs, outputs and ports, and do their work in `execute()`. Register them with the `NodeRegistry`, the way `App\Providers\WorkflowServiceProvider` registers the built-in nodes in `app/Engine/Nodes`. The editor, data picker and validation pick them up automatically.
-
-Credential types extend `App\Credentials\CredentialType` and are registered with the `CredentialTypeRegistry` in `App\Providers\AppServiceProvider`.
-
 ## Development
 
 See [Local development](docs/development.md) to set up a checkout. Run `php artisan boost:update` as part of that setup: it generates the AI agent skills into `.claude/skills`, which isn't committed.
@@ -110,6 +85,12 @@ Where things are:
 | `app/Services` | Workflows, assignments, invitations, mail and workspace management |
 | `resources/views/pages` | Livewire single-file page components |
 | `database/seeders/DemoWorkflowSeeder.php` | The demo workflows |
+
+## Extending
+
+Nodes are PHP classes that extend `App\Engine\Node`: they declare their inputs, outputs and ports, and do their work in `execute()`. Register them with the `NodeRegistry`, the way `App\Providers\WorkflowServiceProvider` registers the built-in nodes in `app/Engine/Nodes`. The editor, data picker and validation pick them up automatically.
+
+Credential types extend `App\Credentials\CredentialType` and are registered with the `CredentialTypeRegistry` in `App\Providers\AppServiceProvider`.
 
 ## License
 
