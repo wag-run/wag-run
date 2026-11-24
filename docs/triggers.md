@@ -104,7 +104,7 @@ A cron expression has five parts: minute, hour, day of the month, month and day 
 | `0 9 * * 1` | At 9:00 every Monday |
 | `0 0 1 * *` | At midnight on the first of each month |
 
-Under the expression, the editor puts the schedule into words, such as **At 09:00 on weekdays**, and lists its next three runs in the chosen time zone. A schedule it can't put into words, such as one that names both a day of the month and a day of the week, still shows its next runs. An expression that isn't valid, or a time zone the server doesn't know, is flagged there and stops the workflow from being published.
+Under the expression, the editor puts the schedule into words, such as **At 09:00 on weekdays**, and lists its next three runs in the chosen time zone. A schedule with both a day of the month and a day of the week runs on either, as cron does: `30 6 5 * 4` reads **At 06:30 on day 5 of the month or on Thursday**. A schedule it can't put into words, such as one with steps in the day fields (`*/2`), still shows its next runs. An expression that isn't valid, or a time zone the server doesn't know, is flagged there and stops the workflow from being published.
 
 `{{ trigger.scheduled_at }}` holds the time the run was due.
 

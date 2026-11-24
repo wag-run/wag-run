@@ -73,6 +73,7 @@ return [
         'at_minute_past_every_n_hours' => 'at :minute minutes past every :count hours',
         'at_minutes_past_every_hour' => 'at :minutes minutes past every hour',
         'at_times' => 'at :times',
+        'either_or' => ':first or :second',
         'every_day' => 'every day',
         'every_hour' => 'every hour',
         'every_hour_from_to' => 'every hour from :start to :end',

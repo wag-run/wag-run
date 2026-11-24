@@ -9,9 +9,11 @@ use Illuminate\Support\Str;
 
 /**
  * Puts a five-part cron expression into words, such as "At 09:00 on
- * weekdays", and lists when it next runs. Expressions it cannot put into
- * words (both a day of the month and a day of the week, steps in the day
- * fields, L, W or #) get no description, only their next runs.
+ * weekdays", and lists when it next runs. An expression that sets both a
+ * day of the month and a day of the week runs on either, as cron does, so
+ * it reads "on day 5 of the month or on Thursday". Expressions it cannot
+ * put into words (steps in the day fields, L, W or #) get no description,
+ * only their next runs.
  */
 final class CronDescription
 {
@@ -184,7 +186,7 @@ final class CronDescription
         $daysOfMonth = self::isAny($dayOfMonth) ? [] : self::numbers($dayOfMonth, 1, 31);
         $daysOfWeek = self::isAny($dayOfWeek) ? [] : self::numbers($dayOfWeek, 0, 7);
 
-        if ($months === null || $daysOfMonth === null || $daysOfWeek === null || ($daysOfMonth !== [] && $daysOfWeek !== [])) {
+        if ($months === null || $daysOfMonth === null || $daysOfWeek === null) {
             return false;
         }
 
@@ -193,17 +195,21 @@ final class CronDescription
         $daysOfWeek = count($daysOfWeek) === 7 ? [] : $daysOfWeek;
         $months = count($months) === 12 ? [] : $months;
 
-        if (count($months) === 1 && count($daysOfMonth) === 1) {
+        if (count($months) === 1 && count($daysOfMonth) === 1 && $daysOfWeek === []) {
             return [self::phrase('on_month_day', ['month' => self::monthName($months[0]), 'day' => $daysOfMonth[0]]), null];
         }
 
-        $days = match (true) {
+        $weekdays = match (true) {
             $daysOfWeek === [1, 2, 3, 4, 5] => self::phrase('on_weekdays'),
             $daysOfWeek === [0, 6] => self::phrase('on_weekends'),
             $daysOfWeek !== [] => self::phrase('on_days', ['days' => self::join(array_map(self::dayName(...), $daysOfWeek))]),
-            $daysOfMonth !== [] => trans_choice('nodes.cron.on_day_of_the_month', count($daysOfMonth), ['days' => self::join($daysOfMonth)]),
             default => null,
         };
+        $monthDays = $daysOfMonth === [] ? null : trans_choice('nodes.cron.on_day_of_the_month', count($daysOfMonth), ['days' => self::join($daysOfMonth)]);
+
+        $days = $weekdays !== null && $monthDays !== null
+            ? self::phrase('either_or', ['first' => $monthDays, 'second' => $weekdays])
+            : $weekdays ?? $monthDays;
 
         $months = $months === [] ? null : self::phrase('in_months', ['months' => self::join(array_map(self::monthName(...), $months))]);
 

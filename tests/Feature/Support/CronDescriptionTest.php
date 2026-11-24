@@ -22,6 +22,8 @@ class CronDescriptionTest extends TestCase
     #[TestWith(['*/10 9-17 * * 1-5', 'Every 10 minutes from 09:00 to 17:59 on weekdays'])]
     #[TestWith(['0 0 1,15 * *', 'At 00:00 on days 1 and 15 of the month'])]
     #[TestWith(['0 12 * 6-8 *', 'Every day at 12:00 in June, July and August'])]
+    #[TestWith(['30 6 5 * 4', 'At 06:30 on day 5 of the month or on Thursday'])]
+    #[TestWith(['0 9 1,15 1 1-5', 'At 09:00 on days 1 and 15 of the month or on weekdays in January'])]
     #[TestWith(['@yearly', 'At 00:00 on January 1'])]
     #[TestWith(['@weekly', 'At 00:00 on Sunday'])]
     public function test_puts_common_schedules_into_words(string $expression, string $description): void
@@ -31,7 +33,7 @@ class CronDescriptionTest extends TestCase
 
     #[TestWith(['not a schedule'])]
     #[TestWith(['0 9 * *'])]
-    #[TestWith(['0 9 1 * 1'])]
+    #[TestWith(['0 9 */2 * *'])]
     #[TestWith(['0 9 L * *'])]
     public function test_gives_no_description_for_invalid_or_unusual_expressions(string $expression): void
     {
