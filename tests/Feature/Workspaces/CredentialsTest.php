@@ -5,16 +5,18 @@ namespace Tests\Feature\Workspaces;
 use App\Enums\WorkspaceRole;
 use App\Models\Credential;
 use App\Models\User;
+use App\Models\Workflow;
 use App\Models\Workspace;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
+use Tests\Concerns\RunsWorkflows;
 use Tests\TestCase;
 
 class CredentialsTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, RunsWorkflows;
 
     public function test_admin_creates_an_ai_provider_key_encrypted_at_rest(): void
     {
@@ -91,6 +93,36 @@ class CredentialsTest extends TestCase
 
         $this->assertSame(1, substr_count($html, '>Client ID</dt>'));
         $this->assertStringContainsString('Iv1.own', $html);
+    }
+
+    public function test_each_credential_shows_how_many_workspace_workflows_use_it_and_which(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $admin = User::factory()->memberOf($workspace, WorkspaceRole::Admin)->create();
+        Credential::factory()->for($workspace)->create(['id' => $this->settingId('billing'), 'description' => 'Billing API']);
+        $usesBilling = $this->graph(['start' => 'core.manual_trigger', 'call' => ['core.http_request', ['credential' => $this->settingId('billing')]], 'again' => ['core.http_request', ['credential' => $this->settingId('billing')]]]);
+        $this->publishedWorkflow($usesBilling, $workspace)->update(['name' => 'Invoice sync']);
+        $this->publishedWorkflow($usesBilling, $workspace)->update(['name' => 'Nightly report', 'draft_graph' => $this->graph(['start' => 'core.manual_trigger'])]);
+        Workflow::factory()->for($workspace)->create(['name' => 'Refunds <b>draft</b>', 'draft_graph' => $usesBilling]);
+        $this->publishedWorkflow($usesBilling)->update(['name' => 'Another workspace']);
+
+        $page = Livewire::actingAs($admin)->test('pages::workspaces.credentials', ['workspace' => $workspace]);
+
+        $page->assertSeeInOrder(['3 workflows', 'Invoice sync', 'Nightly report', 'Refunds <b>draft</b>'])
+            ->assertDontSeeHtml('<b>draft</b>')
+            ->assertDontSee('Another workspace');
+    }
+
+    public function test_a_credential_no_workflow_selects_is_listed_as_unused(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $admin = User::factory()->memberOf($workspace, WorkspaceRole::Admin)->create();
+        Credential::factory()->for($workspace)->create(['id' => $this->settingId('billing'), 'description' => 'Billing API']);
+        Workflow::factory()->for($workspace)->create(['name' => 'Mentions it', 'draft_graph' => $this->graph(['call' => ['core.http_request', ['url' => $this->settingId('billing')]]])]);
+
+        $page = Livewire::actingAs($admin)->test('pages::workspaces.credentials', ['workspace' => $workspace]);
+
+        $page->assertSee('Unused')->assertDontSee('Mentions it');
     }
 
     public function test_the_description_is_required_and_unique_in_the_workspace(): void

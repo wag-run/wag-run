@@ -23,6 +23,9 @@ return [
         'description_help' => 'How nodes list it. Must be different from the workspace\'s other settings.',
         'description_placeholder' => 'Billing API token',
         'reusable_credentials_this_workspace_s' => 'Reusable credentials this workspace\'s workflows use to call other systems.',
+        'unused' => 'Unused',
+        'used_by' => 'Used by',
+        'workflow_count' => ':count workflow|:count workflows',
     ],
     'members' => [
         'remove_member' => 'Remove member?',

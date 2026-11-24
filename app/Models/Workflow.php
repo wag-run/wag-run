@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Engine\Definitions\Field;
 use App\Engine\Graph\WorkflowGraph;
+use App\Engine\NodeRegistry;
 use App\Enums\ConcurrencyPolicy;
 use App\Enums\ExecutionStatus;
 use Database\Factories\WorkflowFactory;
@@ -52,6 +54,37 @@ class Workflow extends Model
     public function draft(): WorkflowGraph
     {
         return WorkflowGraph::fromArray($this->draft_graph);
+    }
+
+    /**
+     * The IDs of the credentials its nodes use, in the draft or the
+     * published version. Load publishedVersion first when listing many.
+     *
+     * @return list<string>
+     */
+    public function credentialIds(): array
+    {
+        $registry = app(NodeRegistry::class);
+        $graphs = array_filter([$this->draft(), $this->publishedVersion?->toGraph()]);
+        $ids = [];
+
+        foreach ($graphs as $graph) {
+            foreach ($graph->nodes as $node) {
+                if (! $registry->has($node->type)) {
+                    continue;
+                }
+
+                foreach ($registry->make($node->type)->inputs() as $field) {
+                    $value = $node->config[$field->name] ?? null;
+
+                    if ($field->type === Field::CREDENTIAL && is_string($value) && $value !== '') {
+                        $ids[] = $value;
+                    }
+                }
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 
     public function hasUnpublishedChanges(): bool

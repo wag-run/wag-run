@@ -83,6 +83,8 @@ Click **Add credential**, choose a **Type**, and give it a **Description**, such
 | **Google** | Google Sheets nodes, HTTP call | None: you connect a Google account (see below) |
 | **OAuth 2.0** | HTTP call | **Authorization URL**, **Token URL**, **Client ID**, **Client secret** and **Scopes**, from the OAuth app you registered with the provider |
 
+The **Used by** column shows how many of the workspace's workflows use each credential, in their draft or their published version. Hover over the count to see which workflows, and click one to open it. A credential no workflow uses is marked **Unused**, which helps before deleting it.
+
 ### Connecting an account
 
 GitHub, Google and OAuth 2.0 settings connect to an account instead of holding a password.

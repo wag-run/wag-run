@@ -4,6 +4,7 @@ use App\Credentials\CredentialType;
 use App\Credentials\OAuthCredentialType;
 use App\Credentials\CredentialTypeRegistry;
 use App\Models\Credential;
+use App\Models\Workflow;
 use App\Models\Workspace;
 use App\Services\OAuthConnections;
 use App\Support\Audit;
@@ -42,6 +43,26 @@ new class extends Component {
     public function credentials()
     {
         return $this->workspace->credentials()->orderBy('description')->get();
+    }
+
+    /**
+     * The workspace's workflows that use each credential, in the draft or
+     * the published version, keyed by credential ID.
+     *
+     * @return array<string, list<Workflow>>
+     */
+    #[Computed]
+    public function workflowsByCredential(): array
+    {
+        $usage = [];
+
+        foreach ($this->workspace->workflows()->with('publishedVersion')->orderBy('name')->get() as $workflow) {
+            foreach ($workflow->credentialIds() as $credentialId) {
+                $usage[$credentialId][] = $workflow;
+            }
+        }
+
+        return $usage;
     }
 
     /**
@@ -242,6 +263,7 @@ new class extends Component {
             <flux:table.column>{{ __('common.description') }}</flux:table.column>
             <flux:table.column>{{ __('common.type') }}</flux:table.column>
             <flux:table.column>{{ __('common.settings') }}</flux:table.column>
+            <flux:table.column>{{ __('workspaces.credentials.used_by') }}</flux:table.column>
             <flux:table.column sticky class="bg-white dark:bg-zinc-800"></flux:table.column>
         </flux:table.columns>
         <flux:table.rows>
@@ -283,6 +305,25 @@ new class extends Component {
                             @endif
                         </dl>
                     </flux:table.cell>
+                    <flux:table.cell data-test="credential-usage">
+                        @php($usedBy = $this->workflowsByCredential[$credential->id] ?? [])
+                        @if ($usedBy === [])
+                            <flux:badge size="sm" color="zinc">{{ __('workspaces.credentials.unused') }}</flux:badge>
+                        @else
+                            <flux:tooltip interactive>
+                                <flux:badge as="button" size="sm" color="blue" icon="share">{{ trans_choice('workspaces.credentials.workflow_count', count($usedBy), ['count' => count($usedBy)]) }}</flux:badge>
+                                <flux:tooltip.content class="max-w-xs">
+                                    <ul class="space-y-0.5">
+                                        @foreach ($usedBy as $workflow)
+                                            <li wire:key="usage-{{ $credential->id }}-{{ $workflow->id }}">
+                                                <a href="{{ route('workspaces.workflows.edit', [$workspace, $workflow]) }}" wire:navigate class="wrap-anywhere hover:underline">{{ $workflow->name }}</a>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </flux:tooltip.content>
+                            </flux:tooltip>
+                        @endif
+                    </flux:table.cell>
                     <flux:table.cell align="end" sticky class="whitespace-nowrap bg-white dark:bg-zinc-800">
                         @if ($this->canManage)
                             @if ($credentialType instanceof OAuthCredentialType)
@@ -298,7 +339,7 @@ new class extends Component {
                 </flux:table.row>
             @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="4" class="text-center text-zinc-500">{{ __('workspaces.credentials.no_credentials_yet') }}</flux:table.cell>
+                    <flux:table.cell colspan="5" class="text-center text-zinc-500">{{ __('workspaces.credentials.no_credentials_yet') }}</flux:table.cell>
                 </flux:table.row>
             @endforelse
         </flux:table.rows>
