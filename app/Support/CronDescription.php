@@ -194,20 +194,33 @@ final class CronDescription
         $months = count($months) === 12 ? [] : $months;
 
         if (count($months) === 1 && count($daysOfMonth) === 1) {
-            return [__('nodes.cron.on_month_day', ['month' => self::monthName($months[0]), 'day' => $daysOfMonth[0]]), null];
+            return [self::phrase('on_month_day', ['month' => self::monthName($months[0]), 'day' => $daysOfMonth[0]]), null];
         }
 
         $days = match (true) {
-            $daysOfWeek === [1, 2, 3, 4, 5] => __('nodes.cron.on_weekdays'),
-            $daysOfWeek === [0, 6] => __('nodes.cron.on_weekends'),
-            $daysOfWeek !== [] => __('nodes.cron.on_days', ['days' => self::join(array_map(self::dayName(...), $daysOfWeek))]),
+            $daysOfWeek === [1, 2, 3, 4, 5] => self::phrase('on_weekdays'),
+            $daysOfWeek === [0, 6] => self::phrase('on_weekends'),
+            $daysOfWeek !== [] => self::phrase('on_days', ['days' => self::join(array_map(self::dayName(...), $daysOfWeek))]),
             $daysOfMonth !== [] => trans_choice('nodes.cron.on_day_of_the_month', count($daysOfMonth), ['days' => self::join($daysOfMonth)]),
             default => null,
         };
 
-        $months = $months === [] ? null : __('nodes.cron.in_months', ['months' => self::join(array_map(self::monthName(...), $months))]);
+        $months = $months === [] ? null : self::phrase('in_months', ['months' => self::join(array_map(self::monthName(...), $months))]);
 
         return [$days, $months];
+    }
+
+    /**
+     * A phrase from lang/en/nodes.php's cron section, or its key if the
+     * line is missing, as __() does.
+     *
+     * @param  array<string, int|string>  $replace
+     */
+    private static function phrase(string $key, array $replace = []): string
+    {
+        $line = __('nodes.cron.'.$key, $replace);
+
+        return is_string($line) ? $line : 'nodes.cron.'.$key;
     }
 
     private static function isAny(string $field): bool
@@ -279,21 +292,26 @@ final class CronDescription
         return sprintf('%02d:%02d', $hour, $minute);
     }
 
+    /**
+     * The name of a day of the week, 0 being Sunday, in the app's language.
+     */
     private static function dayName(int $day): string
     {
-        return CarbonImmutable::create(2024, 1, 7 + $day)->locale(app()->getLocale())->dayName;
+        return CarbonImmutable::createFromDate(2024, 1, 7)->addDays($day)->translatedFormat('l');
     }
 
     private static function monthName(int $month): string
     {
-        return CarbonImmutable::create(2024, $month, 1)->locale(app()->getLocale())->monthName;
+        return CarbonImmutable::createFromDate(2024, $month, 1)->translatedFormat('F');
     }
 
     /**
+     * Join items as a list in words, such as "1, 15 and 28".
+     *
      * @param  list<int|string>  $items
      */
     private static function join(array $items): string
     {
-        return collect($items)->join(', ', __('nodes.cron.and'));
+        return collect($items)->map(fn (int|string $item): string => (string) $item)->join(', ', __('nodes.cron.and'));
     }
 }
