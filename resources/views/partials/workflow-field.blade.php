@@ -31,7 +31,13 @@
         @endforeach
     </flux:select>
     @php
+        // Accounts connect from the node only through the install's app. Without one, say what to set
+        // only when the field has no other way in: no other type, and no app of its own on a credential.
         $oauthType = $field->type === Field::CREDENTIAL ? $field->connectableOAuthType() : null;
+        $otherWaysIn = count($field->credentialTypes) > 1 || $oauthType?->fields() !== [];
+        if ($oauthType && ! $oauthType->isConfigured() && $otherWaysIn) {
+            $oauthType = null;
+        }
     @endphp
     @if ($oauthType && ! $oauthType->isConfigured())
         <flux:text class="text-xs" data-test="oauth-not-set-up">{{ __('workflows.editor.provider_not_set_up', ['provider' => $oauthType->label(), 'keys' => implode(' and ', $oauthType->environmentKeys())]) }}</flux:text>

@@ -147,16 +147,28 @@ class OAuthConnectionsTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_the_node_says_what_to_set_when_the_app_is_missing_from_the_environment(): void
+    public function test_without_the_install_app_a_github_node_points_to_credentials_and_a_google_node_says_what_to_set(): void
     {
-        config(['services.github' => ['client_id' => null, 'client_secret' => null]]);
+        config(['services.github' => ['client_id' => null, 'client_secret' => null], 'services.google' => ['client_id' => null, 'client_secret' => null]]);
+        Credential::factory()->for($this->workspace)->create(['description' => 'Bot token', 'type' => 'github_token', 'config' => ['token' => 'github_pat_abc']]);
+        $sheet = Workflow::factory()->for($this->workspace)->create(['draft_graph' => $this->graph(
+            ['start' => 'core.manual_trigger', 'sheet' => ['google.append_sheet_row', []]],
+            ['start->sheet'],
+        )]);
 
         $this->editor($this->issueWorkflow())
             ->call('selectNode', 'issue')
             ->assertDontSee('data-test="connect-account"', false)
-            ->assertSee('Connecting GitHub isn\'t set up on this install yet. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in the environment first.')
+            ->assertDontSee('data-test="oauth-not-set-up"', false)
             ->call('connectAccount', 'credential')
             ->assertNotFound();
+
+        Credential::query()->delete();
+        $this->editor($this->issueWorkflow())->call('selectNode', 'issue')->assertSee('Add one under Credentials first.');
+
+        $this->editor($sheet)
+            ->call('selectNode', 'sheet')
+            ->assertSee('Connecting Google isn\'t set up on this install yet. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in the environment first.');
     }
 
     public function test_the_add_authentication_form_connects_github_instead_of_asking_for_details(): void
