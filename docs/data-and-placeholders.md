@@ -17,9 +17,17 @@ Fields that accept placeholders have an **Insert data** button. It lists everyth
 - **Variables** and **Secrets** of the workspace.
 - **Execution:** the run's ID, workflow name, trigger type and start time.
 
-Pick a value to insert its placeholder at the cursor. The picker only lists nodes that come before this one on a path to it, because those are the only ones whose output can exist when it runs.
+Pick a value to insert its placeholder at the cursor. If the cursor is already inside a placeholder, such as between the parentheses of `{{ upper() }}`, the value goes in without braces, as part of that expression. The picker only lists nodes that come before this one on a path to it, because those are the only ones whose output can exist when it runs.
+
+Below the data, **Functions** lists the [helper functions](#helper-functions) by category, each with how it's called and what it does. Picking one inserts the call with the cursor between its parentheses; text you had selected becomes its argument.
 
 To see what an output really contains, run the workflow once (a [test run](runs.md#test-runs) will do) and open the step on the run page.
+
+## Highlighting and preview
+
+In fields that accept placeholders, each `{{ }}` placeholder is highlighted, with function names and quoted text in their own colours. A placeholder that is never closed is underlined in red.
+
+While such a field has focus, a **Preview** below it shows what the field would become, and its type. It uses the data of the workflow's latest run: what this node saw if it ran, otherwise what that run's trigger and earlier nodes produced. With no runs yet, data reads as empty, but functions and literals still preview. Secrets show masked. If an expression can't be worked out, the preview shows the error the run would fail with.
 
 ## What placeholders can read
 

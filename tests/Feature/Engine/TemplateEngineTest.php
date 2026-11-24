@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Engine;
 
+use App\Engine\Templates\HelperFunctions;
+use App\Engine\Templates\SafeExpressionLanguage;
 use App\Engine\Templates\TemplateEngine;
 use App\Engine\Templates\TemplateError;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -97,6 +99,16 @@ class TemplateEngineTest extends TestCase
     public function test_helper_functions(string $expression, mixed $expected): void
     {
         $this->assertSame($expected, $this->engine()->evaluate($expression, $this->data()));
+    }
+
+    public function test_every_helper_function_is_listed_for_the_data_picker_with_a_description(): void
+    {
+        $catalog = HelperFunctions::catalog();
+
+        $this->assertEqualsCanonicalizing(app(SafeExpressionLanguage::class)->helperNames(), HelperFunctions::names());
+        foreach (array_merge(...array_column($catalog, 'items')) as $function) {
+            $this->assertStringNotContainsString('engine.functions.', $function['description'], "{$function['name']} has no description");
+        }
     }
 
     public function test_evaluates_expressions_with_dot_and_bracket_access(): void

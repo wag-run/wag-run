@@ -303,6 +303,7 @@ class WorkflowEditorTest extends TestCase
 
         $editor->call('selectNode', 'build')->assertSeeHtml('data-test="data-picker"')->assertSeeHtml('data-token="{{ execution.id }}"');
         $editor->call('selectNode', 'check')->assertSeeHtml('data-test="data-picker"')->assertSeeHtml('data-token="{{ nodes.build.output.value }}"');
+        $editor->assertSeeHtml('data-test="function-picker"')->assertSeeHtml('data-function="upper"')->assertSee('upper(text)');
     }
 
     public function test_a_json_body_gets_the_json_editor_and_a_raw_body_a_plain_textarea(): void

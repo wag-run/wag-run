@@ -142,10 +142,12 @@
                     <div class="w-28 shrink-0">
                         <flux:input size="sm" class="font-mono" wire:model.live.debounce.600ms="{{ $model }}.{{ $index }}.key" :placeholder="__('workflows.editor.key')" />
                     </div>
-                    <div class="min-w-0 flex-1" x-data="wagInsert">
+                    <div @class(['min-w-0 flex-1', 'wag-expr relative' => $pickable]) x-data="wagInsert">
                         <flux:input size="sm" class="font-mono" x-ref="input" wire:model.live.debounce.600ms="{{ $model }}.{{ $index }}.value" :placeholder="__('workflows.editor.value')" />
                         @if ($pickable)
+                            <div wire:ignore x-ref="highlight" class="wag-expr-layer" aria-hidden="true"></div>
                             @include('partials.workflow-picker', ['picker' => $picker])
+                            @include('partials.expression-preview')
                         @endif
                     </div>
                     <flux:button size="sm" variant="ghost" icon="x-mark" class="shrink-0" wire:click="removeRow('{{ $field->name }}', {{ $index }})" :aria-label="__('common.remove')" />
@@ -189,7 +191,7 @@
 @elseif ($field->isJson($values ?? []))
     @include('partials.json-editor', ['model' => $model, 'label' => $field->label, 'description' => $description, 'picker' => $pickable ? $picker : null])
 @else
-    <div x-data="wagInsert">
+    <div x-data="wagInsert" @class(['wag-expr relative' => $pickable])>
         @if ($field->type === Field::TEXTAREA)
             <flux:textarea x-ref="input" rows="4" @class(['font-mono' => $pickable]) wire:model.live.debounce.600ms="{{ $model }}" :label="$field->label" :description="$description" />
         @else
@@ -197,7 +199,9 @@
                 wire:model.live.debounce.600ms="{{ $model }}" :label="$field->label" :description="$description" />
         @endif
         @if ($pickable)
+            <div wire:ignore x-ref="highlight" class="wag-expr-layer" aria-hidden="true"></div>
             @include('partials.workflow-picker', ['picker' => $picker])
+            @include('partials.expression-preview')
         @endif
     </div>
 @endif
