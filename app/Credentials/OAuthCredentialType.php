@@ -103,6 +103,17 @@ abstract class OAuthCredentialType extends CredentialType implements HttpAuthent
     }
 
     /**
+     * Whether adding a setting of this type connects straight away, with
+     * nothing to fill in first: by default, when accounts connect from
+     * nodes. A type whose app can also be given on the setting connects
+     * straight away only while the environment sets one up.
+     */
+    public function connectsWithoutDetails(): bool
+    {
+        return $this->connectsFromNodes();
+    }
+
+    /**
      * The environment variables that set up this provider's app, to tell
      * an administrator what is missing.
      *

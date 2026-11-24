@@ -50,7 +50,7 @@ abstract class GitHubAction extends Node
     public function inputs(): array
     {
         return [
-            new Field('credential', __('nodes.github.github_account'), Field::CREDENTIAL, required: true, credentialTypes: ['github'], description: __('nodes.github.connect_one_under_authentication')),
+            new Field('credential', __('nodes.github.github_connection'), Field::CREDENTIAL, required: true, credentialTypes: GitHub::CREDENTIAL_TYPES, description: __('nodes.github.connect_one_under_authentication')),
             new Field('repository', __('nodes.github.repository'), Field::TEXT, required: true, templated: true, description: __('nodes.github.owner_and_name')),
             ...$this->actionInputs(),
         ];

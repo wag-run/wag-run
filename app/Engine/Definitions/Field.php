@@ -2,6 +2,9 @@
 
 namespace App\Engine\Definitions;
 
+use App\Credentials\CredentialTypeRegistry;
+use App\Credentials\OAuthCredentialType;
+
 /**
  * An input a node expects: one configurable field in the editor.
  *
@@ -102,6 +105,25 @@ final readonly class Field
     public function isJson(array $values, array $siblings = []): bool
     {
         return $this->type === self::JSON || ($this->jsonWhen !== [] && $this->siblingsMatch($this->jsonWhen, $values, $siblings));
+    }
+
+    /**
+     * For a credential field, the OAuth type among the ones it accepts whose
+     * accounts connect right from the node, such as GitHub's, if any.
+     */
+    public function connectableOAuthType(): ?OAuthCredentialType
+    {
+        $registry = app(CredentialTypeRegistry::class);
+
+        foreach ($this->credentialTypes as $key) {
+            $type = $registry->has($key) ? $registry->get($key) : null;
+
+            if ($type instanceof OAuthCredentialType && $type->connectsFromNodes()) {
+                return $type;
+            }
+        }
+
+        return null;
     }
 
     /**

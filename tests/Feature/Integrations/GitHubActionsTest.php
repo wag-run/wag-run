@@ -53,6 +53,71 @@ class GitHubActionsTest extends TestCase
             && $request->header('X-GitHub-Api-Version') === ['2022-11-28']);
     }
 
+    public function test_acts_with_a_personal_access_token(): void
+    {
+        Credential::factory()->for($this->workspace)->create(['id' => $this->settingId('pat'), 'description' => 'pat', 'type' => 'github_token', 'config' => ['token' => 'github_pat_abc']]);
+        Http::fake(['api.github.com/repos/acme/app/issues' => Http::response(['id' => 1, 'number' => 42, 'html_url' => 'https://github.com/acme/app/issues/42'], 201)]);
+
+        $step = $this->runAction('github.create_issue', ['credential' => $this->settingId('pat'), 'title' => 'x']);
+
+        $this->assertSame(42, $step->output['number']);
+        Http::assertSent(fn (Request $request) => $request->url() === 'https://api.github.com/repos/acme/app/issues'
+            && $request->header('Authorization') === ['Bearer github_pat_abc']);
+    }
+
+    public function test_acts_as_a_github_app_with_an_installation_token_it_reuses_until_shortly_before_it_expires(): void
+    {
+        $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+        openssl_pkey_export($key, $privateKey);
+        Credential::factory()->for($this->workspace)->create(['id' => $this->settingId('app'), 'description' => 'app', 'type' => 'github_app', 'config' => [
+            'app_id' => '123', 'installation_id' => '456', 'private_key' => $privateKey,
+        ]]);
+        $this->freezeTime();
+        Http::fake([
+            'api.github.com/app/installations/456/access_tokens' => Http::response(['token' => 'ghs_install', 'expires_at' => now()->addHour()->toIso8601String()], 201),
+            'api.github.com/repos/acme/app/issues' => Http::response(['id' => 1, 'number' => 42, 'html_url' => 'https://github.com/acme/app/issues/42'], 201),
+        ]);
+        $tokenRequests = fn () => Http::recorded(fn (Request $request) => str_ends_with($request->url(), '/app/installations/456/access_tokens'));
+
+        $this->runAction('github.create_issue', ['credential' => $this->settingId('app'), 'title' => 'x']);
+        $this->runAction('github.create_issue', ['credential' => $this->settingId('app'), 'title' => 'y']);
+
+        $this->assertCount(1, $tokenRequests());
+        [$header, $payload, $signature] = explode('.', substr($tokenRequests()[0][0]->header('Authorization')[0], strlen('Bearer ')));
+        $decode = fn (string $part): string => (string) base64_decode(strtr($part, '-_', '+/'));
+        $this->assertSame(1, openssl_verify("{$header}.{$payload}", $decode($signature), (string) openssl_pkey_get_details($key)['key'], OPENSSL_ALGO_SHA256));
+        $claims = json_decode($decode($payload), true);
+        $this->assertSame(['123', now()->getTimestamp() - 60, now()->getTimestamp() + 540], [$claims['iss'], $claims['iat'], $claims['exp']]);
+        $this->assertCount(2, Http::recorded(fn (Request $request) => str_ends_with($request->url(), '/issues') && $request->header('Authorization') === ['Bearer ghs_install']));
+
+        $this->travel(56)->minutes();
+        $this->runAction('github.create_issue', ['credential' => $this->settingId('app'), 'title' => 'z']);
+
+        $this->assertCount(2, $tokenRequests());
+    }
+
+    public function test_a_github_app_with_an_unreadable_key_or_a_refused_token_fails_the_step(): void
+    {
+        $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+        openssl_pkey_export($key, $privateKey);
+        Credential::factory()->for($this->workspace)->create(['id' => $this->settingId('broken'), 'description' => 'Broken app', 'type' => 'github_app', 'config' => [
+            'app_id' => '123', 'installation_id' => '456', 'private_key' => 'not a key',
+        ]]);
+        Credential::factory()->for($this->workspace)->create(['id' => $this->settingId('refused'), 'description' => 'Refused app', 'type' => 'github_app', 'config' => [
+            'app_id' => '123', 'installation_id' => '789', 'private_key' => $privateKey,
+        ]]);
+        Http::fake(['api.github.com/app/installations/789/access_tokens' => Http::response(['message' => 'Bad credentials'], 401)]);
+
+        $this->assertSame(
+            'The private key of the GitHub App "Broken app" can\'t be read. Paste the whole .pem file into its authentication setting.',
+            $this->runAction('github.create_issue', ['credential' => $this->settingId('broken'), 'title' => 'x'])->error['message'],
+        );
+        $this->assertSame(
+            'GitHub didn\'t give the GitHub App "Refused app" a token. GitHub answered 401: Bad credentials',
+            $this->runAction('github.create_issue', ['credential' => $this->settingId('refused'), 'title' => 'x'])->error['message'],
+        );
+    }
+
     public function test_comments_creates_releases_and_runs_actions_workflows(): void
     {
         Http::fake([
@@ -89,7 +154,7 @@ class GitHubActionsTest extends TestCase
     {
         Http::fake();
 
-        $this->assertSame('The GitHub account chosen on this node no longer exists. Choose or connect another in the node\'s settings.', $this->runAction('github.create_issue', ['credential' => $this->settingId('nope'), 'title' => 'x'])->error['message']);
+        $this->assertSame('The GitHub connection chosen on this node no longer exists. Choose or connect another in the node\'s settings.', $this->runAction('github.create_issue', ['credential' => $this->settingId('nope'), 'title' => 'x'])->error['message']);
         $this->assertStringContainsString('isn\'t a repository', $this->runAction('github.create_issue', ['title' => 'x'], ['repo' => 'acme'])->error['message']);
         Http::assertNothingSent();
     }

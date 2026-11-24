@@ -1,7 +1,5 @@
 <?php
 
-use App\Credentials\CredentialTypeRegistry;
-use App\Credentials\OAuthCredentialType;
 use App\Engine\Definitions\Field;
 use App\Engine\Editor\CanvasMapper;
 use App\Engine\Editor\ConfigForm;
@@ -174,10 +172,9 @@ new class extends Component {
         $this->authorize('manage-credentials', $this->workspace);
 
         $field = collect($this->definition?->inputs() ?? [])->first(fn (Field $field) => $field->name === $fieldName && $field->type === Field::CREDENTIAL);
-        $registry = app(CredentialTypeRegistry::class);
-        $type = $field && count($field->credentialTypes) === 1 && $registry->has($field->credentialTypes[0]) ? $registry->get($field->credentialTypes[0]) : null;
+        $type = $field?->connectableOAuthType();
 
-        abort_unless($this->selected && $type instanceof OAuthCredentialType && $type->connectsFromNodes() && $type->isConfigured(), 404);
+        abort_unless($this->selected && $type && $type->isConfigured(), 404);
 
         $this->redirect($connections->beginForNode($type, $this->workflow, $this->selected, $fieldName, Auth::user()));
     }

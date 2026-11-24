@@ -184,17 +184,58 @@ class OAuthConnectionsTest extends TestCase
         $this->assertSame('GitHub (release-bot)', Credential::sole()->description);
     }
 
-    public function test_the_add_authentication_form_says_what_to_set_when_the_app_is_missing(): void
+    public function test_without_an_install_app_a_github_setting_brings_its_own_client(): void
     {
         config(['services.github' => ['client_id' => null, 'client_secret' => null]]);
 
-        Livewire::actingAs($this->admin)->test('pages::workspaces.credentials', ['workspace' => $this->workspace])
+        $page = Livewire::actingAs($this->admin)->test('pages::workspaces.credentials', ['workspace' => $this->workspace])
             ->call('create')
             ->set('type', 'github')
             ->assertDontSee('data-test="connect-account"', false)
-            ->assertSee('Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in the environment first.')
-            ->call('connect')
-            ->assertNotFound();
+            ->assertSee(route('integrations.oauth.callback', 'github'))
+            ->set('description', 'Release bot')
+            ->call('save')
+            ->assertHasErrors(['config.client_id' => 'required', 'config.client_secret' => 'required'])
+            ->set('config.client_id', 'Iv1.own')
+            ->set('config.client_secret', 'own-secret')
+            ->call('save');
+
+        $credential = Credential::sole();
+        $page->assertRedirect(route('workspaces.credentials.connect', [$this->workspace, $credential]));
+        $query = $this->connect($credential);
+        $this->assertSame('Iv1.own', $query['client_id']);
+
+        Http::fake([
+            'github.com/login/oauth/access_token' => Http::response(['access_token' => 'ghu_own']),
+            'api.github.com/user' => Http::response(['login' => 'octocat']),
+        ]);
+        $this->get(route('integrations.oauth.callback', ['type' => 'github', 'state' => $query['state'], 'code' => 'abc']))
+            ->assertSessionHas('oauth_status');
+
+        Http::assertSent(fn (Request $request) => $request->url() === 'https://github.com/login/oauth/access_token'
+            && $request['client_id'] === 'Iv1.own' && $request['client_secret'] === 'own-secret');
+        $this->assertSame('ghu_own', $credential->refresh()->config['access_token']);
+    }
+
+    public function test_a_github_settings_own_client_wins_over_the_install_app(): void
+    {
+        $credential = Credential::factory()->for($this->workspace)->create(['description' => 'Own app', 'type' => 'github', 'config' => ['client_id' => 'Iv1.own', 'client_secret' => 'own-secret']]);
+
+        $this->assertSame('Iv1.own', $this->connect($credential)['client_id']);
+    }
+
+    public function test_a_github_node_offers_tokens_and_apps_and_still_connects_accounts(): void
+    {
+        Credential::factory()->for($this->workspace)->create(['description' => 'Bot token', 'type' => 'github_token', 'config' => ['token' => 'github_pat_abc']]);
+        Credential::factory()->for($this->workspace)->create(['description' => 'Deploy app', 'type' => 'github_app', 'config' => ['app_id' => '1', 'installation_id' => '2', 'private_key' => 'k']]);
+        Credential::factory()->for($this->workspace)->httpBasic()->create(['description' => 'Intranet']);
+
+        $this->editor($this->issueWorkflow())
+            ->call('selectNode', 'issue')
+            ->assertSee('Bot token')
+            ->assertSee('Deploy app')
+            ->assertDontSee('Intranet')
+            ->assertSee('Connect another GitHub account');
     }
 
     public function test_a_callback_from_another_attempt_or_a_declined_consent_is_refused(): void

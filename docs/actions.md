@@ -177,7 +177,7 @@ If the storage service refuses the upload, the step fails with its status and me
 
 ## GitHub
 
-These nodes work on a GitHub repository as a connected GitHub account. Each has a **GitHub account**, which you can connect right from the node with **Connect GitHub** (see [Connecting an account](workspaces.md#connecting-an-account)), and a **Repository**, as `owner/name` or the repository's URL. A placeholder works in **Repository**, such as `{{ trigger.repository }}` after a [GitHub trigger](triggers.md#github).
+These nodes work on a GitHub repository as a GitHub account, personal access token or GitHub App. Each has a **GitHub connection**: a GitHub account, which you can connect right from the node with **Connect GitHub** (see [Connecting an account](workspaces.md#connecting-an-account)), or a personal access token or GitHub App (see [Other ways to connect GitHub](workspaces.md#other-ways-to-connect-github)), and a **Repository**, as `owner/name` or the repository's URL. A placeholder works in **Repository**, such as `{{ trigger.repository }}` after a [GitHub trigger](triggers.md#github).
 
 If GitHub refuses the request, the step fails with GitHub's message. Only server errors and rate limits are retried.
 

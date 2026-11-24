@@ -10,6 +10,7 @@ final readonly class CredentialField
     /**
      * @param  'text'|'url'|'select'  $type
      * @param  array<string, string>  $options  value => label, for select fields
+     * @param  bool  $multiline  edited in a text area, for a value with line breaks such as a private key
      */
     public function __construct(
         public string $name,
@@ -20,6 +21,7 @@ final readonly class CredentialField
         public array $options = [],
         public ?string $default = null,
         public ?string $help = null,
+        public bool $multiline = false,
     ) {}
 
     public static function text(string $name, string $label, bool $required = true, ?string $default = null, ?string $help = null): self
@@ -27,9 +29,9 @@ final readonly class CredentialField
         return new self($name, $label, required: $required, default: $default, help: $help);
     }
 
-    public static function secret(string $name, string $label, bool $required = true, ?string $help = null): self
+    public static function secret(string $name, string $label, bool $required = true, ?string $help = null, bool $multiline = false): self
     {
-        return new self($name, $label, secret: true, required: $required, help: $help);
+        return new self($name, $label, secret: true, required: $required, help: $help, multiline: $multiline);
     }
 
     public static function url(string $name, string $label, bool $required = false, ?string $help = null): self
@@ -50,7 +52,7 @@ final readonly class CredentialField
      */
     public function rules(): array
     {
-        $rules = [$this->required ? 'required' : 'nullable', 'string', 'max:4000'];
+        $rules = [$this->required ? 'required' : 'nullable', 'string', $this->multiline ? 'max:16000' : 'max:4000'];
 
         if ($this->type === 'url') {
             $rules[] = 'url';

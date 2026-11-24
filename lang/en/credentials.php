@@ -2,8 +2,25 @@
 
 return [
     'github' => [
+        'client_id_help' => 'From your GitHub OAuth app, or a GitHub App to connect as a person through it. Leave empty to use this install\'s GitHub app.',
         'description' => 'A GitHub account, connected through OAuth, for the GitHub nodes and HTTP calls to the GitHub API.',
         'label' => 'GitHub',
+    ],
+    'github_app' => [
+        'app_id' => 'App ID or client ID',
+        'app_id_help' => 'On the app\'s settings page in GitHub, under About.',
+        'description' => 'A GitHub App installed on your account or organization. The GitHub nodes act as the app, with the repositories and permissions you gave its installation.',
+        'installation_id' => 'Installation ID',
+        'installation_id_help' => 'The number at the end of the installation\'s settings page address, such as 12345678 in github.com/settings/installations/12345678.',
+        'label' => 'GitHub App',
+        'private_key' => 'Private key',
+        'private_key_help' => 'Paste the whole .pem file the app generated, including the BEGIN and END lines.',
+    ],
+    'github_token' => [
+        'description' => 'A GitHub personal access token. The GitHub nodes act as the person who made it.',
+        'label' => 'GitHub personal access token',
+        'token' => 'Token',
+        'token_help' => 'A fine-grained token with read and write access to Contents, Issues, Actions and Webhooks, or a classic token with the repo and admin:repo_hook scopes.',
     ],
     'google' => [
         'description' => 'A Google account, connected through OAuth, for the Google Sheets nodes and HTTP calls to Google APIs.',

@@ -62,7 +62,7 @@ new class extends Component {
     {
         $type = $this->selectedType();
 
-        return ! $this->editingId && $type instanceof OAuthCredentialType && $type->connectsFromNodes();
+        return ! $this->editingId && $type instanceof OAuthCredentialType && $type->connectsWithoutDetails();
     }
 
     /**
@@ -131,19 +131,20 @@ new class extends Component {
         $existing = $this->editingId ? $this->workspace->credentials()->findOrFail($this->editingId) : null;
 
         $this->validate([
-            'type' => ['required', Rule::in($existing ? [$existing->type] : array_keys(array_filter($registry->all(), fn (CredentialType $type) => ! ($type instanceof OAuthCredentialType && $type->connectsFromNodes()))))],
+            'type' => ['required', Rule::in($existing ? [$existing->type] : array_keys(array_filter($registry->all(), fn (CredentialType $type) => ! ($type instanceof OAuthCredentialType && $type->connectsWithoutDetails()))))],
             'description' => ['required', 'string', 'max:255',
                 Rule::unique('credentials', 'description')->where('workspace_id', $this->workspace->id)->ignore($this->editingId)],
         ], ['description.unique' => __('workspaces.credentials.another_setting_has_this_description')]);
 
         $type = $registry->get($this->type);
-        $secretFields = $type->secretFieldNames();
         $keepingSecrets = $existing && $existing->type === $type->key();
 
         $rules = $type->rules();
         if ($keepingSecrets) {
-            foreach ($secretFields as $name) {
-                $rules["config.{$name}"] = ['nullable', 'string', 'max:4000'];
+            foreach ($type->fields() as $field) {
+                if ($field->secret) {
+                    $rules["config.{$field->name}"] = ['nullable', ...array_slice($field->rules(), 1)];
+                }
             }
         }
         if ($rules !== []) {
@@ -339,6 +340,9 @@ new class extends Component {
                                 <flux:select.option :value="$optionValue">{{ $optionLabel }}</flux:select.option>
                             @endforeach
                         </flux:select>
+                    @elseif ($field->secret && $field->multiline)
+                        <flux:textarea wire:model="config.{{ $field->name }}" rows="6" class="font-mono text-xs" spellcheck="false" autocomplete="off" :label="$field->label"
+                            :description="$editingId ? __('common.leave_empty_to_keep_the') : $field->help" />
                     @elseif ($field->secret)
                         <flux:input wire:model="config.{{ $field->name }}" type="password" viewable autocomplete="off" :label="$field->label"
                             :description="$editingId ? __('common.leave_empty_to_keep_the') : $field->help" />
@@ -352,7 +356,7 @@ new class extends Component {
             @if ($this->selectedType() instanceof OAuthCredentialType)
                 @php($oauthType = $this->selectedType())
                 <flux:text class="text-sm">{{ __('oauth.after_saving_you_go_to', ['provider' => $oauthType->label()]) }}</flux:text>
-                @if ($oauthType->hasUserUrls())
+                @if ($oauthType->fields() !== [])
                     <flux:input :label="__('oauth.callback_url')" :value="$oauthType->callbackUrl()" readonly copyable :description="__('oauth.register_this_callback_url')" />
                 @endif
             @endif

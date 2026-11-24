@@ -77,7 +77,9 @@ Click **Add authentication**, choose a **Type**, and give it a **Description**, 
 | **AI provider** | LLM call | **Provider**, **API key** (not needed for a local Ollama server) and **Base URL** (optional, but needed for an OpenAI-compatible endpoint) |
 | **SMTP server** | Send email | **Host**, **Port**, **Encryption**, **Username**, **Password**, **From address** and **From name**. Lets a workspace send email through its own server instead of the organization's. |
 | **Chat webhook** | Chat message | **Service** (Slack or Mattermost, Microsoft Teams, Discord, or Google Chat) and **Webhook URL**. See [Chat webhooks](chat-webhooks.md) for getting one from each app. |
-| **GitHub** | GitHub nodes, HTTP call | None: you connect a GitHub account (see below) |
+| **GitHub** | GitHub nodes, HTTP call | None when the install has a GitHub app: you connect a GitHub account (see below). Otherwise the **Client ID** and **Client secret** of your own GitHub OAuth app or GitHub App. |
+| **GitHub personal access token** | GitHub nodes | **Token**: a fine-grained token with read and write access to Contents, Issues, Actions and Webhooks, or a classic token with the `repo` and `admin:repo_hook` scopes |
+| **GitHub App** | GitHub nodes | **App ID or client ID**, **Installation ID** and **Private key** (see [Using a GitHub App](#using-a-github-app)) |
 | **Google** | Google Sheets nodes, HTTP call | None: you connect a Google account (see below) |
 | **OAuth 2.0** | HTTP call | **Authorization URL**, **Token URL**, **Client ID**, **Client secret** and **Scopes**, from the OAuth app you registered with the provider |
 
@@ -96,7 +98,25 @@ Either way, you approve the connection at the provider, and wag.run describes th
 
 The connection acts as the account that approved it, so use an account with access to everything the workflows need, such as a bot account. wag.run refreshes the access token on its own when the provider gives it a refresh token, as Google does. An HTTP call that uses one of these settings sends its access token as a bearer token.
 
-GitHub and Google are available once an administrator has set up the install's OAuth apps (see [Connecting GitHub and Google](self-hosting.md#connecting-github-and-google)). For an OAuth 2.0 setting, register an app with the provider using the **Callback URL** shown in the form. Its token URL follows the same [internal-address rules](#workspace-settings) as an HTTP call.
+Google is available once an administrator has set up the install's OAuth app (see [Connecting GitHub and Google](self-hosting.md#connecting-github-and-google)). GitHub works the same way when the install has a GitHub app. Without one, a **GitHub** setting asks for the **Client ID** and **Client secret** of your own GitHub OAuth app, or of a GitHub App to connect as a person through it. Register the **Callback URL** shown in the form with that app, save, and approve the connection at GitHub. The setting's own client wins over the install's, even when the install has one. For an OAuth 2.0 setting, register an app with the provider using the **Callback URL** shown in the form. Its token URL follows the same [internal-address rules](#workspace-settings) as an HTTP call.
+
+### Other ways to connect GitHub
+
+Every GitHub node takes any of three kinds of GitHub setting, listed together under the node's **GitHub connection**:
+
+- **GitHub**: an account connected through OAuth, as above. The nodes act as the person who connected.
+- **GitHub personal access token**: the nodes act as the person who made the token, with the access it gives. Make one under your avatar → **Settings → Developer settings → Personal access tokens**. It stops working when it expires, so set a reminder to replace it.
+- **GitHub App**: the nodes act as the app, not a person, so the setting keeps working when people leave. It reaches only the repositories you install it on, with the permissions you give it.
+
+#### Using a GitHub App
+
+1. Create the app under your organization's **Settings → Developer settings → GitHub Apps → New GitHub App** (or under your own account's developer settings). Turn off **Webhook → Active**: wag.run doesn't need the app's own webhook.
+2. Under **Repository permissions**, give it what the workflows need: **Contents**, **Issues** and **Pull requests** (read and write) for the actions, **Actions** (read and write) to run and watch Actions workflows, and **Webhooks** (read and write) for GitHub triggers that register a webhook.
+3. Create the app. On its settings page, copy the **App ID** (or the **Client ID**, which works too), and under **Private keys** choose **Generate a private key**. Your browser downloads a `.pem` file.
+4. Choose **Install App**, install it on your account or organization, and pick the repositories. The installation's settings page address ends in its **Installation ID**, such as `12345678` in `github.com/organizations/acme/settings/installations/12345678`.
+5. In wag.run, choose **Add authentication → GitHub App**, enter the App ID and installation ID, and paste the whole `.pem` file, including its `BEGIN` and `END` lines, into **Private key**.
+
+wag.run uses the private key to ask GitHub for an installation token, which lasts an hour, and asks for a new one shortly before it expires.
 
 Admins manage authentication settings. Others in the workspace see only their names and types. Admins can reveal a secret field, and each reveal is recorded in the audit log.
 

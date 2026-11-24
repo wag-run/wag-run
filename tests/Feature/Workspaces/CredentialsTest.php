@@ -52,6 +52,34 @@ class CredentialsTest extends TestCase
             ->assertHasErrors(['config.username' => 'required', 'config.password' => 'required']);
     }
 
+    public function test_a_github_app_takes_a_long_private_key_in_a_text_area_and_a_numeric_installation_id(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $admin = User::factory()->memberOf($workspace, WorkspaceRole::Admin)->create();
+        $privateKey = "-----BEGIN RSA PRIVATE KEY-----\n".str_repeat('A', 5000)."\n-----END RSA PRIVATE KEY-----";
+
+        $page = Livewire::actingAs($admin)
+            ->test('pages::workspaces.credentials', ['workspace' => $workspace])
+            ->set('type', 'github_app')
+            ->assertSeeHtml('wire:model="config.private_key"')
+            ->set('description', 'Deploy app')
+            ->set('config.app_id', '123')
+            ->set('config.installation_id', 'my-org')
+            ->set('config.private_key', $privateKey)
+            ->call('save')
+            ->assertHasErrors(['config.installation_id' => 'regex'])
+            ->set('config.installation_id', '456')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $credential = Credential::sole();
+        $this->assertSame(['123', '456', $privateKey], [$credential->config['app_id'], $credential->config['installation_id'], $credential->config['private_key']]);
+
+        $page->call('edit', $credential->id)->set('description', 'Deploy app (org)')->call('save')->assertHasNoErrors();
+
+        $this->assertSame($privateKey, $credential->refresh()->config['private_key']);
+    }
+
     public function test_the_description_is_required_and_unique_in_the_workspace(): void
     {
         $workspace = Workspace::factory()->create();

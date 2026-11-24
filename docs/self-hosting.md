@@ -104,6 +104,8 @@ If your organization restricts which OAuth Apps can see its repositories, GitHub
 
 The connection acts as the account that approved it, with access to every repository that account can see. Consider connecting a bot account instead of your own.
 
+This app is optional. Without it, workspaces can still use GitHub with a personal access token, a GitHub App, or a GitHub setting that carries its own OAuth app. See [Other ways to connect GitHub](workspaces.md#other-ways-to-connect-github).
+
 #### Polling or webhooks
 
 GitHub triggers can check for new events every few minutes, or register a webhook on the repository. Polling works anywhere. A webhook only works if GitHub can reach your `APP_URL`, so it doesn't work for an install on a private network, or for one on your own computer without a tunnel such as Cloudflare Tunnel or ngrok.

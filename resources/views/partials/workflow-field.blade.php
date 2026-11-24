@@ -31,11 +31,7 @@
         @endforeach
     </flux:select>
     @php
-        $registry = app(\App\Credentials\CredentialTypeRegistry::class);
-        $oauthType = $field->type === Field::CREDENTIAL && count($field->credentialTypes) === 1 && $registry->has($field->credentialTypes[0])
-            ? $registry->get($field->credentialTypes[0])
-            : null;
-        $oauthType = $oauthType instanceof \App\Credentials\OAuthCredentialType && $oauthType->connectsFromNodes() ? $oauthType : null;
+        $oauthType = $field->type === Field::CREDENTIAL ? $field->connectableOAuthType() : null;
     @endphp
     @if ($oauthType && ! $oauthType->isConfigured())
         <flux:text class="text-xs" data-test="oauth-not-set-up">{{ __('workflows.editor.provider_not_set_up', ['provider' => $oauthType->label(), 'keys' => implode(' and ', $oauthType->environmentKeys())]) }}</flux:text>
@@ -102,7 +98,9 @@
         @endif
     </div>
 @elseif ($field->type === Field::TIMEZONE)
-    @php($currentTimezone = trim((string) $value))
+    @php
+        $currentTimezone = trim((string) $value);
+    @endphp
     <flux:select wire:model.live="{{ $model }}" :label="$field->label" :description="$field->description" data-test="timezone-field">
         @if ($currentTimezone !== '' && ! \App\Support\TimeZones::isKnown($currentTimezone))
             <flux:select.option :value="$currentTimezone">{{ __('workflows.editor.unknown_time_zone_option', ['timezone' => $currentTimezone]) }}</flux:select.option>

@@ -86,7 +86,7 @@ abstract class GitHubTrigger extends Node implements EventTrigger
     public function inputs(): array
     {
         return [
-            new Field('credential', __('nodes.github.github_account'), Field::CREDENTIAL, required: true, credentialTypes: ['github'], description: __('nodes.github.connect_one_under_authentication')),
+            new Field('credential', __('nodes.github.github_connection'), Field::CREDENTIAL, required: true, credentialTypes: GitHub::CREDENTIAL_TYPES, description: __('nodes.github.connect_one_under_authentication')),
             new Field('repository', __('nodes.github.repository'), Field::TEXT, required: true, description: __('nodes.github.owner_and_name')),
             ...$this->extraInputs(),
             new Field('listen', __('nodes.github.listen_by'), Field::SELECT, required: true, default: EventTrigger::POLL, options: [
