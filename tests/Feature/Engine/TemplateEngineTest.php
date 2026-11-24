@@ -123,6 +123,16 @@ class TemplateEngineTest extends TestCase
         $this->assertSame('EU', $engine->evaluate('upper(vars.region)', $this->data()));
     }
 
+    #[TestWith(['upper()', 'Expression error: upper() needs 1 argument, but got 0.'])]
+    #[TestWith(['replace("a")', 'Expression error: replace() needs 2 arguments, but got 1.'])]
+    #[TestWith(['format([1])', 'Expression error: format() needs string for format, but got array.'])]
+    public function test_a_helper_called_with_the_wrong_arguments_says_so_in_words(string $expression, string $message): void
+    {
+        $this->expectExceptionObject(new TemplateError($message));
+
+        $this->engine()->evaluate($expression, $this->data());
+    }
+
     #[TestWith(['constant("PHP_VERSION")'])]
     #[TestWith(['enum("App\\\\Enums\\\\StepStatus::Pending")'])]
     #[TestWith(['nodes.fetch.output.status =='])]
