@@ -58,86 +58,29 @@ Email is written to the log (`MAIL_MAILER=log`) until you set up SMTP under **Or
 
 ## Self-hosting with Docker
 
-The image runs the web server, two queue workers and the scheduler in one container, next to a PostgreSQL container. You need Docker with the Compose plugin.
+You need Docker with the Compose plugin. The app runs in one container (web server, queue workers and scheduler) next to a PostgreSQL container, both locked down by default.
 
 ```bash
 git clone https://github.com/wag-run/wag-run.git wag.run
-cd wag.run
-cp .env.docker.example .env
 ```
 
-Set the one required value in `.env`, a password for the database:
+```bash
+cd wag.run && cp .env.docker.example .env
+```
+
+Generate a database password, and copy the line it prints into `.env` in place of the empty `DB_PASSWORD=`. It's the only required setting:
 
 ```bash
 echo "DB_PASSWORD=$(openssl rand -hex 24)"
 ```
 
-Then build and start it:
-
 ```bash
 docker compose up -d --build
 ```
 
-On first start the container generates an `APP_KEY`, saves it in the storage volume and runs the database migrations. Open <http://localhost:8080> and register. **The first account becomes the organization admin**, so do this before exposing the install to anyone else. Migrations run on every start, so upgrading is `git pull` followed by the same `docker compose up -d --build`.
+Open <http://localhost:8080> and register. **The first account becomes the organization admin**, so do this before anyone else can reach the install.
 
-### Settings
-
-All settings live in `.env`, next to `docker-compose.yml`.
-
-| Setting | Default | What it does |
-|---|---|---|
-| `DB_PASSWORD` | required | Password for the bundled PostgreSQL database. |
-| `APP_KEY` | generated | Encrypts sessions and stored secrets. Left empty, one is generated on first run and kept in the storage volume as `app.key`. Set it yourself to keep the key out of the volume. Never change it on a running install: secrets saved with the old key become unreadable. |
-| `APP_URL` | `http://localhost:8080` | The public URL. Webhook and form trigger links are built from it. |
-| `APP_BIND` | `127.0.0.1` | Host address the port is published on. Use `0.0.0.0` to expose it without a reverse proxy. |
-| `APP_PORT` | `8080` | Host port. |
-| `TRUSTED_PROXIES` | empty | IP addresses or CIDR ranges of your reverse proxy, comma-separated, or `*` if the app is reachable only through it. Needed for HTTPS links behind a proxy. |
-| `SESSION_SECURE_COOKIE` | `false` | Set to `true` once the site is served over HTTPS. |
-| `MAIL_MAILER`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS` | `log` mailer | SMTP settings. You can also set email up in the app under **Organization → Email**. |
-| `QUEUE_WORKERS` | `2` | Number of queue workers running workflow steps. |
-| `LOG_LEVEL` | `info` | Logs go to the container log (`docker compose logs -f app`). |
-| `APP_MEMORY_LIMIT`, `DB_MEMORY_LIMIT` | `1g` | Memory limit per container. |
-
-### HTTPS
-
-The container serves plain HTTP on `127.0.0.1:8080`. Put a reverse proxy that terminates TLS (Caddy, Traefik, nginx) in front of it, then set `APP_URL` to the `https://` address, `TRUSTED_PROXIES` to the proxy's address and `SESSION_SECURE_COOKIE=true`.
-
-### Data and backups
-
-Two named volumes hold everything: `wag_database` (PostgreSQL) and `wag_storage` (uploaded files). Back up both. The generated `APP_KEY` is in the storage volume; if you set your own, back that up too.
-
-```bash
-docker compose exec db pg_dump -U wag wag > backup.sql
-```
-
-### How the containers are locked down
-
-- Every process runs as an unprivileged user (`82:82` in the app, `70:70` in the database). Nothing starts as root and drops privileges later, so the stack also works under rootless Docker and Podman.
-- All Linux capabilities are dropped and `no-new-privileges` is set.
-- Root filesystems are read-only. The app writes only to its storage volume and a `noexec` tmpfs at `/tmp`; the application code is owned by root and not writable by the app.
-- The database has no published port and sits on an internal network that only the app can reach.
-- The image is a multi-stage build: Composer, Node, dev dependencies, tests and `.env` files never reach it. nginx executes `index.php` and nothing else.
-- Containers have memory and process limits, and the port is published on loopback unless you change `APP_BIND`.
-
-To run without PostgreSQL, the image falls back to SQLite stored in the storage volume when no `DB_*` settings are given. Build the image with `docker build -t wag.run .`, put only `APP_URL` in `.env`, then:
-
-```bash
-docker run -d --read-only --cap-drop ALL --security-opt no-new-privileges --tmpfs /tmp \
-  --env-file .env \
-  -v wag_storage:/var/www/html/storage -p 127.0.0.1:8080:8080 wag.run:latest
-```
-
-## Running in production without Docker
-
-- **Queue worker**: workflow steps run on the `workflows` queue. Run a worker for it, and restart workers after each deploy:
-
-  ```bash
-  php artisan queue:work --queue=workflows,default
-  ```
-
-- **Scheduler**: run `php artisan schedule:run` every minute. It drives schedule triggers, wakes up waiting steps and times out approvals (`workflows:sweep`, `workflows:run-schedules`), and purges old run logs (`workflows:purge-executions`).
-- **`APP_URL`** must be the public URL, because webhook and form trigger URLs are built from it.
-- **Email**: configure SMTP under **Organization → Email**, or with the `MAIL_*` settings in `.env`.
+[Self-hosting](docs/self-hosting.md) covers the rest: every setting, HTTPS behind a reverse proxy, connecting GitHub and Google, backups, upgrades, running with SQLite or without Docker, and how the containers are locked down.
 
 ## Extending
 
