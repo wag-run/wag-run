@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="docs/images/logo.svg" width="128" alt="wag.run logo">
+    <img src="public/logo.svg" width="128" alt="wag.run logo">
 </p>
 
 # wag.run
