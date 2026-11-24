@@ -1,7 +1,7 @@
 <?php
 
-use App\Enums\WorkspacePermission;
 use App\Enums\AssignmentStatus;
+use App\Enums\WorkspacePermission;
 use App\Models\Assignment;
 use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Collection;
@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
-new class extends Component {
+new class extends Component
+{
     public Workspace $workspace;
 
     #[Computed]
@@ -55,11 +56,7 @@ new class extends Component {
 }; ?>
 
 <section class="w-full">
-    <x-page-heading :heading="$workspace->name">
-        <x-slot:actions>
-            <flux:badge>{{ $this->role?->label() }}</flux:badge>
-        </x-slot:actions>
-    </x-page-heading>
+    <x-page-heading :heading="$workspace->name"></x-page-heading>
 
     @if ($this->pendingAssignments->isNotEmpty())
         <div class="mb-8">
