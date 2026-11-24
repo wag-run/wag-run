@@ -102,6 +102,7 @@ return [
     ],
     'editor' => [
         'format_json' => 'Format',
+        'unknown_time_zone_option' => ':timezone (not a known time zone)',
         'not_valid_json' => 'Not valid JSON: :error',
         'valid_json' => 'Valid JSON',
         'add_a_trigger_to_start' => 'Add a trigger to start the workflow.',

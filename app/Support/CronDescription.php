@@ -89,7 +89,7 @@ final class CronDescription
     {
         $timezone = trim($timezone) ?: 'UTC';
 
-        if (! self::isValid($expression) || ! in_array($timezone, timezone_identifiers_list(), true)) {
+        if (! self::isValid($expression) || ! TimeZones::isKnown($timezone)) {
             return [];
         }
 

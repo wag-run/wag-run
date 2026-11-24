@@ -330,12 +330,16 @@ class WorkflowEditorTest extends TestCase
         $editor = $this->editor($workspace, $workflow, $user)->call('selectNode', 'tick');
 
         $editor->assertSeeHtml('data-test="cron-presets"')
+            ->assertSeeHtml('data-test="timezone-field"')
+            ->assertSeeHtml('<optgroup label="Europe">')
+            ->assertSeeHtml('value="America/New_York"')
             ->assertSee('At 09:00 on weekdays')
             ->assertSee('Next runs (America/New_York)')
             ->assertSee('Mon 30 Nov 2026, 09:00');
 
         $editor->set('form.cron', 'every day')->assertSee('Not a valid cron expression.')->assertDontSee('Next runs');
-        $editor->set('form.cron', '0 9 * * *')->set('form.timezone', 'Mars/Olympus')->assertSee('Every day at 09:00')->assertSee('Mars/Olympus is not a time zone');
+        $editor->set('form.cron', '0 9 * * *')->set('form.timezone', 'Mars/Olympus')->assertSee('Every day at 09:00')->assertSee('Mars/Olympus is not a time zone')
+            ->assertSee('Mars/Olympus (not a known time zone)');
     }
 
     public function test_publishing_refuses_an_invalid_cron_expression_or_time_zone(): void

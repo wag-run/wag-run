@@ -9,6 +9,7 @@ use App\Engine\NodeContext;
 use App\Engine\NodeResult;
 use App\Enums\NodeKind;
 use App\Support\CronDescription;
+use App\Support\TimeZones;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Cron\CronExpression;
@@ -50,7 +51,7 @@ class ScheduleTrigger extends Node
             new Field('mode', __('common.run'), Field::SELECT, required: true, default: 'interval', options: ['interval' => __('nodes.schedule_trigger.every_n_minutes'), 'cron' => __('nodes.schedule_trigger.on_a_cron_schedule')]),
             new Field('interval_minutes', __('nodes.schedule_trigger.every_minutes'), Field::NUMBER, default: 60, visibleWhen: ['mode' => 'interval']),
             new Field('cron', __('nodes.schedule_trigger.cron_expression'), Field::CRON, required: true, description: __('nodes.schedule_trigger.such_as_0_9_1'), visibleWhen: ['mode' => 'cron']),
-            new Field('timezone', __('nodes.schedule_trigger.time_zone'), Field::TEXT, default: 'UTC', visibleWhen: ['mode' => 'cron']),
+            new Field('timezone', __('nodes.schedule_trigger.time_zone'), Field::TIMEZONE, default: 'UTC', visibleWhen: ['mode' => 'cron']),
         ];
     }
 
@@ -80,7 +81,7 @@ class ScheduleTrigger extends Node
             $problems[] = __('nodes.cron.not_a_valid_cron_expression');
         }
 
-        if (! in_array($timezone, timezone_identifiers_list(), true)) {
+        if (! TimeZones::isKnown($timezone)) {
             $problems[] = __('nodes.cron.unknown_time_zone', ['timezone' => $timezone]);
         }
 

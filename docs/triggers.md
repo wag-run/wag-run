@@ -92,7 +92,7 @@ The run starts on a timetable.
 | **Run** | **Every N minutes**, or **On a cron schedule** |
 | **Every (minutes)** | For an interval: how many minutes between runs. Defaults to 60. |
 | **Cron expression** | For a cron schedule: when to run, such as `0 9 * * 1-5` for 9:00 on weekdays. **Presets** fills in a common schedule. |
-| **Time zone** | For a cron schedule: the time zone the expression is read in, such as `Europe/London`. Defaults to `UTC`. |
+| **Time zone** | For a cron schedule: the time zone the expression is read in, chosen from a list grouped by region, such as **Europe → London**. Defaults to `UTC`. |
 
 A cron expression has five parts: minute, hour, day of the month, month and day of the week. Some examples:
 

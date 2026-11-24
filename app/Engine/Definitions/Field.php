@@ -51,6 +51,12 @@ final readonly class Field
     public const CRON = 'cron';
 
     /**
+     * A time zone name such as Europe/London, chosen from the ones this
+     * server knows.
+     */
+    public const TIMEZONE = 'timezone';
+
+    /**
      * @param  array<int|string, string>  $options  value => label, for select fields
      * @param  list<string>  $credentialTypes  allowed authentication types, for credential fields
      * @param  list<Field>  $fields  item fields, for list fields

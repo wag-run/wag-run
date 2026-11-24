@@ -53,7 +53,7 @@
         $expression = trim((string) $value);
         $timezone = trim((string) (($values ?? [])['timezone'] ?? '')) ?: 'UTC';
         $cronDescription = \App\Support\CronDescription::describe($expression);
-        $knownTimezone = in_array($timezone, timezone_identifiers_list(), true);
+        $knownTimezone = \App\Support\TimeZones::isKnown($timezone);
         $nextRuns = \App\Support\CronDescription::nextRuns($expression, $timezone);
         $presets = [
             '*/15 * * * *' => __('nodes.cron.preset_every_15_minutes'),
@@ -101,6 +101,21 @@
             </div>
         @endif
     </div>
+@elseif ($field->type === Field::TIMEZONE)
+    @php($currentTimezone = trim((string) $value))
+    <flux:select wire:model.live="{{ $model }}" :label="$field->label" :description="$field->description" data-test="timezone-field">
+        @if ($currentTimezone !== '' && ! \App\Support\TimeZones::isKnown($currentTimezone))
+            <flux:select.option :value="$currentTimezone">{{ __('workflows.editor.unknown_time_zone_option', ['timezone' => $currentTimezone]) }}</flux:select.option>
+        @endif
+        <flux:select.option value="UTC">UTC</flux:select.option>
+        @foreach (\App\Support\TimeZones::grouped() as $region => $zones)
+            <optgroup label="{{ $region }}">
+                @foreach ($zones as $zone => $place)
+                    <flux:select.option :value="$zone">{{ $place }}</flux:select.option>
+                @endforeach
+            </optgroup>
+        @endforeach
+    </flux:select>
 @elseif ($field->type === Field::USERS)
     <flux:checkbox.group wire:model.live="{{ $model }}" :label="$field->label" :description="$field->description">
         <div class="max-h-48 space-y-2 overflow-y-auto rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
