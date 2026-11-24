@@ -4,9 +4,9 @@ name: wag
 
 services:
   app:
-    build:
-      context: .
-    image: wag.run:latest
+    # Release images, published for amd64 and arm64. Set WAG_VERSION to pin a
+    # release, such as 1.2 for its patch updates or 1.2.3 for exactly that one.
+    image: ghcr.io/wag-run/wag-run:${WAG_VERSION:-latest}
     restart: unless-stopped
     user: "82:82"
     read_only: true

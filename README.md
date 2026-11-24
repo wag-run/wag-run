@@ -61,9 +61,9 @@ Email is written to the log (`MAIL_MAILER=log`) until you set up SMTP under **Or
 The image runs the web server, two queue workers and the scheduler in one container, next to a PostgreSQL container. You need Docker with the Compose plugin.
 
 ```bash
-git clone https://github.com/wag-run/wag-run.git wag.run
-cd wag.run
-cp .env.docker.example .env
+mkdir wag.run && cd wag.run
+curl -fsSLO https://raw.githubusercontent.com/wag-run/wag-run/main/docker-compose.yml
+curl -fsSL https://raw.githubusercontent.com/wag-run/wag-run/main/.env.docker.example -o .env
 ```
 
 Set the one required value in `.env`, a password for the database:
@@ -72,13 +72,13 @@ Set the one required value in `.env`, a password for the database:
 echo "DB_PASSWORD=$(openssl rand -hex 24)"
 ```
 
-Then build and start it:
+Then start it:
 
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
 
-On first start the container generates an `APP_KEY`, saves it in the storage volume and runs the database migrations. Open <http://localhost:8080> and register. **The first account becomes the organization admin**, so do this before exposing the install to anyone else. Migrations run on every start, so upgrading is `git pull` followed by the same `docker compose up -d --build`.
+On first start the container generates an `APP_KEY`, saves it in the storage volume and runs the database migrations. Open <http://localhost:8080> and register. **The first account becomes the organization admin**, so do this before exposing the install to anyone else. Migrations run on every start, so upgrading is `docker compose pull && docker compose up -d`.
 
 ### Settings
 
@@ -87,6 +87,7 @@ All settings live in `.env`, next to `docker-compose.yml`.
 | Setting | Default | What it does |
 |---|---|---|
 | `DB_PASSWORD` | required | Password for the bundled PostgreSQL database. |
+| `WAG_VERSION` | `latest` | The release to run: `latest`, a minor version such as `1.2` (gets its patch updates), or an exact version such as `1.2.3`. |
 | `APP_KEY` | generated | Encrypts sessions and stored secrets. Left empty, one is generated on first run and kept in the storage volume as `app.key`. Set it yourself to keep the key out of the volume. Never change it on a running install: secrets saved with the old key become unreadable. |
 | `APP_URL` | `http://localhost:8080` | The public URL. Webhook and form trigger links are built from it. |
 | `APP_BIND` | `127.0.0.1` | Host address the port is published on. Use `0.0.0.0` to expose it without a reverse proxy. |
@@ -119,12 +120,12 @@ docker compose exec db pg_dump -U wag wag > backup.sql
 - The image is a multi-stage build: Composer, Node, dev dependencies, tests and `.env` files never reach it. nginx executes `index.php` and nothing else.
 - Containers have memory and process limits, and the port is published on loopback unless you change `APP_BIND`.
 
-To run without PostgreSQL, the image falls back to SQLite stored in the storage volume when no `DB_*` settings are given. Build the image with `docker build -t wag.run .`, put only `APP_URL` in `.env`, then:
+To run without PostgreSQL, the image falls back to SQLite stored in the storage volume when no `DB_*` settings are given. Put only `APP_URL` in `.env`, then:
 
 ```bash
 docker run -d --read-only --cap-drop ALL --security-opt no-new-privileges --tmpfs /tmp \
   --env-file .env \
-  -v wag_storage:/var/www/html/storage -p 127.0.0.1:8080:8080 wag.run:latest
+  -v wag_storage:/var/www/html/storage -p 127.0.0.1:8080:8080 ghcr.io/wag-run/wag-run:latest
 ```
 
 ## Running in production without Docker
