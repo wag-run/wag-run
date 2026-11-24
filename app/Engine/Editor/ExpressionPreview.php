@@ -79,7 +79,7 @@ class ExpressionPreview
         $execution = $workflow->executions()->latest()->latest('id')->first();
 
         return [$this->withMaskedSecrets($workflow, [
-            'trigger' => $execution?->input ?? [],
+            'trigger' => $execution->input ?? [],
             'nodes' => $execution ? $this->outputsOf($execution) : [],
             'vars' => $workflow->workspace->variables()->pluck('value', 'key')->all(),
             'execution' => [
