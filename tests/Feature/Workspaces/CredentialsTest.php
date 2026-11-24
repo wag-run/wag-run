@@ -80,6 +80,19 @@ class CredentialsTest extends TestCase
         $this->assertSame($privateKey, $credential->refresh()->config['private_key']);
     }
 
+    public function test_the_list_leaves_out_optional_fields_that_are_empty(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $admin = User::factory()->memberOf($workspace, WorkspaceRole::Admin)->create();
+        Credential::factory()->for($workspace)->oauth('github')->create(['description' => 'Install app']);
+        Credential::factory()->for($workspace)->oauth('github', ['client_id' => 'Iv1.own', 'client_secret' => 'own-secret'])->create(['description' => 'Own app']);
+
+        $html = Livewire::actingAs($admin)->test('pages::workspaces.credentials', ['workspace' => $workspace])->html();
+
+        $this->assertSame(1, substr_count($html, '>Client ID</dt>'));
+        $this->assertStringContainsString('Iv1.own', $html);
+    }
+
     public function test_the_description_is_required_and_unique_in_the_workspace(): void
     {
         $workspace = Workspace::factory()->create();

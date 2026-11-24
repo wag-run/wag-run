@@ -255,6 +255,7 @@ new class extends Component {
                     <flux:table.cell class="min-w-64 whitespace-normal">
                         <dl class="grid max-w-md grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1 text-sm">
                             @foreach ($credentialType->fields() as $field)
+                                @continue(! $field->required && blank($credential->config[$field->name] ?? null))
                                 <dt class="whitespace-nowrap text-zinc-500">{{ $field->label }}</dt>
                                 <dd class="min-w-0 wrap-anywhere">
                                     @if ($field->secret)
