@@ -26,7 +26,7 @@ wag.run ships as a Docker image. One container runs the web server, the queue wo
    echo "DB_PASSWORD=$(openssl rand -hex 24)"
    ```
 
-   Copy the line it prints into `.env`, replacing the empty `DB_PASSWORD=`. This is the only setting you must fill in.
+   Copy the line it prints into `.env`, replacing the empty `DB_PASSWORD=`. This is the only setting you must fill in: until it is set, `docker compose up` stops with "Set DB_PASSWORD in .env".
 
 3. Build and start the containers:
 
@@ -50,7 +50,7 @@ docker compose up -d
 
 | Setting | Default | What it does |
 |---|---|---|
-| `DB_PASSWORD` | required | Password for the bundled PostgreSQL database |
+| `DB_PASSWORD` | required | Password for the bundled PostgreSQL database. Compose won't start without it. |
 | `APP_KEY` | generated | Encrypts sessions and stored secrets. Left empty, one is generated on first run and kept in the storage volume as `app.key`. See [The encryption key](#the-encryption-key). |
 | `APP_URL` | `http://localhost:8080` | The address people use to reach wag.run. Webhook and form trigger links are built from it, so set it to your real address. |
 | `APP_BIND` | `127.0.0.1` | The host address the port is published on. Keep it when a reverse proxy on the same machine forwards to the app. Use `0.0.0.0` to expose the port directly. |
