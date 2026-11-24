@@ -313,7 +313,9 @@ class WorkflowEditorTest extends TestCase
         ));
         $editor = $this->editor($workspace, $workflow, $user)->call('selectNode', 'fetch');
 
-        $editor->assertSeeHtml('data-test="json-editor"')->assertSeeHtml('data-test="json-format"')->assertSeeHtml('data-test="data-picker"');
+        $editor->assertSeeHtml('data-test="json-editor"')->assertSeeHtml('data-test="json-format"')->assertSeeHtml('data-test="data-picker"')
+            ->assertSeeHtml('style="display: none" x-show="state === \'valid\'"')
+            ->assertSeeHtml('style="display: none" x-show="state === \'invalid\'"');
 
         $editor->set('form.body_type', 'raw')->assertDontSeeHtml('data-test="json-editor"');
         $this->assertSame('{"id": {{ trigger.values.id }}}', $workflow->refresh()->draft()->node('fetch')->config['body']);

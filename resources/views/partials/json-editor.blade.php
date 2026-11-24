@@ -3,7 +3,9 @@
      count as values, so a templated body can still be checked.
 
      $model: the wire:model path; $live: send changes as you type;
-     $label, $description; $picker: the data picker's groups, if any. --}}
+     $label, $description; $picker: the data picker's groups, if any.
+     The status starts hidden, so a page without the script never claims
+     the JSON is valid. --}}
 @php
     $live ??= true;
     $rows ??= 8;
@@ -21,8 +23,8 @@
         @if (isset($picker))
             @include('partials.workflow-picker', ['picker' => $picker])
         @endif
-        <span class="text-xs text-green-600 dark:text-green-400" x-show="state === 'valid'" x-cloak data-test="json-valid">{{ __('workflows.editor.valid_json') }}</span>
-        <span class="text-xs text-red-600 dark:text-red-400" x-show="state === 'invalid'" x-cloak data-test="json-invalid"
+        <span class="text-xs text-green-600 dark:text-green-400" style="display: none" x-show="state === 'valid'" data-test="json-valid">{{ __('workflows.editor.valid_json') }}</span>
+        <span class="text-xs text-red-600 dark:text-red-400" style="display: none" x-show="state === 'invalid'" data-test="json-invalid"
             data-template="{{ __('workflows.editor.not_valid_json', ['error' => '__error__']) }}" x-text="$el.dataset.template.replace('__error__', error)"></span>
     </div>
 </div>
