@@ -10,6 +10,9 @@ document.addEventListener('alpine:init', () => {
  * field's own undo and redo (Cmd/Ctrl+Z) include it, and the input event
  * that command fires tells Livewire the value changed. Where the command is
  * unavailable, the text is set directly, which undo does not see.
+ *
+ * A reference or function picked while the cursor is already inside a
+ * {{ }} placeholder goes in bare, so it becomes part of that expression.
  */
 const insertsText = {
     field() {
@@ -38,10 +41,257 @@ const insertsText = {
         field.setRangeText(text, start, end, 'end');
         field.dispatchEvent(new Event('input', { bubbles: true }));
     },
+
+    insideExpression(field) {
+        const before = field.value.slice(0, field.selectionStart ?? field.value.length);
+        const open = before.lastIndexOf('{{');
+
+        return open !== -1 && before.indexOf('}}', open) === -1;
+    },
+
+    insertReference(path) {
+        const field = this.field();
+
+        if (field) {
+            this.insert(this.insideExpression(field) ? path : `{{ ${path} }}`);
+        }
+    },
+
+    /**
+     * Inserts a call to a helper function. Selected text becomes its
+     * argument; otherwise the cursor lands between the parentheses.
+     */
+    insertFunction(name, takesArguments = true) {
+        const field = this.field();
+
+        if (! field) {
+            return;
+        }
+
+        const selected = field.value.slice(field.selectionStart, field.selectionEnd);
+        const inside = this.insideExpression(field);
+        const call = `${name}(${selected})`;
+
+        this.insert(inside ? call : `{{ ${call} }}`);
+
+        if (takesArguments && selected === '') {
+            const cursor = field.selectionEnd - (inside ? 1 : 4);
+            field.setSelectionRange(cursor, cursor);
+        }
+    },
+};
+
+const escapeHtml = (text) => text.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+
+/**
+ * The position of the "}}" that closes a placeholder opened before $from,
+ * minding quotes and braces the way the server does
+ * (ExpressionTemplateEngine::closingBraces), or -1.
+ */
+function closingBraces(text, from) {
+    let quote = null;
+    let depth = 0;
+
+    for (let i = from; i < text.length; i++) {
+        const char = text[i];
+
+        if (quote !== null) {
+            if (char === '\\') {
+                i++;
+            } else if (char === quote) {
+                quote = null;
+            }
+
+            continue;
+        }
+
+        if (char === '"' || char === "'") {
+            quote = char;
+        } else if (char === '{') {
+            depth++;
+        } else if (char === '}') {
+            if (depth === 0 && text[i + 1] === '}') {
+                return i;
+            }
+
+            depth = Math.max(0, depth - 1);
+        }
+    }
+
+    return -1;
+}
+
+/**
+ * The inside of a placeholder as HTML: strings and function names get
+ * their own colour.
+ */
+function highlightExpression(expression) {
+    return expression.replace(
+        /("(?:\\.|[^"\\])*"?|'(?:\\.|[^'\\])*'?)|([A-Za-z_][A-Za-z0-9_]*)(?=\s*\()|([^"'A-Za-z_]+|[A-Za-z_][A-Za-z0-9_]*)/g,
+        (match, string, call, other) => {
+            if (string) {
+                return `<span class="wag-x-string">${escapeHtml(string)}</span>`;
+            }
+
+            if (call) {
+                return `<span class="wag-x-function">${escapeHtml(call)}</span>`;
+            }
+
+            return escapeHtml(other);
+        },
+    );
+}
+
+/**
+ * Text with each {{ }} placeholder marked, as HTML. A placeholder that is
+ * never closed is marked as a problem up to the end.
+ */
+function highlightTemplate(text) {
+    let html = '';
+    let offset = 0;
+    let start;
+
+    while ((start = text.indexOf('{{', offset)) !== -1) {
+        html += escapeHtml(text.slice(offset, start));
+        const close = closingBraces(text, start + 2);
+
+        if (close === -1) {
+            return html + `<span class="wag-x-unclosed">${escapeHtml(text.slice(start))}</span>`;
+        }
+
+        html += `<span class="wag-x"><span class="wag-x-brace">{{</span>${highlightExpression(text.slice(start + 2, close))}<span class="wag-x-brace">}}</span></span>`;
+        offset = close + 2;
+    }
+
+    return html + escapeHtml(text.slice(offset));
+}
+
+/**
+ * A field that takes placeholders: the text is drawn again, with the
+ * placeholders coloured, in a layer (x-ref="highlight") laid exactly over
+ * the field, whose own text turns transparent once the layer is ready. If
+ * the field has a preview (x-ref="preview"), what it would become is
+ * worked out on the server as the person types, while the field has focus.
+ */
+const expressionField = {
+    ...insertsText,
+    preview: null,
+    previewLoading: false,
+    focused: false,
+    previewRequest: 0,
+    previewTimer: null,
+
+    setUpExpressionField() {
+        const field = this.field();
+        const layer = this.$refs.highlight;
+
+        if (! field || ! layer) {
+            return;
+        }
+
+        const refresh = () => this.drawHighlight(field, layer);
+        field.addEventListener('input', () => {
+            refresh();
+            this.schedulePreview(field);
+        });
+        field.addEventListener('scroll', () => this.followScroll(field, layer));
+        new ResizeObserver(() => this.placeHighlight(field, layer)).observe(field);
+        document.fonts?.ready.then(() => this.placeHighlight(field, layer));
+
+        const model = [...field.attributes].find((attribute) => attribute.name.startsWith('wire:model'))?.value;
+
+        if (model && this.$wire) {
+            this.$wire.$watch(model, () => this.$nextTick(() => {
+                refresh();
+                this.schedulePreview(field);
+            }));
+        }
+
+        this.$root.addEventListener('focusin', () => {
+            this.focused = true;
+            this.schedulePreview(field);
+        });
+        this.$root.addEventListener('focusout', (event) => {
+            this.focused = this.$root.contains(event.relatedTarget);
+        });
+
+        this.placeHighlight(field, layer);
+        layer.dataset.ready = '';
+    },
+
+    placeHighlight(field, layer) {
+        const style = getComputedStyle(field);
+        const fieldBox = field.getBoundingClientRect();
+        const rootBox = this.$root.getBoundingClientRect();
+        const isInput = field.tagName === 'INPUT';
+        const borders = parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth);
+        const scrollbar = isInput ? 0 : Math.max(0, field.offsetWidth - field.clientWidth - borders);
+
+        for (const property of ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'letterSpacing', 'wordSpacing', 'textIndent', 'textTransform', 'tabSize',
+            'paddingTop', 'paddingLeft', 'paddingBottom', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'boxSizing', 'textAlign']) {
+            layer.style[property] = style[property];
+        }
+
+        Object.assign(layer.style, {
+            top: `${fieldBox.top - rootBox.top}px`,
+            left: `${fieldBox.left - rootBox.left}px`,
+            width: `${field.offsetWidth}px`,
+            height: `${field.offsetHeight}px`,
+            paddingRight: `${parseFloat(style.paddingRight) + scrollbar}px`,
+            whiteSpace: isInput ? 'pre' : 'pre-wrap',
+            overflowWrap: isInput ? 'normal' : 'break-word',
+            lineHeight: isInput ? `${field.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)}px` : style.lineHeight,
+        });
+
+        this.drawHighlight(field, layer);
+    },
+
+    drawHighlight(field, layer) {
+        const value = field.value;
+        layer.innerHTML = highlightTemplate(value) + (field.tagName === 'TEXTAREA' && value.endsWith('\n') ? ' ' : '');
+        this.followScroll(field, layer);
+    },
+
+    followScroll(field, layer) {
+        layer.scrollTop = field.scrollTop;
+        layer.scrollLeft = field.scrollLeft;
+    },
+
+    schedulePreview(field) {
+        if (! this.$refs.preview || ! this.$wire) {
+            return;
+        }
+
+        clearTimeout(this.previewTimer);
+
+        if (! field.value.includes('{{')) {
+            this.preview = null;
+            this.previewLoading = false;
+
+            return;
+        }
+
+        this.previewLoading = true;
+        this.previewTimer = setTimeout(async () => {
+            const request = ++this.previewRequest;
+            const preview = await this.$wire.previewTemplate(field.value);
+
+            if (request === this.previewRequest) {
+                this.preview = preview;
+                this.previewLoading = false;
+            }
+        }, 350);
+    },
 };
 
 document.addEventListener('alpine:init', () => {
-    window.Alpine.data('wagInsert', () => ({ ...insertsText }));
+    window.Alpine.data('wagInsert', () => ({
+        ...expressionField,
+
+        init() {
+            this.$nextTick(() => this.setUpExpressionField());
+        },
+    }));
 });
 
 /**
@@ -100,12 +350,15 @@ function maskPlaceholders(text) {
  */
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('wagJsonEditor', () => ({
-        ...insertsText,
+        ...expressionField,
         state: 'empty',
         error: '',
 
         init() {
-            this.$nextTick(() => this.check());
+            this.$nextTick(() => {
+                this.check();
+                this.setUpExpressionField();
+            });
         },
 
         parse() {

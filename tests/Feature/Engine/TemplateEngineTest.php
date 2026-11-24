@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Engine;
 
+use App\Engine\Templates\HelperFunctions;
+use App\Engine\Templates\SafeExpressionLanguage;
 use App\Engine\Templates\TemplateEngine;
 use App\Engine\Templates\TemplateError;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -99,6 +101,16 @@ class TemplateEngineTest extends TestCase
         $this->assertSame($expected, $this->engine()->evaluate($expression, $this->data()));
     }
 
+    public function test_every_helper_function_is_listed_for_the_data_picker_with_a_description(): void
+    {
+        $catalog = HelperFunctions::catalog();
+
+        $this->assertEqualsCanonicalizing(app(SafeExpressionLanguage::class)->helperNames(), HelperFunctions::names());
+        foreach (array_merge(...array_column($catalog, 'items')) as $function) {
+            $this->assertStringNotContainsString('engine.functions.', $function['description'], "{$function['name']} has no description");
+        }
+    }
+
     public function test_evaluates_expressions_with_dot_and_bracket_access(): void
     {
         $engine = $this->engine();
@@ -109,6 +121,16 @@ class TemplateEngineTest extends TestCase
         $this->assertSame([['id' => 1], ['id' => 2]], $engine->evaluate('nodes.fetch.output.body.items', $this->data()));
         $this->assertNull($engine->evaluate('nodes.fetch.output.nope', $this->data()));
         $this->assertSame('EU', $engine->evaluate('upper(vars.region)', $this->data()));
+    }
+
+    #[TestWith(['upper()', 'Expression error: upper() needs 1 argument, but got 0.'])]
+    #[TestWith(['replace("a")', 'Expression error: replace() needs 2 arguments, but got 1.'])]
+    #[TestWith(['format([1])', 'Expression error: format() needs string for format, but got array.'])]
+    public function test_a_helper_called_with_the_wrong_arguments_says_so_in_words(string $expression, string $message): void
+    {
+        $this->expectExceptionObject(new TemplateError($message));
+
+        $this->engine()->evaluate($expression, $this->data());
     }
 
     #[TestWith(['constant("PHP_VERSION")'])]

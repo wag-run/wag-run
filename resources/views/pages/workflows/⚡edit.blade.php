@@ -5,6 +5,7 @@ use App\Engine\Editor\CanvasMapper;
 use App\Engine\Editor\ConfigForm;
 use App\Engine\Editor\ConnectionRules;
 use App\Engine\Editor\DataPicker;
+use App\Engine\Editor\ExpressionPreview;
 use App\Engine\Graph\GraphNode;
 use App\Engine\Graph\WorkflowGraph;
 use App\Engine\Node;
@@ -27,6 +28,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Renderless;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -452,6 +454,22 @@ new class extends Component {
     public function picker(): array
     {
         return $this->selected ? app(DataPicker::class)->optionsFor($this->graph, $this->selected, $this->workspace) : [];
+    }
+
+    /**
+     * What a templated field of the selected node would become, worked out
+     * with the data of the workflow's latest run, for the field's preview.
+     *
+     * @return array{status: 'value'|'empty'|'error', value: string, type: string, source: string}|null
+     */
+    #[Renderless]
+    public function previewTemplate(string $template): ?array
+    {
+        if (! $this->selectedNode() || ! str_contains($template, '{{') || mb_strlen($template) > 20000) {
+            return null;
+        }
+
+        return app(ExpressionPreview::class)->preview($this->workflow, $this->selected, $template);
     }
 
     /**

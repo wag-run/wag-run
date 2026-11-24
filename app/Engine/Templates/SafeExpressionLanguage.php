@@ -3,8 +3,10 @@
 namespace App\Engine\Templates;
 
 use App\Services\WorkflowFiles;
+use ArgumentCountError;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
+use ReflectionFunction;
 use RuntimeException;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -14,6 +16,7 @@ use Symfony\Component\ExpressionLanguage\Node\GetAttrNode;
 use Symfony\Component\ExpressionLanguage\Node\Node;
 use Symfony\Component\ExpressionLanguage\ParsedExpression;
 use Symfony\Component\ExpressionLanguage\Parser;
+use TypeError;
 
 /**
  * ExpressionLanguage without the built-in constant() and enum() functions,
@@ -180,8 +183,33 @@ class SafeExpressionLanguage extends ExpressionLanguage
             $this->addFunction(new ExpressionFunction(
                 $name,
                 fn () => throw new TemplateError("Expressions cannot be compiled to PHP ({$name})."),
-                fn (array $variables, mixed ...$arguments) => $helper(...$arguments),
+                fn (array $variables, mixed ...$arguments) => $this->callHelper($name, $helper, $arguments),
             ));
+        }
+    }
+
+    /**
+     * Call a helper, putting a call with missing or wrongly typed arguments
+     * into words instead of PHP's message, which names server paths.
+     *
+     * @param  array<mixed>  $arguments
+     */
+    protected function callHelper(string $name, callable $helper, array $arguments): mixed
+    {
+        try {
+            return $helper(...$arguments);
+        } catch (ArgumentCountError) {
+            $needed = (new ReflectionFunction($helper(...)))->getNumberOfRequiredParameters();
+
+            throw new TemplateError(__('engine.expression_error_message', [
+                'message' => trans_choice('engine.function_needs_arguments', $needed, ['function' => $name, 'given' => count($arguments)]),
+            ]));
+        } catch (TypeError $e) {
+            $message = preg_match('/Argument #\d+ \(\$(\w+)\) must be of type (\S+), (\S+) given/', $e->getMessage(), $match)
+                ? __('engine.function_argument_wrong_type', ['function' => $name, 'argument' => $match[1], 'expected' => $match[2], 'given' => $match[3]])
+                : __('engine.function_cannot_use_value', ['function' => $name]);
+
+            throw new TemplateError(__('engine.expression_error_message', ['message' => $message]));
         }
     }
 }

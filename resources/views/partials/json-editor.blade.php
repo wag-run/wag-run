@@ -10,13 +10,16 @@
     $live ??= true;
     $rows ??= 8;
 @endphp
-<div x-data="wagJsonEditor" x-on:input.debounce.300ms="check()" x-on:keydown.enter="newLine($event)" data-test="json-editor">
+<div x-data="wagJsonEditor" x-on:input.debounce.300ms="check()" x-on:keydown.enter="newLine($event)" @class(['wag-expr relative' => isset($picker)]) data-test="json-editor">
     @if ($live)
         <flux:textarea x-ref="input" :rows="$rows" class="font-mono text-xs" spellcheck="false" autocomplete="off"
             wire:model.live.debounce.600ms="{{ $model }}" :label="$label" :description="$description ?? null" />
     @else
         <flux:textarea x-ref="input" :rows="$rows" class="font-mono text-xs" spellcheck="false" autocomplete="off"
             wire:model="{{ $model }}" :label="$label" :description="$description ?? null" />
+    @endif
+    @if (isset($picker))
+        <div wire:ignore x-ref="highlight" class="wag-expr-layer" aria-hidden="true"></div>
     @endif
     <div class="mt-1 flex flex-wrap items-center gap-2">
         <flux:button size="xs" variant="subtle" icon="code-bracket" x-on:click="format()" data-test="json-format">{{ __('workflows.editor.format_json') }}</flux:button>
@@ -27,4 +30,7 @@
         <span class="text-xs text-red-600 dark:text-red-400" style="display: none" x-show="state === 'invalid'" data-test="json-invalid"
             data-template="{{ __('workflows.editor.not_valid_json', ['error' => '__error__']) }}" x-text="$el.dataset.template.replace('__error__', error)"></span>
     </div>
+    @if (isset($picker))
+        @include('partials.expression-preview')
+    @endif
 </div>
