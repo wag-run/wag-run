@@ -288,6 +288,24 @@ class WorkflowEditorTest extends TestCase
         $this->assertTrue($workflow->refresh()->draft()->node('fetch')->errorPath);
     }
 
+    public function test_an_action_can_be_set_to_wait_for_all_its_incoming_branches_and_keeps_the_setting_when_moved(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
+            ['start' => 'core.manual_trigger', 'fetch' => ['core.http_request', ['url' => 'x']], 'merge' => 'core.merge'],
+            ['start->fetch', 'fetch->merge'],
+        ));
+        $editor = $this->editor($workspace, $workflow, $user);
+
+        $editor->call('selectNode', 'fetch')->assertSet('waitForAll', false)->assertSee('data-test="wait-for-all-checkbox"', false)->set('waitForAll', true);
+        $editor->call('moveNode', 'fetch', ['x' => 40, 'y' => 60]);
+        $this->assertTrue($workflow->refresh()->draft()->node('fetch')->waitForAll);
+        $this->assertTrue($workflow->draft()->toArray()['nodes'][1]['wait_for_all']);
+
+        $editor->call('selectNode', 'merge')->assertDontSee('data-test="wait-for-all-checkbox"', false)->set('waitForAll', true);
+        $editor->call('selectNode', 'start')->assertDontSee('data-test="wait-for-all-checkbox"', false);
+        $this->assertFalse($workflow->refresh()->draft()->node('merge')->waitForAll);
+    }
+
     public function test_removing_a_switch_case_drops_its_connections_and_moves_later_ones_up(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(

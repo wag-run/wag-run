@@ -22,10 +22,11 @@ Drag from a node's output on its right edge to another node's input on its left 
 
 - **Several outputs.** Some nodes have more than one output, such as **true** and **false** on **Conditional logic**. Only the connections from the output the node takes are followed.
 - **Parallel branches.** Connect one output to several nodes to run them at the same time. Use **Merge** to wait for all of them before carrying on.
+- **Branches that meet.** A node with several incoming connections runs once for each one that arrives, as soon as it arrives. To run it once, after all of them, turn on **Wait for all incoming branches** in its settings, or put a **Merge** in front of it.
 - **No cycles.** A connection can't lead back to an earlier node. To repeat steps, use a **For loop**.
 - **Triggers have no inputs.** Nothing can connect into a trigger.
-
 - **Unconnected nodes don't run.** A run starts at a trigger and follows the connections from it. A node no trigger leads to is drawn faded with a dashed border and marked **Won't run**, even if it connects into a node that does run. Leave a node like that to set it aside, or connect something that runs into it to bring it back.
+
 To remove a connection, right-click it and choose **Delete connection**.
 
 ## Configuring a node
@@ -37,6 +38,7 @@ Select a node to see its settings in the settings panel:
 - **The node's own settings.** Fields marked as accepting placeholders have an **Insert data** button for picking values from earlier nodes. See [Data and placeholders](data-and-placeholders.md).
 - **Retries** and **Backoff (s)**: how many times to try again if the node fails, and how long to wait before the first retry. Each retry waits twice as long as the one before.
 - **Show "on error" path**: adds an **on error** output. If the node still fails after its retries, the nodes connected to that output run instead of the run failing.
+- **Wait for all incoming branches**: for a node with several incoming connections. It runs once, after every branch leading into it has finished, instead of once for each connection. A branch the run doesn't take, such as the unused side of a condition, isn't waited for.
 - **Outputs**: what the node produces, which later nodes can use.
 
 Changes save to the draft as you type.

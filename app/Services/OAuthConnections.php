@@ -220,7 +220,7 @@ class OAuthConnections
 
         $node = $graph->node($pending['node_id']);
         $this->workflows->saveDraft($workflow, $graph->withNode(new GraphNode(
-            $node->id, $node->type, $node->name, [...$node->config, $pending['field'] => $credential->id], $node->retry, $node->position, $node->errorPath,
+            $node->id, $node->type, $node->name, [...$node->config, $pending['field'] => $credential->id], $node->retry, $node->position, $node->errorPath, $node->waitForAll,
         )));
 
         session()->flash('editor_select_node', $node->id);

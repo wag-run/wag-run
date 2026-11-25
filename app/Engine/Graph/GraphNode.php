@@ -9,6 +9,7 @@ final readonly class GraphNode
      * @param  array<string, mixed>|null  $retry
      * @param  array{x: float|int, y: float|int}  $position
      * @param  bool  $errorPath  whether the node shows its "on error" output in the editor
+     * @param  bool  $waitForAll  whether the node waits for every incoming branch and runs once, as Merge does
      */
     public function __construct(
         public string $id,
@@ -18,6 +19,7 @@ final readonly class GraphNode
         public ?array $retry = null,
         public array $position = ['x' => 0, 'y' => 0],
         public bool $errorPath = false,
+        public bool $waitForAll = false,
     ) {}
 
     /**
@@ -36,6 +38,7 @@ final readonly class GraphNode
                 'y' => (float) ($data['position']['y'] ?? 0),
             ],
             errorPath: (bool) ($data['error_path'] ?? false),
+            waitForAll: (bool) ($data['wait_for_all'] ?? false),
         );
     }
 
@@ -52,11 +55,12 @@ final readonly class GraphNode
             'retry' => $this->retry,
             'position' => $this->position,
             'error_path' => $this->errorPath ?: null,
+            'wait_for_all' => $this->waitForAll ?: null,
         ], fn ($value) => $value !== null);
     }
 
     public function withErrorPath(bool $errorPath): self
     {
-        return new self($this->id, $this->type, $this->name, $this->config, $this->retry, $this->position, $errorPath);
+        return new self($this->id, $this->type, $this->name, $this->config, $this->retry, $this->position, $errorPath, $this->waitForAll);
     }
 }

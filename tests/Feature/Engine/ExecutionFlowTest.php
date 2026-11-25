@@ -99,6 +99,44 @@ class ExecutionFlowTest extends TestCase
         $this->assertSame(1, $execution->steps()->where('node_id', 'end')->count());
     }
 
+    public function test_a_node_runs_once_per_incoming_branch_unless_it_is_set_to_wait_for_all_of_them(): void
+    {
+        $graph = $this->graph(
+            ['start' => 'start', 'fork' => 'fork', 'left' => 'emit', 'right' => 'pause', 'end' => ['emit', ['value' => 'done']]],
+            ['start->fork', 'fork:a->left', 'fork:b->right', 'left->end', 'right->end'],
+        );
+
+        $eager = $this->runWorkflow($this->publishedWorkflow($graph));
+        $this->assertSame(1, $eager->steps()->where('node_id', 'end')->where('status', StepStatus::Complete)->count());
+
+        $graph['nodes'][4]['wait_for_all'] = true;
+        $waiting = $this->runWorkflow($this->publishedWorkflow($graph));
+        $this->assertSame(StepStatus::Waiting, $this->stepFor($waiting, 'end')->status);
+
+        $this->travel(10)->minutes();
+        $this->sweep();
+
+        $this->assertSame(2, $eager->steps()->where('node_id', 'end')->count());
+        $end = $this->stepFor($waiting->refresh(), 'end');
+        $this->assertSame(ExecutionStatus::Complete, $waiting->status);
+        $this->assertSame('done', $end->output['value']);
+        $this->assertNull($end->state);
+    }
+
+    public function test_a_node_waiting_for_all_branches_proceeds_when_one_was_never_taken(): void
+    {
+        $graph = $this->graph(
+            ['start' => 'start', 'check' => ['route', ['take' => 'true']], 'yes' => 'emit', 'no' => 'emit', 'end' => 'emit'],
+            ['start->check', 'check:true->yes', 'check:false->no', 'yes->end', 'no->end'],
+        );
+        $graph['nodes'][4]['wait_for_all'] = true;
+
+        $execution = $this->runWorkflow($this->publishedWorkflow($graph));
+
+        $this->assertSame(ExecutionStatus::Complete, $execution->status);
+        $this->assertSame(['start', 'check', 'yes', 'end'], $this->nodesRun($execution));
+    }
+
     public function test_merge_proceeds_when_a_path_into_it_was_never_taken(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(

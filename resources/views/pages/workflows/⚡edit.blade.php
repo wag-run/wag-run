@@ -68,6 +68,11 @@ new class extends Component {
 
     public bool $errorPath = false;
 
+    /**
+     * Whether the selected node waits for every incoming branch and runs once.
+     */
+    public bool $waitForAll = false;
+
     public string $name = '';
 
     public string $description = '';
@@ -518,6 +523,7 @@ new class extends Component {
         ];
         $this->retryEnabled = (int) $this->retry['max_retries'] > 0;
         $this->errorPath = $node->errorPath;
+        $this->waitForAll = $node->waitForAll;
         $this->form = $this->definition ? ConfigForm::toForm($this->definition, $node->config) : [];
         $this->resetValidation();
     }
@@ -572,7 +578,7 @@ new class extends Component {
         $this->save($this->graph->withNode(new GraphNode($node->id, $node->type, $node->name, $node->config, $node->retry, [
             'x' => round((float) ($position['x'] ?? 0)),
             'y' => round((float) ($position['y'] ?? 0)),
-        ], $node->errorPath)));
+        ], $node->errorPath, $node->waitForAll)));
     }
 
     /**
@@ -760,7 +766,7 @@ new class extends Component {
             $graph = $graph->withNode(new GraphNode($id, $node->type, $node->name, $node->config, $node->retry, [
                 'x' => $node->position['x'] + $dx,
                 'y' => $node->position['y'] + $dy,
-            ], $node->errorPath));
+            ], $node->errorPath, $node->waitForAll));
         }
 
         foreach ($clipboard['edges'] ?? [] as $edge) {
@@ -819,6 +825,11 @@ new class extends Component {
     }
 
     public function updatedErrorPath(): void
+    {
+        $this->saveSelected();
+    }
+
+    public function updatedWaitForAll(): void
     {
         $this->saveSelected();
     }
@@ -971,7 +982,7 @@ new class extends Component {
         $oldPorts = $this->definition->ports($node->config);
         $newPorts = $this->definition->ports($config);
         $outputsChanged = $oldPorts !== $newPorts || $errorPath !== $node->errorPath;
-        $updated = new GraphNode($node->id, $node->type, $this->nodeName, $config, $retry, $node->position, $errorPath);
+        $updated = new GraphNode($node->id, $node->type, $this->nodeName, $config, $retry, $node->position, $errorPath, $this->waitForAll && $this->definition->kind() === NodeKind::Action && ! $this->definition->joinsBranches());
 
         $graph = $this->graph->withNode($updated);
         $relabelled = app(CanvasMapper::class)->node($node)['data']['ports'] !== app(CanvasMapper::class)->node($updated)['data']['ports'];
@@ -1135,10 +1146,10 @@ new class extends Component {
                     data-test="discard-draft">{{ __('workflows.edit.discard_draft') }}</flux:button>
             @endif
         @endif
-        <flux:text class="text-xs" wire:loading.remove wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,retryEnabled,errorPath,addNode,undo,redo,cutNodes,pasteNodes,discardDraft">
+        <flux:text class="text-xs" wire:loading.remove wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,retryEnabled,errorPath,waitForAll,addNode,undo,redo,cutNodes,pasteNodes,discardDraft">
             {{ $workflow->draft_updated_at ? __('workflows.edit.draft_saved_time', ['time' => $workflow->draft_updated_at->diffForHumans()]) : '' }}
         </flux:text>
-        <flux:text class="text-xs" wire:loading wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,retryEnabled,errorPath,addNode,undo,redo,cutNodes,pasteNodes,discardDraft">{{ __('workflows.edit.saving') }}</flux:text>
+        <flux:text class="text-xs" wire:loading wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,retryEnabled,errorPath,waitForAll,addNode,undo,redo,cutNodes,pasteNodes,discardDraft">{{ __('workflows.edit.saving') }}</flux:text>
 
         <flux:spacer />
 
@@ -1468,6 +1479,11 @@ new class extends Component {
 
                     @if ($definition->hasErrorPort())
                         <flux:checkbox wire:model.live="errorPath" :label="__('workflows.edit.show_on_error_path')" :description="__('workflows.edit.show_on_error_path_help')" data-test="error-path-checkbox" />
+                    @endif
+
+                    {{-- Any action can wait for its branches, except one that already does, as Merge does --}}
+                    @if ($definition->kind() === NodeKind::Action && ! $definition->joinsBranches())
+                        <flux:checkbox wire:model.live="waitForAll" :label="__('workflows.edit.wait_for_all_incoming_branches')" :description="__('workflows.edit.wait_for_all_incoming_branches_help')" data-test="wait-for-all-checkbox" />
                     @endif
                 </fieldset>
 

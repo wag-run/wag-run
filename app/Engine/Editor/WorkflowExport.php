@@ -63,7 +63,7 @@ class WorkflowExport
             }
 
             if ($config !== $node->config) {
-                $graph = $graph->withNode(new GraphNode($node->id, $node->type, $node->name, $config, $node->retry, $node->position, $node->errorPath));
+                $graph = $graph->withNode(new GraphNode($node->id, $node->type, $node->name, $config, $node->retry, $node->position, $node->errorPath, $node->waitForAll));
             }
         }
 

@@ -353,7 +353,7 @@ class Coordinator
         $execution = $from->execution;
         $target = $this->graphFor($execution)->node($targetNodeId);
 
-        if (! $this->registry->make($target->type)->joinsBranches()) {
+        if (! $target->waitForAll && ! $this->registry->make($target->type)->joinsBranches()) {
             $this->createStep($execution, $targetNodeId, $scope, $from, $port);
 
             return;
@@ -499,8 +499,9 @@ class Coordinator
     }
 
     /**
-     * A merge runs once every incoming connection has arrived, or once no
-     * open step can still reach it (the other paths were never taken).
+     * A merge, or a node set to wait for all its incoming branches, runs once
+     * every incoming connection has arrived, or once no open step can still
+     * reach it (the other paths were never taken).
      */
     protected function releaseJoins(Execution $execution): bool
     {
@@ -530,7 +531,11 @@ class Coordinator
                 }
             }
 
-            $join->forceFill(['status' => StepStatus::Pending, 'wait_type' => null, 'available_at' => now()])->save();
+            // Only nodes built to join read who arrived; any other node set
+            // to wait for its branches starts with a clean state.
+            $state = $this->registry->make($join->node_type)->joinsBranches() ? $join->state : null;
+
+            $join->forceFill(['status' => StepStatus::Pending, 'wait_type' => null, 'state' => $state, 'available_at' => now()])->save();
             $this->dispatchRun($join);
             $released = true;
         }

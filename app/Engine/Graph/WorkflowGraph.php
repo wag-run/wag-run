@@ -12,7 +12,7 @@ use InvalidArgumentException;
  *       "version": 1,
  *       "nodes": [{"id": "n1", "type": "core.manual_trigger", "name": "Start",
  *                  "config": {}, "retry": {"max_retries": 2}, "position": {"x": 0, "y": 0},
- *                  "error_path": true}],
+ *                  "error_path": true, "wait_for_all": true}],
  *       "edges": [{"id": "e1", "source": "n1", "source_port": "main", "target": "n2"}]
  *     }
  */

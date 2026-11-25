@@ -62,6 +62,8 @@ Waits for parallel branches to finish, then continues once.
 
 It waits for every branch that can still reach it. A branch that was never taken, such as the unused side of a condition, isn't waited for.
 
+Any other node can wait the same way: turn on **Wait for all incoming branches** in its [settings](editor.md#configuring-a-node). Use **Merge** when you also want the branches' outputs gathered in one place.
+
 Output: `branches`, the output of the last node on each branch, keyed by node id.
 
 ### Wait
