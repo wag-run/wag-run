@@ -60,6 +60,7 @@ class WorkflowServiceProvider extends ServiceProvider
         GitHub\CreateRelease::class,
         GitHub\RunActionsWorkflow::class,
         Google\AppendSheetRow::class,
+        Investbrain\NewTransaction::class,
         Investbrain\ListPortfolios::class,
         Investbrain\ListHoldings::class,
         Investbrain\GetHolding::class,

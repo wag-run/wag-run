@@ -184,3 +184,28 @@ Fires when a GitHub Actions run fails. Set **Actions workflow** (its name, such 
 | `trigger.repository` | `owner/name` |
 
 A workflow that a GitHub trigger starts, and that changes the same repository, can start itself again, for example by creating a tag. Each workflow can start only so many [runs a minute](runs.md#runs-per-minute), but check that its actions can't fire its own trigger.
+
+## Investbrain
+
+### New transaction
+
+Fires when a buy or a sale is added to a portfolio in [Investbrain](https://investbra.in). It's under **Triggers › Other apps › Investbrain** in the palette, and needs an **API token**: an **Investbrain API token** setting from the workspace's [credentials](workspaces.md#credentials).
+
+Leave **Portfolio** and **Symbol** empty to hear about every transaction you can see, or set them to only hear about one portfolio (its ID or its address in Investbrain) or one ticker symbol. **Type** narrows it to **Buys** or **Sales**. Investbrain adds transactions of its own for stock splits and reinvested dividends; turn on **Include splits and reinvested dividends** to start runs for those too.
+
+Investbrain doesn't send webhooks, so wag.run checks for new transactions every **Check every (minutes)**, 5 by default. Each check reads the 100 transactions added most recently. The first check after publishing only notes what already exists, so publishing doesn't start runs for old transactions. Importing transactions into Investbrain starts a run for each one, up to 100 a check. Under **Trigger URLs** in the [workflow settings](editor.md#workflow-settings), the trigger shows when it last checked, and what's wrong if it isn't working.
+
+| Placeholder | What it holds |
+|---|---|
+| `trigger.id` | The transaction's ID |
+| `trigger.portfolio_id` | The portfolio it's in |
+| `trigger.symbol` | The ticker symbol, such as `AAPL` |
+| `trigger.transaction_type` | `BUY` or `SELL` |
+| `trigger.quantity` | How many shares |
+| `trigger.cost_basis`, `trigger.sale_price` | What each share cost, and for a sale what each fetched |
+| `trigger.currency` | The currency of those prices |
+| `trigger.date` | The transaction's date, such as `2026-11-25` |
+| `trigger.split`, `trigger.reinvested_dividend` | Whether Investbrain added it for a stock split or to reinvest a dividend |
+| `trigger.created_at` | When it was added |
+
+A workflow that this trigger starts, and that adds a transaction with [Add transaction](actions.md#add-transaction), can start itself again. Set **Portfolio**, **Symbol**, or **Type** so the transactions it adds don't match.
