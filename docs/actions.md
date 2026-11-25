@@ -227,8 +227,6 @@ Outputs: `range`, the cells it wrote, such as `'Orders'!A5:C5`, and `rows`.
 
 These nodes read from wag.run's own [REST API](api.md), so a workflow can work with workspaces and workflows, such as backing every workflow up. Each has an **API token**: a **wag.run API token** setting from the workspace's [credentials](workspaces.md#credentials), which holds a [personal access token](api.md#personal-access-tokens) with the `workflows:read` scope. The nodes act as the person who made the token, so they see the workspaces that person belongs to. The setting reaches this install unless you give it the **Address** of another one.
 
-If this install redirects the call to `https://` because `APP_URL` starts with `http://`, the nodes call it again at the `https://` address. Set `APP_URL` to the address people really use to skip the extra call. A redirect anywhere else, or from another install, fails the step and names where it points, so you can put that address in the setting.
-
 If the API refuses the request, the step fails with its message. Only server errors and rate limits are retried.
 
 ### List workspaces
