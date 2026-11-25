@@ -314,11 +314,12 @@ window.wagReached = (nodes, edges) => {
 window.wagWontRun = (id, nodes, edges) => ! window.wagReached(nodes, edges).has(id);
 
 /**
- * Draws the connections leaving a node that won't run as dashed lines in the
- * workflow editor, keeping up as connections are added and removed.
+ * Keeps the look of the workflow editor's connections in step as they are
+ * added and removed: one leaving an "on error" output is red and dashed, and
+ * one leaving a node that won't run is dashed.
  */
 document.addEventListener('alpine:init', () => {
-    window.Alpine.data('wagWontRunEdges', () => ({
+    window.Alpine.data('wagEdgeClasses', () => ({
         effect: null,
 
         init() {
@@ -328,7 +329,11 @@ document.addEventListener('alpine:init', () => {
                 const reached = window.wagReached(canvas.nodes, canvas.edges);
 
                 for (const edge of canvas.edges) {
-                    const classes = (edge.class ?? '').split(' ').filter((name) => name && name !== 'wag-edge-unreached');
+                    const classes = (edge.class ?? '').split(' ').filter((name) => name && ! ['wag-edge-error', 'wag-edge-unreached'].includes(name));
+
+                    if (edge.sourceHandle === 'error') {
+                        classes.push('wag-edge-error');
+                    }
 
                     if (! reached.has(edge.source)) {
                         classes.push('wag-edge-unreached');
