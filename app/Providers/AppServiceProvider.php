@@ -12,6 +12,7 @@ use App\Credentials\Types\GitHubOAuth;
 use App\Credentials\Types\GitHubToken;
 use App\Credentials\Types\GoogleOAuth;
 use App\Credentials\Types\HttpBasic;
+use App\Credentials\Types\InvestbrainApi;
 use App\Credentials\Types\S3Storage;
 use App\Credentials\Types\Smtp;
 use App\Credentials\Types\WagRunApi;
@@ -53,6 +54,7 @@ class AppServiceProvider extends ServiceProvider
             $registry->register(new GoogleOAuth);
             $registry->register(new GenericOAuth);
             $registry->register(new WagRunApi);
+            $registry->register(new InvestbrainApi);
 
             return $registry;
         });

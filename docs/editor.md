@@ -4,7 +4,7 @@ You build workflows in the editor, which opens when you open a workflow from **W
 
 ## The layout
 
-- **Node palette** on the left, grouped into **Triggers**, **Flow**, **Data**, **Integrations**, **GitHub**, **Google**, **AI**, **Messaging**, and **People**. Click a group to open it, and the back arrow to go up a level. Triggers on another app's events are under **Triggers › Other apps**, such as **Triggers › Other apps › GitHub**. Searching lists every match with the group it's in.
+- **Node palette** on the left, grouped into **Triggers**, **Flow**, **Data**, **Integrations**, **GitHub**, **Google**, **Investbrain**, **wag.run**, **AI**, **Messaging**, and **People**. Click a group to open it, and the back arrow to go up a level. Triggers on another app's events are under **Triggers › Other apps**, such as **Triggers › Other apps › GitHub** and **Triggers › Other apps › Investbrain**. Searching lists every match with the group it's in.
 - **Canvas** in the middle. Scroll or drag the background to move around, and use the minimap in the corner to jump to a part of a large workflow. You can hide the minimap.
 - **Settings panel** on the right. It shows the selected node's settings, or the workflow's settings when nothing is selected. Hide it with the panel button in the toolbar to make more room for the canvas.
 - **Toolbar** along the top, with undo and redo, **Runs**, **Versions**, **Export**, **Run** or **Test draft**, and **Publish**.
@@ -93,7 +93,7 @@ Click an empty part of the canvas, or right-click it and choose **Workflow setti
   - **One at a time, new run cancels the previous**: the running one is cancelled and the new one starts.
 - **Override log retention**: keep this workflow's run logs for a different number of days than the workspace default.
 - **Override run limit**: let this workflow start a different number of runs a minute than the organization default (60). See [Runs per minute](runs.md#runs-per-minute).
-- **Trigger URLs**: the addresses of the workflow's webhook and form triggers. They appear once the workflow is published. GitHub triggers show here too, with when they last checked or whether their webhook is registered.
+- **Trigger URLs**: the addresses of the workflow's webhook and form triggers. They appear once the workflow is published. GitHub and Investbrain triggers show here too, with when they last checked or whether their webhook is registered.
 
 Click **Save settings** to apply them. Workflow settings take effect immediately and aren't part of the draft.
 

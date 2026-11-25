@@ -8,6 +8,7 @@ use App\Engine\NodeRegistry;
 use App\Engine\Nodes\Actions;
 use App\Engine\Nodes\GitHub;
 use App\Engine\Nodes\Google;
+use App\Engine\Nodes\Investbrain;
 use App\Engine\Nodes\Note;
 use App\Engine\Nodes\Triggers;
 use App\Engine\Nodes\WagRun;
@@ -59,6 +60,14 @@ class WorkflowServiceProvider extends ServiceProvider
         GitHub\CreateRelease::class,
         GitHub\RunActionsWorkflow::class,
         Google\AppendSheetRow::class,
+        Investbrain\NewTransaction::class,
+        Investbrain\ListPortfolios::class,
+        Investbrain\ListHoldings::class,
+        Investbrain\GetHolding::class,
+        Investbrain\ListTransactions::class,
+        Investbrain\AddTransaction::class,
+        Investbrain\GetQuote::class,
+        Investbrain\ExportBackup::class,
         WagRun\ListWorkspaces::class,
         WagRun\ListWorkflows::class,
         WagRun\GetWorkflow::class,

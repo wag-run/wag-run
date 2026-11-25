@@ -1,6 +1,6 @@
 # Actions
 
-Actions are the nodes that do the work after a trigger. They're grouped in the palette as **Flow**, **Data**, **Integrations**, **GitHub**, **Google**, **wag.run**, **AI**, **Messaging**, and **People**.
+Actions are the nodes that do the work after a trigger. They're grouped in the palette as **Flow**, **Data**, **Integrations**, **GitHub**, **Google**, **Investbrain**, **wag.run**, **AI**, **Messaging**, and **People**.
 
 Each node's outputs are available to the nodes after it as `nodes.<id>.output`, where `<id>` is shown in the node's settings under **Reference its output as**. For example, the status code of an HTTP call with the id `fetch` is `{{ nodes.fetch.output.status }}`. See [Data and placeholders](data-and-placeholders.md).
 
@@ -222,6 +222,56 @@ Adds a row after the last one in a Google Sheets sheet, as a connected Google ac
 | **Values** | One value per column, starting from the first. Values are entered as if typed, so numbers and dates are recognised. |
 
 Outputs: `range`, the cells it wrote, such as `'Orders'!A5:C5`, and `rows`.
+
+## Investbrain
+
+These nodes work with your portfolios in [Investbrain](https://investbra.in) through its REST API. Each has an **API token**: an **Investbrain API token** setting from the workspace's [credentials](workspaces.md#credentials). The nodes act as the person who made the token, so they see every portfolio that person can, and change the ones they have full access to. The setting reaches Investbrain Cloud unless you give it the **Address** of a self-hosted Investbrain.
+
+A **Portfolio** is the portfolio's ID, or its address in Investbrain, such as `https://investbra.in/portfolio/9b1f6c2e-…`. A **Symbol** is a ticker symbol, such as `AAPL`.
+
+If Investbrain refuses the request, the step fails with its message. Only server errors and rate limits are retried. Investbrain allows 60 requests a minute for each person, and a list of more than 100 items takes a request for each 100.
+
+### List portfolios
+
+Lists your portfolios, each with its holdings. Use [List transactions](#list-transactions) for their transactions.
+
+Outputs: `portfolios`, each with its `id`, `title`, `notes`, `wishlist`, `owner`, and `holdings`, and `count`.
+
+### List holdings
+
+Lists the holdings in every portfolio, or in **Portfolio**, optionally of one **Symbol**. Investbrain keeps a holding after its last share is sold; turn on **Include sold holdings** to list those too.
+
+Outputs: `holdings` and `count`. Each holding has its `symbol`, `portfolio_id`, `quantity`, `currency`, `average_cost_basis`, `total_cost_basis`, `total_market_value`, `market_gain_dollars`, `market_gain_percent`, `realized_gain_dollars`, and `dividends_earned`.
+
+### Get holding
+
+Gets the holding of **Symbol** in **Portfolio**, with the same fields as each holding that [List holdings](#list-holdings) gives, as its outputs.
+
+### List transactions
+
+Lists transactions, newest first, in every portfolio or in **Portfolio**, optionally of one **Symbol** or only **Buys** or **Sales**. **At most** sets how many, 100 by default and up to 1,000.
+
+Outputs: `transactions` and `count`. Each transaction has its `id`, `symbol`, `portfolio_id`, `transaction_type` (`BUY` or `SELL`), `quantity`, `currency`, `cost_basis`, `sale_price`, `date`, and whether Investbrain added it for a stock `split` or a `reinvested_dividend`.
+
+### Add transaction
+
+Records a **Buy** or a **Sale** of **Shares** of **Symbol** in **Portfolio**. **Price per share** is what each share cost for a buy, or fetched for a sale, in **Currency** (`USD` by default). **Date** is today if you leave it empty. Investbrain checks the transaction, for example that a sale doesn't sell more shares than the portfolio held on its date.
+
+Outputs: the new transaction's `id`, `symbol`, `transaction_type`, `quantity`, `cost_basis`, `sale_price`, `currency`, `date`, and `portfolio_id`.
+
+### Get quote
+
+Gets **Symbol**'s price and fundamentals from the market data Investbrain keeps. The symbol doesn't need to be in a portfolio.
+
+Outputs: `symbol`, `name`, `market_value` (the price), `fifty_two_week_low`, `fifty_two_week_high`, `dividend_yield`, `last_dividend_amount`, `last_dividend_date`, `market_cap`, `trailing_pe`, `forward_pe`, `book_value`, and `updated_at`.
+
+### Export backup
+
+Exports the backup workbook that Investbrain's **Import / Export** page makes, with everything the token's person can see, as a file. Investbrain builds the workbook in the background, so the step starts the export, then checks on it every 5 seconds, up to 12 times. Once the workbook is ready, the step downloads it. To keep a copy somewhere else, pass `{{ nodes.<id>.output.file }}` to [Upload to S3](#upload-to-s3) or attach it to a [Send email](#send-email).
+
+If the workbook isn't ready after a minute, or Investbrain couldn't build it, the step fails. Give the step [retries](runs.md#retries-and-error-paths) for a large backup: a retry picks up the export that's still being built instead of starting another. Investbrain keeps only your latest export, allows 3 exports a minute, and deletes an export after 24 hours.
+
+Outputs: `file`, the `.xlsx` workbook; `export_id`; `created_at`; and `expires_at`, when Investbrain deletes the export.
 
 ## wag.run
 

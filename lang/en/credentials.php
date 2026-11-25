@@ -67,6 +67,14 @@ return [
         'username' => 'Username',
         'username_and_password_sent_with' => 'A username and password sent with HTTP Basic authentication.',
     ],
+    'investbrain' => [
+        'description' => 'An API token for Investbrain, for the Investbrain nodes. Create one in Investbrain under API Tokens in the user menu.',
+        'label' => 'Investbrain API token',
+        'token' => 'Token',
+        'token_help' => 'The nodes act as you in Investbrain: they see and change every portfolio you can.',
+        'url' => 'Address',
+        'url_help' => 'Leave empty for Investbrain Cloud. For a self-hosted Investbrain, its address, such as https://investbrain.example.com.',
+    ],
     's3' => [
         'access_key_id' => 'Access key ID',
         'access_keys_for_amazon_s3' => 'Access keys for Amazon S3 or an S3-compatible service such as MinIO, Cloudflare R2, Backblaze B2, or Wasabi. The bucket is chosen on each Upload to S3 node.',
