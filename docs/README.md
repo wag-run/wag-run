@@ -25,7 +25,7 @@ wag.run is a workflow automation app for teams. You build a workflow on a visual
 
 - **Build visually.** Drag nodes onto a canvas and draw connections between them. Each node's outputs can be used by the nodes after it, through a data picker or `{{ }}` placeholders.
 - **Start workflows many ways.** Run one by hand, call it from another system with a webhook or the API, run it on a schedule, let people start it by filling in a form, or start it on a new GitHub tag, release, or failed Actions run, or a new Investbrain transaction.
-- **Call other systems.** Make HTTP requests, work with GitHub issues, releases, and Actions, add rows to Google Sheets, read and record Investbrain portfolios and transactions, send email, post to Slack, Teams, Discord, or Google Chat, send in-app notifications, call an LLM, or start another workflow.
+- **Call other systems.** Make HTTP requests, work with GitHub issues, releases, and Actions, add rows to Google Sheets, read and record Investbrain portfolios and transactions and export their backups, send email, post to Slack, Teams, Discord, or Google Chat, send in-app notifications, call an LLM, or start another workflow.
 - **Add logic.** Branch on a condition, switch on a value, loop over or filter a list, wait, merge parallel branches, or end a run early.
 - **Bring people in.** Approvals pause a run until enough approvers say yes. Tasks pause it until someone fills in a form.
 - **Change safely.** Edits stay in a draft until you publish. Every publish is a numbered version, and you can test a draft, discard it, or roll back to an older version.

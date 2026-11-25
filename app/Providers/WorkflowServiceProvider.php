@@ -67,6 +67,7 @@ class WorkflowServiceProvider extends ServiceProvider
         Investbrain\ListTransactions::class,
         Investbrain\AddTransaction::class,
         Investbrain\GetQuote::class,
+        Investbrain\ExportBackup::class,
         WagRun\ListWorkspaces::class,
         WagRun\ListWorkflows::class,
         WagRun\GetWorkflow::class,

@@ -5,11 +5,14 @@ namespace Tests\Feature\Integrations;
 use App\Enums\StepStatus;
 use App\Models\Credential;
 use App\Models\ExecutionStep;
+use App\Models\WorkflowFile;
 use App\Models\Workspace;
 use App\Support\HostResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Sleep;
 use Tests\Concerns\RunsWorkflows;
 use Tests\TestCase;
 
@@ -18,6 +21,8 @@ class InvestbrainActionsTest extends TestCase
     use RefreshDatabase, RunsWorkflows;
 
     private const PORTFOLIO = '9b1f6c2e-3d4a-4b5c-8d7e-0f1a2b3c4d5e';
+
+    private const EXPORT = '4c8e2a10-7b3d-4f5e-9a1b-2c3d4e5f6a7b';
 
     private Workspace $workspace;
 
@@ -131,6 +136,76 @@ class InvestbrainActionsTest extends TestCase
             ['portfolio_id' => self::PORTFOLIO, 'symbol' => 'AAPL', 'transaction_type' => 'BUY', 'quantity' => 2, 'cost_basis' => 189.5, 'currency' => 'USD', 'date' => '2026-11-25'],
             ['portfolio_id' => self::PORTFOLIO, 'symbol' => 'AAPL', 'transaction_type' => 'SELL', 'quantity' => 1.5, 'sale_price' => 200, 'currency' => 'CAD', 'date' => '2026-11-20'],
         ], Http::recorded()->map(fn (array $pair) => $pair[0]->data())->all());
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function export(string $status): array
+    {
+        return ['id' => self::EXPORT, 'status' => $status, 'download_url' => null, 'created_at' => '2026-11-25T14:03:11.000000Z', 'completed_at' => null, 'expires_at' => '2026-11-26T14:03:11.000000Z'];
+    }
+
+    public function test_exports_a_backup_checking_every_five_seconds_until_it_is_ready_then_saves_the_workbook(): void
+    {
+        Storage::fake('workflow_files');
+        Sleep::fake();
+        $checks = [$this->export('pending'), $this->export('pending'), $this->export('success')];
+        Http::fake(function (Request $request) use (&$checks) {
+            return match (true) {
+                $request->method() === 'POST' => Http::response($this->export('pending'), 202),
+                str_ends_with($request->url(), '/download') => Http::response('PK workbook bytes', 200, ['Content-Disposition' => 'attachment; filename=2026_11_25_investbrain_backup.xlsx']),
+                default => Http::response(array_shift($checks)),
+            };
+        });
+
+        $step = $this->runAction('investbrain.export_backup');
+
+        $this->assertSame(StepStatus::Complete, $step->status, $step->error['message'] ?? '');
+        $this->assertSame([self::EXPORT, '2026-11-25T14:03:11.000000Z', '2026-11-26T14:03:11.000000Z'], [$step->output['export_id'], $step->output['created_at'], $step->output['expires_at']]);
+        $file = WorkflowFile::query()->findOrFail($step->output['file']['id']);
+        $this->assertSame('2026_11_25_investbrain_backup.xlsx', $file->name);
+        $this->assertSame('PK workbook bytes', Storage::disk('workflow_files')->get($file->path));
+        Sleep::assertSequence(array_fill(0, 3, Sleep::for(5)->seconds()));
+        $this->assertSame([
+            'POST https://investbra.in/api/export',
+            'GET https://investbra.in/api/export/'.self::EXPORT,
+            'GET https://investbra.in/api/export/'.self::EXPORT,
+            'GET https://investbra.in/api/export/'.self::EXPORT,
+            'GET https://investbra.in/api/export/'.self::EXPORT.'/download',
+        ], Http::recorded()->map(fn (array $pair) => $pair[0]->method().' '.$pair[0]->url())->all());
+    }
+
+    public function test_an_export_that_isnt_ready_after_twelve_checks_or_that_failed_fails_the_step_to_be_retried(): void
+    {
+        Sleep::fake();
+        $status = 'pending';
+        Http::fake(function () use (&$status) {
+            return Http::response($this->export($status));
+        });
+
+        $slow = $this->runAction('investbrain.export_backup');
+
+        $this->assertSame(StepStatus::Failed, $slow->status);
+        $this->assertSame('The backup was not ready after 60 seconds. Try the step again to keep waiting for it.', $slow->error['message']);
+        $this->assertSame(2, $slow->execution->steps()->where('node_id', 'act')->count());
+        $this->assertCount(2 * 13, Http::recorded(), 'each attempt starts the export and checks on it 12 times');
+        Sleep::assertSleptTimes(2 * 12);
+
+        $status = 'failed';
+        $failed = $this->runAction('investbrain.export_backup');
+
+        $this->assertSame('Investbrain could not build the backup. Try the step again to start a new export.', $failed->error['message']);
+    }
+
+    public function test_an_investbrain_without_backup_exports_says_to_update_it(): void
+    {
+        Http::fake(['investbra.in/api/export' => Http::response(['message' => 'Not Found'], 404)]);
+
+        $step = $this->runAction('investbrain.export_backup');
+
+        $this->assertSame('This Investbrain can\'t export backups through its API. Update it to the latest version.', $step->error['message']);
+        $this->assertSame(1, $step->execution->steps()->where('node_id', 'act')->count());
     }
 
     public function test_refusals_fail_the_step_with_investbrains_message_and_only_server_errors_are_retried(): void

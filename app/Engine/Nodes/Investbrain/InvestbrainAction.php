@@ -19,15 +19,15 @@ use RuntimeException;
 abstract class InvestbrainAction extends Node
 {
     /**
-     * Call the API and return the node's output.
+     * Call the API and return the node's output, or a result such as a failure of its own.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed>|NodeResult
      *
      * @throws RuntimeException when a field is not usable or the answer isn't JSON
      * @throws RequestException when Investbrain refuses
      * @throws ConnectionException when Investbrain can't be reached
      */
-    abstract protected function run(PendingRequest $api, NodeContext $context): array;
+    abstract protected function run(PendingRequest $api, NodeContext $context): array|NodeResult;
 
     /**
      * Fields after the API token.
@@ -60,7 +60,9 @@ abstract class InvestbrainAction extends Node
     public function execute(NodeContext $context): NodeResult
     {
         try {
-            return NodeResult::complete($this->run(Investbrain::request($context->workspace(), $context->input('credential')), $context));
+            $result = $this->run(Investbrain::request($context->workspace(), $context->input('credential')), $context);
+
+            return $result instanceof NodeResult ? $result : NodeResult::complete($result);
         } catch (ConnectionException $e) {
             return NodeResult::fail(__('nodes.investbrain.could_not_reach', ['message' => $e->getMessage()]));
         } catch (RequestException $e) {

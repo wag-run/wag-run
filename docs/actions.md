@@ -265,6 +265,14 @@ Gets **Symbol**'s price and fundamentals from the market data Investbrain keeps.
 
 Outputs: `symbol`, `name`, `market_value` (the price), `fifty_two_week_low`, `fifty_two_week_high`, `dividend_yield`, `last_dividend_amount`, `last_dividend_date`, `market_cap`, `trailing_pe`, `forward_pe`, `book_value`, and `updated_at`.
 
+### Export backup
+
+Exports the backup workbook that Investbrain's **Import / Export** page makes, with everything the token's person can see, as a file. Investbrain builds the workbook in the background, so the step starts the export, then checks on it every 5 seconds, up to 12 times. Once the workbook is ready, the step downloads it. To keep a copy somewhere else, pass `{{ nodes.<id>.output.file }}` to [Upload to S3](#upload-to-s3) or attach it to a [Send email](#send-email).
+
+If the workbook isn't ready after a minute, or Investbrain couldn't build it, the step fails. Give the step [retries](runs.md#retries-and-error-paths) for a large backup: a retry picks up the export that's still being built instead of starting another. Investbrain keeps only your latest export, allows 3 exports a minute, and deletes an export after 24 hours.
+
+Outputs: `file`, the `.xlsx` workbook; `export_id`; `created_at`; and `expires_at`, when Investbrain deletes the export.
+
 ## wag.run
 
 These nodes read from wag.run's own [REST API](api.md), so a workflow can work with workspaces and workflows, such as backing every workflow up. Each has an **API token**: a **wag.run API token** setting from the workspace's [credentials](workspaces.md#credentials), which holds a [personal access token](api.md#personal-access-tokens) with the `workflows:read` scope. The nodes act as the person who made the token, so they see the workspaces that person belongs to. The setting reaches this install unless you give it the **Address** of another one.
