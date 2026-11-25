@@ -254,6 +254,16 @@ select:focus[data-flux-control] {
     @apply bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300;
 }
 
+/* A node no trigger leads to, so runs never reach it: dashed and faded, with its "Won't run" pill left at full strength */
+.flow-container .flow-node:has(.wag-node.is-unreached) {
+    border-style: dashed;
+}
+
+.wag-node.is-unreached .wag-node-header > :not(.wag-run-status),
+.wag-node.is-unreached .wag-port {
+    @apply opacity-50;
+}
+
 .wag-port {
     @apply relative flex min-h-6 items-center justify-end px-3 text-xs text-zinc-500;
 }

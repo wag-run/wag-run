@@ -25,6 +25,7 @@ Drag from a node's output on its right edge to another node's input on its left 
 - **No cycles.** A connection can't lead back to an earlier node. To repeat steps, use a **For loop**.
 - **Triggers have no inputs.** Nothing can connect into a trigger.
 
+- **Unconnected nodes don't run.** A run starts at a trigger and follows the connections from it. A node no trigger leads to is drawn faded with a dashed border and marked **Won't run**, even if it connects into a node that does run. Leave a node like that to set it aside, or connect something that runs into it to bring it back.
 To remove a connection, right-click it and choose **Delete connection**.
 
 ## Configuring a node

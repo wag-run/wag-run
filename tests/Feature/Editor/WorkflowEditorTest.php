@@ -68,6 +68,17 @@ class WorkflowEditorTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/interactive(\\\\u0022|&quot;|"):false/', $html);
     }
 
+    public function test_the_canvas_can_mark_nodes_no_trigger_leads_to(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor();
+
+        $this->actingAs($user)->get(route('workspaces.workflows.edit', [$workspace, $workflow]))
+            ->assertOk()
+            ->assertSee('wagWontRun(node.id, nodes, edges)', false)
+            ->assertSee('data-test="wont-run"', false)
+            ->assertSee('Won\'t run');
+    }
+
     public function test_a_workflow_from_another_workspace_is_not_found(): void
     {
         [$workspace, , $user] = $this->setUpEditor();

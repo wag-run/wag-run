@@ -284,6 +284,29 @@ const expressionField = {
     },
 };
 
+/**
+ * Whether no trigger leads to a node on the workflow canvas, so a run can
+ * never reach it. Read by the canvas node template, which redraws as
+ * connections are added and removed.
+ */
+window.wagWontRun = (id, nodes, edges) => {
+    const reached = new Set(nodes.filter((node) => node.data?.isTrigger).map((node) => node.id));
+    const queue = [...reached];
+
+    while (queue.length) {
+        const current = queue.pop();
+
+        for (const edge of edges) {
+            if (edge.source === current && ! reached.has(edge.target)) {
+                reached.add(edge.target);
+                queue.push(edge.target);
+            }
+        }
+    }
+
+    return ! reached.has(id);
+};
+
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('wagInsert', () => ({
         ...expressionField,
