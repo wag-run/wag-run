@@ -6,11 +6,11 @@ The first account registered on a new install becomes an organization admin. Adm
 
 ## Workspaces
 
-**Organization → Workspaces** lists every workspace with how many members, variables, secrets and credentials it has.
+**Organization → Workspaces** lists every workspace with how many members, variables, secrets, and credentials it has.
 
 - **New workspace** creates one. Add people to it from its **Members** page. See [Members and roles](workspaces.md#members-and-roles).
 - **Rename** changes its name.
-- **Delete** removes it with all its workflows, run logs, variables, secrets and credentials. This can't be undone.
+- **Delete** removes it with all its workflows, run logs, variables, secrets, and credentials. This can't be undone.
 
 ## Users
 
@@ -21,7 +21,7 @@ The first account registered on a new install becomes an organization admin. Adm
 - **Deactivate**: sign someone out and stop them signing in, without deleting their account or history. **Reactivate** lets them back in. You can't deactivate yourself or the last organization admin.
 - **Generate password-reset link**: create a link that lets someone set a new password, for when email isn't set up or didn't arrive. Give it to them yourself. It works once and expires after 60 minutes.
 
-A deactivated person can't be chosen as an approver, assignee or notification recipient, and workflows they own no longer notify them of failed runs.
+A deactivated person can't be chosen as an approver, assignee, or notification recipient, and workflows they own no longer notify them of failed runs.
 
 ## Organization settings
 
@@ -39,7 +39,7 @@ Turn off **Allow anyone to register** once your first account exists, unless you
 
 ## Sign-in providers
 
-**Organization → Sign-in providers** lets people sign in with an OpenID Connect provider, such as Okta, Microsoft Entra ID, Google Workspace, Keycloak or Authentik. Email-and-password sign-in stays available alongside it.
+**Organization → Sign-in providers** lets people sign in with an OpenID Connect provider, such as Okta, Microsoft Entra ID, Google Workspace, Keycloak, or Authentik. Email-and-password sign-in stays available alongside it.
 
 To add one:
 
@@ -63,10 +63,10 @@ The list shows how many people have linked their account to each provider. Delet
 
 ## Email
 
-**Organization → Email** sets the SMTP server wag.run sends through: for invitations, approval and task emails, notification emails and **Send email** nodes. Workspaces can add their own SMTP server for **Send email** nodes under [Credentials](workspaces.md#credentials).
+**Organization → Email** sets the SMTP server wag.run sends through: for invitations, approval and task emails, notification emails, and **Send email** nodes. Workspaces can add their own SMTP server for **Send email** nodes under [Credentials](workspaces.md#credentials).
 
 1. Turn on **Send through my SMTP server**.
-2. Enter the **Host**, **Port**, **Encryption** (**STARTTLS**, usually port 587, or **SSL/TLS**, usually port 465), **Username**, **Password**, **From address** and **From name**.
+2. Enter the **Host**, **Port**, **Encryption** (**STARTTLS**, usually port 587, or **SSL/TLS**, usually port 465), **Username**, **Password**, **From address**, and **From name**.
 3. Click **Save settings**, then **Send test email**. The test goes to your own address, using the saved settings.
 
 When **Send through my SMTP server** is off, email uses the server's own mail configuration. On a fresh install, that writes email to the log instead of sending it. For a Docker install, you can also set email in `.env`; see [Self-hosting](self-hosting.md#settings).

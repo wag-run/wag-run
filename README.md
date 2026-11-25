@@ -6,25 +6,25 @@
 
 Self-hosted workflow automation app built for collaboration. Build workflows on a visual canvas from triggers and actions, publish them as versions, and follow every run step-by-step. People participate in runs through approvals and tasks that land in their inbox.
 
-Built with Laravel 13, Livewire 4, Flux and [WireFlow](https://github.com/getartisanflow/wireflow) for the canvas.
+Built with Laravel 13, Livewire 4, Flux, and [WireFlow](https://github.com/getartisanflow/wireflow) for the canvas.
 
 ## Features
 
-- **Visual editor**: drag nodes from the palette, draw connections, right-click to copy, paste or delete, undo and redo (⌘Z / ⇧⌘Z), and a data picker to insert earlier outputs into fields.
+- **Visual editor**: drag nodes from the palette, draw connections, right-click to copy, paste, or delete, undo and redo (⌘Z / ⇧⌘Z), and a data picker to insert earlier outputs into fields.
 - **Drafts and versions**: edits stay in a draft until you publish. Each publish is a version, runs stay on the version they started with, and you can roll back or discard the draft.
-- **Triggers**: manual (with inputs to fill in), webhook (optionally verified by token, HMAC signature or IP allowlist), schedule (interval or cron), public or members-only forms, and GitHub (new tag, new release, failed Actions run), by polling or a webhook registered on the repository.
-- **Actions**: HTTP call, conditional logic, switch, for loop, wait, merge, terminate, compose, trigger another workflow, LLM call, send email and send notification, GitHub (create issue, comment, create release, run an Actions workflow) and Google Sheets (add row).
+- **Triggers**: manual (with inputs to fill in), webhook (optionally verified by token, HMAC signature, or IP allowlist), schedule (interval or cron), public or members-only forms, and GitHub (new tag, new release, failed Actions run), by polling or a webhook registered on the repository.
+- **Actions**: HTTP call, conditional logic, switch, for loop, wait, merge, terminate, compose, trigger another workflow, LLM call, send email and send notification, GitHub (create issue, comment, create release, run an Actions workflow), and Google Sheets (add row).
 - **People in the loop**: approvals (one or more approvers, with an "approvals needed" count) and tasks with a form to fill in. They show up in the assignee's inbox and, unless turned off on the node, by email.
 - **Error handling**: per-node retries with backoff, and an optional "on error" path to catch a node that still fails.
-- **Runs**: a live view of each run on the canvas with every step's input, output and error. Retention is configurable per organization, workspace and workflow.
-- **Workspaces and roles**: Admin, Editor, Viewer and Guest roles per workspace, plus organization admins. Variables, encrypted secrets and reusable credentials (HTTP basic, API token, AI provider, SMTP, and GitHub, Google or any OAuth 2.0 provider connected through OAuth) belong to a workspace.
+- **Runs**: a live view of each run on the canvas with every step's input, output, and error. Retention is configurable for the whole install, per workspace, and per workflow.
+- **Workspaces and roles**: Admin, Editor, Viewer, and Guest roles per workspace, plus admins for the whole install. Variables, encrypted secrets, and reusable credentials (HTTP basic, API token, AI provider, SMTP, and GitHub, Google, or any OAuth 2.0 provider connected through OAuth) belong to a workspace.
 - **Sign-in**: email and password, passkeys, two-factor authentication, and OpenID Connect providers.
 - **API and MCP server**: start and inspect runs from scripts with personal access tokens, or connect an AI assistant such as Claude to the MCP server through OAuth.
-- **Audit log** of changes to workflows, secrets, members and settings.
+- **Audit log** of changes to workflows, secrets, members, and settings.
 
 ## Getting started
 
-You need Docker with the Compose plugin. The app runs from a published image in one container (web server, queue workers and scheduler) next to a PostgreSQL container.
+You need Docker with the Compose plugin. The app runs from a published image in one container (web server, queue workers, and scheduler) next to a PostgreSQL container.
 
 ```bash
 mkdir wag.run && cd wag.run
@@ -66,14 +66,14 @@ Where things are:
 
 | Path | What |
 |---|---|
-| `app/Engine` | The engine: coordinator, step runner, graph, templates, editor helpers and nodes |
-| `app/Services` | Workflows, assignments, invitations, mail and workspace management |
+| `app/Engine` | The engine: coordinator, step runner, graph, templates, editor helpers, and nodes |
+| `app/Services` | Workflows, assignments, invitations, mail, and workspace management |
 | `resources/views/pages` | Livewire single-file page components |
 | `database/seeders/DemoWorkflowSeeder.php` | The demo workflows |
 
 ## Extending
 
-Nodes are PHP classes that extend `App\Engine\Node`: they declare their inputs, outputs and ports, and do their work in `execute()`. Register them with the `NodeRegistry`, the way `App\Providers\WorkflowServiceProvider` registers the built-in nodes in `app/Engine/Nodes`. The editor, data picker and validation pick them up automatically.
+Nodes are PHP classes that extend `App\Engine\Node`: they declare their inputs, outputs, and ports, and do their work in `execute()`. Register them with the `NodeRegistry`, the way `App\Providers\WorkflowServiceProvider` registers the built-in nodes in `app/Engine/Nodes`. The editor, data picker, and validation pick them up automatically.
 
 Credential types extend `App\Credentials\CredentialType` and are registered with the `CredentialTypeRegistry` in `App\Providers\AppServiceProvider`.
 

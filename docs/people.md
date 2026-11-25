@@ -1,12 +1,12 @@
-# Approvals, tasks and the Inbox
+# Approvals, tasks, and the Inbox
 
 Some workflows need a person to make a decision or provide information before they can carry on. **Approval** and **Task** nodes, under **People** in the palette, pause the run and send a request to the people you name. The run waits, with the status **Waiting**, until they respond in their **Inbox**.
 
 ## Who can receive requests
 
-Approvers and assignees are chosen from the people in the organization, and must have an active account.
+Approvers and assignees are chosen from the people who have an active account.
 
-To open and answer a request, a person also needs a role in the workflow's workspace. **Guest** is enough, and is the right role for people who only answer requests: Guests see the approvals and tasks assigned to them, and none of the workspace's workflows, runs or settings. See [Members and roles](workspaces.md#members-and-roles).
+To open and answer a request, a person also needs a role in the workflow's workspace. **Guest** is enough, and is the right role for people who only answer requests: Guests see the approvals and tasks assigned to them, and none of the workspace's workflows, runs, or settings. See [Members and roles](workspaces.md#members-and-roles).
 
 ## Approval
 
@@ -37,7 +37,7 @@ Outputs:
 | `comment` | The comment left with the deciding response |
 | `responded_by`, `responded_by_name` | Who gave the deciding response |
 | `approvals`, `rejections` | How many approved and how many rejected |
-| `responses` | Every answer given, each with the person's user ID, name, decision and comment |
+| `responses` | Every answer given, each with the person's user ID, name, decision, and comment |
 
 ## Task
 
@@ -48,7 +48,7 @@ Pauses the run until someone fills in a form, then continues with their answers.
 | **Assignee** | The person who does the task |
 | **Title** | What the task is called in the Inbox, such as `Set up a laptop for {{ trigger.values.name }}` |
 | **Instructions** | What to do |
-| **Form fields** | What to ask for. Each field has a **Key**, a **Label**, a **Type** (**Text**, **Long text**, **Number**, **Email**, **Date**, **Checkbox** or **Choice**) and whether it's **Required**. A **Choice** field lists its options, one per line as `value=Label`. |
+| **Form fields** | What to ask for. Each field has a **Key**, a **Label**, a **Type** (**Text**, **Long text**, **Number**, **Email**, **Date**, **Checkbox**, or **Choice**) and whether it's **Required**. A **Choice** field lists its options, one per line as `value=Label`. |
 | **Timeout (hours)** | How long they have. Defaults to 48. |
 | **Also email the assignee** | On by default |
 
@@ -92,7 +92,7 @@ Open an approval or task from your Inbox, or from the link in its email.
 - **An approval** shows its details, who else was asked, how many approvals it has so far, and when it must be answered by. Add an optional comment, then click **Approve** or **Reject**.
 - **A task** shows its instructions and form. Fill it in and click **Submit**.
 
-The run carries on as soon as your answer settles it. Once a request has been answered, expired or withdrawn, it can't be answered again, and the page shows who answered and when.
+The run carries on as soon as your answer settles it. Once a request has been answered, expired, or withdrawn, it can't be answered again, and the page shows who answered and when.
 
 Only the person a request was sent to can answer it.
 

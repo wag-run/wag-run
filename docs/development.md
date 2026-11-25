@@ -9,7 +9,7 @@ This page covers running wag.run from a checkout on your own machine, for workin
 - **Node.js** and npm. The Docker image builds assets with Node 26.
 - **Git**
 
-On macOS, [Herd](https://herd.laravel.com) installs PHP, Composer and Node for you.
+On macOS, [Herd](https://herd.laravel.com) installs PHP, Composer, and Node for you.
 
 ## 1. Clone the repository
 
@@ -24,7 +24,7 @@ cd wag-run
 composer run setup
 ```
 
-This installs the PHP and npm dependencies, creates `.env` from `.env.example`, generates an `APP_KEY`, runs the migrations and builds the front-end assets. Local development uses SQLite (`database/database.sqlite`) and the database queue and cache, so there's nothing else to start.
+This installs the PHP and npm dependencies, creates `.env` from `.env.example`, generates an `APP_KEY`, runs the migrations, and builds the front-end assets. Local development uses SQLite (`database/database.sqlite`) and the database queue and cache, so there's nothing else to start.
 
 ## 3. Install the AI agent skills and guidelines
 

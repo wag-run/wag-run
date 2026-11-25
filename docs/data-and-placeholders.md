@@ -10,12 +10,12 @@ Hi {{ trigger.values.name }}, your order of {{ length(trigger.values.items) }} i
 
 Fields that accept placeholders have an **Insert data** button. It lists everything the node can use, grouped by where it comes from:
 
-- **Trigger:** the trigger's outputs, such as manual inputs, form values or the webhook body.
+- **Trigger:** the trigger's outputs, such as manual inputs, form values, or the webhook body.
 - **Each earlier node**, by name, with its outputs.
-- **Loop:** inside a For loop, **Current item**, **Item index** and **Item count**.
+- **Loop:** inside a For loop, **Current item**, **Item index**, and **Item count**.
 - **Error:** on a node connected to an **on error** output, **Error message** and **Attempt**.
 - **Variables** and **Secrets** of the workspace.
-- **Execution:** the run's ID, workflow name, trigger type and start time.
+- **Execution:** the run's ID, workflow name, trigger type, and start time.
 
 Pick a value to insert its placeholder at the cursor. If the cursor is already inside a placeholder, such as between the parentheses of `{{ upper() }}`, the value goes in without braces, as part of that expression. The picker only lists nodes that come before this one on a path to it, because those are the only ones whose output can exist when it runs.
 
@@ -122,10 +122,10 @@ Call these inside placeholders, such as `{{ upper(trigger.code) }}`.
 | `join(list, glue)` | Joins into text | `join(['a', 'b'], ', ')` | `a, b` |
 | `column(list, key)` | One field from each object in a list | `column(nodes.fetch.output.body.items, 'id')` | `[1, 2, 3]` |
 | `sum(list)` | Adds up the numbers | `sum(column(trigger.values.items, 'price'))` | `59.97` |
-| `sort(list)`, `reverse(list)`, `unique(list)` | Sorts, reverses or removes duplicates | `unique([1, 1, 2])` | `[1, 2]` |
+| `sort(list)`, `reverse(list)`, `unique(list)` | Sorts, reverses, or removes duplicates | `unique([1, 1, 2])` | `[1, 2]` |
 | `merge(a, b)` | Combines two lists or objects | `merge([1], [2])` | `[1, 2]` |
 | `keys(object)`, `values(object)` | An object's keys or values | `keys({'a': 1})` | `['a']` |
-| `empty(value)` | True for empty text, lists and nothing | `empty([])` | `true` |
+| `empty(value)` | True for empty text, lists, and nothing | `empty([])` | `true` |
 | `default(value, fallback)` | The fallback when the value is empty | `default(null, 'n/a')` | `n/a` |
 
 ### Dates

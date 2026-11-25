@@ -38,7 +38,7 @@ wag.run ships as a Docker image, `ghcr.io/wag-run/wag-run`, built for both x86 (
    docker compose up -d
    ```
 
-   On first start, the app generates an encryption key (`APP_KEY`), saves it in its storage volume and creates the database tables.
+   On first start, the app generates an encryption key (`APP_KEY`), saves it in its storage volume, and creates the database tables.
 
 4. Open <http://localhost:8080> and **register**. The first account becomes the organization admin, so do this before anyone else can reach the install.
 
@@ -69,7 +69,7 @@ docker compose up -d
 | `APP_NAME` | `wag.run` | The name shown in the app and in emails |
 | `QUEUE_WORKERS` | `2` | How many workers run workflow steps at once |
 | `LOG_LEVEL` | `info` | How much the app logs |
-| `WORKFLOW_FILES_MAX_MB` | `50` | The largest file, in MB, that a run can receive, download or have uploaded to it. The image accepts requests up to 55 MB, so you can lower this but not raise it. |
+| `WORKFLOW_FILES_MAX_MB` | `50` | The largest file, in MB, that a run can receive, download, or have uploaded to it. The image accepts requests up to 55 MB, so you can lower this but not raise it. |
 | `APP_MEMORY_LIMIT`, `DB_MEMORY_LIMIT` | `1g` | Memory limit for each container |
 
 Until email is set up, outgoing mail is written to the log instead of sent.
@@ -136,7 +136,7 @@ An **External** app in the **Testing** publishing status only lets the test user
 
 ## HTTPS
 
-The app container serves plain HTTP. Put a reverse proxy that handles TLS, such as Caddy, Traefik or nginx, in front of it, forwarding to `127.0.0.1:8080`. Then set these in `.env`:
+The app container serves plain HTTP. Put a reverse proxy that handles TLS, such as Caddy, Traefik, or nginx, in front of it, forwarding to `127.0.0.1:8080`. Then set these in `.env`:
 
 ```dotenv
 APP_URL=https://wag.example.com
@@ -150,7 +150,7 @@ Requests to the app, such as webhook calls and form uploads, can be up to 55 MB,
 
 ## The encryption key
 
-`APP_KEY` encrypts sessions and everything stored as secret: workspace secrets, credentials and the organization's SMTP password.
+`APP_KEY` encrypts sessions and everything stored as secret: workspace secrets, credentials, and the organization's SMTP password.
 
 - If you leave it empty, the generated key is kept in the storage volume, so a backup of that volume includes it.
 - If you'd rather keep the key out of the volume, generate one and put it in `.env` before the first start:
@@ -167,7 +167,7 @@ Two Docker volumes hold everything:
 
 | Volume | What's in it |
 |---|---|
-| `wag_database` | The PostgreSQL database: workflows, runs, users and settings |
+| `wag_database` | The PostgreSQL database: workflows, runs, users, and settings |
 | `wag_storage` | The app's own files, including the generated `APP_KEY` and the keys that sign API tokens (`oauth-private.key` and `oauth-public.key`) |
 
 Back up both. To dump the database:
@@ -236,7 +236,7 @@ Skip `docker compose pull` while you run it, or set `WAG_VERSION` back to a rele
 - All Linux capabilities are dropped, and processes can't gain new privileges.
 - Root filesystems are read-only. The app writes only to its storage volume and to a `/tmp` that can't run programs. The application code is owned by root and the app can't change it.
 - The database has no published port. It sits on an internal network that only the app can reach and that has no route to the internet.
-- The image contains only what runs the app: no build tools, development dependencies, tests or `.env` files.
+- The image contains only what runs the app: no build tools, development dependencies, tests, or `.env` files.
 - Each container has memory and process limits, and the app's port is published only on the local machine unless you change `APP_BIND`.
 
 ## Running without Docker

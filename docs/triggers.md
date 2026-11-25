@@ -14,9 +14,9 @@ Someone starts the run from inside wag.run: with **Run** in the editor, or **Run
 
 | Setting | What it does |
 |---|---|
-| **Key** | The name later nodes use, as in `trigger.values.amount`. Letters, numbers and underscores. |
+| **Key** | The name later nodes use, as in `trigger.values.amount`. Letters, numbers, and underscores. |
 | **Label** | What the person sees |
-| **Type** | **Text**, **Long text**, **Number**, **Email**, **Date**, **Checkbox** or **Choice** |
+| **Type** | **Text**, **Long text**, **Number**, **Email**, **Date**, **Checkbox**, or **Choice** |
 | **Required** | Whether it must be filled in |
 | **Choices** | For a **Choice** input, the options, one per line as `value=Label` |
 
@@ -77,7 +77,7 @@ The webhook answers as soon as the run starts. It doesn't wait for the run to fi
 |---|---|
 | `trigger.body` | The request body: decoded JSON, form fields, or else the raw text |
 | `trigger.query` | Query string parameters |
-| `trigger.headers` | Request headers, by lowercase name. Cookies, the `Authorization` header and the token or signature headers are left out. |
+| `trigger.headers` | Request headers, by lowercase name. Cookies, the `Authorization` header, and the token or signature headers are left out. |
 | `trigger.method` | The HTTP method |
 | `trigger.ip` | The caller's IP address |
 
@@ -94,7 +94,7 @@ The run starts on a timetable.
 | **Cron expression** | For a cron schedule: when to run, such as `0 9 * * 1-5` for 9:00 on weekdays. **Presets** fills in a common schedule. |
 | **Time zone** | For a cron schedule: the time zone the expression is read in, chosen from a list grouped by region, such as **Europe → London**. Defaults to `UTC`. |
 
-A cron expression has five parts: minute, hour, day of the month, month and day of the week. Some examples:
+A cron expression has five parts: minute, hour, day of the month, month, and day of the week. Some examples:
 
 | Expression | Runs |
 |---|---|
@@ -133,14 +133,14 @@ Form answers and a manual trigger's inputs are both under `trigger.values`. When
 
 ## GitHub
 
-Three triggers start a workflow on a GitHub repository's events: **New tag**, **New release** and **Actions run failed**. They're under **Triggers › Other apps › GitHub** in the palette. Each needs a **GitHub connection** that can see the repository: a GitHub account, which you can connect right from the node with **Connect GitHub** (see [Connecting an account](workspaces.md#connecting-an-account)), or a personal access token or GitHub App (see [Other ways to connect GitHub](workspaces.md#other-ways-to-connect-github)), and the **Repository**, as `owner/name`.
+Three triggers start a workflow on a GitHub repository's events: **New tag**, **New release**, and **Actions run failed**. They're under **Triggers › Other apps › GitHub** in the palette. Each needs a **GitHub connection** that can see the repository: a GitHub account, which you can connect right from the node with **Connect GitHub** (see [Connecting an account](workspaces.md#connecting-an-account)), or a personal access token or GitHub App (see [Other ways to connect GitHub](workspaces.md#other-ways-to-connect-github)), and the **Repository**, as `owner/name`.
 
 ### Polling or a webhook
 
 **Find out about new events by** decides how wag.run hears about them:
 
 - **Checking every few minutes** (the default): wag.run asks GitHub what's new every **Check every (minutes)**, 5 by default. It works even when GitHub can't reach your install. The first check after publishing only notes what already exists, so publishing doesn't start runs for old tags or releases.
-- **A webhook on the repository**: when you publish, wag.run adds a webhook to the repository, and GitHub sends each event as it happens. GitHub must be able to reach your install's `APP_URL`, and the connected account needs admin access to the repository. Changing the trigger, unpublishing it or deleting the workflow removes the webhook.
+- **A webhook on the repository**: when you publish, wag.run adds a webhook to the repository, and GitHub sends each event as it happens. GitHub must be able to reach your install's `APP_URL`, and the connected account needs admin access to the repository. Changing the trigger, unpublishing it, or deleting the workflow removes the webhook.
 
 Under **Trigger URLs** in the [workflow settings](editor.md#workflow-settings), each GitHub trigger shows when it last checked or whether its webhook is registered, and what's wrong if it isn't working. Runs it starts show **Another app** as their trigger.
 

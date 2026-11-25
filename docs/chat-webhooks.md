@@ -1,6 +1,6 @@
 # Chat webhooks
 
-The [Chat message](actions.md#chat-message) action posts to a channel in Slack, Mattermost, Microsoft Teams, Discord or Google Chat through an **incoming webhook**: a secret address the chat app gives you that posts to one channel. This page shows how to get one from each app and save it in wag.run.
+The [Chat message](actions.md#chat-message) action posts to a channel in Slack, Mattermost, Microsoft Teams, Discord, or Google Chat through an **incoming webhook**: a secret address the chat app gives you that posts to one channel. This page shows how to get one from each app and save it in wag.run.
 
 ## How it works
 
@@ -46,7 +46,7 @@ Mattermost accepts the same request as Slack.
 
 If **Integrations** is missing, a system admin needs to turn on incoming webhooks under **System Console → Integrations → Integration Management**.
 
-Messages use Markdown: `**bold**`, `_italic_` and `[the text](https://example.com)`.
+Messages use Markdown: `**bold**`, `_italic_`, and `[the text](https://example.com)`.
 
 If your Mattermost server is on a private network, a workspace admin must add its address to the workspace's [internal-address allowlist](workspaces.md#workspace-settings). Otherwise the step fails because the address is internal.
 
@@ -62,7 +62,7 @@ Keep the template's steps as they are: it loops over the cards in the request an
 
 The workflow posts as **Workflows** on behalf of the person who created it, and runs under their Microsoft 365 account. If that person leaves, the workflow stops, so consider creating it with a shared account. Workflows can't post to private channels as the flow bot.
 
-Messages support a little Markdown: `**bold**`, `_italic_`, lists and `[the text](https://example.com)`.
+Messages support a little Markdown: `**bold**`, `_italic_`, lists, and `[the text](https://example.com)`.
 
 ## Discord
 
@@ -72,7 +72,7 @@ You need the **Manage Webhooks** permission on the server.
 2. Name it, such as `wag.run`, pick the channel, and optionally set an avatar.
 3. Choose **Copy Webhook URL**. It starts with `https://discord.com/api/webhooks/`.
 
-Discord limits a message to 2,000 characters, so a longer one fails. Messages use Markdown: `**bold**`, `*italic*`, `` `code` `` and `[the text](https://example.com)`.
+Discord limits a message to 2,000 characters, so a longer one fails. Messages use Markdown: `**bold**`, `*italic*`, `` `code` ``, and `[the text](https://example.com)`.
 
 ## Google Chat
 

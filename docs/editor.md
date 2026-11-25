@@ -4,7 +4,7 @@ You build workflows in the editor, which opens when you open a workflow from **W
 
 ## The layout
 
-- **Node palette** on the left, grouped into **Triggers**, **Flow**, **Data**, **Integrations**, **GitHub**, **Google**, **AI**, **Messaging** and **People**. Click a group to open it, and the back arrow to go up a level. Triggers on another app's events are under **Triggers › Other apps**, such as **Triggers › Other apps › GitHub**. Searching lists every match with the group it's in.
+- **Node palette** on the left, grouped into **Triggers**, **Flow**, **Data**, **Integrations**, **GitHub**, **Google**, **AI**, **Messaging**, and **People**. Click a group to open it, and the back arrow to go up a level. Triggers on another app's events are under **Triggers › Other apps**, such as **Triggers › Other apps › GitHub**. Searching lists every match with the group it's in.
 - **Canvas** in the middle. Scroll or drag the background to move around, and use the minimap in the corner to jump to a part of a large workflow. You can hide the minimap.
 - **Settings panel** on the right. It shows the selected node's settings, or the workflow's settings when nothing is selected. Hide it with the panel button in the toolbar to make more room for the canvas.
 - **Toolbar** along the top, with undo and redo, **Runs**, **Versions**, **Export**, **Run** or **Test draft**, and **Publish**.
@@ -40,9 +40,9 @@ Select a node to see its settings in the settings panel:
 
 Changes save to the draft as you type.
 
-## Selecting, copying and deleting
+## Selecting, copying, and deleting
 
-Click a node to select it. Right-click a node for **Copy**, **Cut**, **Delete** and **Node settings**. When several nodes are selected, right-click the selection to copy, cut or delete them together. Right-click the canvas for **Paste here**, **Undo**, **Redo**, **Add sticky note** and **Workflow settings**. Pasted nodes keep the connections between them. You're asked to confirm before nodes are deleted, and their connections are deleted with them.
+Click a node to select it. Right-click a node for **Copy**, **Cut**, **Delete**, and **Node settings**. When several nodes are selected, right-click the selection to copy, cut, or delete them together. Right-click the canvas for **Paste here**, **Undo**, **Redo**, **Add sticky note**, and **Workflow settings**. Pasted nodes keep the connections between them. You're asked to confirm before nodes are deleted, and their connections are deleted with them.
 
 | Action | Shortcut |
 |---|---|
@@ -59,7 +59,7 @@ Sticky notes explain a workflow to whoever reads it next. They never run and can
 
 Add one by right-clicking the canvas and choosing **Add sticky note**. Select it to edit:
 
-- **Text**: supports basic Markdown, such as `**bold**`, `_italic_`, lists and links.
+- **Text**: supports basic Markdown, such as `**bold**`, `_italic_`, lists, and links.
 - **Color**: **Yellow**, **Blue**, **Green**, **Pink**, **Gray**, or a hex code such as `#fde68a`.
 - **Opacity**: how see-through the note is.
 
@@ -67,7 +67,7 @@ Add one by right-clicking the canvas and choosing **Add sticky note**. Select it
 
 Every change you make goes into the workflow's **draft**. The toolbar shows when the draft was last saved, and **Unpublished draft** when it differs from the published version.
 
-The draft doesn't run on its own. Webhooks, forms, schedules and **Run** always use the **published version**. To try a draft without publishing, use **Test draft** (see [Runs](runs.md#test-runs)).
+The draft doesn't run on its own. Webhooks, forms, schedules, and **Run** always use the **published version**. To try a draft without publishing, use **Test draft** (see [Runs](runs.md#test-runs)).
 
 When you click **Publish**, the editor checks the workflow first. If something needs fixing, such as a required setting left empty or a condition without `{{ }}`, it lists the problems under **Fix these before publishing**. Otherwise the draft becomes a new numbered version, and new runs use it straight away. Runs already going stay on the version they started with.
 
@@ -102,4 +102,4 @@ To bring a workflow in, click **Import** on the **Workflows** list and choose th
 
 ## Deleting a workflow
 
-On the **Workflows** list, open a workflow's menu and choose **Delete**. This deletes the workflow, all its versions and its run history, and can't be undone.
+On the **Workflows** list, open a workflow's menu and choose **Delete**. This deletes the workflow, all its versions, and its run history, and can't be undone.

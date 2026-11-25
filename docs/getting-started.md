@@ -2,11 +2,11 @@
 
 This guide walks you through signing in, finding your way around, and building your first workflow: a large-order alert that checks an amount and notifies you when it is over a limit. It takes about ten minutes.
 
-You need an account in a wag.run organization and the **Editor** or **Admin** role in a workspace. If you can't see **Workflows** in the sidebar, ask a workspace admin to change your role.
+You need an account on a wag.run install and the **Editor** or **Admin** role in a workspace. If you can't see **Workflows** in the sidebar, ask a workspace admin to change your role.
 
 ## 1. Sign in
 
-Open your wag.run address and sign in with your email and password, a passkey, or a sign-in provider button such as **Sign in with Okta** if your organization has one set up.
+Open your wag.run address and sign in with your email and password, a passkey, or a sign-in provider button such as **Sign in with Okta** if your install has one set up.
 
 - **Invited by email?** Open the invitation link to create your account and join. Invitations expire, so ask for a new one if yours no longer works.
 - **First person on a new install?** Register an account. The first account becomes the organization admin. To set up an install, see [Self-hosting](self-hosting.md).
@@ -20,16 +20,16 @@ The sidebar shows the current workspace at the top. Use it to switch workspaces.
 | Item | What it's for |
 |---|---|
 | **Overview** | The workspace's workflows and the approvals and tasks waiting on you |
-| **Workflows** | Create, import and open workflows |
+| **Workflows** | Create, import, and open workflows |
 | **Runs** | Every run in the workspace, newest first, filterable by status |
 | **Variables**, **Secrets**, **Credentials** | Shared values and sign-in details your workflows use |
 | **Members**, **Settings**, **Audit log** | Workspace administration (Admins) |
 
-Organization admins also see an **Organization** section for users, workspaces, sign-in and email settings.
+Organization admins also see an **Organization** section for users, workspaces, sign-in, and email settings.
 
 Your **Inbox** is in the account menu at the bottom of the sidebar. It collects approvals and tasks assigned to you, failed runs of workflows you own, and messages from workflows, across all your workspaces. A red dot on your avatar means something in it is unread.
 
-> **Tip:** If your workspace has the demo workflows (**Refund approval**, **Order status updates**, **New hire onboarding** and **Daily post digest**), open one to see a finished workflow before building your own.
+> **Tip:** If your workspace has the demo workflows (**Refund approval**, **Order status updates**, **New hire onboarding**, and **Daily post digest**), open one to see a finished workflow before building your own.
 
 ## 3. Create a workflow
 
@@ -91,7 +91,7 @@ Try the workflow before publishing it.
 
 A test run does everything a real run does, including sending emails and calling other services, so be careful with workflows that contact people outside your team.
 
-You land on the run page. The canvas shows how far the run got, and you can click any step to see its input, output and any error. You should also have a new item in your Inbox.
+You land on the run page. The canvas shows how far the run got, and you can click any step to see its input, output, and any error. You should also have a new item in your Inbox.
 
 Run another test with an amount under 500. This time the run stops after the condition and no notification is sent.
 
@@ -108,9 +108,9 @@ From now on, your edits go into a new draft. The published version keeps running
 
 ## 9. Follow your runs
 
-**Runs** in the sidebar lists every run in the workspace, with its trigger, status, start time and duration. Open one to see it on the canvas:
+**Runs** in the sidebar lists every run in the workspace, with its trigger, status, start time, and duration. Open one to see it on the canvas:
 
-- Each step shows its status. Click it for its input, output and error, and each attempt if it was retried.
+- Each step shows its status. Click it for its input, output, and error, and each attempt if it was retried.
 - A waiting run shows what it's waiting for, such as **Resumes** with a time for a Wait node, or **Times out** for an approval.
 - Editors and Admins can **Cancel run** while it's running or waiting.
 
@@ -141,6 +141,6 @@ Right-click a node or the canvas for the same actions.
 
 ## Next steps
 
-- Read the [overview](README.md) for the concepts behind workspaces, versions, runs and placeholders.
+- Read the [overview](README.md) for the concepts behind workspaces, versions, runs, and placeholders.
 - Learn the rest of [the editor](editor.md), then browse the [triggers](triggers.md) and [actions](actions.md) you can build with.
-- Open the demo workflows to see webhooks, forms, schedules, loops, tasks and error handling working together.
+- Open the demo workflows to see webhooks, forms, schedules, loops, tasks, and error handling working together.

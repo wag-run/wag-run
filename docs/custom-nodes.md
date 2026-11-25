@@ -208,7 +208,7 @@ To check settings beyond "required", override `configProblems(array $config): ar
 
 ## Outputs
 
-`new Output(name, label, type)` describes one value your node returns. The type is one of `string`, `number`, `boolean`, `object`, `array`, `file` or `any`. Give an object or an array `children` to let people pick its properties:
+`new Output(name, label, type)` describes one value your node returns. The type is one of `string`, `number`, `boolean`, `object`, `array`, `file`, or `any`. Give an object or an array `children` to let people pick its properties:
 
 ```php
 new Output('customer', 'Customer', 'object', children: [
@@ -248,7 +248,7 @@ public function __construct(protected NetworkGuard $guard) {}
 
 ### Calling addresses people type in
 
-If the address your node calls comes from a setting, check it with `App\Support\NetworkGuard` first, as the HTTP call and Chat message nodes do. It blocks private, loopback and link-local addresses unless the workspace's allowlist permits them. See `ChatMessage::execute()` for the pattern. A fixed public address, as in the example above, doesn't need it.
+If the address your node calls comes from a setting, check it with `App\Support\NetworkGuard` first, as the HTTP call and Chat message nodes do. It blocks private, loopback, and link-local addresses unless the workspace's allowlist permits them. See `ChatMessage::execute()` for the pattern. A fixed public address, as in the example above, doesn't need it.
 
 ## What `execute()` can return
 
@@ -449,7 +449,7 @@ class NewTicket extends Node implements EventTrigger
 
 How polling works:
 
-- **`poll()` receives the trigger's settings, the workspace and whatever `state` the last poll returned.** There is no `NodeContext` here: no run exists yet.
+- **`poll()` receives the trigger's settings, the workspace, and whatever `state` the last poll returned.** There is no `NodeContext` here: no run exists yet.
 - **`state` is yours.** Return whatever you need to tell new from old next time: a last ID, a timestamp, a list of IDs seen. It is `null` on the first poll after publishing.
 - **The first poll should start nothing.** Record what already exists and return no events, or publishing a workflow would start a run for every old item.
 - **Each event is one run's trigger input**, oldest first. Its keys should match the trigger's outputs.
@@ -493,7 +493,7 @@ One limit: `subscribe()` is called once per trigger with that trigger's own addr
 
 ## A credential type
 
-If the built-in **API token**, **HTTP Basic** or **OAuth 2.0** types don't fit, add your own. A credential type declares its fields, and the app handles the form, encryption, masking and the audit log.
+If the built-in **API token**, **HTTP Basic**, or **OAuth 2.0** types don't fit, add your own. A credential type declares its fields, and the app handles the form, encryption, masking, and the audit log.
 
 ```php
 <?php
@@ -627,4 +627,4 @@ Workflows save a node's type and its settings by field name, and runs in progres
 - **Never rename a type or a credential key.** Workflows that use it would no longer publish, and steps would fail.
 - **Renaming or removing a field** loses that setting in existing workflows. Add a new field and keep reading the old name instead.
 - **Renaming or removing an output or a port** breaks placeholders and connections that use it.
-- **Adding** fields (with a default), outputs and ports is safe.
+- **Adding** fields (with a default), outputs, and ports is safe.

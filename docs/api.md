@@ -1,6 +1,6 @@
 # API and MCP server
 
-Scripts, other apps and AI assistants can list workflows, start runs and follow them. There are two ways in, and they do the same things:
+Scripts, other apps, and AI assistants can list workflows, start runs, and follow them. There are two ways in, and they do the same things:
 
 - **The REST API**, at `/api/v1`, for scripts and other apps.
 - **The MCP server**, at `/mcp`, for AI assistants such as Claude that support the [Model Context Protocol](https://modelcontextprotocol.io).
@@ -27,7 +27,7 @@ The assistant gets these tools:
 | `get-workflow` | One workflow and its inputs |
 | `start-run` | Start a run of a workflow's published version |
 | `list-runs` | A workspace's runs, newest first, optionally for one workflow or one status |
-| `get-run` | One run with its input, output, error and every step |
+| `get-run` | One run with its input, output, error, and every step |
 | `cancel-run` | Cancel a run that's still going |
 
 An assistant that can't connect through OAuth can use a personal access token instead, sent as a bearer token. It's limited to the token's scopes.
@@ -79,7 +79,7 @@ curl -X POST https://wag.example.com/api/v1/workspaces/ops/workflows/$WORKFLOW_I
 
 The answer is `201` with the new run. A workflow without a Manual trigger starts at its first trigger with no input. The run shows **API** as its trigger, and you as the person who started it.
 
-The request returns as soon as the run starts. To follow it, get the run until its `status` is `complete`, `failed`, `cancelled` or `skipped`. A run that waits for an approval can stay `waiting` for a long time.
+The request returns as soon as the run starts. To follow it, get the run until its `status` is `complete`, `failed`, `cancelled`, or `skipped`. A run that waits for an approval can stay `waiting` for a long time.
 
 ### Listing runs
 
@@ -88,7 +88,7 @@ The request returns as soon as the run starts. To follow it, get the run until i
 | Parameter | What it does |
 |---|---|
 | `workflow` | Only runs of this workflow id |
-| `status` | Only runs with this status: `running`, `waiting`, `complete`, `failed`, `cancelled` or `skipped` |
+| `status` | Only runs with this status: `running`, `waiting`, `complete`, `failed`, `cancelled`, or `skipped` |
 | `per_page` | Runs per page, 1 to 100. 25 by default. |
 | `page` | The page, from 1 |
 
@@ -98,9 +98,9 @@ The answer has the runs under `data`, and the page details under `meta` and `lin
 
 | Status | When |
 |---|---|
-| `401` | The token is missing, expired or revoked |
+| `401` | The token is missing, expired, or revoked |
 | `403` | The token doesn't have the scope, your role in the workspace doesn't allow it, or your account is deactivated |
-| `404` | The workspace, workflow or run doesn't exist, or you can't see it |
+| `404` | The workspace, workflow, or run doesn't exist, or you can't see it |
 | `422` | The input doesn't match the workflow's inputs, the workflow isn't published, or a filter is invalid. `errors` says which field. |
 | `429` | Too many requests |
 

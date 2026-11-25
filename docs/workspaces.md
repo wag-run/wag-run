@@ -1,12 +1,12 @@
 # Workspaces
 
-A workspace holds a team's workflows and runs, the people who work on them, and the values and sign-in details those workflows share. Each workspace is separate: a workflow can only use the variables, secrets and credentials of its own workspace, and can only start workflows in its own workspace.
+A workspace holds a team's workflows and runs, the people who work on them, and the values and sign-in details those workflows share. Each workspace is separate: a workflow can only use the variables, secrets, and credentials of its own workspace, and can only start workflows in its own workspace.
 
-Switch workspaces with the menu at the top of the sidebar. Organization admins create, rename and delete workspaces. See [Organization administration](administration.md#workspaces).
+Switch workspaces with the menu at the top of the sidebar. Organization admins create, rename, and delete workspaces. See [Organization administration](administration.md#workspaces).
 
 ## Overview
 
-**Overview** is the workspace's home page. It shows its workflows, the approvals and tasks waiting on you in this workspace, and shortcuts to its variables, secrets, credentials and members.
+**Overview** is the workspace's home page. It shows its workflows, the approvals and tasks waiting on you in this workspace, and shortcuts to its variables, secrets, credentials, and members.
 
 ## Members and roles
 
@@ -15,11 +15,11 @@ Switch workspaces with the menu at the top of the sidebar. Organization admins c
 | | Guest | Viewer | Editor | Admin |
 |---|:-:|:-:|:-:|:-:|
 | Answer approvals and tasks sent to them | ✓ | ✓ | ✓ | ✓ |
-| See workflows, runs and members | | ✓ | ✓ | ✓ |
-| See the names of variables, secrets and credentials | | ✓ | ✓ | ✓ |
-| Build, publish, test and run workflows, and cancel runs | | | ✓ | ✓ |
-| Add, change and delete variables | | | ✓ | ✓ |
-| Manage members, secrets and credentials | | | | ✓ |
+| See workflows, runs, and members | | ✓ | ✓ | ✓ |
+| See the names of variables, secrets, and credentials | | ✓ | ✓ | ✓ |
+| Build, publish, test, and run workflows, and cancel runs | | | ✓ | ✓ |
+| Add, change, and delete variables | | | ✓ | ✓ |
+| Manage members, secrets, and credentials | | | | ✓ |
 | Reveal secret values | | | | ✓ |
 | Change workspace settings and read the audit log | | | | ✓ |
 
@@ -27,22 +27,22 @@ Switch workspaces with the menu at the top of the sidebar. Organization admins c
 
 ### Adding people
 
-Under **Add or invite by email**, enter an email address, choose a role and click **Add**.
+Under **Add or invite by email**, enter an email address, choose a role, and click **Add**.
 
-- If the person already has an account in the organization, they're added straight away.
+- If the person already has an account, they're added straight away.
 - If not, they're emailed an invitation to create an account and join. Invitations expire after 7 days. Until then, they're listed under **Pending invitations**, where you can **Revoke** them.
 
 To change someone's role, pick a new one next to their name. To take away their access, click **Remove**. Removing someone from a workspace doesn't delete their account.
 
 ## Variables
 
-Variables are named values that any workflow in the workspace can use, such as a team's email address, a base URL or a threshold. Read one in a placeholder as `{{ vars.<key> }}`:
+Variables are named values that any workflow in the workspace can use, such as a team's email address, a base URL, or a threshold. Read one in a placeholder as `{{ vars.<key> }}`:
 
 ```text
 {{ vars.api_base_url }}/orders/{{ trigger.order_id }}
 ```
 
-Click **Add variable** and give it a **Key** (letters, numbers and underscores), a **Value** and an optional **Description**. Editors and Admins can manage variables.
+Click **Add variable** and give it a **Key** (letters, numbers, and underscores), a **Value**, and an optional **Description**. Editors and Admins can manage variables.
 
 Changing a variable affects every run from then on, without republishing. If you delete a variable, workflows that use it get an empty value.
 
@@ -50,7 +50,7 @@ Variables are not secret: anyone who can see the workspace's runs can see their 
 
 ## Secrets
 
-Secrets are for sensitive values, such as tokens, passwords and signing keys. They're encrypted where they're stored, and wherever a secret's value would show in a run's step input or output, it's masked.
+Secrets are for sensitive values, such as tokens, passwords, and signing keys. They're encrypted where they're stored, and wherever a secret's value would show in a run's step input or output, it's masked.
 
 Read one in a placeholder as `{{ secrets.<key> }}`, for example in an HTTP call header:
 
@@ -74,20 +74,20 @@ Click **Add credential**, choose a **Type**, and give it a **Description**, such
 |---|---|---|
 | **HTTP Basic** | HTTP call | **Username** and **Password** |
 | **API token** | HTTP call | **Header name** (defaults to `Authorization`), **Value prefix** (defaults to `Bearer`; leave it empty to send the token alone) and **Token** |
-| **AI provider** | LLM call | **Provider**, **API key** (not needed for a local Ollama server) and **Base URL** (optional, but needed for an OpenAI-compatible endpoint) |
-| **SMTP server** | Send email | **Host**, **Port**, **Encryption**, **Username**, **Password**, **From address** and **From name**. Lets a workspace send email through its own server instead of the organization's. |
+| **AI provider** | LLM call | **Provider**, **API key** (not needed for a local Ollama server), and **Base URL** (optional, but needed for an OpenAI-compatible endpoint) |
+| **SMTP server** | Send email | **Host**, **Port**, **Encryption**, **Username**, **Password**, **From address**, and **From name**. Lets a workspace send email through its own server instead of the organization's. |
 | **Chat webhook** | Chat message | **Service** (Slack or Mattermost, Microsoft Teams, Discord, or Google Chat) and **Webhook URL**. See [Chat webhooks](chat-webhooks.md) for getting one from each app. |
 | **GitHub** | GitHub nodes, HTTP call | None when the install has a GitHub app: you connect a GitHub account (see below). Otherwise the **Client ID** and **Client secret** of your own GitHub OAuth app or GitHub App. |
-| **GitHub personal access token** | GitHub nodes | **Token**: a fine-grained token with read and write access to Contents, Issues, Actions and Webhooks, or a classic token with the `repo` and `admin:repo_hook` scopes |
-| **GitHub App** | GitHub nodes | **App ID or client ID**, **Installation ID** and **Private key** (see [Using a GitHub App](#using-a-github-app)) |
+| **GitHub personal access token** | GitHub nodes | **Token**: a fine-grained token with read and write access to Contents, Issues, Actions, and Webhooks, or a classic token with the `repo` and `admin:repo_hook` scopes |
+| **GitHub App** | GitHub nodes | **App ID or client ID**, **Installation ID**, and **Private key** (see [Using a GitHub App](#using-a-github-app)) |
 | **Google** | Google Sheets nodes, HTTP call | None: you connect a Google account (see below) |
-| **OAuth 2.0** | HTTP call | **Authorization URL**, **Token URL**, **Client ID**, **Client secret** and **Scopes**, from the OAuth app you registered with the provider |
+| **OAuth 2.0** | HTTP call | **Authorization URL**, **Token URL**, **Client ID**, **Client secret**, and **Scopes**, from the OAuth app you registered with the provider |
 
 The **Used by** column shows how many of the workspace's workflows use each credential, in their draft or their published version. Hover over the count to see which workflows, and click one to open it. A credential no workflow uses is marked **Unused**, which helps before deleting it.
 
 ### Connecting an account
 
-GitHub, Google and OAuth 2.0 settings connect to an account instead of holding a password.
+GitHub, Google, and OAuth 2.0 settings connect to an account instead of holding a password.
 
 **GitHub and Google** accounts are connected with a **Connect** button, from either place:
 
@@ -113,7 +113,7 @@ Every GitHub node takes any of three kinds of GitHub setting, listed together un
 #### Using a GitHub App
 
 1. Create the app under your organization's **Settings → Developer settings → GitHub Apps → New GitHub App** (or under your own account's developer settings). Turn off **Webhook → Active**: wag.run doesn't need the app's own webhook.
-2. Under **Repository permissions**, give it what the workflows need: **Contents**, **Issues** and **Pull requests** (read and write) for the actions, **Actions** (read and write) to run and watch Actions workflows, and **Webhooks** (read and write) for GitHub triggers that register a webhook.
+2. Under **Repository permissions**, give it what the workflows need: **Contents**, **Issues**, and **Pull requests** (read and write) for the actions, **Actions** (read and write) to run and watch Actions workflows, and **Webhooks** (read and write) for GitHub triggers that register a webhook.
 3. Create the app. On its settings page, copy the **App ID** (or the **Client ID**, which works too), and under **Private keys** choose **Generate a private key**. Your browser downloads a `.pem` file.
 4. Choose **Install App**, install it on your account or organization, and pick the repositories. The installation's settings page address ends in its **Installation ID**, such as `12345678` in `github.com/organizations/acme/settings/installations/12345678`.
 5. In wag.run, choose **Add credential → GitHub App**, enter the App ID and installation ID, and paste the whole `.pem` file, including its `BEGIN` and `END` lines, into **Private key**.
@@ -129,10 +129,10 @@ If you delete a credential, workflows that use it fail until it's replaced.
 Admins can change these under **Settings**:
 
 - **Execution log retention**: how long this workspace's run logs are kept. Turn on **Use a workspace-specific retention period** to set your own number of days. Otherwise, the organization default applies. A workflow can override this too. See [How long runs are kept](runs.md#how-long-runs-are-kept).
-- **Internal-address allowlist**: by default, HTTP call nodes can't reach private, loopback or link-local addresses, so a workflow can't be used to probe your internal network. List the internal hosts this workspace's workflows may call, one per line: a hostname, a wildcard such as `*.corp.internal`, an IP address, or a CIDR range such as `10.0.0.0/8`.
+- **Internal-address allowlist**: by default, HTTP call nodes can't reach private, loopback, or link-local addresses, so a workflow can't be used to probe your internal network. List the internal hosts this workspace's workflows may call, one per line: a hostname, a wildcard such as `*.corp.internal`, an IP address, or a CIDR range such as `10.0.0.0/8`.
 
 ## Audit log
 
-**Audit log** lists changes to this workspace: workflows created, imported, published, rolled back or deleted; variables, secrets and credentials created, changed, deleted or revealed; members added, removed or given a new role; and invitations. Each entry shows who did it and when.
+**Audit log** lists changes to this workspace: workflows created, imported, published, rolled back, or deleted; variables, secrets, and credentials created, changed, deleted, or revealed; members added, removed, or given a new role; and invitations. Each entry shows who did it and when.
 
 Admins can read it. The dropdown at the top switches between the workspaces whose log you can read, and the action filter narrows entries by type. Organization admins also see **Organization**: every entry in the organization, including those that belong to no workspace, such as sign-ins (with how each person signed in), users promoted or deactivated, single sign-on, organization settings, and deleted workspaces.

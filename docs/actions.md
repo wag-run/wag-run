@@ -1,10 +1,10 @@
 # Actions
 
-Actions are the nodes that do the work after a trigger. They're grouped in the palette as **Flow**, **Data**, **Integrations**, **GitHub**, **Google**, **AI**, **Messaging** and **People**.
+Actions are the nodes that do the work after a trigger. They're grouped in the palette as **Flow**, **Data**, **Integrations**, **GitHub**, **Google**, **AI**, **Messaging**, and **People**.
 
 Each node's outputs are available to the nodes after it as `nodes.<id>.output`, where `<id>` is shown in the node's settings under **Reference its output as**. For example, the status code of an HTTP call with the id `fetch` is `{{ nodes.fetch.output.status }}`. See [Data and placeholders](data-and-placeholders.md).
 
-Every action also has **Retries**, **Backoff (s)** and **Show "on error" path** in its settings. See [Retries and error paths](runs.md#retries-and-error-paths).
+Every action also has **Retries**, **Backoff (s)**, and **Show "on error" path** in its settings. See [Retries and error paths](runs.md#retries-and-error-paths).
 
 ## Flow
 
@@ -27,7 +27,7 @@ Sends the run down one of several outputs, by comparing a value with a list of c
 | Setting | What it does |
 |---|---|
 | **Value** | What to compare, such as `{{ trigger.plan }}` |
-| **Cases** | Up to 20 values to compare against. Each case gets its own output, **case 1**, **case 2** and so on. |
+| **Cases** | Up to 20 values to compare against. Each case gets its own output, **case 1**, **case 2**, and so on. |
 | **Case insensitive** | Treat `Pro` and `pro` as equal |
 
 The first case equal to the value is taken. If none is, the run goes down **default**.
@@ -71,7 +71,7 @@ Pauses the run.
 | Setting | What it does |
 |---|---|
 | **Wait** | **For a duration**, or **Until a time** |
-| **Amount** and **Unit** | For a duration: how long, in **Seconds**, **Minutes**, **Hours** or **Days**. Defaults to 5 minutes. |
+| **Amount** and **Unit** | For a duration: how long, in **Seconds**, **Minutes**, **Hours**, or **Days**. Defaults to 5 minutes. |
 | **Until** | For a time: a date and time, such as `2026-12-01 09:00` or `{{ trigger.send_at }}`. Times without a time zone are read as UTC. |
 
 A time that has already passed doesn't wait. While it waits, the run is **Waiting**, and the run page shows when it resumes.
@@ -101,7 +101,7 @@ Ends the run here.
 
 | Setting | What it does |
 |---|---|
-| **End as** | **Complete**, **Failed** or **Cancelled** |
+| **End as** | **Complete**, **Failed**, or **Cancelled** |
 | **Output** | Optional. Becomes the run's output. |
 
 Other branches still going are stopped too.
@@ -130,7 +130,7 @@ Keeps the items of a list that match a condition.
 | **List** | One placeholder for a list, such as `{{ nodes.fetch.output.body.items }}` |
 | **Condition** | One placeholder checked for each item, such as `{{ item.amount > 100 }}`. `item` is the item and `index` its position. Inside a For loop, the loop's own item is `loop.item`. |
 
-Outputs: `items` (the ones that match), `count` (how many match) and `removed` (the ones that don't).
+Outputs: `items` (the ones that match), `count` (how many match), and `removed` (the ones that don't).
 
 ## Integrations
 
@@ -140,11 +140,11 @@ Makes an HTTP request.
 
 | Setting | What it does |
 |---|---|
-| **Method** | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD` or `OPTIONS` |
+| **Method** | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, or `OPTIONS` |
 | **URL** | The address, with placeholders if needed, such as `https://api.example.com/orders/{{ trigger.order_id }}` |
 | **Authentication** | Optional. An **HTTP Basic** or **API token** setting from the workspace's [credentials](workspaces.md#credentials). |
 | **Query parameters** and **Headers** | Keys and values to send |
-| **Body** | **None**, **JSON**, **Form fields** or **Raw text** |
+| **Body** | **None**, **JSON**, **Form fields**, or **Raw text** |
 | **JSON or raw body** | For **JSON**, a JSON editor: it says whether the JSON is valid as you type, and **Format** indents it. Placeholders count as values, so `{"id": {{ trigger.id }}}` is valid. |
 | **Timeout (s)** | How long to wait for an answer. Defaults to 30. |
 | **Follow redirects** | Follow up to 5 redirects. On by default. |
@@ -153,39 +153,39 @@ Makes an HTTP request.
 
 Outputs: `status` (the status code), `ok` (true for a 2xx status), `headers`, and `body`, which is decoded JSON when the response is JSON, or else text. Bodies over 1 MB are cut short.
 
-HTTP calls can't reach private, loopback or link-local addresses, such as `10.0.0.5` or `localhost`, unless a workspace admin lists them in the [internal-address allowlist](workspaces.md#workspace-settings).
+HTTP calls can't reach private, loopback, or link-local addresses, such as `10.0.0.5` or `localhost`, unless a workspace admin lists them in the [internal-address allowlist](workspaces.md#workspace-settings).
 
 > **Warning:** With **Allow insecure connections** on, the connection is still encrypted, but wag.run no longer checks who it's talking to. Anyone between wag.run and the server could read or change the request and the response, including any token or password sent with it. Use it only for internal servers you control. Where you can, give the server a valid certificate instead.
 
 ### Upload to S3
 
-Writes a file to a bucket on Amazon S3 or an S3-compatible service, such as MinIO, Cloudflare R2, Backblaze B2 or Wasabi. A file already at the same key is replaced.
+Writes a file to a bucket on Amazon S3 or an S3-compatible service, such as MinIO, Cloudflare R2, Backblaze B2, or Wasabi. A file already at the same key is replaced.
 
 | Setting | What it does |
 |---|---|
-| **Storage** | An **S3-compatible storage** setting from the workspace's [credentials](workspaces.md#credentials). It holds the bucket, region, endpoint and access keys. |
+| **Storage** | An **S3-compatible storage** setting from the workspace's [credentials](workspaces.md#credentials). It holds the bucket, region, endpoint, and access keys. |
 | **Key** | The file's path in the bucket, such as `backups/config-{{ date(now(), 'Y-m-d') }}.xml` |
 | **Content** | Text, such as `{{ nodes.fetch.output.body }}`, or a file from an earlier node, such as `{{ nodes.fetch.output.file }}` from an HTTP call that saves its response as a file. Files are uploaded byte for byte. A list or object is saved as JSON. |
 | **Content type** | Optional, such as `application/xml`. Left empty, a file keeps its own type, and text gets one guessed from the key's extension. |
-| **Storage class** | Optional. **Bucket default** unless you choose **Standard**, **Intelligent-Tiering**, **Standard-Infrequent Access**, **One Zone-Infrequent Access**, **Glacier Instant Retrieval**, **Glacier Flexible Retrieval** or **Glacier Deep Archive**. The colder classes cost less to keep but more, or longer, to read back. Other S3-compatible services may accept only some of these. |
+| **Storage class** | Optional. **Bucket default** unless you choose **Standard**, **Intelligent-Tiering**, **Standard-Infrequent Access**, **One Zone-Infrequent Access**, **Glacier Instant Retrieval**, **Glacier Flexible Retrieval**, or **Glacier Deep Archive**. The colder classes cost less to keep but more, or longer, to read back. Other S3-compatible services may accept only some of these. |
 
-Outputs: `bucket`, `key`, `url` (the file's address) and `size` (in bytes).
+Outputs: `bucket`, `key`, `url` (the file's address), and `size` (in bytes).
 
-Like HTTP calls, an upload can't reach a storage endpoint on a private, loopback or link-local address, such as a MinIO server at `10.0.0.5`, unless a workspace admin lists it in the [internal-address allowlist](workspaces.md#workspace-settings).
+Like HTTP calls, an upload can't reach a storage endpoint on a private, loopback, or link-local address, such as a MinIO server at `10.0.0.5`, unless a workspace admin lists it in the [internal-address allowlist](workspaces.md#workspace-settings).
 
-If the storage service refuses the upload, the step fails with its status and message. Server errors, rate limits and connection problems are retried; other refusals, such as wrong keys or a missing bucket, are not.
+If the storage service refuses the upload, the step fails with its status and message. Server errors, rate limits, and connection problems are retried; other refusals, such as wrong keys or a missing bucket, are not.
 
 ## GitHub
 
-These nodes work on a GitHub repository as a GitHub account, personal access token or GitHub App. Each has a **GitHub connection**: a GitHub account, which you can connect right from the node with **Connect GitHub** (see [Connecting an account](workspaces.md#connecting-an-account)), or a personal access token or GitHub App (see [Other ways to connect GitHub](workspaces.md#other-ways-to-connect-github)), and a **Repository**, as `owner/name` or the repository's URL. A placeholder works in **Repository**, such as `{{ trigger.repository }}` after a [GitHub trigger](triggers.md#github).
+These nodes work on a GitHub repository as a GitHub account, personal access token, or GitHub App. Each has a **GitHub connection**: a GitHub account, which you can connect right from the node with **Connect GitHub** (see [Connecting an account](workspaces.md#connecting-an-account)), or a personal access token or GitHub App (see [Other ways to connect GitHub](workspaces.md#other-ways-to-connect-github)), and a **Repository**, as `owner/name` or the repository's URL. A placeholder works in **Repository**, such as `{{ trigger.repository }}` after a [GitHub trigger](triggers.md#github).
 
 If GitHub refuses the request, the step fails with GitHub's message. Only server errors and rate limits are retried.
 
 ### Create issue
 
-Opens an issue. **Title** is required; **Body**, **Labels** and **Assignees** (usernames) are optional, with labels and assignees separated by commas.
+Opens an issue. **Title** is required; **Body**, **Labels**, and **Assignees** (usernames) are optional, with labels and assignees separated by commas.
 
-Outputs: `number`, `url` and `id`.
+Outputs: `number`, `url`, and `id`.
 
 ### Comment on issue or PR
 
@@ -197,7 +197,7 @@ Outputs: `id` and `url`.
 
 Publishes a release for **Tag**. If the tag doesn't exist yet, GitHub creates it at **Target**, a branch or commit (the default branch if empty). **Name** defaults to the tag. Turn on **Generate release notes** to have GitHub add notes from the pull requests since the last release, or **Save as a draft** or **Pre-release** as needed.
 
-Outputs: `id`, `tag` and `url`.
+Outputs: `id`, `tag`, and `url`.
 
 ### Run Actions workflow
 
@@ -233,7 +233,7 @@ Sends a prompt to a large language model and returns its answer.
 | **Instructions** | Optional. A system prompt that sets how the model should behave. |
 | **Prompt** | What to ask, with placeholders for data, such as `Summarize this ticket: {{ trigger.body.description }}` |
 | **Response** | **Free text**, or **Structured data** |
-| **Structured fields** | For structured data: the fields the model must return. For each, a **Key**, a **Type** (**Text**, **Number**, **Whole number**, **Yes/no** or **List of text**), a **Description** to guide the model, and whether it's **Required**. |
+| **Structured fields** | For structured data: the fields the model must return. For each, a **Key**, a **Type** (**Text**, **Number**, **Whole number**, **Yes/no**, or **List of text**), a **Description** to guide the model, and whether it's **Required**. |
 | **Timeout (s)** | Defaults to 120 |
 
 Outputs:
@@ -259,7 +259,7 @@ Supported providers are Anthropic, OpenAI, Google Gemini, Mistral, Groq, xAI, De
 | **Body** | |
 | **SMTP server** | Optional. An **SMTP server** setting from the workspace's [credentials](workspaces.md#credentials). Leave it empty to send through the organization's [email settings](administration.md#email). |
 
-Outputs: `to` (the addresses it was sent to), `subject` and `message_id`.
+Outputs: `to` (the addresses it was sent to), `subject`, and `message_id`.
 
 ### Send notification
 
@@ -267,7 +267,7 @@ Sends a message to people's [Inbox](people.md#the-inbox) in wag.run.
 
 | Setting | What it does |
 |---|---|
-| **Recipients** | People in the organization |
+| **Recipients** | People with an account |
 | **Title** | |
 | **Message** | |
 | **Link** | Optional. Where opening the item goes. Defaults to this run. |
@@ -277,7 +277,7 @@ Outputs: `recipients` (the user IDs notified) and `count`.
 
 ### Chat message
 
-Posts a message to a Slack, Microsoft Teams, Discord or Google Chat channel, through an incoming webhook.
+Posts a message to a Slack, Microsoft Teams, Discord, or Google Chat channel, through an incoming webhook.
 
 | Setting | What it does |
 |---|---|
@@ -298,4 +298,4 @@ Pauses the run until enough of the chosen approvers approve, or it's rejected. I
 
 Pauses the run until someone fills in a form, then continues with their answers.
 
-Both are covered in [Approvals, tasks and the Inbox](people.md).
+Both are covered in [Approvals, tasks, and the Inbox](people.md).

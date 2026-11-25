@@ -1,6 +1,6 @@
 # Runs
 
-A run is one execution of a workflow, from its trigger to the last step. wag.run records every run, with each step's input, output and error, so you can see exactly what happened.
+A run is one execution of a workflow, from its trigger to the last step. wag.run records every run, with each step's input, output, and error, so you can see exactly what happened.
 
 ## Starting runs
 
@@ -18,13 +18,13 @@ A test run uses the **draft** instead of the published version, so you can try c
    - For other triggers, enter sample data as JSON, in the shape the trigger would receive. For a webhook, that could be `{"body": {"order_id": 1042}}`. The editor says whether the JSON is valid, and **Format** indents it.
 3. Click **Start test run**.
 
-A test run does everything a real run does, **including sending emails, posting messages and calling other services**. It's marked **Test** in the run list.
+A test run does everything a real run does, **including sending emails, posting messages, and calling other services**. It's marked **Test** in the run list.
 
-Webhooks, forms and schedules keep using the published version while you test.
+Webhooks, forms, and schedules keep using the published version while you test.
 
 ## The run list
 
-**Runs** in the sidebar lists every run in the workspace, newest first, with its workflow, status, trigger, start time and duration. Filter it by workflow or by status. The **Runs** button in the editor opens the list filtered to that workflow.
+**Runs** in the sidebar lists every run in the workspace, newest first, with its workflow, status, trigger, start time, and duration. Filter it by workflow or by status. The **Runs** button in the editor opens the list filtered to that workflow.
 
 ## The run page
 
@@ -79,7 +79,7 @@ Any step can fail: a service doesn't answer, an expression has a typo, an approv
 
 ### Retries
 
-**Retries** is how many more times to try the step after it fails. It's 0 by default. **Backoff (s)** is how long to wait before the first retry, 30 seconds by default. Each retry waits twice as long as the one before, so with 3 retries and a 30-second backoff, the retries happen after 30 seconds, 1 minute and 2 minutes.
+**Retries** is how many more times to try the step after it fails. It's 0 by default. **Backoff (s)** is how long to wait before the first retry, 30 seconds by default. Each retry waits twice as long as the one before, so with 3 retries and a 30-second backoff, the retries happen after 30 seconds, 1 minute, and 2 minutes.
 
 Retries suit failures that might go away on their own, like a service that's briefly down. Some failures are never retried because trying again can't help, such as a setting that isn't valid.
 
@@ -113,7 +113,7 @@ An organization admin sets the default under **Organization → Settings → Max
 
 ## How long runs are kept
 
-Run logs are deleted once they're older than the retention period, checked every hour. Completed, failed, cancelled and skipped runs are all removed the same way. Runs still going are never removed. The period is set at three levels, and the most specific one wins:
+Run logs are deleted once they're older than the retention period, checked every hour. Completed, failed, cancelled, and skipped runs are all removed the same way. Runs still going are never removed. The period is set at three levels, and the most specific one wins:
 
 1. **The organization's default**, under **Organization → Settings**. 30 days unless changed, or keep forever.
 2. **The workspace**, under **Settings**, which can use its own period.
