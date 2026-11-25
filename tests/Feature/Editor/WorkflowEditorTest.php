@@ -57,6 +57,17 @@ class WorkflowEditorTest extends TestCase
         $this->actingAs($guest)->get(route('workspaces.workflows.edit', [$workspace, $workflow]))->assertForbidden();
     }
 
+    public function test_viewers_can_move_around_the_canvas_without_unlocking_it(): void
+    {
+        [$workspace, $workflow] = $this->setUpEditor();
+        $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
+
+        $html = $this->editor($workspace, $workflow, $viewer)->html();
+
+        $this->assertStringContainsString('flowCanvas(', $html);
+        $this->assertDoesNotMatchRegularExpression('/interactive(\\\\u0022|&quot;|"):false/', $html);
+    }
+
     public function test_a_workflow_from_another_workspace_is_not_found(): void
     {
         [$workspace, , $user] = $this->setUpEditor();

@@ -1279,7 +1279,6 @@ new class extends Component {
             <x-flow
                 :nodes="$this->canvas['nodes']"
                 :edges="$this->canvas['edges']"
-                :interactive="$this->canEdit"
                 :controls="true"
                 :minimap="true"
                 :fit-view-on-init="true"

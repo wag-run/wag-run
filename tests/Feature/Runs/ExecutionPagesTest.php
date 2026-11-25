@@ -173,6 +173,22 @@ class ExecutionPagesTest extends TestCase
             ->assertDispatched('flow:update', targets: ['edges' => ['e0' => ['animated' => false]]]);
     }
 
+    public function test_the_run_canvas_can_be_moved_around_but_its_nodes_cannot_be_dragged(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
+        $execution = $this->runWorkflow($this->branchingWorkflow($workspace));
+
+        $page = Livewire::actingAs($viewer)->test('pages::executions.show', ['workspace' => $workspace, 'execution' => $execution]);
+
+        $this->assertStringContainsString('flowCanvas(', $page->html());
+        $this->assertDoesNotMatchRegularExpression('/interactive(\\\\u0022|&quot;|"):false/', $page->html());
+
+        foreach ($page->instance()->canvas['nodes'] as $node) {
+            $this->assertFalse($node['draggable']);
+        }
+    }
+
     public function test_the_run_page_and_the_editor_draw_connections_the_same_way(): void
     {
         $workspace = Workspace::factory()->create();
