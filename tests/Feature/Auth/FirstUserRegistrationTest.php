@@ -5,7 +5,9 @@ namespace Tests\Feature\Auth;
 use App\Enums\OrgRole;
 use App\Models\Organization;
 use App\Models\User;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class FirstUserRegistrationTest extends TestCase
@@ -32,6 +34,33 @@ class FirstUserRegistrationTest extends TestCase
         $this->assertSame(['Default'], $organization->workspaces()->pluck('name')->all());
         $this->assertSame($organization->workspaces()->first()->id, $user->current_workspace_id);
         $this->assertDatabaseHas('audit_logs', ['action' => 'workspace.created', 'user_id' => $user->id]);
+    }
+
+    public function test_first_user_opens_the_app_without_confirming_their_email(): void
+    {
+        Notification::fake();
+
+        $this->post(route('register.store'), $this->registration('ada@example.com'));
+
+        $user = User::firstWhere('email', 'ada@example.com');
+
+        $this->assertTrue($user->hasVerifiedEmail());
+        Notification::assertNothingSent();
+        $this->get(route('workspaces.show', $user->accessibleWorkspaces()->sole()))->assertOk();
+    }
+
+    public function test_someone_who_registers_later_must_confirm_their_email(): void
+    {
+        Notification::fake();
+        Organization::factory()->create(['registration_open' => true]);
+
+        $this->post(route('register.store'), $this->registration('member@example.com'));
+
+        $user = User::firstWhere('email', 'member@example.com');
+
+        $this->assertFalse($user->hasVerifiedEmail());
+        Notification::assertSentTo($user, VerifyEmail::class);
+        $this->get(route('dashboard'))->assertRedirect(route('verification.notice'));
     }
 
     public function test_rejects_later_registrations_while_registration_is_by_invitation_only(): void
