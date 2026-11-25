@@ -55,5 +55,11 @@ return [
         'please_confirm_access_to_your' => 'Please confirm access to your account by entering one of your emergency recovery codes.',
         'recovery_code' => 'Recovery code',
     ],
+    'verify_email' => [
+        'email_verification' => 'Email verification',
+        'new_verification_link_has_been' => 'A new verification link has been sent to the email address you provided during registration.',
+        'please_verify_your_email_address' => 'Please verify your email address by clicking on the link we just emailed to you.',
+        'resend_verification_email' => 'Resend verification email',
+    ],
     'otp_code' => 'OTP code',
 ];
