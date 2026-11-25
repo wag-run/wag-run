@@ -21,7 +21,12 @@ use RuntimeException;
  * A call to the REST API under /api/v1, as the person whose personal access
  * token the workspace's API token setting holds. The setting reaches this
  * install unless it names another one, whose address is checked like an
- * HTTP call's. Subclasses add their fields and make one API call.
+ * HTTP call's. When this install redirects to another scheme or port on its
+ * own host, such as from http:// to https:// because APP_URL names the
+ * wrong scheme, the call is made once more there, with the token; any
+ * other redirect fails the step, since the address the call was checked
+ * at is the only one it may connect to. Subclasses add their fields and
+ * make one API call.
  */
 abstract class WagRunAction extends Node
 {
@@ -73,10 +78,18 @@ abstract class WagRunAction extends Node
     {
         try {
             $response = $this->send($this->request($context), $context);
+
+            if ($base = $this->ownRedirect($response, $context)) {
+                $response = $this->send($this->request($context, $base), $context);
+            }
         } catch (ConnectionException $e) {
             return NodeResult::fail(__('nodes.wag_run.could_not_reach', ['app' => config('app.name'), 'message' => $e->getMessage()]));
         } catch (RuntimeException $e) {
             return NodeResult::fail($e->getMessage(), retryable: false);
+        }
+
+        if ($response->redirect()) {
+            return NodeResult::fail(__('nodes.wag_run.redirected', ['app' => config('app.name'), 'status' => $response->status(), 'location' => $response->header('Location')]), retryable: false);
         }
 
         if (! $response->successful()) {
@@ -98,7 +111,7 @@ abstract class WagRunAction extends Node
      *
      * @throws RuntimeException when the setting doesn't exist, or names an address workflows may not call
      */
-    protected function request(NodeContext $context): PendingRequest
+    protected function request(NodeContext $context, ?string $base = null): PendingRequest
     {
         $credential = $context->credential($context->input('credential'));
 
@@ -111,11 +124,9 @@ abstract class WagRunAction extends Node
             ->timeout(30)
             ->withOptions(['allow_redirects' => false]);
 
-        $url = rtrim(trim((string) ($credential->config['url'] ?? '')), '/');
+        $url = $base ?? $this->baseUrl($context);
 
-        if ($url === '') {
-            $url = rtrim((string) config('app.url'), '/');
-        } elseif (! RunChain::isOwnHost((string) parse_url($url, PHP_URL_HOST))) {
+        if (! RunChain::isOwnHost((string) parse_url($url, PHP_URL_HOST))) {
             $target = app(NetworkGuard::class)->check($url, new AddressAllowlist($context->workspace()->internal_allowlist ?? []));
             $ip = str_contains($target['ip'], ':') ? "[{$target['ip']}]" : $target['ip'];
 
@@ -123,6 +134,37 @@ abstract class WagRunAction extends Node
         }
 
         return $request->baseUrl($url.'/api/v1');
+    }
+
+    /**
+     * Where the node's setting points: its address, or this install's.
+     */
+    protected function baseUrl(NodeContext $context): string
+    {
+        $url = rtrim(trim((string) ($context->credential($context->input('credential'))?->config['url'] ?? '')), '/');
+
+        return $url !== '' ? $url : rtrim((string) config('app.url'), '/');
+    }
+
+    /**
+     * The address to call again at, when $response is this install
+     * redirecting to another scheme or port on its own host: the scheme,
+     * host, and port the redirect names, with the path before /api/v1.
+     */
+    protected function ownRedirect(Response $response, NodeContext $context): ?string
+    {
+        $from = parse_url($this->baseUrl($context));
+        $to = parse_url((string) $response->header('Location'));
+        $host = (string) ($from['host'] ?? '');
+
+        if (! $response->redirect() || ! RunChain::isOwnHost($host) || strcasecmp((string) ($to['host'] ?? ''), $host) !== 0
+            || ! in_array(strtolower((string) ($to['scheme'] ?? '')), ['http', 'https'], true)) {
+            return null;
+        }
+
+        $port = isset($to['port']) ? ":{$to['port']}" : '';
+
+        return strtolower($to['scheme'])."://{$host}{$port}".rtrim((string) ($from['path'] ?? ''), '/');
     }
 
     /**

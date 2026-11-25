@@ -138,6 +138,40 @@ class WagRunNodesTest extends TestCase
         $this->assertSame(StepStatus::Complete, $this->runAction('wag_run.list_workspaces', ['credential' => $this->settingId('allowed')], workspace: $allowed)->status);
     }
 
+    public function test_follows_this_installs_redirect_to_https_but_not_to_another_host(): void
+    {
+        config(['app.url' => 'http://wag.test']);
+        Http::fake([
+            'http://wag.test/api/v1/workspaces' => Http::response('', 301, ['Location' => 'https://wag.test/api/v1/workspaces']),
+            'https://wag.test/api/v1/workspaces' => Http::response(['data' => [['slug' => 'ops']]]),
+            'http://wag.test/api/v1/workspaces/ops/workflows' => Http::response('', 302, ['Location' => 'https://evil.example.com/steal']),
+        ]);
+
+        $this->assertSame(['workspaces' => [['slug' => 'ops']], 'count' => 1], $this->runAction('wag_run.list_workspaces')->output);
+        $this->assertSame(
+            [['http://wag.test/api/v1/workspaces', ['Bearer token-api']], ['https://wag.test/api/v1/workspaces', ['Bearer token-api']]],
+            Http::recorded()->map(fn (array $pair) => [$pair[0]->url(), $pair[0]->header('Authorization')])->all(),
+        );
+
+        $this->assertSame(
+            'wag.run answered 302, sending the request on to https://evil.example.com/steal. Put that address in the API token setting, or set APP_URL to it for this install.',
+            $this->runAction('wag_run.list_workflows', ['workspace' => 'ops'])->error['message'],
+        );
+        Http::assertNotSent(fn (Request $request) => str_contains($request->url(), 'evil.example.com'));
+    }
+
+    public function test_another_install_that_redirects_fails_with_where_it_points(): void
+    {
+        $this->token('remote', 'http://wag.example.com');
+        Http::fake(['wag.example.com/api/v1/workspaces' => Http::response('', 301, ['Location' => 'https://wag.example.com/api/v1/workspaces'])]);
+
+        $step = $this->runAction('wag_run.list_workspaces', ['credential' => $this->settingId('remote')]);
+
+        $this->assertSame(StepStatus::Failed, $step->status);
+        $this->assertStringContainsString('sending the request on to https://wag.example.com/api/v1/workspaces', $step->error['message']);
+        Http::assertSentCount(1);
+    }
+
     public function test_refusals_fail_the_step_with_the_apis_message_and_only_server_errors_are_retried(): void
     {
         Http::fake([

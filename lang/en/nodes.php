@@ -467,6 +467,7 @@ return [
         'list_workflows' => 'List workflows',
         'list_workflows_description' => 'Lists the workflows in a workspace, through the :app API.',
         'list_workspaces' => 'List workspaces',
+        'redirected' => ':app answered :status, sending the request on to :location. Put that address in the API token setting, or set APP_URL to it for this install.',
         'list_workspaces_description' => 'Lists the workspaces an API token can see, through the :app API.',
         'token_not_found' => 'The API token setting was not found in this workspace.',
         'unexpected_answer' => ':app did not answer with JSON. Check the address in the API token setting.',
