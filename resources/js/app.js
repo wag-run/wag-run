@@ -311,12 +311,12 @@ window.wagReached = (nodes, edges) => {
  * never reach it. Read by the canvas node template, which redraws as
  * connections are added and removed.
  */
-window.wagWontRun = (id, nodes, edges) => ! window.wagReached(nodes, edges).has(id);
+window.wagHasNoInput = (id, nodes, edges) => ! window.wagReached(nodes, edges).has(id);
 
 /**
  * Keeps the look of the workflow editor's connections in step as they are
  * added and removed: one leaving an "on error" output is red and dashed, and
- * one leaving a node that won't run is dashed.
+ * one leaving a node with no input is dashed.
  */
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('wagEdgeClasses', () => ({
@@ -329,14 +329,14 @@ document.addEventListener('alpine:init', () => {
                 const reached = window.wagReached(canvas.nodes, canvas.edges);
 
                 for (const edge of canvas.edges) {
-                    const classes = (edge.class ?? '').split(' ').filter((name) => name && ! ['wag-edge-error', 'wag-edge-unreached'].includes(name));
+                    const classes = (edge.class ?? '').split(' ').filter((name) => name && ! ['wag-edge-error', 'wag-edge-no-input'].includes(name));
 
                     if (edge.sourceHandle === 'error') {
                         classes.push('wag-edge-error');
                     }
 
                     if (! reached.has(edge.source)) {
-                        classes.push('wag-edge-unreached');
+                        classes.push('wag-edge-no-input');
                     }
 
                     if ((edge.class ?? '') !== classes.join(' ')) {

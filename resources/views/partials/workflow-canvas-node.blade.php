@@ -4,7 +4,7 @@
     adds status and statusLabel. Sticky notes (node.data.isNote) draw as a
     note with no handles. Double-clicking a node dispatches wag-open-node,
     which the editor answers by opening that node's settings. In the editor,
-    a node no trigger leads to is marked as one that won't run.
+    a node no trigger leads to is marked as having no input.
 --}}
 <template x-if="node.data.isNote">
     <div class="wag-note" :class="node.data.custom ? 'wag-note-custom' : 'wag-note-' + node.data.color"
@@ -18,7 +18,7 @@
     </div>
 </template>
 <template x-if="! node.data.isNote">
-<div class="wag-node" x-on:dblclick.stop="$dispatch('wag-open-node', { id: node.id })" :class="{ 'is-trigger': node.data.isTrigger, 'is-unknown': node.data.unknown, 'is-unreached': ! node.data.status && wagWontRun(node.id, nodes, edges), ['run-' + node.data.status]: !! node.data.status }">
+<div class="wag-node" x-on:dblclick.stop="$dispatch('wag-open-node', { id: node.id })" :class="{ 'is-trigger': node.data.isTrigger, 'is-unknown': node.data.unknown, 'is-no-input': ! node.data.status && wagHasNoInput(node.id, nodes, edges), ['run-' + node.data.status]: !! node.data.status }">
     <template x-if="! node.data.isTrigger">
         <div x-flow-handle:target.left="'in'"></div>
     </template>
@@ -31,8 +31,8 @@
         <template x-if="node.data.status">
             <span class="wag-run-status ms-auto" x-text="node.data.statusLabel"></span>
         </template>
-        <template x-if="! node.data.status && wagWontRun(node.id, nodes, edges)">
-            <span class="wag-run-status ms-auto" data-test="wont-run" title="{{ __('workflows.editor.no_trigger_leads_to_this') }}">{{ __('workflows.editor.wont_run') }}</span>
+        <template x-if="! node.data.status && wagHasNoInput(node.id, nodes, edges)">
+            <span class="wag-run-status ms-auto" data-test="no-input" title="{{ __('workflows.editor.no_trigger_leads_to_this') }}">{{ __('workflows.editor.no_input') }}</span>
         </template>
     </div>
     <div class="py-1">

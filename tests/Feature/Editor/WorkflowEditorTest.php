@@ -74,10 +74,10 @@ class WorkflowEditorTest extends TestCase
 
         $this->actingAs($user)->get(route('workspaces.workflows.edit', [$workspace, $workflow]))
             ->assertOk()
-            ->assertSee('wagWontRun(node.id, nodes, edges)', false)
-            ->assertSee('data-test="wont-run"', false)
+            ->assertSee('wagHasNoInput(node.id, nodes, edges)', false)
+            ->assertSee('data-test="no-input"', false)
             ->assertSee('x-data="wagEdgeClasses"', false)
-            ->assertSee('Won\'t run');
+            ->assertSee('No input');
     }
 
     public function test_a_workflow_from_another_workspace_is_not_found(): void

@@ -254,19 +254,19 @@ select:focus[data-flux-control] {
     @apply bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300;
 }
 
-/* A node no trigger leads to, so runs never reach it: dashed and faded, with its "Won't run" pill left at full strength */
-.flow-container .flow-node:has(.wag-node.is-unreached) {
+/* A node no trigger leads to, so runs never reach it: dashed and faded, with its "No input" pill left at full strength */
+.flow-container .flow-node:has(.wag-node.is-no-input) {
     border-style: dashed;
 }
 
-/* A connection leaving a node that won't run: dashed, as nothing travels along it, and faded like the node's own content */
-.flow-container .wag-edge-unreached path {
+/* A connection leaving a node with no input: dashed, as nothing travels along it, and faded like the node's own content */
+.flow-container .wag-edge-no-input path {
     stroke-dasharray: 5 4;
     opacity: 0.5;
 }
 
-.wag-node.is-unreached .wag-node-header > :not(.wag-run-status),
-.wag-node.is-unreached .wag-port {
+.wag-node.is-no-input .wag-node-header > :not(.wag-run-status),
+.wag-node.is-no-input .wag-port {
     @apply opacity-50;
 }
 
