@@ -49,12 +49,9 @@ return [
         'security' => 'Security',
     ],
     'profile' => [
-        'click_here_to_re_send' => 'Click here to re-send the verification email.',
-        'new_verification_link_has_been' => 'A new verification link has been sent to your email address.',
         'profile_settings' => 'Profile settings',
         'profile_updated' => 'Profile updated.',
         'update_your_name_and_email' => 'Update your name and email address',
-        'your_email_address_is_unverified' => 'Your email address is unverified.',
         'title' => 'Profile settings',
     ],
     'security' => [

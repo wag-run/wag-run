@@ -30,7 +30,7 @@ Route::middleware(['guest', 'throttle:30,1'])->prefix('auth/oidc/{provider}')->n
     Route::get('callback', [OidcController::class, 'callback'])->name('callback');
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
     Route::get('integrations/oauth/{type}/callback', [OAuthConnectionController::class, 'callback'])
         ->middleware('throttle:30,1')->name('integrations.oauth.callback');
