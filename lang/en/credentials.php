@@ -68,10 +68,9 @@ return [
         'username_and_password_sent_with' => 'A username and password sent with HTTP Basic authentication.',
     ],
     's3' => [
-        'a_bucket_on_amazon_s3' => 'A bucket on Amazon S3 or an S3-compatible service such as MinIO, Cloudflare R2, Backblaze B2, or Wasabi.',
         'access_key_id' => 'Access key ID',
+        'access_keys_for_amazon_s3' => 'Access keys for Amazon S3 or an S3-compatible service such as MinIO, Cloudflare R2, Backblaze B2, or Wasabi. The bucket is chosen on each Upload to S3 node.',
         'address_style' => 'Address style',
-        'bucket' => 'Bucket',
         'endpoint' => 'Endpoint',
         'endpoint_help' => 'Leave empty for Amazon S3. For other services, their S3 endpoint, such as https://<account>.r2.cloudflarestorage.com or http://minio.internal:9000.',
         'path_style' => 'Path-style (endpoint/bucket/key, usual for MinIO)',

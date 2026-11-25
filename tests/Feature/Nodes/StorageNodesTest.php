@@ -39,7 +39,7 @@ class StorageNodesTest extends TestCase
             public function resolve(string $host): array
             {
                 return match ($host) {
-                    'backups.s3.us-east-1.amazonaws.com' => ['52.216.1.1'],
+                    'backups.s3.us-east-1.amazonaws.com', 'archive.s3.us-east-1.amazonaws.com' => ['52.216.1.1'],
                     'minio.corp.internal' => ['10.20.0.9'],
                     default => parent::resolve($host),
                 };
@@ -75,7 +75,7 @@ class StorageNodesTest extends TestCase
     private function runUpload(Workspace $workspace, array $config, array $input = []): Execution
     {
         return $this->runWorkflow($this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'upload' => ['core.s3_upload', ['credential' => $this->settingId('backups'), ...$config]]],
+            ['start' => 'core.manual_trigger', 'upload' => ['core.s3_upload', ['credential' => $this->settingId('backups'), 'bucket' => 'backups', ...$config]]],
             ['start->upload'],
         ), $workspace), ['values' => $input]);
     }
@@ -107,6 +107,36 @@ class StorageNodesTest extends TestCase
         );
     }
 
+    public function test_one_storage_setting_uploads_to_the_bucket_each_node_names(): void
+    {
+        $workspace = Workspace::factory()->create();
+        Credential::factory()->for($workspace)->s3()->create(['id' => $this->settingId('backups'), 'description' => 'backups']);
+
+        $this->storageAnswers(fn () => new Result([]));
+        $this->runUpload($workspace, ['key' => 'config.xml', 'content' => '<a/>']);
+        $this->storageAnswers(fn () => new Result([]));
+        $execution = $this->runUpload($workspace, ['bucket' => '{{ trigger.values.bucket }}', 'key' => 'config.xml', 'content' => '<a/>'], ['bucket' => 'archive']);
+
+        $this->assertSame(['backups', 'archive'], array_column($this->sent, 'bucket'));
+        $this->assertSame('https://archive.s3.us-east-1.amazonaws.com/config.xml', $this->sent[1]['url']);
+        $this->assertSame('archive', $this->stepFor($execution, 'upload')->output['bucket']);
+    }
+
+    public function test_refuses_a_missing_or_malformed_bucket_name_without_sending_anything(): void
+    {
+        $this->storageAnswers(fn () => new Result([]));
+        $workspace = Workspace::factory()->create();
+        Credential::factory()->for($workspace)->s3()->create(['id' => $this->settingId('backups'), 'description' => 'backups']);
+
+        $empty = $this->runUpload($workspace, ['bucket' => '{{ trigger.values.bucket }}', 'key' => 'config.xml', 'content' => '<a/>']);
+        $malformed = $this->runUpload($workspace, ['bucket' => 'evil.example/x', 'key' => 'config.xml', 'content' => '<a/>']);
+
+        $this->assertSame('The bucket is empty.', $empty->error['message']);
+        $this->assertSame('"evil.example/x" is not a bucket name. Use 3 to 63 lowercase letters, numbers, dots, and hyphens.', $malformed->error['message']);
+        $this->assertSame(1, $this->stepFor($malformed, 'upload')->attempt);
+        $this->assertSame([], $this->sent);
+    }
+
     public function test_sends_the_chosen_storage_class_for_text_and_files(): void
     {
         Storage::fake('workflow_files');
@@ -119,7 +149,7 @@ class StorageNodesTest extends TestCase
         $this->runWorkflow($this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger',
                 'make' => ['core.create_file', ['name' => 'config.tar', 'content' => 'tar bytes']],
-                'upload' => ['core.s3_upload', ['credential' => $this->settingId('backups'), 'key' => 'config.tar', 'content' => '{{ nodes.make.output.file }}', 'storage_class' => 'DEEP_ARCHIVE']]],
+                'upload' => ['core.s3_upload', ['credential' => $this->settingId('backups'), 'bucket' => 'backups', 'key' => 'config.tar', 'content' => '{{ nodes.make.output.file }}', 'storage_class' => 'DEEP_ARCHIVE']]],
             ['start->make', 'make->upload'],
         ), $workspace));
 

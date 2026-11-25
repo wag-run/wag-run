@@ -154,7 +154,7 @@ class FilesTest extends TestCase
         $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger',
                 'make' => ['core.create_file', ['name' => 'pixel.png', 'content' => base64_encode(self::PNG), 'encoding' => 'base64']],
-                'upload' => ['core.s3_upload', ['credential' => $this->settingId('media'), 'key' => 'images/{{ nodes.make.output.file.name }}', 'content' => '{{ nodes.make.output.file }}']]],
+                'upload' => ['core.s3_upload', ['credential' => $this->settingId('media'), 'bucket' => 'backups', 'key' => 'images/{{ nodes.make.output.file.name }}', 'content' => '{{ nodes.make.output.file }}']]],
             ['start->make', 'make->upload'],
         ), $workspace));
 

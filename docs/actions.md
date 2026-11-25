@@ -163,7 +163,8 @@ Writes a file to a bucket on Amazon S3 or an S3-compatible service, such as MinI
 
 | Setting | What it does |
 |---|---|
-| **Storage** | An **S3-compatible storage** setting from the workspace's [credentials](workspaces.md#credentials). It holds the bucket, region, endpoint, and access keys. |
+| **Storage** | An **S3-compatible storage** setting from the workspace's [credentials](workspaces.md#credentials). It holds the region, endpoint, and access keys, and works for every bucket those keys can write to. |
+| **Bucket** | The bucket's name, such as `backups` |
 | **Key** | The file's path in the bucket, such as `backups/config-{{ date(now(), 'Y-m-d') }}.xml` |
 | **Content** | Text, such as `{{ nodes.fetch.output.body }}`, or a file from an earlier node, such as `{{ nodes.fetch.output.file }}` from an HTTP call that saves its response as a file. Files are uploaded byte for byte. A list or object is saved as JSON. |
 | **Content type** | Optional, such as `application/xml`. Left empty, a file keeps its own type, and text gets one guessed from the key's extension. |
@@ -173,7 +174,7 @@ Outputs: `bucket`, `key`, `url` (the file's address), and `size` (in bytes).
 
 Like HTTP calls, an upload can't reach a storage endpoint on a private, loopback, or link-local address, such as a MinIO server at `10.0.0.5`, unless a workspace admin lists it in the [internal-address allowlist](workspaces.md#workspace-settings).
 
-If the storage service refuses the upload, the step fails with its status and message. Server errors, rate limits, and connection problems are retried; other refusals, such as wrong keys or a missing bucket, are not.
+If the storage service refuses the upload, the step fails with its status and message. Server errors, rate limits, and connection problems are retried; other refusals, such as wrong keys or a missing bucket, are not. A bucket name that isn't 3 to 63 lowercase letters, numbers, dots, and hyphens fails the step before anything is sent.
 
 ## GitHub
 

@@ -326,7 +326,10 @@ return [
     ],
     's3_upload' => [
         'add_one_under_credentials' => 'Add one under the workspace\'s Credentials, as S3-compatible storage.',
+        'bucket' => 'Bucket',
         'bucket_default' => 'Bucket default',
+        'bucket_help' => 'The name of a bucket the storage\'s access keys can write to, such as backups.',
+        'bucket_is_empty' => 'The bucket is empty.',
         'content' => 'Content',
         'content_help' => 'Text, such as {{ nodes.fetch.output.body }}, or a file, such as {{ nodes.fetch.output.file }}, whose bytes are uploaded as they are. A list or object is saved as JSON.',
         'content_type' => 'Content type',
@@ -335,6 +338,7 @@ return [
         'key' => 'Key',
         'key_help' => 'The file\'s path in the bucket, such as backups/config-{{ date(now(), \'Y-m-d\') }}.xml. A file already there is replaced.',
         'key_is_empty' => 'The key is empty.',
+        'not_a_bucket_name' => '":bucket" is not a bucket name. Use 3 to 63 lowercase letters, numbers, dots, and hyphens.',
         'size_in_bytes' => 'Size in bytes',
         'storage' => 'Storage',
         'storage_answered' => 'The storage service answered :status :code: :message',

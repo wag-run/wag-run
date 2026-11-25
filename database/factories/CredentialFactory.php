@@ -71,7 +71,6 @@ class CredentialFactory extends Factory
                 'access_key_id' => 'AKIAEXAMPLE',
                 'secret_access_key' => 'secret-'.fake()->sha1(),
                 'region' => 'us-east-1',
-                'bucket' => 'backups',
                 'endpoint' => '',
                 'path_style' => 'no',
                 ...$overrides,
