@@ -65,7 +65,7 @@ class McpServerTest extends TestCase
 
         $server->tool(ListWorkspaces::class)->assertOk()->assertSee($this->workspace->slug);
         $server->tool(ListWorkflows::class, ['workspace' => $this->workspace->slug])->assertOk()->assertSee([$this->workflow->id, '"name":"order"']);
-        $server->tool(GetWorkflow::class, ['workspace' => $this->workspace->slug, 'workflow' => $this->workflow->id])->assertOk()->assertSee('"published_version":1');
+        $server->tool(GetWorkflow::class, ['workspace' => $this->workspace->slug, 'workflow' => $this->workflow->id])->assertOk()->assertSee(['"published_version":1', '"definition":{']);
 
         $server->tool(StartRun::class, ['workspace' => $this->workspace->slug, 'workflow' => $this->workflow->id, 'input' => ['order' => 7]])
             ->assertOk()->assertSee(['"status":"waiting"', '"trigger_type":"api"']);

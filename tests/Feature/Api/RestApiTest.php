@@ -71,6 +71,19 @@ class RestApiTest extends TestCase
             ->assertJsonPath('data.0.inputs', [['name' => 'order', 'label' => 'Order', 'type' => 'number', 'required' => true, 'options' => null]]);
     }
 
+    public function test_a_workflow_comes_with_its_definition_and_a_list_only_when_asked(): void
+    {
+        $this->actingAsMember(WorkspaceRole::Viewer, ['workflows:read']);
+        $this->workflow->update(['description' => 'Waits for an order']);
+
+        $definition = $this->getJson($this->url("workflows/{$this->workflow->id}"))->assertOk()->json('data.definition');
+
+        $this->assertSame(['wag.run/workflow', $this->workflow->name, 'Waits for an order'], [$definition['format'], $definition['name'], $definition['description']]);
+        $this->assertSame(['start', 'wait'], array_column($definition['graph']['nodes'], 'id'));
+        $this->getJson($this->url('workflows'))->assertOk()->assertJsonMissingPath('data.0.definition');
+        $this->getJson($this->url('workflows?include=definition'))->assertOk()->assertJsonPath('data.0.definition', $definition);
+    }
+
     public function test_starts_a_run_with_validated_input_and_shows_its_steps(): void
     {
         $user = $this->actingAsMember();

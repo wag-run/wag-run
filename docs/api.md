@@ -24,7 +24,7 @@ The assistant gets these tools:
 |---|---|
 | `list-workspaces` | The workspaces you belong to |
 | `list-workflows` | A workspace's workflows, with the inputs each one takes |
-| `get-workflow` | One workflow and its inputs |
+| `get-workflow` | One workflow, its inputs, and its definition |
 | `start-run` | Start a run of a workflow's published version |
 | `list-runs` | A workspace's runs, newest first, optionally for one workflow or one status |
 | `get-run` | One run with its input, output, error, and every step |
@@ -60,11 +60,22 @@ Every path below starts with `/api/v1`. A workspace is named by its slug, the pa
 |---|---|---|
 | `GET /workspaces` | List your workspaces | `workflows:read` |
 | `GET /workspaces/{workspace}/workflows` | List a workspace's workflows | `workflows:read` |
-| `GET /workspaces/{workspace}/workflows/{id}` | Show a workflow and its inputs | `workflows:read` |
+| `GET /workspaces/{workspace}/workflows/{id}` | Show a workflow, its inputs, and its definition | `workflows:read` |
 | `POST /workspaces/{workspace}/workflows/{id}/runs` | Start a run | `runs:write` |
 | `GET /workspaces/{workspace}/runs` | List runs, newest first | `runs:read` |
 | `GET /workspaces/{workspace}/runs/{id}` | Show a run and its steps | `runs:read` |
 | `POST /workspaces/{workspace}/runs/{id}/cancel` | Cancel a run in progress | `runs:write` |
+
+### Workflow definitions
+
+A workflow's `definition` is its draft: its nodes, connections, and settings, in the format workflows [export and import](editor.md#export-and-import) in. It never holds secret or credential values. Showing one workflow always includes it. Listing workflows leaves it out unless you add `?include=definition`:
+
+```bash
+curl "https://wag.example.com/api/v1/workspaces/ops/workflows?include=definition" \
+  -H "Authorization: Bearer $WAG_TOKEN"
+```
+
+A workflow can call these endpoints itself with the [wag.run nodes](actions.md#wagrun), such as to back every workflow up.
 
 ### Starting a run
 
