@@ -282,7 +282,7 @@ select:focus[data-flux-control] {
 }
 
 .flow-container .wag-edge-error path {
-    stroke: var(--color-red-400);
+    stroke: var(--color-red-500);
     stroke-dasharray: 5 4;
 }
 
