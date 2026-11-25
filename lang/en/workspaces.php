@@ -3,7 +3,7 @@
 return [
     'audit' => [
         'all_actions' => 'All actions',
-        'changes_to_this_workspace_s' => 'Changes to this workspace\'s workflows, secrets, credentials and membership, and every secret reveal.',
+        'changes_to_this_workspace_s' => 'Changes to this workspace\'s workflows, secrets, credentials, and membership, and every secret reveal.',
         'every_audited_change_in_the' => 'Every audited change in the organization, across all workspaces.',
         'invitations' => 'Invitations',
         'membership' => 'Membership',
@@ -58,9 +58,9 @@ return [
     'settings' => [
         'execution_log_retention' => 'Execution log retention',
         'how_long_execution_logs_are' => 'How long execution logs are kept, failed runs included. A workflow can override this.',
-        'http_call_nodes_cannot_reach' => 'HTTP call nodes cannot reach private, loopback or link-local addresses unless they are listed here. One entry per line: a hostname, a wildcard like *.corp.internal, an IP address, or a CIDR range like 10.0.0.0/8.',
+        'http_call_nodes_cannot_reach' => 'HTTP call nodes cannot reach private, loopback, or link-local addresses unless they are listed here. One entry per line: a hostname, a wildcard like *.corp.internal, an IP address, or a CIDR range like 10.0.0.0/8.',
         'internal_address_allowlist' => 'Internal-address allowlist',
-        'not_a_valid_host_ip' => 'Not a valid host, IP address or CIDR range: :entries',
+        'not_a_valid_host_ip' => 'Not a valid host, IP address, or CIDR range: :entries',
         'use_a_workspace_specific_retention' => 'Use a workspace-specific retention period',
         'using_the_organization_default_days' => 'Using the organization default: :days days.',
         'using_the_organization_default_keep' => 'Using the organization default: keep forever.',

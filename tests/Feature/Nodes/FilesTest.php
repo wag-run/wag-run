@@ -217,7 +217,7 @@ class FilesTest extends TestCase
         AnonymousAgent::assertPrompted(fn (AgentPrompt $prompt) => $prompt->attachments->count() === 1);
 
         $refused = $ask('archive.zip', base64_encode('PK...'));
-        $this->assertSame('"archive.zip" is application/zip; an LLM call can read images, PDFs and text files.', $refused->error['message']);
+        $this->assertSame('"archive.zip" is application/zip; an LLM call can read images, PDFs, and text files.', $refused->error['message']);
     }
 
     public function test_a_form_upload_becomes_a_file_of_the_run_it_starts(): void

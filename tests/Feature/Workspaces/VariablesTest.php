@@ -53,7 +53,7 @@ class VariablesTest extends TestCase
             ->test('pages::workspaces.variables', ['workspace' => $workspace])
             ->set('key', '1st-key')
             ->call('save')
-            ->assertHasErrors(['key' => 'Use letters, numbers and underscores, starting with a letter or underscore.']);
+            ->assertHasErrors(['key' => 'Use letters, numbers, and underscores, starting with a letter or underscore.']);
     }
 
     public function test_keys_are_unique_per_workspace_only(): void

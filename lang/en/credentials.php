@@ -20,7 +20,7 @@ return [
         'description' => 'A GitHub personal access token. The GitHub nodes act as the person who made it.',
         'label' => 'GitHub personal access token',
         'token' => 'Token',
-        'token_help' => 'A fine-grained token with read and write access to Contents, Issues, Actions and Webhooks, or a classic token with the repo and admin:repo_hook scopes.',
+        'token_help' => 'A fine-grained token with read and write access to Contents, Issues, Actions, and Webhooks, or a classic token with the repo and admin:repo_hook scopes.',
     ],
     'google' => [
         'description' => 'A Google account, connected through OAuth, for the Google Sheets nodes and HTTP calls to Google APIs.',
@@ -68,7 +68,7 @@ return [
         'username_and_password_sent_with' => 'A username and password sent with HTTP Basic authentication.',
     ],
     's3' => [
-        'a_bucket_on_amazon_s3' => 'A bucket on Amazon S3 or an S3-compatible service such as MinIO, Cloudflare R2, Backblaze B2 or Wasabi.',
+        'a_bucket_on_amazon_s3' => 'A bucket on Amazon S3 or an S3-compatible service such as MinIO, Cloudflare R2, Backblaze B2, or Wasabi.',
         'access_key_id' => 'Access key ID',
         'address_style' => 'Address style',
         'bucket' => 'Bucket',

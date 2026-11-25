@@ -5,7 +5,7 @@ return [
     'rollback_to_version_number' => 'Rollback to version :number',
     'that_version_belongs_to_another' => 'That version belongs to another workflow.',
     'edit' => [
-        'a_test_run_uses_the_draft' => 'A test run uses the draft without publishing it. It does everything a real run does, including sending emails and calling other services. Webhooks, forms and schedules keep using the published version.',
+        'a_test_run_uses_the_draft' => 'A test run uses the draft without publishing it. It does everything a real run does, including sending emails and calling other services. Webhooks, forms, and schedules keep using the published version.',
         'add_sticky_note' => 'Add sticky note',
         'all_nodes' => 'All nodes',
         'back_to_workflows' => 'Back to workflows',
@@ -132,7 +132,7 @@ return [
         'loop_name' => 'Loop: :name',
         'name_has_no_output_named' => ':name has no output named ":port".',
         'node_cannot_connect_to_itself' => 'A node cannot connect to itself.',
-        'node_id_id_must_start' => 'Node id [:id] must start with a letter or underscore and use only letters, numbers and underscores, so templates can reference it.',
+        'node_id_id_must_start' => 'Node id [:id] must start with a letter or underscore and use only letters, numbers, and underscores, so templates can reference it.',
         'node_name_has_an_unknown' => 'Node ":name" has an unknown type [:type].',
         'node_name_has_no_error' => 'Node ":name" has no error output.',
         'node_name_has_no_output' => 'Node ":name" has no output named ":port".',

@@ -365,7 +365,7 @@ class WorkflowEditorTest extends TestCase
         ));
 
         $this->editor($workspace, $workflow, $user)->call('publish')->assertSet('publishErrors', [
-            'Node "tick": Not a valid cron expression. Use five parts: minute, hour, day of the month, month and day of the week.',
+            'Node "tick": Not a valid cron expression. Use five parts: minute, hour, day of the month, month, and day of the week.',
             'Node "tick": Mars/Olympus is not a time zone this server knows, such as Europe/London or America/New_York.',
         ]);
         $this->assertNull($workflow->refresh()->published_version_id);

@@ -89,7 +89,7 @@ return [
     'triggers' => 'Triggers',
     'two_factor_authentication' => 'Two-factor authentication',
     'type' => 'Type',
-    'use_letters_numbers_and_underscores' => 'Use letters, numbers and underscores, starting with a letter or underscore.',
+    'use_letters_numbers_and_underscores' => 'Use letters, numbers, and underscores, starting with a letter or underscore.',
     'users' => 'Users',
     'value' => 'Value',
     'variables' => 'Variables',

@@ -21,7 +21,7 @@ return [
         'no_connected_apps' => 'No apps connected yet.',
         'no_tokens_yet' => 'No tokens yet.',
         'revoke_token' => 'Revoke token?',
-        'subheading' => 'Start and inspect runs from scripts, other apps and AI assistants',
+        'subheading' => 'Start and inspect runs from scripts, other apps, and AI assistants',
         'the_app_loses_access' => 'The app loses access right away. It can connect again only if you approve it again.',
         'title' => 'API tokens',
         'token_created' => 'Token created',

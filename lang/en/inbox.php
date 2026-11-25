@@ -2,7 +2,7 @@
 
 return [
     'only_the_assignee_can_respond' => 'Only the assignee can respond.',
-    'this_has_already_been_answered' => 'This has already been answered, expired or was withdrawn.',
+    'this_has_already_been_answered' => 'This has already been answered, expired, or was withdrawn.',
     'this_is_not_a_type' => 'This is not a :type.',
     'index' => [
         'action_needed' => 'Action needed',

@@ -61,7 +61,7 @@ return [
         'merge' => 'Combines two lists or objects',
         'keys' => 'An object\'s keys',
         'values' => 'An object\'s values',
-        'empty' => 'True for empty text, lists and nothing',
+        'empty' => 'True for empty text, lists, and nothing',
         'default' => 'The fallback when the value is empty',
         'now' => 'The current time, as ISO 8601',
         'date' => 'Formats a date or timestamp. With no value, the current time.',

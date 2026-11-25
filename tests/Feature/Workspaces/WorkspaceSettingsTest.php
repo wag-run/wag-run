@@ -43,7 +43,7 @@ class WorkspaceSettingsTest extends TestCase
             ->set('allowlist', "10.0.0.0/8\nhttp://bad")
             ->call('save');
 
-        $this->assertSame('Not a valid host, IP address or CIDR range: http://bad', $page->errors()->first('allowlist'));
+        $this->assertSame('Not a valid host, IP address, or CIDR range: http://bad', $page->errors()->first('allowlist'));
 
         $this->assertSame(['10.0.0.1'], $workspace->fresh()->internal_allowlist);
     }
