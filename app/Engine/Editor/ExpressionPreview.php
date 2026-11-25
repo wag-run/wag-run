@@ -86,6 +86,7 @@ class ExpressionPreview
                 'id' => $execution?->id,
                 'workflow' => $workflow->name,
                 'trigger_type' => $execution?->trigger_type,
+                'trigger' => $execution?->triggerDetails(),
                 'started_at' => $execution?->started_at?->toIso8601String(),
             ],
         ]), $execution];

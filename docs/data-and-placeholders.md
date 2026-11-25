@@ -38,6 +38,7 @@ While such a field has focus, a **Preview** below it shows what the field would 
 | `vars.<key>` | A workspace [variable](workspaces.md#variables) |
 | `secrets.<key>` | A workspace [secret](workspaces.md#secrets) |
 | `execution.id`, `execution.workflow`, `execution.trigger_type`, `execution.started_at` | About the run itself |
+| `execution.trigger.id`, `execution.trigger.type`, `execution.trigger.config` | The trigger that started the run: its ID, its node type (such as `core.form_trigger` or `core.schedule_trigger`), and its settings as the run's version has them, such as `execution.trigger.config.title` for a form. Useful when a workflow has more than one trigger. Secret settings hold the secret's name, never its value. |
 | `item`, `loop.index`, `loop.count` | Inside a [For loop](actions.md#for-loop): the current item, its position from 0, and the number of items |
 | `error.message`, `error.attempt` | On a node reached through an **on error** connection: what went wrong, and on which attempt |
 

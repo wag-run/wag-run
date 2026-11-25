@@ -66,6 +66,24 @@ class Execution extends Model
         return substr(str_replace('-', '', $id), -8);
     }
 
+    /**
+     * The trigger node that started the run, as the run's version has it:
+     * its id, its node type (such as core.form_trigger), and its settings.
+     *
+     * @return array{id: string|null, type: string|null, config: array<string, mixed>}
+     */
+    public function triggerDetails(): array
+    {
+        $graph = $this->version->toGraph();
+        $node = $this->trigger_node_id !== null && $graph->has($this->trigger_node_id) ? $graph->node($this->trigger_node_id) : null;
+
+        return [
+            'id' => $this->trigger_node_id,
+            'type' => $node?->type,
+            'config' => $node->config ?? [],
+        ];
+    }
+
     public function isInProgress(): bool
     {
         return in_array($this->status, ExecutionStatus::inProgress(), true);

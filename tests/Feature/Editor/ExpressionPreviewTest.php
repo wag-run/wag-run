@@ -88,9 +88,9 @@ class ExpressionPreviewTest extends TestCase
         )]);
         $editor = $this->editorFor($workflow, 'added');
 
-        $preview = $this->preview($editor, '{{ trigger.name }} {{ nodes.second.output.value }}');
+        $preview = $this->preview($editor, '{{ trigger.name }} {{ nodes.second.output.value }} {{ execution.trigger.type }}');
 
-        $this->assertSame('Ada x', $preview['value']);
+        $this->assertSame('Ada x test.start', $preview['value']);
     }
 
     public function test_secrets_are_masked(): void

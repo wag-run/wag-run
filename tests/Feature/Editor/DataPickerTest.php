@@ -41,6 +41,8 @@ class DataPickerTest extends TestCase
         $this->assertSame(['nodes.fetch.output.status', 'nodes.fetch.output.ok', 'nodes.fetch.output.headers', 'nodes.fetch.output.body', 'nodes.fetch.output.file', 'nodes.fetch.output.file.name', 'nodes.fetch.output.file.mime', 'nodes.fetch.output.file.size'], $paths['Fetch order']);
         $this->assertArrayNotHasKey('other', $paths, 'parallel paths are not offered');
         $this->assertContains('execution.id', $paths['Execution']);
+        $this->assertContains('execution.trigger.type', $paths['Execution']);
+        $this->assertContains('execution.trigger.config', $paths['Execution']);
     }
 
     public function test_leaves_out_a_node_no_trigger_leads_to_until_it_is_connected(): void

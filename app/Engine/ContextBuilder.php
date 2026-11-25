@@ -14,7 +14,9 @@ use App\Models\ExecutionStep;
  *     nodes.<id>.output  the latest output of that node visible from this step
  *     vars.<key>         workspace variables
  *     secrets.<key>      workspace secrets (in memory only; masked in logs)
- *     execution          id, workflow, trigger type, started_at
+ *     execution          id, workflow, trigger type, started_at, and
+ *                        trigger: the id, node type, and settings of the
+ *                        trigger node that started the run
  *     item, loop         the current For loop item, index and count
  *     error              for steps reached through an error output
  */
@@ -36,6 +38,7 @@ class ContextBuilder
                 'id' => $execution->id,
                 'workflow' => $execution->workflow->name,
                 'trigger_type' => $execution->trigger_type,
+                'trigger' => $execution->triggerDetails(),
                 'started_at' => $execution->started_at?->toIso8601String(),
             ],
         ];

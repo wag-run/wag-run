@@ -109,6 +109,9 @@ class DataPicker
             ['label' => __('common.execution_id'), 'path' => 'execution.id', 'type' => 'number'],
             ['label' => __('workflows.editor.workflow_name'), 'path' => 'execution.workflow', 'type' => 'string'],
             ['label' => __('workflows.editor.started_at'), 'path' => 'execution.started_at', 'type' => 'string'],
+            ['label' => __('workflows.editor.trigger_node_id'), 'path' => 'execution.trigger.id', 'type' => 'string'],
+            ['label' => __('workflows.editor.trigger_node_type'), 'path' => 'execution.trigger.type', 'type' => 'string'],
+            ['label' => __('workflows.editor.trigger_settings'), 'path' => 'execution.trigger.config', 'type' => 'object'],
         ]];
 
         return $groups;

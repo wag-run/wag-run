@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Engine;
 
+use App\Engine\Engine;
 use App\Enums\ExecutionStatus;
 use App\Enums\StepStatus;
 use App\Services\Workflows;
@@ -37,6 +38,25 @@ class ExecutionFlowTest extends TestCase
         $this->assertSame($this->stepFor($execution, 'first')->id, $this->stepFor($execution, 'second')->previous_step_id);
         $this->assertSame(['second'], array_keys($execution->output));
         $this->assertNotNull($execution->finished_at);
+    }
+
+    public function test_steps_can_read_the_id_type_and_settings_of_the_trigger_that_started_the_run(): void
+    {
+        $workflow = $this->publishedWorkflow($this->graph(
+            [
+                'manual' => 'core.manual_trigger',
+                'form' => ['core.form_trigger', ['title' => 'New hire', 'fields' => [['name' => 'who', 'label' => 'Who', 'type' => 'text']]]],
+                'say' => ['core.compose', ['template' => '{{ execution.trigger.id }} {{ execution.trigger.type }} {{ execution.trigger.config.title }}']],
+            ],
+            ['manual->say', 'form->say'],
+        ));
+
+        $fromForm = $this->app->make(Engine::class)->start($workflow, ['values' => ['who' => 'Ada']], triggerType: 'form', triggerNodeId: 'form');
+        $fromManual = $this->runWorkflow($workflow);
+
+        $this->assertSame('form core.form_trigger New hire', $this->stepFor($fromForm, 'say')->output['value']);
+        $this->assertSame('manual core.manual_trigger ', $this->stepFor($fromManual, 'say')->output['value']);
+        $this->assertSame(['values' => ['who' => 'Ada']], $this->stepFor($fromForm, 'form')->output, 'the trigger output stays what came in');
     }
 
     public function test_paths_not_taken_have_no_step_rows(): void
