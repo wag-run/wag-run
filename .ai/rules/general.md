@@ -14,8 +14,8 @@ This is an open source project (AGPL-3.0). For new or changed user-facing featur
 ## Always use the Oxford comma
 Strictly enforce the Oxford (serial) comma in docs and in UI text strings: write "nodes, triggers, and credentials", never "nodes, triggers and credentials". Fix any list of three or more items that lacks it in text you touch.
 
-## Keep "organizations" out of the docs
-Organizations exist for the forthcoming SaaS hosted version and are not really intended for self-hosters. Minimise any reference to the organization ("org") level in `README.md`, the self-hosting docs, and any other docs; describe features from a single self-hosted install's point of view instead.
+## Limit mentions of "organizations" in the docs
+Organizations exist primarily for the forthcoming SaaS hosted version and are not intended for use by self-hosters (at most would satisfy a curiosity of how wag.run is built). Minimise references to the organization construct in `README.md`, the self-hosting docs, and any other docs; describe features from a single self-hosted user's point of view instead. You can and should refer to "organizations" when referring to the settings applicable on those screens.
 
 ## Check `.docs/` for intent and direction
 The `.docs/` folder holds the developers' working notes: the PRD (`Workflow Builder PRD.md`), the open items list (`Open Items.md`), and other helpful background. It is gitignored, so it may be missing in a fresh clone; if so, continue without it. Read the relevant files there before making a big architectural change, when you are stuck and need guidance, or when you need to know what the developers intended. This is distinct from `docs/`, which is the published user documentation.
