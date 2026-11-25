@@ -17,7 +17,7 @@ Fields that accept placeholders have an **Insert data** button. It lists everyth
 - **Variables** and **Secrets** of the workspace.
 - **Execution:** the run's ID, workflow name, trigger type, and start time.
 
-Pick a value to insert its placeholder at the cursor. If the cursor is already inside a placeholder, such as between the parentheses of `{{ upper() }}`, the value goes in without braces, as part of that expression. The picker only lists nodes that come before this one on a path to it, because those are the only ones whose output can exist when it runs.
+Pick a value to insert its placeholder at the cursor. If the cursor is already inside a placeholder, such as between the parentheses of `{{ upper() }}`, the value goes in without braces, as part of that expression. The picker only lists nodes that come before this one on a path to it, because those are the only ones whose output can exist when it runs. A node marked **Won't run**, because no trigger leads to it, isn't listed either.
 
 Below the data, **Functions** lists the [helper functions](#helper-functions) by category, each with how it's called and what it does. Picking one inserts the call with the cursor between its parentheses; text you had selected becomes its argument.
 

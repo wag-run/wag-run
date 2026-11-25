@@ -43,6 +43,17 @@ class DataPickerTest extends TestCase
         $this->assertContains('execution.id', $paths['Execution']);
     }
 
+    public function test_leaves_out_a_node_no_trigger_leads_to_until_it_is_connected(): void
+    {
+        $nodes = ['start' => 'core.manual_trigger', 'fetch' => 'core.http_request', 'bucket' => 'core.compose', 'upload' => 'core.compose'];
+        $parked = WorkflowGraph::fromArray($this->graph($nodes, ['start->fetch', 'fetch->upload', 'bucket->upload']));
+        $connected = WorkflowGraph::fromArray($this->graph($nodes, ['start->fetch', 'fetch->upload', 'bucket->upload', 'start->bucket']));
+
+        $this->assertArrayNotHasKey('bucket', $this->paths($parked, 'upload'));
+        $this->assertArrayHasKey('fetch', $this->paths($parked, 'upload'));
+        $this->assertSame(['nodes.bucket.output.value'], $this->paths($connected, 'upload')['bucket']);
+    }
+
     public function test_offers_the_loop_item_inside_a_loop_and_hides_loop_body_outputs_after_it(): void
     {
         $graph = WorkflowGraph::fromArray($this->graph(

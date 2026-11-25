@@ -11,7 +11,8 @@ use App\Models\Workspace;
 
 /**
  * Lists the values a node can reference: its trigger's outputs, outputs of
- * every node that runs before it, the current loop item, the error it was
+ * every node that runs before it (one no trigger leads to never runs, so it
+ * is left out), the current loop item, the error it was
  * reached from, and the workspace's variables and secrets. Built from each
  * node's declared outputs, so custom nodes appear the same way.
  */
@@ -40,6 +41,7 @@ class DataPicker
         }
 
         $ancestors = $graph->ancestorsOf($nodeId);
+        $reached = $this->reachedFromTriggers($graph);
         $loopBodies = $this->loopBodies($graph);
         $groups = [];
 
@@ -60,7 +62,7 @@ class DataPicker
                 continue;
             }
 
-            if ($this->hiddenByLoop($node->id, $nodeId, $loopBodies)) {
+            if (! isset($reached[$node->id]) || $this->hiddenByLoop($node->id, $nodeId, $loopBodies)) {
                 continue;
             }
 
@@ -139,6 +141,24 @@ class DataPicker
         }
 
         return $items;
+    }
+
+    /**
+     * Every node a run can get to: the ones some trigger leads to.
+     *
+     * @return array<string, true>
+     */
+    protected function reachedFromTriggers(WorkflowGraph $graph): array
+    {
+        $reached = [];
+
+        foreach ($graph->nodes as $node) {
+            if ($this->registry->has($node->type) && $this->registry->make($node->type)->kind() === NodeKind::Trigger) {
+                $reached += $graph->reachableFrom($node->id);
+            }
+        }
+
+        return $reached;
     }
 
     /**
