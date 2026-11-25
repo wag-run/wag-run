@@ -1311,6 +1311,8 @@ new class extends Component {
                     @include('partials.workflow-canvas-node')
                 </x-slot:node>
 
+                <div x-data="wagWontRunEdges" class="hidden" data-test="wont-run-edges"></div>
+
                 @if ($this->canEdit)
                     <x-flow-context-menu scope="node" class="wag-menu" x-on:pointerdown.stop x-on:mousedown.stop>
                         <button type="button" class="wag-menu-item" data-test="node-menu-copy"

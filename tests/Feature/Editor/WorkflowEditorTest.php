@@ -76,6 +76,7 @@ class WorkflowEditorTest extends TestCase
             ->assertOk()
             ->assertSee('wagWontRun(node.id, nodes, edges)', false)
             ->assertSee('data-test="wont-run"', false)
+            ->assertSee('x-data="wagWontRunEdges"', false)
             ->assertSee('Won\'t run');
     }
 

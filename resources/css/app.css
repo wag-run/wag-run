@@ -259,6 +259,11 @@ select:focus[data-flux-control] {
     border-style: dashed;
 }
 
+/* A connection leaving a node that won't run: dashed, as nothing travels along it */
+.flow-container .wag-edge-unreached path {
+    stroke-dasharray: 5 4;
+}
+
 .wag-node.is-unreached .wag-node-header > :not(.wag-run-status),
 .wag-node.is-unreached .wag-port {
     @apply opacity-50;

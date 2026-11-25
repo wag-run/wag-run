@@ -285,11 +285,10 @@ const expressionField = {
 };
 
 /**
- * Whether no trigger leads to a node on the workflow canvas, so a run can
- * never reach it. Read by the canvas node template, which redraws as
- * connections are added and removed.
+ * The ids of the nodes on the workflow canvas that a run can get to: the
+ * triggers, and every node some trigger leads to.
  */
-window.wagWontRun = (id, nodes, edges) => {
+window.wagReached = (nodes, edges) => {
     const reached = new Set(nodes.filter((node) => node.data?.isTrigger).map((node) => node.id));
     const queue = [...reached];
 
@@ -304,8 +303,51 @@ window.wagWontRun = (id, nodes, edges) => {
         }
     }
 
-    return ! reached.has(id);
+    return reached;
 };
+
+/**
+ * Whether no trigger leads to a node on the workflow canvas, so a run can
+ * never reach it. Read by the canvas node template, which redraws as
+ * connections are added and removed.
+ */
+window.wagWontRun = (id, nodes, edges) => ! window.wagReached(nodes, edges).has(id);
+
+/**
+ * Draws the connections leaving a node that won't run as dashed lines in the
+ * workflow editor, keeping up as connections are added and removed.
+ */
+document.addEventListener('alpine:init', () => {
+    window.Alpine.data('wagWontRunEdges', () => ({
+        effect: null,
+
+        init() {
+            const canvas = window.Alpine.$data(this.$el.closest('.flow-container'));
+
+            this.effect = window.Alpine.effect(() => {
+                const reached = window.wagReached(canvas.nodes, canvas.edges);
+
+                for (const edge of canvas.edges) {
+                    const classes = (edge.class ?? '').split(' ').filter((name) => name && name !== 'wag-edge-unreached');
+
+                    if (! reached.has(edge.source)) {
+                        classes.push('wag-edge-unreached');
+                    }
+
+                    if ((edge.class ?? '') !== classes.join(' ')) {
+                        edge.class = classes.join(' ');
+                    }
+                }
+            });
+        },
+
+        destroy() {
+            if (this.effect) {
+                window.Alpine.release(this.effect);
+            }
+        },
+    }));
+});
 
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('wagInsert', () => ({
