@@ -34,7 +34,7 @@ While such a field has focus, a **Preview** below it shows what the field would 
 | Name | What it holds |
 |---|---|
 | `trigger` | What the trigger received. See [Triggers](triggers.md) for each trigger's data. |
-| `nodes.<id>.output` | The output of an earlier node. The id is shown in the node's settings, under **Reference its output as**. |
+| `nodes.<id>.output` | The output of an earlier node. The id is shown in the node's settings, under **Reference its output as**, where you can [change it](editor.md#configuring-a-node). |
 | `vars.<key>` | A workspace [variable](workspaces.md#variables) |
 | `secrets.<key>` | A workspace [secret](workspaces.md#secrets) |
 | `execution.id`, `execution.workflow`, `execution.trigger_type`, `execution.started_at` | About the run itself |

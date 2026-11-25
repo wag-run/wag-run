@@ -34,7 +34,7 @@ To remove a connection, right-click it and choose **Delete connection**.
 Select a node to see its settings in the settings panel:
 
 - **Name**: what the node is called on the canvas and on the run page.
-- **Reference its output as**: how later nodes refer to this node's output in placeholders, such as `nodes.http_request.output`. It's set when you add the node and doesn't change when you rename it.
+- **Reference its output as**: how later nodes refer to this node's output in placeholders, such as `nodes.http_request.output`. The ID in it is set when you add the node and doesn't change when you change the **Name**. To change it, click the pencil beside it, type a new ID, and click **Save** (or press Enter; Esc cancels). An ID starts with a letter or underscore and uses only letters, numbers, and underscores, and no two nodes can share one. Saving moves the node's connections and updates every placeholder in the draft that read the old ID, such as `nodes.fetch.output` or `nodes['fetch']`. **Undo** puts the old ID back. Triggers keep the ID they were added with, because their webhook URL, form link, schedule, or subscription is tied to it; their settings show **Reference its data as** `trigger` instead.
 - **The node's own settings.** Fields marked as accepting placeholders have an **Insert data** button for picking values from earlier nodes. See [Data and placeholders](data-and-placeholders.md).
 - **Retries** and **Backoff (s)**: how many times to try again if the node fails, and how long to wait before the first retry. Each retry waits twice as long as the one before.
 - **Show "on error" path**: adds an **on error** output. If the node still fails after its retries, the nodes connected to that output run instead of the run failing.

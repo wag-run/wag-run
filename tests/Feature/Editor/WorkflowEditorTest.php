@@ -651,4 +651,81 @@ class WorkflowEditorTest extends TestCase
         $editor->set('retryEnabled', false)->assertDontSeeHtml('data-test="retry-settings"');
         $this->assertNull($retryOf());
     }
+
+    public function test_changing_a_node_id_moves_its_connections_and_rewrites_references_to_it(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
+            [
+                'start' => 'core.manual_trigger',
+                'fetch' => ['core.http_request', ['url' => 'https://api.example.com']],
+                'fetch_2' => ['core.http_request', ['url' => '{{ nodes.fetch_2.output.url }}', 'headers' => ['X-Id' => "{{ nodes['fetch'].output.id }}", 'X-Raw' => '{{ nodes["fetch"]?.output }}']]],
+                'check' => ['core.conditional', ['condition' => '{{ nodes.fetch.output.status == 200 and nodes?.fetch.output.ok }}']],
+                'filter' => ['core.filter', ['items' => '{{ nodes.fetch.output.body.items }}', 'condition' => '{{ item.id == nodes.fetch.output.id and item.nodes.fetch }}']],
+            ],
+            ['start->fetch', 'fetch->check', 'check:true->filter', 'fetch->fetch_2'],
+        ));
+
+        $editor = $this->editor($workspace, $workflow, $user)
+            ->call('selectNode', 'fetch')
+            ->call('startEditingNodeId')
+            ->assertSeeHtml('data-test="node-id-form"')
+            ->set('newNodeId', ' lookup ')
+            ->call('saveNodeId')
+            ->assertHasNoErrors()
+            ->assertSet('selected', 'lookup')
+            ->assertSet('editingNodeId', false)
+            ->assertSee('nodes.lookup.output');
+
+        $graph = $workflow->refresh()->draft();
+        $this->assertFalse($graph->has('fetch'));
+        $this->assertSame('https://api.example.com', $graph->node('lookup')->config['url']);
+        $this->assertTrue($graph->hasEdge('start', 'main', 'lookup'));
+        $this->assertTrue($graph->hasEdge('lookup', 'main', 'check'));
+        $this->assertTrue($graph->hasEdge('lookup', 'main', 'fetch_2'));
+        $this->assertSame('{{ nodes.lookup.output.status == 200 and nodes?.lookup.output.ok }}', $graph->node('check')->config['condition']);
+        $this->assertSame('{{ item.id == nodes.lookup.output.id and item.nodes.fetch }}', $graph->node('filter')->config['condition'], 'a key named after the node is left alone');
+        $this->assertSame(['X-Id' => "{{ nodes['lookup'].output.id }}", 'X-Raw' => '{{ nodes["lookup"]?.output }}'], $graph->node('fetch_2')->config['headers']);
+        $this->assertSame('{{ nodes.fetch_2.output.url }}', $graph->node('fetch_2')->config['url'], 'a longer id that starts the same is left alone');
+        $this->assertSame([], app(GraphValidator::class)->validate($graph));
+
+        $editor->call('undo');
+        $this->assertTrue($workflow->refresh()->draft()->has('fetch'));
+    }
+
+    public function test_a_node_id_must_be_free_and_valid_and_triggers_keep_theirs(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor();
+        $original = $workflow->draft_graph;
+        $editor = $this->editor($workspace, $workflow, $user)->call('selectNode', 'fetch')->call('startEditingNodeId');
+
+        $editor->set('newNodeId', 'check')->call('saveNodeId')->assertHasErrors('newNodeId')->assertSee('Another node already uses the ID check.');
+        $editor->set('newNodeId', '2fetch')->call('saveNodeId')->assertHasErrors('newNodeId');
+        $editor->set('newNodeId', 'fetch-order')->call('saveNodeId')->assertHasErrors('newNodeId');
+        $editor->set('newNodeId', str_repeat('a', 65))->call('saveNodeId')->assertHasErrors('newNodeId');
+        $editor->call('cancelEditingNodeId')->assertSet('editingNodeId', false)->assertHasNoErrors();
+
+        $editor->call('selectNode', 'start')
+            ->assertSeeHtml('data-test="trigger-reference"')
+            ->assertDontSeeHtml('data-test="node-id-edit"')
+            ->set('newNodeId', 'begin')
+            ->call('saveNodeId')
+            ->assertHasErrors('newNodeId');
+
+        $this->assertSame($original, $workflow->refresh()->draft_graph);
+    }
+
+    public function test_viewers_cannot_change_a_node_id(): void
+    {
+        [$workspace, $workflow] = $this->setUpEditor();
+        $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
+
+        $this->editor($workspace, $workflow, $viewer)
+            ->call('selectNode', 'fetch')
+            ->assertDontSeeHtml('data-test="node-id-edit"')
+            ->set('newNodeId', 'lookup')
+            ->call('saveNodeId')
+            ->assertForbidden();
+
+        $this->assertTrue($workflow->refresh()->draft()->has('fetch'));
+    }
 }

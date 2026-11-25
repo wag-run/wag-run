@@ -6,6 +6,7 @@ use App\Engine\Editor\ConfigForm;
 use App\Engine\Editor\ConnectionRules;
 use App\Engine\Editor\DataPicker;
 use App\Engine\Editor\ExpressionPreview;
+use App\Engine\Editor\NodeRenamer;
 use App\Engine\Graph\GraphNode;
 use App\Engine\Graph\WorkflowGraph;
 use App\Engine\Node;
@@ -49,6 +50,14 @@ new class extends Component {
     public ?array $connectionResult = null;
 
     public string $nodeName = '';
+
+    /**
+     * Whether the selected node's ID is open for editing. The ID only changes
+     * when the person saves, since references to it are rewritten then.
+     */
+    public bool $editingNodeId = false;
+
+    public string $newNodeId = '';
 
     /**
      * @var array<string, mixed>
@@ -525,7 +534,59 @@ new class extends Component {
         $this->errorPath = $node->errorPath;
         $this->waitForAll = $node->waitForAll;
         $this->form = $this->definition ? ConfigForm::toForm($this->definition, $node->config) : [];
+        $this->editingNodeId = false;
+        $this->newNodeId = $nodeId;
         $this->resetValidation();
+    }
+
+    public function startEditingNodeId(): void
+    {
+        $this->editingNodeId = $this->selected !== null;
+        $this->newNodeId = (string) $this->selected;
+        $this->resetValidation('newNodeId');
+    }
+
+    public function cancelEditingNodeId(): void
+    {
+        $this->editingNodeId = false;
+        $this->newNodeId = (string) $this->selected;
+        $this->resetValidation('newNodeId');
+    }
+
+    /**
+     * Give the selected node the ID typed in, moving its connections and
+     * rewriting every reference to it in the draft.
+     */
+    public function saveNodeId(NodeRenamer $renamer): void
+    {
+        $this->authorize('edit-workflows', $this->workspace);
+
+        $node = $this->selectedNode();
+
+        if (! $node) {
+            return;
+        }
+
+        $newId = trim($this->newNodeId);
+
+        if ($problem = $renamer->check($this->graph, $node->id, $newId)) {
+            $this->addError('newNodeId', $problem);
+
+            return;
+        }
+
+        if ($newId === $node->id) {
+            $this->cancelEditingNodeId();
+
+            return;
+        }
+
+        $this->save($renamer->rename($this->graph, $node->id, $newId));
+        $this->reloadCanvas();
+        $this->selectNode($newId);
+        $this->flowSelectNodes([$newId]);
+
+        Flux::toast(variant: 'success', text: __('workflows.edit.id_changed_to', ['from' => $node->id, 'to' => $newId]));
     }
 
     public function deselect(): void
@@ -1146,10 +1207,10 @@ new class extends Component {
                     data-test="discard-draft">{{ __('workflows.edit.discard_draft') }}</flux:button>
             @endif
         @endif
-        <flux:text class="text-xs" wire:loading.remove wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,retryEnabled,errorPath,waitForAll,addNode,undo,redo,cutNodes,pasteNodes,discardDraft">
+        <flux:text class="text-xs" wire:loading.remove wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,saveNodeId,retry,retryEnabled,errorPath,waitForAll,addNode,undo,redo,cutNodes,pasteNodes,discardDraft">
             {{ $workflow->draft_updated_at ? __('workflows.edit.draft_saved_time', ['time' => $workflow->draft_updated_at->diffForHumans()]) : '' }}
         </flux:text>
-        <flux:text class="text-xs" wire:loading wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,retry,retryEnabled,errorPath,waitForAll,addNode,undo,redo,cutNodes,pasteNodes,discardDraft">{{ __('workflows.edit.saving') }}</flux:text>
+        <flux:text class="text-xs" wire:loading wire:target="moveNode,onConnect,nodesChanged,edgesChanged,form,nodeName,saveNodeId,retry,retryEnabled,errorPath,waitForAll,addNode,undo,redo,cutNodes,pasteNodes,discardDraft">{{ __('workflows.edit.saving') }}</flux:text>
 
         <flux:spacer />
 
@@ -1458,7 +1519,24 @@ new class extends Component {
 
                 <fieldset class="space-y-4" @disabled(! $this->canEdit)>
                     <flux:input wire:model.live.debounce.600ms="nodeName" :label="__('common.name')" />
-                    <flux:text class="text-xs">{{ __('workflows.edit.reference_its_output_as') }} <code class="rounded bg-zinc-100 px-1 dark:bg-zinc-800">nodes.{{ $selected }}.output</code></flux:text>
+                    @if ($definition->kind() === NodeKind::Trigger)
+                        <flux:text class="text-xs" data-test="trigger-reference">{{ __('workflows.edit.reference_its_data_as') }} <code class="rounded bg-zinc-100 px-1 dark:bg-zinc-800">trigger</code></flux:text>
+                    @elseif ($editingNodeId)
+                        <form wire:submit="saveNodeId" class="space-y-2" data-test="node-id-form">
+                            <flux:input class="font-mono" wire:model="newNodeId" wire:keydown.escape="cancelEditingNodeId" :label="__('workflows.edit.node_id')" maxlength="64" autofocus data-test="node-id-input" />
+                            <div class="flex justify-end gap-2">
+                                <flux:button size="sm" variant="ghost" wire:click="cancelEditingNodeId">{{ __('common.cancel') }}</flux:button>
+                                <flux:button size="sm" variant="primary" type="submit" data-test="node-id-save">{{ __('common.save') }}</flux:button>
+                            </div>
+                        </form>
+                    @else
+                        <div class="flex items-center gap-1">
+                            <flux:text class="text-xs">{{ __('workflows.edit.reference_its_output_as') }} <code class="rounded bg-zinc-100 px-1 dark:bg-zinc-800">nodes.{{ $selected }}.output</code></flux:text>
+                            @if ($this->canEdit)
+                                <flux:button size="xs" variant="subtle" icon="pencil-square" wire:click="startEditingNodeId" :tooltip="__('workflows.edit.change_id')" :aria-label="__('workflows.edit.change_id')" data-test="node-id-edit" />
+                            @endif
+                        </div>
+                    @endif
 
                     @foreach ($definition->inputs() as $field)
                         @continue(! $field->isVisible($form, $definition->inputs()))
