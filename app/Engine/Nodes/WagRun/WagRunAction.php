@@ -31,6 +31,7 @@ abstract class WagRunAction extends Node
      * Make the API call.
      *
      * @throws RuntimeException when a field is not usable
+     * @throws ConnectionException when the install can't be reached
      */
     abstract protected function send(PendingRequest $api, NodeContext $context): Response;
 
