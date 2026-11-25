@@ -123,6 +123,19 @@ Output: `value`.
 
 Compose is useful for working something out once and using it in several places, and for building a JSON body for an HTTP call.
 
+### Create file
+
+Makes a file from text, or from base64 such as an API's encoded image, so nodes that take files can use it: [Upload to S3](#upload-to-s3), [Send email](#send-email) attachments, and [HTTP call](#http-call) uploads.
+
+| Setting | What it does |
+|---|---|
+| **File name** | Such as `report-{{ date(now(), 'Y-m-d') }}.csv` |
+| **Content** | The file's content. A list or object is saved as formatted JSON. |
+| **Content is** | **Text** (the default), or **Base64** to decode the content first. Content that isn't valid base64 fails the step. |
+| **Content type** | Optional, such as `image/png`. Left empty, it's guessed from the file name. |
+
+Output: `file`. Pass it to a later node with a placeholder such as `{{ nodes.make_report.output.file }}`.
+
 ### Filter
 
 Keeps the items of a list that match a condition.
@@ -146,14 +159,16 @@ Makes an HTTP request.
 | **URL** | The address, with placeholders if needed, such as `https://api.example.com/orders/{{ trigger.order_id }}` |
 | **Authentication** | Optional. An **HTTP Basic** or **API token** setting from the workspace's [credentials](workspaces.md#credentials). |
 | **Query parameters** and **Headers** | Keys and values to send |
-| **Body** | **None**, **JSON**, **Form fields**, or **Raw text** |
+| **Body** | **None**, **JSON**, **Form fields**, **Raw text**, or **A file** |
 | **JSON or raw body** | For **JSON**, a JSON editor: it says whether the JSON is valid as you type, and **Format** indents it. Placeholders count as values, so `{"id": {{ trigger.id }}}` is valid. |
+| **File** | For **A file**: one placeholder for a file, such as `{{ nodes.make.output.file }}`. It's sent as the body with the file's content type. In **Form fields**, a value that is a file is uploaded as a file (multipart). |
 | **Timeout (s)** | How long to wait for an answer. Defaults to 30. |
 | **Follow redirects** | Follow up to 5 redirects. On by default. |
 | **Fail on an error status (4xx or 5xx)** | On by default. Turn it off to handle error responses yourself, for example with a condition on `status`. |
+| **Save the response as a file** | For downloads such as images, zips, and backups, and for any body over 1 MB. The body comes back as `file`. Off by default. |
 | **Allow insecure connections** | Off by default. Skips checking the server's TLS certificate, for an internal server with a self-signed certificate or one that doesn't match its address. See the warning below. |
 
-Outputs: `status` (the status code), `ok` (true for a 2xx status), `headers`, and `body`, which is decoded JSON when the response is JSON, or else text. Bodies over 1 MB are cut short.
+Outputs: `status` (the status code), `ok` (true for a 2xx status), `headers`, and `body`, which is decoded JSON when the response is JSON, or else text. Bodies over 1 MB are cut short unless the response is saved as a file. `file` holds the response as a file when it was saved as one, and always when it isn't text.
 
 HTTP calls can't reach private, loopback, or link-local addresses, such as `10.0.0.5` or `localhost`, unless a workspace admin lists them in the [internal-address allowlist](workspaces.md#workspace-settings).
 
@@ -276,6 +291,7 @@ Sends a prompt to a large language model and returns its answer.
 | **Model** | The provider's model name, such as `claude-sonnet-5-5` |
 | **Instructions** | Optional. A system prompt that sets how the model should behave. |
 | **Prompt** | What to ask, with placeholders for data, such as `Summarize this ticket: {{ trigger.body.description }}` |
+| **Attachments** | Optional. One placeholder for a file or a list of files: images, PDFs, or text files the model should read. |
 | **Response** | **Free text**, or **Structured data** |
 | **Structured fields** | For structured data: the fields the model must return. For each, a **Key**, a **Type** (**Text**, **Number**, **Whole number**, **Yes/no**, or **List of text**), a **Description** to guide the model, and whether it's **Required**. |
 | **Timeout (s)** | Defaults to 120 |
@@ -301,6 +317,7 @@ Supported providers are Anthropic, OpenAI, Google Gemini, Mistral, Groq, xAI, De
 | **Subject** | |
 | **Format** | **Plain text** or **HTML** |
 | **Body** | |
+| **Attachments** | Optional. One placeholder for a file or a list of files, such as `{{ nodes.fetch.output.file }}` |
 | **SMTP server** | Optional. An **SMTP server** setting from the workspace's [credentials](workspaces.md#credentials). Leave it empty to send through the organization's [email settings](administration.md#email). |
 
 Outputs: `to` (the addresses it was sent to), `subject`, and `message_id`.
