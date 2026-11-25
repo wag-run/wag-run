@@ -10,6 +10,7 @@ use App\Engine\Nodes\GitHub;
 use App\Engine\Nodes\Google;
 use App\Engine\Nodes\Note;
 use App\Engine\Nodes\Triggers;
+use App\Engine\Nodes\WagRun;
 use App\Engine\Templates\ExpressionTemplateEngine;
 use App\Engine\Templates\TemplateEngine;
 use App\Services\Assignments;
@@ -58,6 +59,9 @@ class WorkflowServiceProvider extends ServiceProvider
         GitHub\CreateRelease::class,
         GitHub\RunActionsWorkflow::class,
         Google\AppendSheetRow::class,
+        WagRun\ListWorkspaces::class,
+        WagRun\ListWorkflows::class,
+        WagRun\GetWorkflow::class,
         Note::class,
     ];
 

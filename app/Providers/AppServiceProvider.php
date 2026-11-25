@@ -14,6 +14,7 @@ use App\Credentials\Types\GoogleOAuth;
 use App\Credentials\Types\HttpBasic;
 use App\Credentials\Types\S3Storage;
 use App\Credentials\Types\Smtp;
+use App\Credentials\Types\WagRunApi;
 use App\Enums\WorkspacePermission;
 use App\Models\User;
 use App\Models\Workspace;
@@ -51,6 +52,7 @@ class AppServiceProvider extends ServiceProvider
             $registry->register(new GitHubApp);
             $registry->register(new GoogleOAuth);
             $registry->register(new GenericOAuth);
+            $registry->register(new WagRunApi);
 
             return $registry;
         });

@@ -1,6 +1,6 @@
 # Actions
 
-Actions are the nodes that do the work after a trigger. They're grouped in the palette as **Flow**, **Data**, **Integrations**, **GitHub**, **Google**, **AI**, **Messaging**, and **People**.
+Actions are the nodes that do the work after a trigger. They're grouped in the palette as **Flow**, **Data**, **Integrations**, **GitHub**, **Google**, **wag.run**, **AI**, **Messaging**, and **People**.
 
 Each node's outputs are available to the nodes after it as `nodes.<id>.output`, where `<id>` is shown in the node's settings under **Reference its output as**. For example, the status code of an HTTP call with the id `fetch` is `{{ nodes.fetch.output.status }}`. See [Data and placeholders](data-and-placeholders.md).
 
@@ -222,6 +222,47 @@ Adds a row after the last one in a Google Sheets sheet, as a connected Google ac
 | **Values** | One value per column, starting from the first. Values are entered as if typed, so numbers and dates are recognised. |
 
 Outputs: `range`, the cells it wrote, such as `'Orders'!A5:C5`, and `rows`.
+
+## wag.run
+
+These nodes read from wag.run's own [REST API](api.md), so a workflow can work with workspaces and workflows, such as backing every workflow up. Each has an **API token**: a **wag.run API token** setting from the workspace's [credentials](workspaces.md#credentials), which holds a [personal access token](api.md#personal-access-tokens) with the `workflows:read` scope. The nodes act as the person who made the token, so they see the workspaces that person belongs to. The setting reaches this install unless you give it the **Address** of another one.
+
+If the API refuses the request, the step fails with its message. Only server errors and rate limits are retried.
+
+### List workspaces
+
+Lists the workspaces the token's person belongs to.
+
+Outputs: `workspaces`, each with its `slug`, `name`, and `url`, and `count`.
+
+### List workflows
+
+Lists the workflows in **Workspace**, given by its slug, such as `{{ item.slug }}` inside a [For loop](#for-loop) over workspaces. Turn on **Include definitions** to get each workflow's `definition` too: its draft, in the format workflows [export and import](editor.md#export-and-import) in.
+
+Outputs: `workflows`, each with its `id`, `name`, `description`, `published_version`, `inputs`, and `url`; `count`; and `workspace`, the slug you gave, so steps inside a loop over the workflows can still tell which workspace they came from.
+
+### Get workflow
+
+Gets the workflow with **Workflow id** in **Workspace**, with its definition.
+
+Outputs: `workflow` and `workspace`.
+
+### Example: backing up every workflow
+
+This saves every workflow to an S3 bucket each week, one file per workflow, in a folder named for the day, such as `2026-11-27 wag-run workflows`. Each file can be [imported](editor.md#export-and-import) as it is.
+
+1. A [Schedule](triggers.md#schedule) trigger on the cron schedule `0 0 * * 5`: Fridays at midnight.
+2. **List workspaces**.
+3. A **For loop** over `{{ nodes.workspaces.output.workspaces }}`.
+4. On its **each item** output, **List workflows** with **Workspace** `{{ item.slug }}` and **Include definitions** on.
+5. A second **For loop** over `{{ nodes.workflows.output.workflows }}`.
+6. On its **each item** output, [Upload to S3](#upload-to-s3) with **Content** `{{ item.definition }}` and this **Key**:
+
+```text
+{{ date(execution.started_at, 'Y-m-d') }} wag-run workflows/{{ nodes.workflows.output.workspace }}/{{ slug(item.name) }}-{{ item.id }}.workflow.json
+```
+
+The folder is named for the day the run started, so a run that crosses midnight still fills one folder.
 
 ## AI
 

@@ -93,4 +93,11 @@ return [
         'starttls' => 'STARTTLS (usually port 587)',
         'username' => 'Username',
     ],
+    'wag_run' => [
+        'description' => 'A personal access token for the :app API, for the :app nodes. Create one under Settings → API tokens, with the "workflows:read" scope to list workspaces and workflows.',
+        'label' => ':app API token',
+        'token' => 'Token',
+        'url' => 'Address',
+        'url_help' => 'Leave empty for this install. For another install, its address, such as https://wag.example.com.',
+    ],
 ];
