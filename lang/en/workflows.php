@@ -23,7 +23,7 @@ return [
         'delete_keys' => '⌫',
         'delete_node' => 'Delete node',
         'delete_node_question' => 'Delete this node?',
-        'delete_nodes_message' => 'Its connections wil be deleted too.',
+        'delete_nodes_message' => 'Its connections will be deleted too.',
         'discard_draft' => 'Discard draft',
         'discard_draft_question' => 'Discard draft?',
         'discard_your_changes_and_go_back' => 'Discard your unpublished changes and go back to version :n? You can undo this until you leave the editor.',
