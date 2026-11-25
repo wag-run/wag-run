@@ -25,7 +25,6 @@
         @empty
             <flux:menu.item disabled>{{ __('workflows.editor.connect_this_node_to_a') }}</flux:menu.item>
         @endforelse
-        <flux:menu.separator />
         <flux:menu.group :heading="__('workflows.editor.functions')" data-test="function-picker">
             @foreach (\App\Engine\Templates\HelperFunctions::catalog() as $category)
                 <flux:menu.submenu :heading="$category['label']">
