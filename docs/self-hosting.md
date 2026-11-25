@@ -188,6 +188,8 @@ docker compose pull && docker compose up -d
 
 This moves to the newest release that `WAG_VERSION` allows. To move to a newer minor version when you've pinned one, change `WAG_VERSION` first. Read the [release notes](https://github.com/wag-run/wag-run/releases) before a big jump.
 
+To try changes before they're released, set `WAG_VERSION=nightly`. That image is rebuilt every night from the `main` branch, and each night's build is also kept under a dated tag such as `nightly-20261124`. Nightly builds are previews that haven't been through a release: don't run one on an install you depend on, and back up before you switch, because a database change made by a nightly can't be undone by going back to a release.
+
 Database changes are applied automatically every time the app starts. When the container stops, workers get about a minute to finish the step they're on. Steps that were queued but not started run once the app is back. A step that was cut off mid-run is marked failed with "The worker running this step stopped responding", and is retried if its node has retries set.
 
 ## Logs and health
