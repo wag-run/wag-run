@@ -80,6 +80,7 @@ Click **Add credential**, choose a **Type**, and give it a **Description**, such
 | **GitHub** | GitHub nodes, HTTP call | None when the install has a GitHub app: you connect a GitHub account (see below). Otherwise the **Client ID** and **Client secret** of your own GitHub OAuth app or GitHub App. |
 | **GitHub personal access token** | GitHub nodes | **Token**: a fine-grained token with read and write access to Contents, Issues, Actions, and Webhooks, or a classic token with the `repo` and `admin:repo_hook` scopes |
 | **GitHub App** | GitHub nodes | **App ID or client ID**, **Installation ID**, and **Private key** (see [Using a GitHub App](#using-a-github-app)) |
+| **Investbrain API token** | Investbrain nodes | **Address** (leave empty for Investbrain Cloud) and **Token**: an API token from **API Tokens** in Investbrain's user menu |
 | **wag.run API token** | wag.run nodes | **Address** (leave empty for this install) and **Token**: a [personal access token](api.md#personal-access-tokens) with the `workflows:read` scope |
 | **Google** | Google Sheets nodes, HTTP call | None: you connect a Google account (see below) |
 | **OAuth 2.0** | HTTP call | **Authorization URL**, **Token URL**, **Client ID**, **Client secret**, and **Scopes**, from the OAuth app you registered with the provider |
