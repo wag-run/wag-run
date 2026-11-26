@@ -54,6 +54,18 @@ class ExpressionTemplateEngine implements TemplateEngine
     }
 
     /**
+     * The expressions inside a template's {{ }} placeholders.
+     *
+     * @return list<string>
+     *
+     * @throws TemplateError when a placeholder is not closed
+     */
+    public function expressions(string $template): array
+    {
+        return array_column(array_filter($this->split($template), fn (array $part) => $part[0] === 'expression'), 1);
+    }
+
+    /**
      * Split a template into text and the expressions inside {{ }}. Quotes and
      * braces inside an expression are respected, so {{ {a: 1}.a }} and
      * {{ "}}" }} work. A template that is one placeholder, give or take

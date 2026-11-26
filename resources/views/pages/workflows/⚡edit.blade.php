@@ -6,8 +6,10 @@ use App\Engine\Editor\ConfigForm;
 use App\Engine\Editor\ConnectionRules;
 use App\Engine\Editor\DataPicker;
 use App\Engine\Editor\ExpressionPreview;
+use App\Engine\Editor\FieldFacts;
 use App\Engine\Editor\NodeRenamer;
 use App\Engine\Graph\GraphNode;
+use App\Engine\Graph\StoreReferenceValidator;
 use App\Engine\Graph\WorkflowGraph;
 use App\Engine\Node;
 use App\Engine\NodeRegistry;
@@ -490,7 +492,7 @@ new class extends Component {
      * Choices for credential, secret, workflow and user fields. Settings are
      * listed by description and stored by UUID.
      *
-     * @return array{credentials: array<string, array{type: string, label: string}>, secrets: array<string, string>, workflows: array<string, string>, users: array<string, string>}
+     * @return array{credentials: array<string, array{type: string, label: string}>, secrets: array<string, string>, storeEntries: array<string, array{type: \App\Enums\ValueType, collection: bool, read_only: bool}>, workflows: array<string, string>, users: array<string, string>}
      */
     #[Computed]
     public function choices(): array
@@ -500,6 +502,7 @@ new class extends Component {
         return [
             'credentials' => $credentials->mapWithKeys(fn ($credential) => [$credential->id => ['type' => $credential->type, 'label' => $credential->description]])->all(),
             'secrets' => $this->workspace->secrets()->orderBy('key')->pluck('key', 'key')->all(),
+            'storeEntries' => FieldFacts::storeEntries($this->workspace),
             'workflows' => $this->workspace->workflows()->whereKeyNot($this->workflow->id)->orderBy('name')->pluck('name', 'id')->all(),
             'users' => Organization::current()?->users()->wherePivotNull('deactivated_at')->orderBy('name')->get(['users.id', 'name', 'email'])
                 ->mapWithKeys(fn ($user) => [$user->id => "{$user->name} ({$user->email})"])->all() ?? [],
@@ -510,6 +513,28 @@ new class extends Component {
     public function versions()
     {
         return $this->workflow->versions()->with('creator')->orderByDesc('number')->get();
+    }
+
+    /**
+     * What the selected node's reference fields point at, for fields that
+     * depend on them.
+     *
+     * @return array<string, string>
+     */
+    public function fieldFacts(): array
+    {
+        return $this->definition ? FieldFacts::for($this->definition, $this->form, $this->choices['storeEntries']) : [];
+    }
+
+    /**
+     * What is wrong with the selected node's use of the data store, such
+     * as an entry that doesn't exist. These block publishing.
+     *
+     * @return list<string>
+     */
+    public function storeProblems(): array
+    {
+        return $this->selected ? (app(StoreReferenceValidator::class)->problems($this->graph, $this->workspace, $this->selected)[$this->selected] ?? []) : [];
     }
 
     public function selectedNode(): ?GraphNode
@@ -1034,7 +1059,13 @@ new class extends Component {
             'retry.backoff_seconds' => ['nullable', 'integer', 'min:0', 'max:86400'],
         ]);
 
-        $config = ConfigForm::toConfig($this->definition, $this->form);
+        $config = ConfigForm::toConfig($this->definition, $this->form, $this->fieldFacts());
+
+        foreach ($this->definition->inputs() as $field) {
+            if ($field->optionsWhen !== []) {
+                $this->form[$field->name] = $config[$field->name] ?? $field->default;
+            }
+        }
         $retry = (int) $this->retry['max_retries'] > 0
             ? ['max_retries' => (int) $this->retry['max_retries'], 'backoff_seconds' => (int) ($this->retry['backoff_seconds'] ?? 30)]
             : null;
@@ -1538,10 +1569,23 @@ new class extends Component {
                         </div>
                     @endif
 
+                    @php($formValues = [...$form, ...$this->fieldFacts()])
+                    @php($storeProblems = $this->storeProblems())
+                    @if ($storeProblems)
+                        <flux:callout variant="danger" icon="exclamation-triangle" data-test="store-problems">
+                            <flux:callout.text>
+                                <ul class="list-disc ps-4">
+                                    @foreach ($storeProblems as $problem)
+                                        <li>{{ $problem }}</li>
+                                    @endforeach
+                                </ul>
+                            </flux:callout.text>
+                        </flux:callout>
+                    @endif
                     @foreach ($definition->inputs() as $field)
-                        @continue(! $field->isVisible($form, $definition->inputs()))
+                        @continue(! $field->isVisible($formValues, $definition->inputs()))
                         <div wire:key="field-{{ $selected }}-{{ $field->name }}">
-                            @include('partials.workflow-field', ['field' => $field, 'model' => 'form.'.$field->name, 'value' => $form[$field->name] ?? null, 'values' => $form, 'choices' => $this->choices, 'picker' => $this->picker, 'canConnectAccounts' => $this->canConnectAccounts])
+                            @include('partials.workflow-field', ['field' => $field, 'model' => 'form.'.$field->name, 'value' => $form[$field->name] ?? null, 'values' => $formValues, 'siblings' => $definition->inputs(), 'choices' => $this->choices, 'picker' => $this->picker, 'canConnectAccounts' => $this->canConnectAccounts])
                         </div>
                     @endforeach
 

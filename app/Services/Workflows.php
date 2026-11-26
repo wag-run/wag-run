@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Engine\Graph\GraphValidator;
+use App\Engine\Graph\StoreReferenceValidator;
 use App\Engine\Graph\WorkflowGraph;
 use App\Models\User;
 use App\Models\Workflow;
@@ -20,6 +21,7 @@ class Workflows
 {
     public function __construct(
         protected GraphValidator $validator,
+        protected StoreReferenceValidator $storeReferences,
         protected TriggerSync $triggers,
     ) {}
 
@@ -53,7 +55,7 @@ class Workflows
     public function publish(Workflow $workflow, ?User $publisher = null, ?string $note = null): WorkflowVersion
     {
         $graph = $workflow->draft();
-        $errors = $this->validator->validate($graph);
+        $errors = [...$this->validator->validate($graph), ...$this->storeReferences->validate($graph, $workflow->workspace)];
 
         if ($errors !== []) {
             throw ValidationException::withMessages(['graph' => $errors]);
@@ -115,7 +117,7 @@ class Workflows
     public function draftSnapshot(Workflow $workflow, ?User $user = null): WorkflowVersion
     {
         $graph = $workflow->draft();
-        $errors = $this->validator->validate($graph);
+        $errors = [...$this->validator->validate($graph), ...$this->storeReferences->validate($graph, $workflow->workspace)];
 
         if ($errors !== []) {
             throw ValidationException::withMessages(['graph' => $errors]);

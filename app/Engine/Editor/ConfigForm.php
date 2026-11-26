@@ -10,7 +10,8 @@ use Illuminate\Support\Str;
  * Converts a node's saved config to the shape the editor's form edits, and
  * back. Key-value fields become rows in the form; inside list rows they
  * become "value=Label" lines. Plain number fields are stored as numbers.
- * Fields hidden by another field's value are not saved.
+ * Fields hidden by another field's value are not saved, and a select
+ * whose choice no longer fits its sibling fields goes back to its default.
  */
 class ConfigForm
 {
@@ -31,15 +32,22 @@ class ConfigForm
 
     /**
      * @param  array<string, mixed>  $form
+     * @param  array<string, string>  $facts  extra sibling values, see {@see FieldFacts}
      * @return array<string, mixed>
      */
-    public static function toConfig(Node $node, array $form): array
+    public static function toConfig(Node $node, array $form, array $facts = []): array
     {
         $config = [];
         $inputs = $node->inputs();
 
         foreach ($inputs as $field) {
-            if (! $field->isVisible($form, $inputs)) {
+            if ($field->optionsWhen !== [] && ! array_key_exists((string) ($form[$field->name] ?? ''), $field->optionsFor([...$form, ...$facts], $inputs))) {
+                $form[$field->name] = $field->default;
+            }
+        }
+
+        foreach ($inputs as $field) {
+            if (! $field->isVisible([...$form, ...$facts], $inputs)) {
                 continue;
             }
 

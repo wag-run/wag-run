@@ -5,8 +5,9 @@ namespace Tests\Feature\Editor;
 use App\Engine\Editor\DataPicker;
 use App\Engine\Graph\GraphNode;
 use App\Engine\Graph\WorkflowGraph;
+use App\Enums\ValueType;
 use App\Models\Secret;
-use App\Models\Variable;
+use App\Models\StoreEntry;
 use App\Models\Workspace;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\RunsWorkflows;
@@ -108,16 +109,21 @@ class DataPickerTest extends TestCase
         $this->assertSame(['error.message', 'error.attempt'], $this->paths($graph, 'handle')['Error']);
     }
 
-    public function test_offers_workspace_variable_and_secret_names_only(): void
+    public function test_offers_data_store_entries_with_their_types_and_secret_names_only(): void
     {
         $workspace = Workspace::factory()->create();
-        Variable::factory()->for($workspace)->create(['key' => 'region']);
+        StoreEntry::factory()->for($workspace)->type(ValueType::Number)->create(['key' => 'attempts']);
+        StoreEntry::factory()->for($workspace)->type(ValueType::Number)->collection()->create(['key' => 'failures']);
         Secret::factory()->for($workspace)->create(['key' => 'api_key', 'value' => 'hidden-value']);
         $graph = WorkflowGraph::fromArray($this->graph(['start' => 'core.manual_trigger', 'a' => 'core.compose'], ['start->a']));
 
         $paths = $this->paths($graph, 'a', $workspace);
 
-        $this->assertSame(['vars.region'], $paths['Variables']);
+        $this->assertSame(['store.attempts', 'store.failures'], $paths['Data store']);
+        $this->assertSame(
+            ['store.attempts' => 'number', 'store.failures' => 'object'],
+            array_column(collect(app(DataPicker::class)->optionsFor($graph, 'a', $workspace))->firstWhere('label', 'Data store')['items'], 'type', 'path'),
+        );
         $this->assertSame(['secrets.api_key'], $paths['Secrets']);
         $this->assertStringNotContainsString('hidden-value', json_encode(app(DataPicker::class)->optionsFor($graph, 'a', $workspace)));
     }
