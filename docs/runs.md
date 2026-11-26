@@ -67,7 +67,7 @@ A waiting run shows what it's waiting for: **Resumes** with a time for a **Wait*
 | **Cancelled** | Someone cancelled it, a newer run replaced it, a **Terminate** node ended it as cancelled, it was too many levels deep in a chain of workflows starting workflows, or its workflow had already started too many [runs that minute](#runs-per-minute) |
 | **Skipped** | Never started, because the workflow runs one at a time and another run was going |
 
-When a run fails, the owner of the workflow gets an item in their [Inbox](people.md#the-inbox).
+When a run fails, the owner of the workflow gets an item in their [Inbox](people.md#the-inbox) and an email. They can turn either off under **Settings → Notifications**.
 
 ## Cancelling a run
 

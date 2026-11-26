@@ -8,6 +8,8 @@ use App\Engine\Node;
 use App\Engine\NodeContext;
 use App\Engine\NodeResult;
 use App\Enums\NodeKind;
+use App\Enums\NotificationKind;
+use App\Models\User;
 use App\Notifications\WorkflowNotification;
 use App\Services\Assignments;
 use Illuminate\Support\Facades\Notification;
@@ -97,11 +99,17 @@ class SendNotification extends Node
         $workspaceId = $context->workspace()->id;
         $output = ['recipients' => $users->pluck('id')->all(), 'count' => $users->count()];
 
-        Notification::send($users, new WorkflowNotification($title, $message, $link, $workspaceId));
+        Notification::send(
+            $users->filter(fn (User $user) => $user->wantsNotification(NotificationKind::Workflow, 'database')),
+            new WorkflowNotification($title, $message, $link, $workspaceId),
+        );
 
         if ($context->input('email')) {
             try {
-                Notification::send($users, new WorkflowNotification($title, $message, $link, $workspaceId, ['mail']));
+                Notification::send(
+                    $users->filter(fn (User $user) => $user->wantsNotification(NotificationKind::Workflow, 'mail')),
+                    new WorkflowNotification($title, $message, $link, $workspaceId, ['mail']),
+                );
             } catch (TransportExceptionInterface $exception) {
                 return NodeResult::fail(__('nodes.send_notification.notified_in_the_app_but', ['message' => $exception->getMessage()]), retryable: false, output: $output);
             }
