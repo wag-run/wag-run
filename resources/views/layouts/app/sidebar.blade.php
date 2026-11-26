@@ -98,26 +98,6 @@
                         @endif
                     </flux:sidebar.group>
                 @endif
-
-                @if ($isOrgAdmin)
-                    <flux:sidebar.group :heading="__('navigation.organization')" class="grid">
-                        <flux:sidebar.item icon="squares-2x2" :href="route('admin.workspaces')" :current="request()->routeIs('admin.workspaces')" wire:navigate>
-                            {{ __('common.workspaces') }}
-                        </flux:sidebar.item>
-                        <flux:sidebar.item icon="users" :href="route('admin.users')" :current="request()->routeIs('admin.users')" wire:navigate>
-                            {{ __('common.users') }}
-                        </flux:sidebar.item>
-                        <flux:sidebar.item icon="adjustments-horizontal" :href="route('admin.settings')" :current="request()->routeIs('admin.settings')" wire:navigate>
-                            {{ __('common.settings') }}
-                        </flux:sidebar.item>
-                        <flux:sidebar.item icon="finger-print" :href="route('admin.sign-in-providers')" :current="request()->routeIs('admin.sign-in-providers')" wire:navigate>
-                            {{ __('common.sign_in_providers') }}
-                        </flux:sidebar.item>
-                        <flux:sidebar.item icon="envelope" :href="route('admin.email')" :current="request()->routeIs('admin.email')" wire:navigate>
-                            {{ __('admin.email.title') }}
-                        </flux:sidebar.item>
-                    </flux:sidebar.group>
-                @endif
             </flux:sidebar.nav>
 
             <flux:spacer />
@@ -165,8 +145,13 @@
                     <flux:menu.radio.group>
                         @include('partials.inbox-menu-item', ['unread' => $unreadNotifications])
                         <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
-                            {{ __('common.settings') }}
+                            {{ __('navigation.preferences') }}
                         </flux:menu.item>
+                        @if ($isOrgAdmin)
+                            <flux:menu.item :href="route('admin.workspaces')" icon="building-office" wire:navigate data-test="org-settings-menu-item">
+                                {{ __('navigation.org_settings') }}
+                            </flux:menu.item>
+                        @endif
                     </flux:menu.radio.group>
 
                     <flux:menu.separator />

@@ -28,8 +28,13 @@
         <flux:menu.radio.group>
             @include('partials.inbox-menu-item', ['unread' => $unread])
             <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
-                {{ __('common.settings') }}
+                {{ __('navigation.preferences') }}
             </flux:menu.item>
+            @can('org-admin')
+                <flux:menu.item :href="route('admin.workspaces')" icon="building-office" wire:navigate data-test="org-settings-menu-item">
+                    {{ __('navigation.org_settings') }}
+                </flux:menu.item>
+            @endcan
             <form method="POST" action="{{ route('logout') }}" class="w-full">
                 @csrf
                 <flux:menu.item

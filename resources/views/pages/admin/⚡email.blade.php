@@ -123,37 +123,37 @@ new class extends Component {
 }; ?>
 
 <section class="w-full">
-    <x-page-heading :heading="__('admin.email.title')" :subheading="__('admin.email.the_smtp_server_the_app')" />
+    <x-pages::admin.layout :heading="__('admin.email.title')" :subheading="__('admin.email.the_smtp_server_the_app')">
+        <form wire:submit="save" class="max-w-2xl space-y-6">
+            <flux:switch wire:model.live="enabled" :label="__('admin.email.send_through_my_smtp_server')"
+                :description="__('admin.email.when_off_email_uses_the')" data-test="mail-enabled" />
 
-    <form wire:submit="save" class="max-w-2xl space-y-6">
-        <flux:switch wire:model.live="enabled" :label="__('admin.email.send_through_my_smtp_server')"
-            :description="__('admin.email.when_off_email_uses_the')" data-test="mail-enabled" />
+            @if ($enabled)
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <flux:input wire:model="host" :label="__('credentials.smtp.host')" placeholder="smtp.example.com" class="sm:col-span-2" required />
+                    <flux:input wire:model="port" type="number" min="1" max="65535" :label="__('credentials.smtp.port')" required />
+                </div>
+                <flux:select wire:model="encryption" :label="__('credentials.smtp.encryption')">
+                    @foreach (Smtp::encryptionOptions() as $value => $label)
+                        <flux:select.option :value="$value">{{ $label }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <flux:input wire:model="username" :label="__('credentials.smtp.username')" autocomplete="off" />
+                    <flux:input wire:model="password" type="password" :label="__('common.password')" autocomplete="new-password"
+                        :placeholder="$hasPassword ? __('admin.email.leave_empty_to_keep') : ''" />
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <flux:input wire:model="fromAddress" type="email" :label="__('credentials.smtp.from_address')" required />
+                    <flux:input wire:model="fromName" :label="__('credentials.smtp.from_name')" />
+                </div>
+            @endif
 
-        @if ($enabled)
-            <div class="grid gap-4 sm:grid-cols-3">
-                <flux:input wire:model="host" :label="__('credentials.smtp.host')" placeholder="smtp.example.com" class="sm:col-span-2" required />
-                <flux:input wire:model="port" type="number" min="1" max="65535" :label="__('credentials.smtp.port')" required />
+            <div class="flex gap-2">
+                <flux:button type="submit" variant="primary">{{ __('common.save_settings') }}</flux:button>
+                <flux:button wire:click="sendTest" icon="paper-airplane" data-test="send-test-email">{{ __('admin.email.send_test_email') }}</flux:button>
             </div>
-            <flux:select wire:model="encryption" :label="__('credentials.smtp.encryption')">
-                @foreach (Smtp::encryptionOptions() as $value => $label)
-                    <flux:select.option :value="$value">{{ $label }}</flux:select.option>
-                @endforeach
-            </flux:select>
-            <div class="grid gap-4 sm:grid-cols-2">
-                <flux:input wire:model="username" :label="__('credentials.smtp.username')" autocomplete="off" />
-                <flux:input wire:model="password" type="password" :label="__('common.password')" autocomplete="new-password"
-                    :placeholder="$hasPassword ? __('admin.email.leave_empty_to_keep') : ''" />
-            </div>
-            <div class="grid gap-4 sm:grid-cols-2">
-                <flux:input wire:model="fromAddress" type="email" :label="__('credentials.smtp.from_address')" required />
-                <flux:input wire:model="fromName" :label="__('credentials.smtp.from_name')" />
-            </div>
-        @endif
-
-        <div class="flex gap-2">
-            <flux:button type="submit" variant="primary">{{ __('common.save_settings') }}</flux:button>
-            <flux:button wire:click="sendTest" icon="paper-airplane" data-test="send-test-email">{{ __('admin.email.send_test_email') }}</flux:button>
-        </div>
-        <flux:text class="text-xs">{{ __('admin.email.test_uses_saved_settings') }}</flux:text>
-    </form>
+            <flux:text class="text-xs">{{ __('admin.email.test_uses_saved_settings') }}</flux:text>
+        </form>
+    </x-pages::admin.layout>
 </section>
