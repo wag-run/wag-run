@@ -62,4 +62,21 @@ class WorkspaceSettingsTest extends TestCase
         $this->assertNull($workspace->fresh()->retention_days);
         $this->assertSame(90, $workspace->fresh()->effectiveRetentionDays());
     }
+
+    public function test_settings_live_in_the_json_column_and_only_changes_are_tracked(): void
+    {
+        $workspace = Workspace::factory()->create();
+
+        $this->assertNull($workspace->retention_days);
+        $this->assertSame([], $workspace->internal_allowlist);
+
+        $workspace->fill(['retention_days' => null, 'internal_allowlist' => []]);
+        $this->assertFalse($workspace->isDirty());
+
+        $workspace->fill(['retention_days' => 14]);
+        $this->assertSame(['retention_days'], $workspace->changedFields());
+
+        $workspace->save();
+        $this->assertSame(['retention_days' => 14], $workspace->fresh()->settings);
+    }
 }

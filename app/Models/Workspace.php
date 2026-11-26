@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasSettings;
 use App\Enums\WorkspaceRole;
 use Database\Factories\WorkspaceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -19,26 +20,28 @@ use Illuminate\Support\Str;
  * @property string $organization_id
  * @property string $name
  * @property string $slug
+ * @property array<string, mixed>|null $settings the workspace's settings, see {@see Workspace::SETTINGS}
  * @property int|null $retention_days
- * @property list<string>|null $internal_allowlist
+ * @property list<string> $internal_allowlist
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Organization $organization
  */
-#[Fillable(['name', 'slug', 'retention_days', 'internal_allowlist'])]
+#[Fillable(['name', 'slug', 'settings', 'retention_days', 'internal_allowlist'])]
 #[RouteKey('slug')]
 class Workspace extends Model
 {
     /** @use HasFactory<WorkspaceFactory> */
-    use HasFactory;
+    use HasFactory, HasSettings;
 
-    protected function casts(): array
-    {
-        return [
-            'retention_days' => 'integer',
-            'internal_allowlist' => 'array',
-        ];
-    }
+    /**
+     * The workspace's settings, see {@see HasSettings}. A null retention
+     * means the organization default applies.
+     */
+    public const SETTINGS = [
+        'retention_days' => ['int', null],
+        'internal_allowlist' => ['array', []],
+    ];
 
     protected static function booted(): void
     {

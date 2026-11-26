@@ -102,9 +102,9 @@ class WorkspaceManager
             return;
         }
 
-        $changes = $workspace->getDirty();
+        $changed = $workspace->changedFields();
         $workspace->save();
 
-        Audit::record('workspace.settings_updated', $workspace, $workspace, ['changed' => array_keys($changes)]);
+        Audit::record('workspace.settings_updated', $workspace, $workspace, ['changed' => $changed]);
     }
 }

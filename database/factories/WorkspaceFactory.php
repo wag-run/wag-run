@@ -19,8 +19,6 @@ class WorkspaceFactory extends Factory
         return [
             'organization_id' => fn () => Organization::current()->id ?? Organization::factory(),
             'name' => fake()->unique()->words(2, true),
-            'retention_days' => null,
-            'internal_allowlist' => [],
         ];
     }
 }

@@ -32,8 +32,7 @@ return new class extends Migration
             $table->foreignUuid('organization_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('slug');
-            $table->unsignedInteger('retention_days')->nullable();
-            $table->json('internal_allowlist')->nullable();
+            $table->json('settings')->nullable();
             $table->timestamps();
 
             $table->unique(['organization_id', 'slug']);

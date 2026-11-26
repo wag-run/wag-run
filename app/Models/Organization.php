@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasSettings;
 use App\Enums\OrgRole;
 use Database\Factories\OrganizationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -32,77 +33,25 @@ use Illuminate\Support\Carbon;
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */
-    use HasFactory, HasUuids;
+    use HasFactory, HasSettings, HasUuids;
 
     /**
      * The organization-wide settings, with their defaults. They live in the
-     * `settings` JSON column and read and write like attributes
-     * (`$organization->max_chain_depth`), so adding one needs no migration:
-     * add it here and to the Fillable list above. The default's type is the
-     * setting's type.
+     * `settings` JSON column, see {@see HasSettings}.
      */
     public const SETTINGS = [
-        'default_retention_days' => 30,
-        'registration_open' => false,
-        'max_chain_depth' => 10,
-        'max_runs_per_minute' => 60,
-        'allow_account_deletion' => true,
+        'default_retention_days' => ['int', 30],
+        'registration_open' => ['bool', false],
+        'max_chain_depth' => ['int', 10],
+        'max_runs_per_minute' => ['int', 60],
+        'allow_account_deletion' => ['bool', true],
     ];
 
     protected function casts(): array
     {
         return [
-            'settings' => 'array',
             'mail' => 'encrypted:array',
         ];
-    }
-
-    public function getAttribute($key)
-    {
-        if (! array_key_exists($key, self::SETTINGS)) {
-            return parent::getAttribute($key);
-        }
-
-        $settings = $this->settings ?? [];
-        $value = array_key_exists($key, $settings) ? $settings[$key] : self::SETTINGS[$key];
-
-        return match (true) {
-            $value === null => null,
-            is_bool(self::SETTINGS[$key]) => (bool) $value,
-            default => (int) $value,
-        };
-    }
-
-    public function setAttribute($key, $value)
-    {
-        if (! array_key_exists($key, self::SETTINGS)) {
-            return parent::setAttribute($key, $value);
-        }
-
-        return parent::setAttribute('settings', [...($this->settings ?? []), $key => $value]);
-    }
-
-    /**
-     * The names of the attributes and settings that have unsaved changes.
-     *
-     * @return list<string>
-     */
-    public function changedFields(): array
-    {
-        $changed = array_keys($this->getDirty());
-
-        if (in_array('settings', $changed, true)) {
-            $before = $this->getOriginal('settings') ?? [];
-            $after = $this->settings ?? [];
-            $keys = array_map('strval', array_unique([...array_keys($before), ...array_keys($after)]));
-
-            $changed = [
-                ...array_diff($changed, ['settings']),
-                ...array_filter($keys, fn (string $key) => ($before[$key] ?? null) !== ($after[$key] ?? null)),
-            ];
-        }
-
-        return $changed;
     }
 
     /**
