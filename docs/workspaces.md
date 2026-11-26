@@ -1,12 +1,12 @@
 # Workspaces
 
-A workspace holds a team's workflows and runs, the people who work on them, and the values and sign-in details those workflows share. Each workspace is separate: a workflow can only use the variables, secrets, and credentials of its own workspace, and can only start workflows in its own workspace.
+A workspace holds a team's workflows and runs, the people who work on them, and the values and sign-in details those workflows share. Each workspace is separate: a workflow can only use the data store, secrets, and credentials of its own workspace, and can only start workflows in its own workspace.
 
 Switch workspaces with the menu at the top of the sidebar. Organization admins create, rename, and delete workspaces. See [Organization administration](administration.md#workspaces).
 
 ## Overview
 
-**Overview** is the workspace's home page. It shows its workflows, the approvals and tasks waiting on you in this workspace, and shortcuts to its variables, secrets, credentials, and members.
+**Overview** is the workspace's home page. It shows its workflows, the approvals and tasks waiting on you in this workspace, and shortcuts to its data store, secrets, credentials, and members.
 
 ## Members and roles
 
@@ -16,10 +16,10 @@ Switch workspaces with the menu at the top of the sidebar. Organization admins c
 |---|:-:|:-:|:-:|:-:|
 | Answer approvals and tasks sent to them | ✓ | ✓ | ✓ | ✓ |
 | See workflows, runs, and members | | ✓ | ✓ | ✓ |
-| See the names of variables, secrets, and credentials | | ✓ | ✓ | ✓ |
+| See the data store's entries and their values | | ✓ | ✓ | ✓ |
+| See the names of secrets and credentials | | ✓ | ✓ | ✓ |
 | Build, publish, test, and run workflows, and cancel runs | | | ✓ | ✓ |
-| Add, change, and delete variables | | | ✓ | ✓ |
-| See and delete the values in the data store | | | ✓ | ✓ |
+| Add, change, and delete data store entries | | | ✓ | ✓ |
 | Manage members, secrets, and credentials | | | | ✓ |
 | Reveal secret values | | | | ✓ |
 | Change workspace settings and read the audit log | | | | ✓ |
@@ -35,27 +35,65 @@ Under **Add or invite by email**, enter an email address, choose a role, and cli
 
 To change someone's role, pick a new one next to their name. To take away their access, click **Remove**. Removing someone from a workspace doesn't delete their account.
 
-## Variables
+## Data store
 
-Variables are named values that any workflow in the workspace can use, such as a team's email address, a base URL, or a threshold. Read one in a placeholder as `{{ vars.<key> }}`:
+The data store keeps typed values for the whole workspace between runs. Use it for settings people type in, such as a base URL or a threshold, and for data workflows write, such as the time of the last fetch, tickets already handled, or a count of failures in a row.
+
+Each value lives in an **entry** that you declare on the **Data store** page. Workflows read an entry with a placeholder and change it with the [Update data store](actions.md#update-data-store) node:
 
 ```text
-{{ vars.api_base_url }}/orders/{{ trigger.order_id }}
+{{ store.api_base_url }}/orders/{{ trigger.order_id }}
 ```
 
-Click **Add variable** and give it a **Key** (letters, numbers, and underscores), a **Value**, and an optional **Description**. Editors and Admins can manage variables.
+### Adding an entry
 
-Changing a variable affects every run from then on, without republishing. If you delete a variable, workflows that use it get an empty value.
+Click **Add entry** and give it:
 
-Variables are not secret: anyone who can see the workspace's runs can see their values in step inputs. Use a secret for anything sensitive.
+- A **Name**, with letters, numbers, and underscores. It's what comes after `store.` in a placeholder.
+- A **Type**: String, Number, Boolean, Object, Array, or Date & time.
+- What it **Holds**: a single value, or a collection.
+- Its **Current value**, for a single value. Left empty, it starts as empty text, 0, false, an empty object or array, or no date.
+- An optional **Description**.
 
-## Store
+The name, type, and whether it's a collection can't change once the entry is created. To change them, delete the entry and add it again.
 
-The store holds the values that workflows save while they run, so a later run can read them: tickets already handled, the time of the last fetch, a count of failures in a row. Where variables are settings that people type in, the store holds data that workflows write. The workflows use the [data store nodes](actions.md#data-store) to save and read it; people can't add or change values here.
+A **collection** holds many values of its type under **item keys** that come from data, such as a ticket ID or a customer's name. A Boolean collection can record the tickets you've already handled, and a Number collection is a set of counters, such as failures per customer. Read one item by its key:
 
-**Store** lists every value with its **Key**, its **Value** as JSON, who it's **Shared with** (the whole workspace, or the one workflow it belongs to), when it **Expires**, and when it was last **Updated**. Search filters the list by key. Editors and Admins can delete a value with the trash button, or **Clear all values** (or, with a search, **Clear matching values**) to remove everything in the list. Deleting a value that a workflow uses isn't harmful: it reads as if nothing was saved, and **Seen before?** treats the key as new.
+```text
+{{ store.seen_tickets[trigger.body.id] }}
+```
 
-Values aren't secret: they show here, and in the step inputs and outputs of runs. Use a secret for anything sensitive.
+An item nobody has saved yet reads as empty. `{{ store.seen_tickets }}` on its own is the whole collection as an object, for helpers such as `keys()` and `length()`. Click the item count on the page to browse, search, add, edit, and delete a collection's items.
+
+### Values and types
+
+A value has to fit its entry's type. Where the conversion is exact, it happens for you, on the page and in workflows:
+
+| Given | Becomes |
+|---|---|
+| The text `42` or `1.5` | A Number |
+| The text `true` or `false` | A Boolean |
+| ISO 8601 text, such as `2026-01-31T09:00:00Z` | A Date & time |
+| JSON text, such as `{"a": 1}` or `[1, 2]` | An Object or an Array |
+| A number or a boolean | A String |
+
+Anything else is refused: the page shows why, and a workflow step fails.
+
+### Read-only entries
+
+Turn on **Read-only** for an entry that workflows should read but never change, such as an API base URL. An Update data store node that targets it can't be published, and a step that tries fails. People can still edit a read-only entry here.
+
+### Who can do what
+
+Everyone in the workspace except Guests sees every entry's name, type, and value. Editors and Admins add entries, edit values and items, switch **Read-only**, and delete. Changes people make here go in the [audit log](#audit-log); changes workflows make don't, but each one shows in its run as an Update data store step.
+
+Changing a value affects every run from then on, without republishing. Deleting an entry deletes everything saved in it. A workflow that reads a deleted entry gets an empty value, a step that updates it fails, and the workflow can't be published again until the reference is fixed.
+
+### Limits
+
+A value or collection item can be up to 64 KB once saved as JSON, and a workspace can hold 100,000 values, collection items included. The page shows how many are used. An entry stays until someone deletes it.
+
+Values aren't secret: they show here, to everyone who can open the workspace, and in the step inputs and outputs of runs. Use a [secret](#secrets) for anything sensitive.
 
 ## Secrets
 
@@ -144,6 +182,6 @@ Admins can change these under **Settings**:
 
 ## Audit log
 
-**Audit log** lists changes to this workspace: workflows created, imported, published, rolled back, or deleted; variables, secrets, and credentials created, changed, deleted, or revealed; store values deleted or cleared; members added, removed, or given a new role; and invitations. Each entry shows who did it and when.
+**Audit log** lists changes to this workspace: workflows created, imported, published, rolled back, or deleted; data store entries and items added, changed, or deleted by people; secrets and credentials created, changed, deleted, or revealed; members added, removed, or given a new role; and invitations. Each entry shows who did it and when.
 
 Admins can read it. The dropdown at the top switches between the workspaces whose log you can read, and the action filter narrows entries by type. Organization admins also see **Organization**: every entry in the organization, including those that belong to no workspace, such as sign-ins (with how each person signed in), users promoted or deactivated, single sign-on, organization settings, and deleted workspaces.
