@@ -60,7 +60,7 @@ class ExpressionPreviewTest extends TestCase
 
         $preview = $this->preview($editor, '{{ upper("hi") }}-{{ trigger.name }}-{{ nodes.first.output.value }}');
 
-        $this->assertSame(['status' => 'value', 'value' => 'HI--', 'type' => 'text', 'source' => __('workflows.editor.preview_no_runs_yet')], $preview);
+        $this->assertSame(['status' => 'value', 'value' => 'HI--', 'type' => 'string', 'source' => __('workflows.editor.preview_no_runs_yet')], $preview);
     }
 
     public function test_uses_the_data_the_node_saw_in_its_latest_run(): void

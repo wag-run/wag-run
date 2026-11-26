@@ -184,7 +184,7 @@ return [
             'list' => 'array',
             'number' => 'number',
             'object' => 'object',
-            'text' => 'text',
+            'text' => 'string',
         ],
     ],
     'index' => [

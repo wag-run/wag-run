@@ -74,18 +74,18 @@ class DataPicker
             }
         }
 
-        usort($ancestorGroups, fn (array $a, array $b) => $a['distance'] <=> $b['distance']);
-        $groups = array_column($ancestorGroups, 'group');
-
         foreach ($loopBodies as $loopId => $body) {
             if (isset($body[$nodeId])) {
-                $groups[] = ['label' => __('workflows.editor.loop_name', ['name' => $graph->node($loopId)->name]), 'items' => [
+                $ancestorGroups[] = ['distance' => $distances[$loopId] ?? PHP_INT_MAX, 'group' => ['label' => __('workflows.editor.loop_name', ['name' => $graph->node($loopId)->name]), 'items' => [
                     ['label' => __('workflows.editor.current_item'), 'path' => 'item', 'type' => 'any'],
                     ['label' => __('workflows.editor.item_index'), 'path' => 'loop.index', 'type' => 'number'],
                     ['label' => __('workflows.editor.item_count'), 'path' => 'loop.count', 'type' => 'number'],
-                ]];
+                ]]];
             }
         }
+
+        usort($ancestorGroups, fn (array $a, array $b) => $a['distance'] <=> $b['distance']);
+        $groups = array_column($ancestorGroups, 'group');
 
         foreach ($graph->incoming($nodeId) as $edge) {
             if ($edge->sourcePort === 'error') {
