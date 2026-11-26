@@ -55,7 +55,7 @@ return [
         'in_app' => 'In the app',
         'kinds' => [
             'assignment' => [
-                'description' => 'An approval or task is waiting on you. Workflows decide whether to email you as well.',
+                'description' => 'An approval or task is waiting on you.',
                 'label' => 'Approvals and tasks',
             ],
             'run_failed' => [
@@ -63,8 +63,8 @@ return [
                 'label' => 'Failed runs',
             ],
             'workflow' => [
-                'description' => 'A workflow sends you a message with a Send notification node. Workflows decide whether to email you as well.',
-                'label' => 'Workflow messages',
+                'description' => 'A workflow sends you a message with a Send notification node.',
+                'label' => 'Workflow notifications',
             ],
         ],
         'preferences_saved' => 'Notification preferences saved.',

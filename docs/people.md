@@ -19,7 +19,6 @@ Pauses the run until enough of the approvers approve, or until it's rejected. Th
 | **Title** | What the request is called in the Inbox, such as `Refund {{ number_format(trigger.values.amount, 2) }} for {{ trigger.values.customer }}` |
 | **Details** | More information for the approvers |
 | **Timeout (hours)** | How long they have to respond. Defaults to 48. |
-| **Also email the approvers** | On by default. They always get the request in their Inbox, and the email links to it. |
 
 How the decision is made:
 
@@ -50,7 +49,6 @@ Pauses the run until someone fills in a form, then continues with their answers.
 | **Instructions** | What to do |
 | **Form fields** | What to ask for. Each field has a **Key**, a **Label**, a **Type** (**Text**, **Long text**, **Number**, **Email**, **Date**, **Checkbox**, **Choice**, or **File upload**) and whether it's **Required**. A **Choice** field lists its options, one per line as `value=Label`. |
 | **Timeout (hours)** | How long they have. Defaults to 48. |
-| **Also email the assignee** | On by default |
 
 A task with no form fields works as a to-do: the assignee clicks **Submit** when it's done.
 
@@ -73,9 +71,9 @@ The **Inbox** is in the account menu at the bottom of the sidebar. A red dot on 
 
 - **Approvals and tasks** assigned to you
 - **Failed runs** of workflows you own
-- **Messages** that workflows send you with a **Send notification** node
+- **Notifications** that workflows send you with a **Send notification** node
 
-Choose which of these also reach you by email, or stay out of the Inbox, under **Settings → Notifications**. Both channels are on until you turn one off.
+Choose which of these reach you in the Inbox, by email, or both, under **Settings → Notifications**. Both channels are on until you turn one off. Approvals and tasks follow your choice; a workflow that needs to email someone specifically can use a **Send email** node.
 
 Items are newest first. Ones you've opened are greyed out, and **Mark all read** clears the count. Approvals and tasks carry a badge with where they stand:
 

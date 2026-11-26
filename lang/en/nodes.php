@@ -2,7 +2,6 @@
 
 return [
     'approval' => [
-        'also_email_the_approvers' => 'Also email the approvers',
         'approved_or_rejected' => 'approved or rejected',
         'approvals' => 'Approvals',
         'approvals_needed' => 'Approvals needed',
@@ -15,7 +14,6 @@ return [
         'needs_n_approvals_but_only' => 'Needs :needed approvals, but only :count approvers have an active account.',
         'rejections' => 'Rejections',
         'responses' => 'Responses',
-        'they_always_get_an_in_app' => 'They always get an in-app notification. The email links to the request and uses the organization\'s email settings.',
         'comment' => 'Comment',
         'decision' => 'Decision',
         'no_response_before_the_approval' => 'No response before the approval timed out.',
@@ -491,15 +489,13 @@ return [
         'attachments_help' => 'One placeholder for a file or an array of files, such as {{ nodes.fetch.output.file }}.',
     ],
     'send_notification' => [
-        'also_send_by_email' => 'Also send by email',
         'count' => 'Count',
         'ids_of_the_people_notified' => 'User ids of the people notified.',
         'link' => 'Link',
         'link_is_not_a_valid' => 'The link ":link" is not a valid URL.',
         'message' => 'Message',
         'none_of_the_recipients_has' => 'None of the recipients has an active account in this organization.',
-        'notified_in_the_app_but' => 'Notified in the app, but the email could not be sent: :message',
-        'notifies_people_in_the_app' => 'Notifies people in the app, and optionally by email.',
+        'notifies_people_in_the_app' => 'Notifies people in the app, by email, or both, as they have chosen.',
         'recipients' => 'Recipients',
         'send_notification' => 'Send notification',
         'where_opening_the_notification_goes' => 'Optional. Defaults to this run.',
@@ -522,7 +518,6 @@ return [
         'value' => 'Value',
     ],
     'task' => [
-        'also_email_the_assignee' => 'Also email the assignee',
         'assignee' => 'Assignee',
         'assignee_does_not_have_an' => 'The assignee does not have an active account in this organization.',
         'assigns_a_manual_task_with' => 'Assigns a manual task with a form to fill in before the flow continues.',
@@ -541,7 +536,6 @@ return [
             'select' => 'Choice',
             'file' => 'File upload',
         ],
-        'they_always_get_an_in_app' => 'They always get an in-app notification. The email links to the task and uses the organization\'s email settings.',
     ],
     'terminate' => [
         'end_as' => 'End as',

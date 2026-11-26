@@ -135,7 +135,6 @@ class DemoWorkflowSeeder extends Seeder
                 'recipients' => [$admin->id, $editor->id],
                 'title' => 'Order #{{ trigger.body.order_id }} was cancelled',
                 'message' => 'Check whether the customer needs a refund.',
-                'email' => true,
             ]),
             $this->node('ignore', 'core.terminate', 'Ignore other statuses', 640, 480, [
                 'status' => 'complete',

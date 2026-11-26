@@ -378,7 +378,7 @@ Outputs: `to` (the addresses it was sent to), `subject`, and `message_id`.
 
 ### Send notification
 
-Sends a message to people's [Inbox](people.md#the-inbox) in wag.run.
+Sends a message to people in wag.run. Each person receives it in their [Inbox](people.md#the-inbox), by email, or both, as they choose under **Settings → Notifications**. To email someone no matter what they chose, or someone without an account, use **Send email**.
 
 | Setting | What it does |
 |---|---|
@@ -386,7 +386,6 @@ Sends a message to people's [Inbox](people.md#the-inbox) in wag.run.
 | **Title** | |
 | **Message** | |
 | **Link** | Optional. Where opening the item goes. Defaults to this run. |
-| **Also send by email** | Email it to them as well. Off by default. |
 
 Outputs: `recipients` (the user IDs notified) and `count`.
 

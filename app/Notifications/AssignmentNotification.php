@@ -10,7 +10,7 @@ use Illuminate\Notifications\Notification;
 
 /**
  * Tells an assignee that an approval or task is waiting on them: in the
- * app, and by email when the node asks for it.
+ * app, by email, or both, as the assignee has chosen.
  */
 class AssignmentNotification extends Notification
 {

@@ -7,8 +7,8 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * A notification a workflow's Send notification node sends, in the app and,
- * when the node asks for it, by email.
+ * A notification a workflow's Send notification node sends, in the app, by
+ * email, or both, as each recipient has chosen.
  */
 class WorkflowNotification extends Notification
 {

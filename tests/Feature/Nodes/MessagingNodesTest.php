@@ -104,7 +104,6 @@ class MessagingNodesTest extends TestCase
                 'title' => 'Order {{ trigger.values.id }} needs a look',
                 'message' => 'It is over budget.',
                 'link' => 'https://shop.example.com/orders/{{ trigger.values.id }}',
-                'email' => true,
             ]]],
             ['start->notify'],
         ), $workspace), ['values' => ['id' => 7]]);
@@ -125,7 +124,7 @@ class MessagingNodesTest extends TestCase
         $ada = User::factory()->orgMember()->create();
 
         $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'notify' => ['core.send_notification', ['recipients' => [$ada->id], 'title' => 'Done', 'link' => '  ', 'email' => true]]],
+            ['start' => 'core.manual_trigger', 'notify' => ['core.send_notification', ['recipients' => [$ada->id], 'title' => 'Done', 'link' => '  ']]],
             ['start->notify'],
         ), $workspace));
 
