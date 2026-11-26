@@ -175,7 +175,53 @@ class FeedTriggerTest extends TestCase
         $this->artisan('workflows:poll-triggers');
 
         $this->assertNull($workflow->triggers()->sole()->state['error']);
-        Http::assertSent(fn (Request $request) => $request->url() === 'https://cdn.example.net/feed.xml' && ! $request->hasHeader('Authorization') && ! $request->hasHeader('X-Site'));
+        Http::assertSent(fn (Request $request) => $request->url() === 'https://cdn.example.net/feed.xml' && ! $request->hasHeader('Authorization') && ! $request->hasHeader('X-Site') && ! $request->hasHeader('If-None-Match'));
+    }
+
+    public function test_asks_only_for_what_changed_since_the_last_check_and_a_not_modified_answer_starts_nothing(): void
+    {
+        $workflow = $this->publish();
+        $feed = fn (string ...$guids) => $this->rss(array_map(fn (string $guid) => $this->entry($guid, $guid), $guids));
+        Http::fake(['example.com/feed.xml' => Http::sequence()
+            ->push($feed('p1'), 200, ['ETag' => '"v1"', 'Last-Modified' => 'Tue, 24 Nov 2026 10:00:00 GMT'])
+            ->push('', 304)
+            ->push($feed('p2', 'p1'), 200, ['ETag' => '"v2"'])
+            ->push('', 304, ['ETag' => '"v2"'])]);
+
+        $this->artisan('workflows:poll-triggers');
+        $this->poll();
+        $this->poll();
+        $this->poll();
+
+        $requests = Http::recorded()->map(fn (array $pair) => $pair[0]);
+        $this->assertFalse($requests[0]->hasHeader('If-None-Match'), 'the first check has nothing to compare');
+        $this->assertSame(['"v1"'], $requests[1]->header('If-None-Match'));
+        $this->assertSame(['Tue, 24 Nov 2026 10:00:00 GMT'], $requests[1]->header('If-Modified-Since'));
+        $this->assertSame(['"v2"'], $requests[3]->header('If-None-Match'), 'a changed feed replaces what is compared');
+        $this->assertFalse($requests[3]->hasHeader('If-Modified-Since'), 'a validator the source stopped giving is dropped');
+        $this->assertSame(['p2'], Execution::all()->pluck('input.id')->all(), 'not modified starts nothing, and what was seen is kept');
+        $this->assertNull($workflow->triggers()->sole()->state['error']);
+    }
+
+    public function test_a_not_modified_answer_to_a_request_with_nothing_to_compare_is_an_error(): void
+    {
+        $workflow = $this->publish();
+        Http::fake(['example.com/feed.xml' => Http::response('', 304)]);
+
+        $this->artisan('workflows:poll-triggers');
+
+        $this->assertSame('The feed answered 304 Not Modified.', $workflow->triggers()->sole()->state['error']);
+    }
+
+    public function test_a_header_set_on_the_trigger_wins_over_the_remembered_validator(): void
+    {
+        $this->publish(['headers' => ['If-None-Match' => '"mine"']]);
+        Http::fake(['example.com/feed.xml' => Http::sequence()->push($this->rss([]), 200, ['ETag' => '"v1"'])->push($this->rss([]))]);
+
+        $this->artisan('workflows:poll-triggers');
+        $this->poll();
+
+        $this->assertSame(['"mine"'], Http::recorded()->last()[0]->header('If-None-Match'));
     }
 
     public function test_a_private_address_is_refused_unless_the_workspace_allows_it(): void
