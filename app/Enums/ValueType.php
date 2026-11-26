@@ -79,11 +79,7 @@ enum ValueType: string
                 is_bool($value) => $value ? 'true' : 'false',
                 default => null,
             },
-            self::Number => match (true) {
-                is_int($value), is_float($value) && is_finite($value) => $value,
-                is_string($value) && preg_match('/^-?\d+(\.\d+)?([eE][+-]?\d+)?$/', trim($value)) === 1 && is_finite(trim($value) + 0) => trim($value) + 0,
-                default => null,
-            },
+            self::Number => $this->number($value),
             self::Boolean => match (true) {
                 is_bool($value) => $value,
                 is_string($value) && in_array(strtolower(trim($value)), ['true', 'false'], true) => strtolower(trim($value)) === 'true',
@@ -115,6 +111,25 @@ enum ValueType: string
             is_array($value) && array_is_list($value) => __('engine.values.given_array'),
             default => __('engine.values.given_object'),
         };
+    }
+
+    /**
+     * A number as given, or from text that is nothing but a number as JSON
+     * writes one, so "007" is refused instead of losing its zeros. Whole
+     * numbers stay integers while they fit; anything else is a float.
+     */
+    private function number(mixed $value): int|float|null
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_string($value) && preg_match('/^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$/', trim($value)) === 1) {
+            $whole = filter_var(trim($value), FILTER_VALIDATE_INT);
+            $value = $whole === false ? (float) trim($value) : $whole;
+        }
+
+        return is_int($value) || (is_float($value) && is_finite($value)) ? $value : null;
     }
 
     /**

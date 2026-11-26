@@ -23,7 +23,7 @@ use Traversable;
  * Given an entry, it stands for that collection's items; otherwise for the
  * workspace's entries.
  *
- * @implements ArrayAccess<array-key, mixed>
+ * @implements ArrayAccess<mixed, mixed>
  * @implements IteratorAggregate<array-key, mixed>
  */
 final class StoreData implements ArrayAccess, Countable, IteratorAggregate, LazyData
