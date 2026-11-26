@@ -537,8 +537,6 @@ class WorkflowEditorTest extends TestCase
         $this->assertSame([], $types('Triggers › Other apps'));
         $this->assertSame(['github.new_tag', 'github.new_release', 'github.workflow_run_failed'], $types('Triggers › Other apps › GitHub'));
         $this->assertSame(['investbrain.new_transaction'], $types('Triggers › Other apps › Investbrain'));
-        $this->assertSame(['key' => 'Triggers › Integrations', 'name' => 'Integrations', 'icon' => 'rss', 'count' => 1], $palette['Triggers']['groups'][1]);
-        $this->assertSame(['core.new_feed_item'], $types('Triggers › Integrations'));
         $this->assertContains('investbrain.add_transaction', $types('Investbrain'));
         $this->assertContains('github.create_issue', $types('GitHub'));
     }

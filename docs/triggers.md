@@ -131,40 +131,6 @@ What the run receives:
 
 Form answers and a manual trigger's inputs are both under `trigger.values`. When another workflow starts this one with [Trigger other workflow](actions.md#trigger-other-workflow) and the form is the workflow's first trigger, it must give an answer for every **Required** field, the same as for a [manual trigger](#manual).
 
-## New item in a feed or list
-
-Fires for each new item in an RSS or Atom feed, or in a list a JSON API returns. Use it for blogs, changelogs, status pages, and any service that has no webhooks but can list recent items. It's under **Triggers › Integrations** in the palette.
-
-| Setting | What it does |
-|---|---|
-| **URL** | The address of the feed or list. It can read workspace variables, as in `https://{{ vars.api_host }}/orders`. |
-| **Format** | **RSS or Atom feed**, or **JSON** |
-| **Authentication** | Optional: an **HTTP Basic** or **API token** setting from the workspace's [credentials](workspaces.md#credentials) |
-| **Headers** | Optional. Values can read workspace variables. |
-| **List** | For JSON: where the items are, such as `data.items`. Leave it empty when the answer is the list itself. |
-| **Item ID** | For JSON: the field that identifies an item, such as `id`. It can reach into the item, as in `ref.id`. |
-| **Newest item is listed first** | For JSON: on by default. Turn it off if the list starts with the oldest item, so runs start oldest first. |
-| **Check every (minutes)** | How often to look, 15 by default |
-
-wag.run fetches the address every **Check every (minutes)** and starts one run for each item it hasn't seen, oldest first. The first check after publishing only notes what's already there, so publishing doesn't start runs for old items. A feed entry is identified by its `guid` or `id`, or its link when it has neither. Entries and JSON items with no ID are skipped. Under **Trigger URLs** in the [workflow settings](editor.md#workflow-settings), the trigger shows when it last checked, and what's wrong if it isn't working.
-
-The address is checked like an [HTTP call's](actions.md#http-call): private addresses are refused unless the workspace allows them. A redirect to another host is followed without the authentication and headers. Answers over 5 MB are refused.
-
-What the run receives depends on the format. For a feed:
-
-| Placeholder | What it holds |
-|---|---|
-| `trigger.id` | The entry's ID |
-| `trigger.title` | Its title |
-| `trigger.link` | Its address |
-| `trigger.summary` | Its summary or description, as plain text |
-| `trigger.author` | Its author |
-| `trigger.published_at` | When it was published, such as `2026-11-25T08:30:00+00:00`, when the feed says |
-
-For JSON, `trigger.id` is the item's ID and `trigger.item` is the whole item, so a field is `{{ trigger.item.total }}`.
-
-Items are remembered by ID, so an item whose ID changes starts a run again. Put **Item ID** on a field that never changes, such as a database ID, not a timestamp or a position in the list.
-
 ## GitHub
 
 Three triggers start a workflow on a GitHub repository's events: **New tag**, **New release**, and **Actions run failed**. They're under **Triggers › Other apps › GitHub** in the palette. Each needs a **GitHub connection** that can see the repository: a GitHub account, which you can connect right from the node with **Connect GitHub** (see [Connecting an account](workspaces.md#connecting-an-account)), or a personal access token or GitHub App (see [Other ways to connect GitHub](workspaces.md#other-ways-to-connect-github)), and the **Repository**, as `owner/name`.
