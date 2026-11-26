@@ -172,7 +172,7 @@ class InboxTest extends TestCase
         $workspace = Workspace::factory()->create();
         [$ada, $grace, $linus] = User::factory()->memberOf($workspace, WorkspaceRole::Editor)->count(3)->create();
         $this->runWorkflow($this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'approve' => ['core.approval', ['approvers' => [$ada->id, $grace->id, $linus->id], 'required_approvals' => 2, 'title' => 'Budget', 'email' => false]]],
+            ['start' => 'core.manual_trigger', 'approve' => ['core.approval', ['approvers' => [$ada->id, $grace->id, $linus->id], 'required_approvals' => 2, 'title' => 'Budget']]],
             ['start->approve'],
         ), $workspace));
         $request = fn (User $user) => Assignment::query()->where('assignee_id', $user->id)->sole();
@@ -207,7 +207,7 @@ class InboxTest extends TestCase
         $workspace = Workspace::factory()->create();
         [$ada, $grace] = User::factory()->memberOf($workspace, WorkspaceRole::Editor)->count(2)->create();
         $this->runWorkflow($this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'approve' => ['core.approval', ['approvers' => [$ada->id, $grace->id], 'required_approvals' => 1, 'title' => 'Budget', 'email' => false]]],
+            ['start' => 'core.manual_trigger', 'approve' => ['core.approval', ['approvers' => [$ada->id, $grace->id], 'required_approvals' => 1, 'title' => 'Budget']]],
             ['start->approve'],
         ), $workspace));
 

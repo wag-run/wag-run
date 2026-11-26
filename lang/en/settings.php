@@ -55,7 +55,7 @@ return [
         'in_app' => 'In the app',
         'kinds' => [
             'assignment' => [
-                'description' => 'An approval or task is waiting on you. Workflows decide whether to email you as well.',
+                'description' => 'An approval or task is waiting on you.',
                 'label' => 'Approvals and tasks',
             ],
             'run_failed' => [

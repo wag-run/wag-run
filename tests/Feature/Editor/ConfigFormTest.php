@@ -16,7 +16,6 @@ class ConfigFormTest extends TestCase
             'title' => 'Check {{ trigger.values.id }}',
             'fields' => [['name' => 'size', 'label' => 'Size', 'type' => 'select', 'required' => true, 'options' => ['s' => 'Small', 'l' => 'Large']]],
             'timeout_hours' => 48,
-            'email' => false,
         ];
 
         $form = ConfigForm::toForm($task, $config);

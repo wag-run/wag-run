@@ -60,13 +60,13 @@ class Assignments
     }
 
     /**
-     * Create an assignment and notify the assignee in the app, and by email
-     * when $email is set. A failed email is reported, not thrown, so it
-     * never fails the step that is already waiting on the assignment.
+     * Create an assignment and notify the assignee in the app, by email, or
+     * both, as they have chosen. A failed email is reported, not thrown, so
+     * it never fails the step that is already waiting on the assignment.
      *
      * @param  list<array<string, mixed>>  $fields
      */
-    public function create(NodeContext $context, AssignmentType $type, User $assignee, string $title, ?string $message, ?CarbonInterface $dueAt, array $fields = [], bool $email = false): Assignment
+    public function create(NodeContext $context, AssignmentType $type, User $assignee, string $title, ?string $message, ?CarbonInterface $dueAt, array $fields = []): Assignment
     {
         $workspace = $context->workspace();
 
@@ -87,12 +87,12 @@ class Assignments
             'due_at' => $dueAt,
         ]);
 
-        DB::afterCommit(function () use ($assignee, $assignment, $email) {
+        DB::afterCommit(function () use ($assignee, $assignment) {
             if ($assignee->wantsNotification(NotificationKind::Assignment, 'database')) {
                 $assignee->notify(new AssignmentNotification($assignment));
             }
 
-            if (! $email || ! $assignee->wantsNotification(NotificationKind::Assignment, 'mail')) {
+            if (! $assignee->wantsNotification(NotificationKind::Assignment, 'mail')) {
                 return;
             }
 

@@ -2,7 +2,6 @@
 
 return [
     'approval' => [
-        'also_email_the_approvers' => 'Also email the approvers',
         'approved_or_rejected' => 'approved or rejected',
         'approvals' => 'Approvals',
         'approvals_needed' => 'Approvals needed',
@@ -15,7 +14,6 @@ return [
         'needs_n_approvals_but_only' => 'Needs :needed approvals, but only :count approvers have an active account.',
         'rejections' => 'Rejections',
         'responses' => 'Responses',
-        'they_always_get_an_in_app' => 'They always get an in-app notification. The email links to the request and uses the organization\'s email settings.',
         'comment' => 'Comment',
         'decision' => 'Decision',
         'no_response_before_the_approval' => 'No response before the approval timed out.',
@@ -522,7 +520,6 @@ return [
         'value' => 'Value',
     ],
     'task' => [
-        'also_email_the_assignee' => 'Also email the assignee',
         'assignee' => 'Assignee',
         'assignee_does_not_have_an' => 'The assignee does not have an active account in this organization.',
         'assigns_a_manual_task_with' => 'Assigns a manual task with a form to fill in before the flow continues.',
@@ -541,7 +538,6 @@ return [
             'select' => 'Choice',
             'file' => 'File upload',
         ],
-        'they_always_get_an_in_app' => 'They always get an in-app notification. The email links to the task and uses the organization\'s email settings.',
     ],
     'terminate' => [
         'end_as' => 'End as',

@@ -183,25 +183,26 @@ class ApprovalAndTaskTest extends TestCase
         $this->assertSame(AssignmentStatus::Cancelled, Assignment::sole()->status);
     }
 
-    public function test_approvers_are_emailed_only_when_the_node_asks_for_it(): void
+    public function test_assignees_are_notified_in_the_app_and_by_email_unless_they_opted_out(): void
     {
         Notification::fake();
-        [$emailed, $notEmailed] = User::factory()->orgMember()->count(2)->create();
+        [$everywhere, $appOnly] = User::factory()->orgMember()->count(2)->create();
+        $appOnly->forceFill(['notification_preferences' => ['assignment' => ['database' => true, 'mail' => false]]])->save();
 
         $this->runWorkflow($this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'approve' => ['core.approval', ['approvers' => [$emailed->id], 'title' => 'Refund', 'email' => true]]],
+            ['start' => 'core.manual_trigger', 'approve' => ['core.approval', ['approvers' => [$everywhere->id], 'title' => 'Refund']]],
             ['start->approve'],
         )));
         $this->runWorkflow($this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'check' => ['core.task', ['assignee' => $notEmailed->id, 'title' => 'Check stock', 'email' => false]]],
+            ['start' => 'core.manual_trigger', 'check' => ['core.task', ['assignee' => $appOnly->id, 'title' => 'Check stock']]],
             ['start->check'],
         )));
 
         $byMail = fn (AssignmentNotification $notification, array $channels) => $channels === ['mail'];
-        Notification::assertSentTo($emailed, AssignmentNotification::class, fn (AssignmentNotification $notification, array $channels) => $channels === ['database']);
-        Notification::assertSentTo($emailed, AssignmentNotification::class, $byMail);
-        Notification::assertSentTo($notEmailed, AssignmentNotification::class, fn (AssignmentNotification $notification, array $channels) => $channels === ['database']);
-        Notification::assertNotSentTo($notEmailed, AssignmentNotification::class, $byMail);
+        Notification::assertSentTo($everywhere, AssignmentNotification::class, fn (AssignmentNotification $notification, array $channels) => $channels === ['database']);
+        Notification::assertSentTo($everywhere, AssignmentNotification::class, $byMail);
+        Notification::assertSentTo($appOnly, AssignmentNotification::class, fn (AssignmentNotification $notification, array $channels) => $channels === ['database']);
+        Notification::assertNotSentTo($appOnly, AssignmentNotification::class, $byMail);
     }
 
     public function test_the_assignment_email_carries_the_request_due_date_and_a_link_to_it(): void

@@ -121,7 +121,7 @@ class NotificationPreferencesTest extends TestCase
             ['start->notify'],
         )));
         $this->runWorkflow($this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'approve' => ['core.approval', ['approvers' => [$recipient->id], 'title' => 'Refund', 'email' => true]]],
+            ['start' => 'core.manual_trigger', 'approve' => ['core.approval', ['approvers' => [$recipient->id], 'title' => 'Refund']]],
             ['start->approve'],
         )));
 
