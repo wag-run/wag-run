@@ -12,31 +12,29 @@ class OrganizationSettingsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_org_admin_opens_registration_and_sets_retention_to_forever(): void
+    public function test_org_admin_sets_retention_to_forever(): void
     {
         $admin = User::factory()->orgAdmin()->create();
 
         Livewire::actingAs($admin)
             ->test('pages::admin.settings')
-            ->set('registrationOpen', true)
             ->set('keepForever', true)
             ->call('save')
             ->assertHasNoErrors();
 
-        $organization = Organization::current();
-        $this->assertTrue($organization->registration_open);
-        $this->assertNull($organization->default_retention_days);
+        $this->assertNull(Organization::current()->default_retention_days);
         $this->assertDatabaseHas('audit_logs', ['action' => 'organization.settings_updated']);
     }
 
-    public function test_the_page_is_called_organization_settings_and_listed_as_settings(): void
+    public function test_the_page_is_the_general_tab_of_org_settings_without_registration(): void
     {
         $admin = User::factory()->orgAdmin()->create();
 
         $this->actingAs($admin)->get(route('admin.settings'))
             ->assertOk()
-            ->assertSeeInOrder(['<title>', 'Organization settings - '], false)
-            ->assertDontSee('Sign-in &amp; defaults', false);
+            ->assertSeeInOrder(['<title>', 'General - '], false)
+            ->assertSee('Org settings')
+            ->assertDontSee('Allow anyone to register');
     }
 
     public function test_requires_a_retention_period_unless_kept_forever(): void

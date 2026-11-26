@@ -11,6 +11,8 @@ use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 new class extends Component {
+    public bool $registrationOpen = false;
+
     #[Locked]
     public ?string $editingId = null;
 
@@ -37,6 +39,31 @@ new class extends Component {
 
     public bool $trustEmail = false;
 
+    public function mount(): void
+    {
+        $this->registrationOpen = Organization::current()->registration_open;
+    }
+
+    /**
+     * Save the registration switch as soon as it changes.
+     */
+    public function updatedRegistrationOpen(): void
+    {
+        $this->authorize('org-admin');
+
+        $organization = Organization::current();
+        $organization->registration_open = $this->registrationOpen;
+
+        if ($organization->isDirty()) {
+            $organization->save();
+            Audit::record('organization.settings_updated', $organization, metadata: ['changed' => ['registration_open']]);
+        }
+
+        Flux::toast(variant: 'success', text: $this->registrationOpen
+            ? __('admin.sign_in_providers.anyone_can_now_register')
+            : __('admin.sign_in_providers.people_now_join_only_by_invitation'));
+    }
+
     #[Computed]
     public function providers()
     {
@@ -46,7 +73,7 @@ new class extends Component {
     public function create(): void
     {
         $this->authorize('org-admin');
-        $this->reset();
+        $this->resetExcept('registrationOpen');
         $this->resetValidation();
         Flux::modal('provider-form')->show();
     }
@@ -125,7 +152,7 @@ new class extends Component {
 
         Flux::modal('provider-form')->close();
         Flux::toast(variant: 'success', text: __('admin.sign_in_providers.sign_in_provider_saved'));
-        $this->reset();
+        $this->resetExcept('registrationOpen');
     }
 
     public function test(string $id, OidcClient $client): void
@@ -170,76 +197,86 @@ new class extends Component {
 }; ?>
 
 <section class="w-full">
-    <x-page-heading :heading="__('common.sign_in_providers')" :subheading="__('admin.sign_in_providers.let_people_sign_in_with')">
-        <x-slot:actions>
-            <flux:button variant="primary" icon="plus" wire:click="create" data-test="add-provider">{{ __('admin.sign_in_providers.add_provider') }}</flux:button>
-        </x-slot:actions>
-    </x-page-heading>
+    <x-pages::admin.layout :heading="__('admin.sign_in_providers.title')" :subheading="__('admin.sign_in_providers.who_can_create_an_account')">
+        <div class="mb-10 max-w-2xl space-y-3">
+            <flux:heading>{{ __('admin.sign_in_providers.registration') }}</flux:heading>
+            <flux:switch wire:model.live="registrationOpen" :label="__('admin.sign_in_providers.allow_anyone_to_register')"
+                :description="__('admin.sign_in_providers.when_off_people_join_only')" data-test="registration-open" />
+        </div>
 
-    <flux:table>
-        <flux:table.columns>
-            <flux:table.column>{{ __('common.provider') }}</flux:table.column>
-            <flux:table.column>{{ __('admin.sign_in_providers.issuer') }}</flux:table.column>
-            <flux:table.column>{{ __('admin.sign_in_providers.new_people') }}</flux:table.column>
-            <flux:table.column>{{ __('admin.sign_in_providers.linked_users') }}</flux:table.column>
-            <flux:table.column></flux:table.column>
-        </flux:table.columns>
-        <flux:table.rows>
-            @forelse ($this->providers as $provider)
-                <flux:table.row :key="$provider->id">
-                    <flux:table.cell>
-                        <span class="font-medium">{{ $provider->name }}</span>
-                        @unless ($provider->enabled)
-                            <flux:badge size="sm" class="ms-1">{{ __('admin.sign_in_providers.off') }}</flux:badge>
-                        @endunless
-                        <div class="font-mono text-xs text-zinc-500">{{ $this->callbackUrl($provider->slug) }}</div>
-                    </flux:table.cell>
-                    <flux:table.cell class="font-mono text-xs">{{ $provider->issuer }}</flux:table.cell>
-                    <flux:table.cell>{{ $provider->allow_registration ? __('admin.sign_in_providers.get_an_account') : __('admin.sign_in_providers.need_an_invitation') }}</flux:table.cell>
-                    <flux:table.cell>{{ $provider->identities_count }}</flux:table.cell>
-                    <flux:table.cell align="end">
-                        <flux:button size="sm" variant="ghost" icon="signal" wire:click="test('{{ $provider->id }}')" :tooltip="__('admin.sign_in_providers.check_discovery')" :aria-label="__('admin.sign_in_providers.check_discovery')" />
-                        <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit('{{ $provider->id }}')" :aria-label="__('common.edit')" />
-                        <flux:button size="sm" variant="ghost" icon="trash" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('admin.sign_in_providers.delete_sign_in_provider'), 'message' => __('admin.sign_in_providers.delete_name_people_who_signed', ['name' => $provider->name]), 'confirm' => __('common.delete')]) }}).then((ok) => ok && $wire.delete('{{ $provider->id }}'))"
-                            :aria-label="__('common.delete')" />
-                    </flux:table.cell>
-                </flux:table.row>
-            @empty
-                <flux:table.row>
-                    <flux:table.cell colspan="5" class="text-center text-zinc-500">{{ __('admin.sign_in_providers.no_sign_in_providers_yet') }}</flux:table.cell>
-                </flux:table.row>
-            @endforelse
-        </flux:table.rows>
-    </flux:table>
-
-    <flux:modal name="provider-form" class="md:w-xl">
-        <form wire:submit="save" class="space-y-6">
-            <flux:heading size="lg">{{ $editingId ? __('admin.sign_in_providers.edit_sign_in_provider') : __('admin.sign_in_providers.add_sign_in_provider') }}</flux:heading>
-
-            <flux:input wire:model.live.debounce.300ms="name" :label="__('common.name')" :description="__('admin.sign_in_providers.shown_on_the_sign_in')" required />
-            <flux:input wire:model="issuer" :label="__('admin.sign_in_providers.issuer_url')" placeholder="https://id.example.com/realms/main" :description="__('admin.sign_in_providers.base_url_that_serves_well')" required />
-
-            <flux:field>
-                <flux:label>{{ __('admin.sign_in_providers.redirect_uri') }}</flux:label>
-                <flux:description>{{ __('admin.sign_in_providers.register_this_with_the_provider') }}</flux:description>
-                <flux:input :value="$this->callbackUrl()" readonly copyable />
-            </flux:field>
-
-            <flux:input wire:model="clientId" :label="__('admin.sign_in_providers.client_id')" required />
-            <flux:input wire:model="clientSecret" type="password" :label="__('admin.sign_in_providers.client_secret')" viewable
-                :placeholder="$editingId ? __('admin.sign_in_providers.leave_blank_to_keep_the') : ''" :required="! $editingId" />
-            <flux:input wire:model="scopes" :label="__('admin.sign_in_providers.scopes')" />
-
-            <flux:switch wire:model="enabled" :label="__('admin.sign_in_providers.show_on_the_sign_in')" />
-            <flux:switch wire:model="allowRegistration" :label="__('admin.sign_in_providers.create_accounts_for_new_people')"
-                :description="__('admin.sign_in_providers.new_people_join_as_organization')" />
-            <flux:switch wire:model="trustEmail" :label="__('admin.sign_in_providers.trust_email_addresses_from_this')"
-                :description="__('admin.sign_in_providers.link_sign_ins_to_existing')" />
-
-            <div class="flex justify-end gap-2">
-                <flux:modal.close><flux:button variant="ghost">{{ __('common.cancel') }}</flux:button></flux:modal.close>
-                <flux:button type="submit" variant="primary" data-test="save-provider">{{ __('common.save') }}</flux:button>
+        <div class="mb-4 flex flex-wrap items-end justify-between gap-4">
+            <div>
+                <flux:heading>{{ __('common.sign_in_providers') }}</flux:heading>
+                <flux:text class="mt-1">{{ __('admin.sign_in_providers.let_people_sign_in_with') }}</flux:text>
             </div>
-        </form>
-    </flux:modal>
+            <flux:button variant="primary" icon="plus" wire:click="create" data-test="add-provider">{{ __('admin.sign_in_providers.add_provider') }}</flux:button>
+        </div>
+
+        <flux:table>
+            <flux:table.columns>
+                <flux:table.column>{{ __('common.provider') }}</flux:table.column>
+                <flux:table.column>{{ __('admin.sign_in_providers.issuer') }}</flux:table.column>
+                <flux:table.column>{{ __('admin.sign_in_providers.new_people') }}</flux:table.column>
+                <flux:table.column>{{ __('admin.sign_in_providers.linked_users') }}</flux:table.column>
+                <flux:table.column></flux:table.column>
+            </flux:table.columns>
+            <flux:table.rows>
+                @forelse ($this->providers as $provider)
+                    <flux:table.row :key="$provider->id">
+                        <flux:table.cell>
+                            <span class="font-medium">{{ $provider->name }}</span>
+                            @unless ($provider->enabled)
+                                <flux:badge size="sm" class="ms-1">{{ __('admin.sign_in_providers.off') }}</flux:badge>
+                            @endunless
+                            <div class="font-mono text-xs text-zinc-500">{{ $this->callbackUrl($provider->slug) }}</div>
+                        </flux:table.cell>
+                        <flux:table.cell class="font-mono text-xs">{{ $provider->issuer }}</flux:table.cell>
+                        <flux:table.cell>{{ $provider->allow_registration ? __('admin.sign_in_providers.get_an_account') : __('admin.sign_in_providers.need_an_invitation') }}</flux:table.cell>
+                        <flux:table.cell>{{ $provider->identities_count }}</flux:table.cell>
+                        <flux:table.cell align="end">
+                            <flux:button size="sm" variant="ghost" icon="signal" wire:click="test('{{ $provider->id }}')" :tooltip="__('admin.sign_in_providers.check_discovery')" :aria-label="__('admin.sign_in_providers.check_discovery')" />
+                            <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit('{{ $provider->id }}')" :aria-label="__('common.edit')" />
+                            <flux:button size="sm" variant="ghost" icon="trash" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('admin.sign_in_providers.delete_sign_in_provider'), 'message' => __('admin.sign_in_providers.delete_name_people_who_signed', ['name' => $provider->name]), 'confirm' => __('common.delete')]) }}).then((ok) => ok && $wire.delete('{{ $provider->id }}'))"
+                                :aria-label="__('common.delete')" />
+                        </flux:table.cell>
+                    </flux:table.row>
+                @empty
+                    <flux:table.row>
+                        <flux:table.cell colspan="5" class="text-center text-zinc-500">{{ __('admin.sign_in_providers.no_sign_in_providers_yet') }}</flux:table.cell>
+                    </flux:table.row>
+                @endforelse
+            </flux:table.rows>
+        </flux:table>
+
+        <flux:modal name="provider-form" class="md:w-xl">
+            <form wire:submit="save" class="space-y-6">
+                <flux:heading size="lg">{{ $editingId ? __('admin.sign_in_providers.edit_sign_in_provider') : __('admin.sign_in_providers.add_sign_in_provider') }}</flux:heading>
+
+                <flux:input wire:model.live.debounce.300ms="name" :label="__('common.name')" :description="__('admin.sign_in_providers.shown_on_the_sign_in')" required />
+                <flux:input wire:model="issuer" :label="__('admin.sign_in_providers.issuer_url')" placeholder="https://id.example.com/realms/main" :description="__('admin.sign_in_providers.base_url_that_serves_well')" required />
+
+                <flux:field>
+                    <flux:label>{{ __('admin.sign_in_providers.redirect_uri') }}</flux:label>
+                    <flux:description>{{ __('admin.sign_in_providers.register_this_with_the_provider') }}</flux:description>
+                    <flux:input :value="$this->callbackUrl()" readonly copyable />
+                </flux:field>
+
+                <flux:input wire:model="clientId" :label="__('admin.sign_in_providers.client_id')" required />
+                <flux:input wire:model="clientSecret" type="password" :label="__('admin.sign_in_providers.client_secret')" viewable
+                    :placeholder="$editingId ? __('admin.sign_in_providers.leave_blank_to_keep_the') : ''" :required="! $editingId" />
+                <flux:input wire:model="scopes" :label="__('admin.sign_in_providers.scopes')" />
+
+                <flux:switch wire:model="enabled" :label="__('admin.sign_in_providers.show_on_the_sign_in')" />
+                <flux:switch wire:model="allowRegistration" :label="__('admin.sign_in_providers.create_accounts_for_new_people')"
+                    :description="__('admin.sign_in_providers.new_people_join_as_organization')" />
+                <flux:switch wire:model="trustEmail" :label="__('admin.sign_in_providers.trust_email_addresses_from_this')"
+                    :description="__('admin.sign_in_providers.link_sign_ins_to_existing')" />
+
+                <div class="flex justify-end gap-2">
+                    <flux:modal.close><flux:button variant="ghost">{{ __('common.cancel') }}</flux:button></flux:modal.close>
+                    <flux:button type="submit" variant="primary" data-test="save-provider">{{ __('common.save') }}</flux:button>
+                </div>
+            </form>
+        </flux:modal>
+    </x-pages::admin.layout>
 </section>
