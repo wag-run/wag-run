@@ -159,7 +159,7 @@ Requests to the app, such as webhook calls and form uploads, can be up to 55 MB,
   echo "APP_KEY=base64:$(openssl rand -base64 32)"
   ```
 
-**Never change the key on an install that is in use.** Secrets saved with the old key can't be read with a new one.
+**Never change the key on an install that is in use.** Secrets saved with the old key can't be read with a new one. For the same reason, an install restored from a backup must use the key the backup was made with (see [Restoring](#restoring)).
 
 ## Data and backups
 
@@ -168,15 +168,68 @@ Two Docker volumes hold everything:
 | Volume | What's in it |
 |---|---|
 | `wag_database` | The PostgreSQL database: workflows, runs, users, and settings |
-| `wag_storage` | The app's own files, including the generated `APP_KEY` and the keys that sign API tokens (`oauth-private.key` and `oauth-public.key`) |
+| `wag_storage` | The app's own files: the files runs receive or make, the generated `APP_KEY`, and the keys that sign API tokens (`oauth-private.key` and `oauth-public.key`) |
 
-Back up both. To dump the database:
+### Backing up
+
+Back up the database, the storage volume, and `.env`. Run these in the install folder while the app is running:
 
 ```bash
-docker compose exec db pg_dump -U wag wag > backup.sql
+docker compose exec -T db pg_dump -U wag wag > backup.sql
 ```
 
-If you set `APP_KEY` yourself, keep a copy of it with your backups. If the API token keys are lost, new ones are generated on the next start, and everyone's API tokens and connected AI assistants stop working until they're created or connected again.
+```bash
+docker compose exec -T app tar czf - -C /var/www/html/storage . > storage.tar.gz
+```
+
+Take both at the same time, so the files match the runs that refer to them. Keep a copy of `.env` with them: it holds `DB_PASSWORD`, your OAuth app secrets, and `APP_KEY` if you set it yourself. Together, these hold the encryption key and every secret it unlocks, so store them as carefully as the install itself.
+
+If the API token keys are lost, new ones are generated on the next start, and everyone's API tokens and connected AI assistants stop working until they're created or connected again.
+
+### Restoring
+
+Restore into a fresh install, before its app has started for the first time. On first start, the app creates empty tables and a new `APP_KEY`, which would clash with the backup's. If you've already started it, remove it with `docker compose down -v`, which deletes both of its volumes, and start again from step 2.
+
+1. Make a folder and download `docker-compose.yml` into it, as in [Install](#install), but don't download the settings file. Copy your backed-up `.env`, `backup.sql`, and `storage.tar.gz` into the folder instead.
+
+   Set `WAG_VERSION` to the release the backup came from or a newer one. Database changes are only applied forward, so an older release can't run a newer backup.
+
+2. Start only the database:
+
+   ```bash
+   docker compose up -d --wait db
+   ```
+
+3. Load the database dump:
+
+   ```bash
+   docker compose exec -T db psql -U wag -d wag -v ON_ERROR_STOP=1 < backup.sql
+   ```
+
+4. Unpack the storage backup into the new storage volume:
+
+   ```bash
+   docker compose run --rm --no-deps -T --entrypoint tar app xzf - -C /var/www/html/storage < storage.tar.gz
+   ```
+
+   `--entrypoint tar` runs only `tar`, skipping the app's startup, so no new `APP_KEY` is generated before the backed-up one is in place.
+
+5. Start the app:
+
+   ```bash
+   docker compose up -d
+   ```
+
+   It applies any database changes the backup doesn't have yet, then runs with the restored data and key.
+
+#### The key must match
+
+Secrets in the database can only be read with the `APP_KEY` they were saved with, so the restored install must use the same key as the one the backup came from.
+
+- **If the key was generated**, it's `app.key` in `storage.tar.gz`, and step 4 restores it. Leave `APP_KEY` empty in `.env`: a key set in `.env` takes the place of `app.key`.
+- **If you set the key yourself**, it's in your backed-up `.env`. Make sure the restored `.env` has that same `APP_KEY`.
+
+With a different key, the app still starts and people can still sign in, but everything that reads a secret, such as a run step that uses a credential or the organization's SMTP settings, fails and logs `The MAC is invalid.` To fix it, stop the app, put the original key in place, and start it again. If the original key is lost, the secrets can't be recovered and have to be entered again.
 
 ## Upgrading
 
@@ -216,7 +269,19 @@ For a small or trial install, the image can store its data in SQLite inside the 
 docker run -d --read-only --cap-drop ALL --security-opt no-new-privileges --tmpfs /tmp --env-file .env -v wag_storage:/var/www/html/storage -p 127.0.0.1:8080:8080 ghcr.io/wag-run/wag-run:latest
 ```
 
-Back up the `wag_storage` volume, which then holds the database too.
+Back up the `wag_storage` volume, which then holds the database too. Stop the container first, so the database file isn't mid-write, then run:
+
+```bash
+docker run --rm --entrypoint tar -v wag_storage:/var/www/html/storage ghcr.io/wag-run/wag-run:latest czf - -C /var/www/html/storage . > storage.tar.gz
+```
+
+To restore it into a new, empty volume, before the app's first start:
+
+```bash
+docker run --rm -i --entrypoint tar -v wag_storage:/var/www/html/storage ghcr.io/wag-run/wag-run:latest xzf - -C /var/www/html/storage < storage.tar.gz
+```
+
+The [same rules about the key](#the-key-must-match) apply.
 
 ## Building the image yourself
 
