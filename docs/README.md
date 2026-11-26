@@ -9,7 +9,8 @@ wag.run is a workflow automation app for teams. You build a workflow on a visual
 | [Getting started](getting-started.md) | Signing in, finding your way around, and building, testing, and publishing your first workflow |
 | [The workflow editor](editor.md) | The canvas, connecting nodes, the settings panel, sticky notes, drafts and versions, workflow settings, import and export |
 | [Triggers](triggers.md) | Manual, webhook, schedule, form, GitHub, and Investbrain triggers |
-| [Actions](actions.md) | Every action node: flow, data, integrations, AI, messaging, and people |
+| [Actions](actions.md) | Every action node: flow, data, integrations, storage, GitHub, Google, Investbrain, wag.run, AI, messaging, and people |
+| [Files](files.md) | Files that runs receive, make, and pass between nodes: uploads, downloads, attachments, and how long they're kept |
 | [Data and placeholders](data-and-placeholders.md) | Using earlier outputs, the data picker, `{{ }}` expressions, and helper functions |
 | [Chat webhooks](chat-webhooks.md) | Getting an incoming webhook from Slack, Mattermost, Microsoft Teams, Discord, and Google Chat for the Chat message action |
 | [Approvals, tasks, and the Inbox](people.md) | Bringing people into a run, and responding to requests |
@@ -93,7 +94,7 @@ What a placeholder can read:
 | `nodes.<id>.output` | The output of an earlier node. The node's settings panel shows the exact name under **Reference its output as**. |
 | `vars.<key>` | A workspace variable |
 | `secrets.<key>` | A workspace secret. Its value is masked in run logs. |
-| `execution` | The run's `id`, `workflow` name, `trigger_type`, and `started_at` |
+| `execution` | The run's `id`, `workflow` name, `trigger_type`, and `started_at`, and `trigger`, the `id`, `type`, and `config` of the trigger that started it |
 | `item`, `loop` | Inside a For loop: the current item, and its `index` and `count` |
 | `error` | On a node reached through an **on error** connection: what went wrong |
 
