@@ -11,7 +11,7 @@ Open your wag.run address and sign in with your email and password, a passkey, o
 - **Invited by email?** Open the invitation link to create your account and join. Invitations expire, so ask for a new one if yours no longer works.
 - **First person on a new install?** Register an account. The first account becomes the organization admin. To set up an install, see [Self-hosting](self-hosting.md).
 
-Once you're in, open **Settings** from the account menu at the bottom of the sidebar to add a passkey or turn on two-factor authentication.
+Once you're in, open **Preferences** from the account menu at the bottom of the sidebar to add a passkey or turn on two-factor authentication.
 
 ## 2. Find your way around
 
@@ -25,7 +25,7 @@ The sidebar shows the current workspace at the top. Use it to switch workspaces.
 | **Variables**, **Secrets**, **Credentials** | Shared values and sign-in details your workflows use |
 | **Members**, **Settings**, **Audit log** | Workspace administration (Admins) |
 
-Organization admins also see an **Organization** section for users, workspaces, sign-in, and email settings.
+Organization admins also see **Org settings** in the account menu, for workspaces, users, sign-in, email, and organization-wide defaults.
 
 Your **Inbox** is in the account menu at the bottom of the sidebar. It collects approvals and tasks assigned to you, failed runs of workflows you own, and messages from workflows, across all your workspaces. A red dot on your avatar means something in it is unread.
 
