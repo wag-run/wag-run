@@ -29,6 +29,12 @@ use RuntimeException;
  * Makes an HTTP request, optionally authenticated with a workspace setting.
  * Internal addresses are refused unless allowlisted, on every redirect hop,
  * and the connection is pinned to the address that was checked.
+ *
+ * Redirects are followed here rather than by Guzzle, to check each hop, so
+ * this node decides what a hop gets: the authentication and the node's
+ * headers go only to the host the URL names, and never over plain HTTP
+ * after HTTPS. The query parameters are added to the first request only,
+ * since a redirect's Location is the whole address to go to.
  */
 class HttpRequest extends Node
 {
@@ -152,10 +158,14 @@ class HttpRequest extends Node
      */
     protected function send(NodeContext $context, string $method, string $url, AddressAllowlist $allowlist, array $options, ?string $download): NodeResult
     {
+        $originHost = strtolower((string) parse_url($url, PHP_URL_HOST));
+        $originIsSecure = strtolower((string) parse_url($url, PHP_URL_SCHEME)) === 'https';
+
         try {
             for ($hop = 0; ; $hop++) {
                 $target = $this->guard->check($url, $allowlist);
-                $response = $this->request($context, $target)->send($method, $url, $options);
+                $trusted = $target['host'] === $originHost && (! $originIsSecure || strtolower((string) parse_url($url, PHP_URL_SCHEME)) === 'https');
+                $response = $this->request($context, $target, $trusted, $hop === 0)->send($method, $url, $options);
 
                 if (! $context->input('follow_redirects', true) || ! $response->redirect() || ! $response->header('Location')) {
                     break;
@@ -199,8 +209,10 @@ class HttpRequest extends Node
 
     /**
      * @param  array{host: string, port: int, ip: string}  $target
+     * @param  bool  $trusted  whether this hop may get the authentication and the node's headers
+     * @param  bool  $firstHop  whether this is the request to the URL itself, not a redirect
      */
-    protected function request(NodeContext $context, array $target): PendingRequest
+    protected function request(NodeContext $context, array $target, bool $trusted = true, bool $firstHop = true): PendingRequest
     {
         $ip = str_contains($target['ip'], ':') ? "[{$target['ip']}]" : $target['ip'];
 
@@ -210,17 +222,19 @@ class HttpRequest extends Node
                 'verify' => ! $context->input('allow_insecure', false),
                 'curl' => [CURLOPT_RESOLVE => ["{$target['host']}:{$target['port']}:{$ip}"]],
             ])
-            ->withHeaders(array_filter((array) $context->input('headers', []), fn ($value, $key) => $key !== '', ARRAY_FILTER_USE_BOTH));
+            ->withHeaders($trusted ? array_filter((array) $context->input('headers', []), fn ($value, $key) => $key !== '', ARRAY_FILTER_USE_BOTH) : []);
 
         if (RunChain::isOwnHost($target['host'])) {
             $request->withHeaders([RunChain::HEADER => RunChain::headerFor($context->execution)]);
         }
 
-        if ($query = array_filter((array) $context->input('query', []), fn ($value, $key) => $key !== '', ARRAY_FILTER_USE_BOTH)) {
+        $query = $firstHop ? array_filter((array) $context->input('query', []), fn ($value, $key) => $key !== '', ARRAY_FILTER_USE_BOTH) : [];
+
+        if ($query !== []) {
             $request->withQueryParameters($query);
         }
 
-        $credential = $context->credential($context->input('credential'));
+        $credential = $trusted ? $context->credential($context->input('credential')) : null;
 
         if ($credential) {
             $type = $credential->credentialType();
