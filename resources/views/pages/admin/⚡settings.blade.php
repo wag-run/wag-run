@@ -12,6 +12,8 @@ new class extends Component {
 
     public ?int $defaultRetentionDays = null;
 
+    public bool $allowAccountDeletion = true;
+
     public int|string $maxChainDepth = 10;
 
     public int|string $maxRunsPerMinute = 60;
@@ -23,6 +25,7 @@ new class extends Component {
         $this->name = $organization->name;
         $this->keepForever = $organization->default_retention_days === null;
         $this->defaultRetentionDays = $organization->default_retention_days ?? 30;
+        $this->allowAccountDeletion = $organization->allow_account_deletion;
         $this->maxChainDepth = $organization->max_chain_depth;
         $this->maxRunsPerMinute = $organization->max_runs_per_minute;
     }
@@ -42,12 +45,13 @@ new class extends Component {
         $organization->fill([
             'name' => $this->name,
             'default_retention_days' => $this->keepForever ? null : $this->defaultRetentionDays,
+            'allow_account_deletion' => $this->allowAccountDeletion,
             'max_chain_depth' => (int) $this->maxChainDepth,
             'max_runs_per_minute' => (int) $this->maxRunsPerMinute,
         ]);
 
         if ($organization->isDirty()) {
-            $changed = array_keys($organization->getDirty());
+            $changed = $organization->changedFields();
             $organization->save();
             Audit::record('organization.settings_updated', $organization, metadata: ['changed' => $changed]);
         }
@@ -65,6 +69,12 @@ new class extends Component {
     <x-pages::admin.layout :heading="__('admin.settings.title')" :subheading="__('admin.settings.organization_wide_settings_workspaces_and')">
         <form wire:submit="save" class="max-w-2xl space-y-10">
             <flux:input wire:model="name" :label="__('admin.settings.organization_name')" required />
+
+            <div class="space-y-3">
+                <flux:heading>{{ __('admin.settings.accounts') }}</flux:heading>
+                <flux:switch wire:model="allowAccountDeletion" :label="__('admin.settings.let_people_delete_their_accounts')"
+                    :description="__('admin.settings.when_off_the_delete_account')" data-test="allow-account-deletion" />
+            </div>
 
             <div class="space-y-3">
                 <flux:heading>{{ __('admin.settings.default_execution_log_retention') }}</flux:heading>

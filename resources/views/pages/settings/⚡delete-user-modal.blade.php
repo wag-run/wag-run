@@ -2,6 +2,7 @@
 
 use App\Concerns\PasswordValidationRules;
 use App\Livewire\Actions\Logout;
+use App\Models\Organization;
 use App\Services\UserDirectory;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -16,6 +17,8 @@ new class extends Component {
      */
     public function deleteUser(Logout $logout, UserDirectory $directory): void
     {
+        abort_unless(Organization::allowsAccountDeletion(), 403);
+
         $this->validate([
             'password' => $this->currentPasswordRules(),
         ]);

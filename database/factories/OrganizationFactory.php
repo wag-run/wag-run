@@ -17,8 +17,7 @@ class OrganizationFactory extends Factory
     {
         return [
             'name' => fake()->company(),
-            'default_retention_days' => 30,
-            'registration_open' => false,
+            'settings' => [],
         ];
     }
 }

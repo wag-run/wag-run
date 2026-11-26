@@ -84,4 +84,34 @@ class OrganizationSettingsTest extends TestCase
 
         $this->assertSame(120, Organization::current()->max_runs_per_minute);
     }
+
+    public function test_org_admin_turns_off_account_deletion(): void
+    {
+        $admin = User::factory()->orgAdmin()->create();
+
+        Livewire::actingAs($admin)
+            ->test('pages::admin.settings')
+            ->assertSet('allowAccountDeletion', true)
+            ->set('allowAccountDeletion', false)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertFalse(Organization::current()->allow_account_deletion);
+    }
+
+    public function test_settings_live_in_the_json_column_and_fall_back_to_their_defaults(): void
+    {
+        $organization = Organization::factory()->create();
+
+        $this->assertSame(10, $organization->max_chain_depth);
+        $this->assertTrue($organization->allow_account_deletion);
+
+        $organization->fill(['max_chain_depth' => 4]);
+
+        $this->assertSame(['max_chain_depth'], $organization->changedFields());
+
+        $organization->save();
+
+        $this->assertSame(['max_chain_depth' => 4], $organization->fresh()->settings);
+    }
 }

@@ -74,6 +74,7 @@ When **Send through my SMTP server** is off, email uses the server's own mail co
 | Setting | What it does |
 |---|---|
 | **Organization name** | Your organization's name |
+| **Let people delete their own accounts** | When on, people can delete their own account from their profile settings. When off, the **Delete account** button is hidden and the action is refused. On by default. |
 | **Default execution log retention** | How many days run logs are kept, unless a workspace or workflow sets its own. 30 days by default. Turn on **Keep execution logs forever** to never remove them. |
 | **Maximum chain depth** | How many runs deep a chain of workflows starting other workflows can go. A run past it is cancelled, which stops workflows that start each other in a loop. 10 by default. |
 | **Maximum runs per minute** | How many runs one workflow can start in a minute, unless the workflow sets its own limit. Runs past it are cancelled, which slows down loops through other apps, such as a workflow that fires its own trigger. 60 by default. |

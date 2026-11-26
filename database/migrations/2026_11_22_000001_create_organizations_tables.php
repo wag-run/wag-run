@@ -11,11 +11,8 @@ return new class extends Migration
         Schema::create('organizations', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name');
-            $table->unsignedInteger('default_retention_days')->nullable()->default(30);
-            $table->boolean('registration_open')->default(false);
             $table->json('settings')->nullable();
             $table->text('mail')->nullable();
-            $table->unsignedSmallInteger('max_chain_depth')->default(10);
             $table->timestamps();
         });
 
