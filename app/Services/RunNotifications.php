@@ -3,12 +3,14 @@
 namespace App\Services;
 
 use App\Enums\ExecutionStatus;
+use App\Enums\NotificationKind;
 use App\Enums\WorkspacePermission;
 use App\Models\Execution;
 use App\Notifications\RunFailedNotification;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 /**
- * In-app notifications about runs. Email comes later.
+ * Notifications about runs, in the app and by email as each person prefers.
  */
 class RunNotifications
 {
@@ -28,6 +30,18 @@ class RunNotifications
             return;
         }
 
-        $owner->notify(new RunFailedNotification($execution));
+        if ($owner->wantsNotification(NotificationKind::RunFailed, 'database')) {
+            $owner->notify(new RunFailedNotification($execution));
+        }
+
+        if (! $owner->wantsNotification(NotificationKind::RunFailed, 'mail')) {
+            return;
+        }
+
+        try {
+            $owner->notify(new RunFailedNotification($execution, ['mail']));
+        } catch (TransportExceptionInterface $exception) {
+            report($exception);
+        }
     }
 }

@@ -6,6 +6,7 @@ use App\Engine\Engine;
 use App\Engine\NodeContext;
 use App\Enums\AssignmentStatus;
 use App\Enums\AssignmentType;
+use App\Enums\NotificationKind;
 use App\Enums\WorkspaceRole;
 use App\Models\Assignment;
 use App\Models\Execution;
@@ -87,9 +88,11 @@ class Assignments
         ]);
 
         DB::afterCommit(function () use ($assignee, $assignment, $email) {
-            $assignee->notify(new AssignmentNotification($assignment));
+            if ($assignee->wantsNotification(NotificationKind::Assignment, 'database')) {
+                $assignee->notify(new AssignmentNotification($assignment));
+            }
 
-            if (! $email) {
+            if (! $email || ! $assignee->wantsNotification(NotificationKind::Assignment, 'mail')) {
                 return;
             }
 

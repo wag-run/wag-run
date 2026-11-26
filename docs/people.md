@@ -75,6 +75,8 @@ The **Inbox** is in the account menu at the bottom of the sidebar. A red dot on 
 - **Failed runs** of workflows you own
 - **Messages** that workflows send you with a **Send notification** node
 
+Choose which of these also reach you by email, or stay out of the Inbox, under **Settings → Notifications**. Both channels are on until you turn one off.
+
 Items are newest first. Ones you've opened are greyed out, and **Mark all read** clears the count. Approvals and tasks carry a badge with where they stand:
 
 | Badge | Meaning |
