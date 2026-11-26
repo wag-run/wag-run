@@ -23,11 +23,12 @@ use Illuminate\Support\Carbon;
  * @property array<string, mixed>|null $settings
  * @property array{host?: string, port?: int, encryption?: string, username?: string|null, password?: string|null, from_address?: string, from_name?: string|null}|null $mail
  * @property int $max_chain_depth
+ * @property bool $allow_account_deletion
  * @property int $max_runs_per_minute
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'default_retention_days', 'registration_open', 'settings', 'mail', 'max_chain_depth', 'max_runs_per_minute'])]
+#[Fillable(['name', 'default_retention_days', 'registration_open', 'settings', 'mail', 'max_chain_depth', 'max_runs_per_minute', 'allow_account_deletion'])]
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */
@@ -41,6 +42,7 @@ class Organization extends Model
             'settings' => 'array',
             'mail' => 'encrypted:array',
             'max_chain_depth' => 'integer',
+            'allow_account_deletion' => 'boolean',
             'max_runs_per_minute' => 'integer',
         ];
     }
@@ -51,6 +53,14 @@ class Organization extends Model
     public static function current(): ?self
     {
         return static::query()->oldest('id')->first();
+    }
+
+    /**
+     * Whether people may delete their own accounts.
+     */
+    public static function allowsAccountDeletion(): bool
+    {
+        return (bool) (static::query()->oldest('id')->value('allow_account_deletion') ?? true);
     }
 
     /**

@@ -16,6 +16,7 @@ return new class extends Migration
             $table->json('settings')->nullable();
             $table->text('mail')->nullable();
             $table->unsignedSmallInteger('max_chain_depth')->default(10);
+            $table->boolean('allow_account_deletion')->default(true);
             $table->timestamps();
         });
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Concerns\ProfileValidationRules;
+use App\Models\Organization;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
@@ -75,8 +76,9 @@ new class extends Component {
     #[Computed]
     public function showDeleteUser(): bool
     {
-        return ! Auth::user() instanceof MustVerifyEmail
-            || (Auth::user() instanceof MustVerifyEmail && Auth::user()->hasVerifiedEmail());
+        return Organization::allowsAccountDeletion()
+            && (! Auth::user() instanceof MustVerifyEmail
+                || (Auth::user() instanceof MustVerifyEmail && Auth::user()->hasVerifiedEmail()));
     }
 
     public function render()

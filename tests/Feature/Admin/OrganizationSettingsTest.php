@@ -86,4 +86,18 @@ class OrganizationSettingsTest extends TestCase
 
         $this->assertSame(120, Organization::current()->max_runs_per_minute);
     }
+
+    public function test_org_admin_turns_off_account_deletion(): void
+    {
+        $admin = User::factory()->orgAdmin()->create();
+
+        Livewire::actingAs($admin)
+            ->test('pages::admin.settings')
+            ->assertSet('allowAccountDeletion', true)
+            ->set('allowAccountDeletion', false)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertFalse(Organization::current()->allow_account_deletion);
+    }
 }

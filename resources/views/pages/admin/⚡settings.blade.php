@@ -14,6 +14,8 @@ new class extends Component {
 
     public ?int $defaultRetentionDays = null;
 
+    public bool $allowAccountDeletion = true;
+
     public int|string $maxChainDepth = 10;
 
     public int|string $maxRunsPerMinute = 60;
@@ -26,6 +28,7 @@ new class extends Component {
         $this->registrationOpen = $organization->registration_open;
         $this->keepForever = $organization->default_retention_days === null;
         $this->defaultRetentionDays = $organization->default_retention_days ?? 30;
+        $this->allowAccountDeletion = $organization->allow_account_deletion;
         $this->maxChainDepth = $organization->max_chain_depth;
         $this->maxRunsPerMinute = $organization->max_runs_per_minute;
     }
@@ -46,6 +49,7 @@ new class extends Component {
             'name' => $this->name,
             'registration_open' => $this->registrationOpen,
             'default_retention_days' => $this->keepForever ? null : $this->defaultRetentionDays,
+            'allow_account_deletion' => $this->allowAccountDeletion,
             'max_chain_depth' => (int) $this->maxChainDepth,
             'max_runs_per_minute' => (int) $this->maxRunsPerMinute,
         ]);
@@ -79,6 +83,12 @@ new class extends Component {
                 {{ __('admin.settings.people_can_also_sign_in') }}
                 <flux:link :href="route('admin.sign-in-providers')" wire:navigate>{{ __('admin.settings.manage_sign_in_providers') }}</flux:link>
             </flux:text>
+        </div>
+
+        <div class="space-y-3">
+            <flux:heading>{{ __('admin.settings.accounts') }}</flux:heading>
+            <flux:switch wire:model="allowAccountDeletion" :label="__('admin.settings.let_people_delete_their_accounts')"
+                :description="__('admin.settings.when_off_the_delete_account')" data-test="allow-account-deletion" />
         </div>
 
         <div class="space-y-3">
