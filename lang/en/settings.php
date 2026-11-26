@@ -63,8 +63,8 @@ return [
                 'label' => 'Failed runs',
             ],
             'workflow' => [
-                'description' => 'A workflow sends you a message with a Send notification node. Workflows decide whether to email you as well.',
-                'label' => 'Workflow messages',
+                'description' => 'A workflow sends you a message with a Send notification node.',
+                'label' => 'Workflow notifications',
             ],
         ],
         'preferences_saved' => 'Notification preferences saved.',

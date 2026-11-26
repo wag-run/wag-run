@@ -16,8 +16,8 @@ use Illuminate\Support\Facades\Notification;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 /**
- * Notifies people in the app, in their inbox, and optionally
- * by email through the organization's mail settings. Without a link, the
+ * Notifies people in the app, by email, or both, as each of them has chosen
+ * in their notification settings. Without a link, the
  * notification and the email open the run that sent them, even for
  * recipients who cannot view runs.
  */
@@ -62,7 +62,6 @@ class SendNotification extends Node
             new Field('title', __('common.title'), Field::TEXT, required: true, templated: true),
             new Field('message', __('nodes.send_notification.message'), Field::TEXTAREA, templated: true),
             new Field('link', __('nodes.send_notification.link'), Field::TEXT, templated: true, description: __('nodes.send_notification.where_opening_the_notification_goes')),
-            new Field('email', __('nodes.send_notification.also_send_by_email'), Field::BOOLEAN, default: false),
         ];
     }
 
@@ -104,14 +103,11 @@ class SendNotification extends Node
             new WorkflowNotification($title, $message, $link, $workspaceId),
         );
 
-        if ($context->input('email')) {
+        foreach ($users->filter(fn (User $user) => $user->wantsNotification(NotificationKind::Workflow, 'mail')) as $user) {
             try {
-                Notification::send(
-                    $users->filter(fn (User $user) => $user->wantsNotification(NotificationKind::Workflow, 'mail')),
-                    new WorkflowNotification($title, $message, $link, $workspaceId, ['mail']),
-                );
+                $user->notify(new WorkflowNotification($title, $message, $link, $workspaceId, ['mail']));
             } catch (TransportExceptionInterface $exception) {
-                return NodeResult::fail(__('nodes.send_notification.notified_in_the_app_but', ['message' => $exception->getMessage()]), retryable: false, output: $output);
+                report($exception);
             }
         }
 

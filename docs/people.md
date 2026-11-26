@@ -71,7 +71,7 @@ The **Inbox** is in the account menu at the bottom of the sidebar. A red dot on 
 
 - **Approvals and tasks** assigned to you
 - **Failed runs** of workflows you own
-- **Messages** that workflows send you with a **Send notification** node
+- **Notifications** that workflows send you with a **Send notification** node
 
 Choose which of these reach you in the Inbox, by email, or both, under **Settings → Notifications**. Both channels are on until you turn one off. Approvals and tasks follow your choice; a workflow that needs to email someone specifically can use a **Send email** node.
 
