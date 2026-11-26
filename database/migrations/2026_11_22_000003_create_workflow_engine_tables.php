@@ -16,6 +16,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('concurrency', 20)->default('allow');
             $table->unsignedInteger('retention_days')->nullable();
+            $table->unsignedSmallInteger('max_runs_per_minute')->nullable();
             $table->json('draft_graph');
             $table->timestamp('draft_updated_at')->nullable();
             $table->unsignedBigInteger('published_version_id')->nullable();
