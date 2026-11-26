@@ -8,7 +8,7 @@ wag.run is a workflow automation app for teams. You build a workflow on a visual
 |---|---|
 | [Getting started](getting-started.md) | Signing in, finding your way around, and building, testing, and publishing your first workflow |
 | [The workflow editor](editor.md) | The canvas, connecting nodes, the settings panel, sticky notes, drafts and versions, workflow settings, import and export |
-| [Triggers](triggers.md) | Manual, webhook, schedule, form, GitHub, and Investbrain triggers |
+| [Triggers](triggers.md) | Manual, webhook, schedule, form, GitHub, Investbrain, and feed or list triggers |
 | [Actions](actions.md) | Every action node: flow, data, integrations, AI, messaging, and people |
 | [Data and placeholders](data-and-placeholders.md) | Using earlier outputs, the data picker, `{{ }}` expressions, and helper functions |
 | [Chat webhooks](chat-webhooks.md) | Getting an incoming webhook from Slack, Mattermost, Microsoft Teams, Discord, and Google Chat for the Chat message action |
@@ -24,7 +24,7 @@ wag.run is a workflow automation app for teams. You build a workflow on a visual
 ## What you can do with it
 
 - **Build visually.** Drag nodes onto a canvas and draw connections between them. Each node's outputs can be used by the nodes after it, through a data picker or `{{ }}` placeholders.
-- **Start workflows many ways.** Run one by hand, call it from another system with a webhook or the API, run it on a schedule, let people start it by filling in a form, or start it on a new GitHub tag, release, or failed Actions run, or a new Investbrain transaction.
+- **Start workflows many ways.** Run one by hand, call it from another system with a webhook or the API, run it on a schedule, let people start it by filling in a form, or start it on a new GitHub tag, release, or failed Actions run, a new Investbrain transaction, or a new item in an RSS feed or JSON list.
 - **Call other systems.** Make HTTP requests, work with GitHub issues, releases, and Actions, add rows to Google Sheets, read and record Investbrain portfolios and transactions and export their backups, send email, post to Slack, Teams, Discord, or Google Chat, send in-app notifications, call an LLM, or start another workflow.
 - **Add logic.** Branch on a condition, switch on a value, loop over or filter a list, wait, merge parallel branches, or end a run early.
 - **Bring people in.** Approvals pause a run until enough approvers say yes. Tasks pause it until someone fills in a form.
