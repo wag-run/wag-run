@@ -179,7 +179,7 @@ return [
         'preview_no_runs_yet' => 'No runs yet, so data reads as empty. Run the workflow once to preview it with real data.',
         'preview_types' => [
             'boolean' => 'boolean',
-            'empty' => 'empty',
+            'empty' => 'null',
             'file' => 'file',
             'list' => 'array',
             'number' => 'number',

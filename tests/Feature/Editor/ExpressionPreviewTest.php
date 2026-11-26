@@ -122,7 +122,7 @@ class ExpressionPreviewTest extends TestCase
 
         $preview = $this->preview($editor, '{{ trigger.missing }}');
 
-        $this->assertSame(['status' => 'empty', 'value' => '', 'type' => 'empty'], array_slice($preview, 0, 3));
+        $this->assertSame(['status' => 'empty', 'value' => '', 'type' => 'null'], array_slice($preview, 0, 3));
     }
 
     public function test_text_without_placeholders_is_not_previewed(): void
