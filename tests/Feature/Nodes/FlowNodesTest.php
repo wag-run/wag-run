@@ -74,7 +74,7 @@ class FlowNodesTest extends TestCase
         $execution = $this->runWorkflow($workflow, ['values' => ['name' => 'not a list']]);
 
         $this->assertSame(ExecutionStatus::Failed, $execution->status);
-        $this->assertSame('Items must be a list.', $execution->error['message']);
+        $this->assertSame('Items must be an array.', $execution->error['message']);
     }
 
     public function test_every_connection_from_one_output_runs_and_merge_collects_their_outputs(): void
@@ -385,7 +385,7 @@ class FlowNodesTest extends TestCase
         $execution = $this->runWorkflow($workflow, ['body' => ['order' => ['amount' => 150]]]);
 
         $this->assertSame(ExecutionStatus::Failed, $execution->status);
-        $this->assertSame('The list to filter is array, not a list.', $execution->error['message']);
+        $this->assertSame('The array to filter is array, not an array.', $execution->error['message']);
     }
 
     public function test_publishing_refuses_a_filter_whose_list_or_condition_is_not_one_placeholder(): void
@@ -395,7 +395,7 @@ class FlowNodesTest extends TestCase
             ['start->keep'],
         )));
 
-        $this->assertContains('Node "keep": its list must be one {{ }} placeholder, such as {{ nodes.fetch.output.body.items }}.', $problems);
+        $this->assertContains('Node "keep": its array must be one {{ }} placeholder, such as {{ nodes.fetch.output.body.items }}.', $problems);
         $this->assertContains('Node "keep": its condition must be one {{ }} placeholder, such as {{ item.amount > 100 }}.', $problems);
     }
 }
