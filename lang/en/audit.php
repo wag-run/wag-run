@@ -53,6 +53,10 @@ return [
             'reactivated' => 'User reactivated',
             'password_reset_link_generated' => 'Password reset link generated',
         ],
+        'store' => [
+            'deleted' => 'Store value deleted',
+            'cleared' => 'Store values cleared',
+        ],
         'variable' => [
             'created' => 'Variable created',
             'updated' => 'Variable updated',

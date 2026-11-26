@@ -12,6 +12,8 @@ enum WorkspacePermission: string
     case CancelExecutions = 'cancel-executions';
     case ViewVariables = 'view-variables';
     case ManageVariables = 'manage-variables';
+    case ViewStore = 'view-store';
+    case ManageStore = 'manage-store';
     case ViewSecrets = 'view-secrets';
     case ManageSecrets = 'manage-secrets';
     case RevealSecrets = 'reveal-secrets';
