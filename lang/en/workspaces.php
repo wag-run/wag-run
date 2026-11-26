@@ -7,6 +7,7 @@ return [
         'every_audited_change_in_the' => 'Every audited change in the organization, across all workspaces.',
         'invitations' => 'Invitations',
         'membership' => 'Membership',
+        'org_wide' => 'Org-wide',
         'organization_settings' => 'Organization settings',
         'show_log_for' => 'Show the log for',
         'sign_in' => 'Sign-in',

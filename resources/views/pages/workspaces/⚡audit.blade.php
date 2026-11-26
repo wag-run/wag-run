@@ -95,7 +95,7 @@ new class extends Component {
 
     public function scopeLabel(): string
     {
-        return $this->scope === 'organization' ? __('navigation.organization') : $this->workspace->name;
+        return $this->scope === 'organization' ? __('workspaces.audit.org_wide') : $this->workspace->name;
     }
 
     public function updatedAction(): void
@@ -144,7 +144,7 @@ new class extends Component {
                         :icon="$scope === 'organization' ? 'check' : null"
                         wire:navigate
                     >
-                        {{ __('navigation.organization') }}
+                        {{ __('workspaces.audit.org_wide') }}
                     </flux:menu.item>
                 @endif
             </flux:menu>
