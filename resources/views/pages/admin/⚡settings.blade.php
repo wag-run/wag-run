@@ -55,7 +55,7 @@ new class extends Component {
         ]);
 
         if ($organization->isDirty()) {
-            $changed = array_keys($organization->getDirty());
+            $changed = $organization->changedFields();
             $organization->save();
             Audit::record('organization.settings_updated', $organization, metadata: ['changed' => $changed]);
         }

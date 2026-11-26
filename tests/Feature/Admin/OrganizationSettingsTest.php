@@ -100,4 +100,20 @@ class OrganizationSettingsTest extends TestCase
 
         $this->assertFalse(Organization::current()->allow_account_deletion);
     }
+
+    public function test_settings_live_in_the_json_column_and_fall_back_to_their_defaults(): void
+    {
+        $organization = Organization::factory()->create();
+
+        $this->assertSame(10, $organization->max_chain_depth);
+        $this->assertTrue($organization->allow_account_deletion);
+
+        $organization->fill(['max_chain_depth' => 4]);
+
+        $this->assertSame(['max_chain_depth'], $organization->changedFields());
+
+        $organization->save();
+
+        $this->assertSame(['max_chain_depth' => 4], $organization->fresh()->settings);
+    }
 }
