@@ -75,7 +75,7 @@ class ExpressionPreviewTest extends TestCase
 
         $this->assertSame('Hi Ada, from first', $text['value']);
         $this->assertStringContainsString(Execution::reference($execution->id), $text['source']);
-        $this->assertSame(['status' => 'value', 'value' => "[\n    \"start\"\n]", 'type' => 'list'], array_slice($list, 0, 3));
+        $this->assertSame(['status' => 'value', 'value' => "[\n    \"start\"\n]", 'type' => 'array'], array_slice($list, 0, 3));
     }
 
     public function test_a_node_that_has_not_run_yet_uses_what_the_latest_run_produced(): void

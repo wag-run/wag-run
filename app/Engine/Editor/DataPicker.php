@@ -43,7 +43,8 @@ class DataPicker
         $ancestors = $graph->ancestorsOf($nodeId);
         $reached = $this->reachedFromTriggers($graph);
         $loopBodies = $this->loopBodies($graph);
-        $groups = [];
+        $distances = $this->distancesTo($graph, $nodeId);
+        $ancestorGroups = [];
 
         foreach ($graph->nodes as $node) {
             if (! isset($ancestors[$node->id]) || ! $this->registry->has($node->type)) {
@@ -56,7 +57,7 @@ class DataPicker
                 $items = $this->flatten($definition->outputs($node->config), 'trigger');
 
                 if ($items !== []) {
-                    $groups[] = ['label' => __('workflows.editor.trigger_name', ['name' => $node->name]), 'items' => $items];
+                    $ancestorGroups[] = ['distance' => $distances[$node->id] ?? PHP_INT_MAX, 'group' => ['label' => __('workflows.editor.trigger_name', ['name' => $node->name]), 'items' => $items]];
                 }
 
                 continue;
@@ -69,9 +70,12 @@ class DataPicker
             $items = $this->flatten($definition->outputs($node->config), "nodes.{$node->id}.output");
 
             if ($items !== []) {
-                $groups[] = ['label' => $node->name, 'items' => $items];
+                $ancestorGroups[] = ['distance' => $distances[$node->id] ?? PHP_INT_MAX, 'group' => ['label' => $node->name, 'items' => $items]];
             }
         }
+
+        usort($ancestorGroups, fn (array $a, array $b) => $a['distance'] <=> $b['distance']);
+        $groups = array_column($ancestorGroups, 'group');
 
         foreach ($loopBodies as $loopId => $body) {
             if (isset($body[$nodeId])) {
@@ -115,6 +119,31 @@ class DataPicker
         ]];
 
         return $groups;
+    }
+
+    /**
+     * How many connections each node is from $nodeId, walking backwards, so
+     * the closest predecessor can be listed first.
+     *
+     * @return array<string, int>
+     */
+    protected function distancesTo(WorkflowGraph $graph, string $nodeId): array
+    {
+        $distances = [$nodeId => 0];
+        $queue = [$nodeId];
+
+        while ($queue !== []) {
+            $current = array_shift($queue);
+
+            foreach ($graph->incoming($current) as $edge) {
+                if (! isset($distances[$edge->source])) {
+                    $distances[$edge->source] = $distances[$current] + 1;
+                    $queue[] = $edge->source;
+                }
+            }
+        }
+
+        return $distances;
     }
 
     /**

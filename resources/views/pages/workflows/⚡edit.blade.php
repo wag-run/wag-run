@@ -1338,7 +1338,7 @@ new class extends Component {
         @endif
 
         {{-- Canvas --}}
-        <div class="relative min-w-0 flex-1" x-data="{ showMinimap: localStorage.getItem('wag.minimap') !== 'hidden' }"
+        <div class="relative min-w-0 flex-1" x-data="{ showMinimap: localStorage.getItem('wag.minimap') === 'shown' }"
             x-init="$watch('showMinimap', value => localStorage.setItem('wag.minimap', value ? 'shown' : 'hidden'))"
             :class="{ 'wag-minimap-hidden': ! showMinimap }">
             <button type="button" class="wag-minimap-toggle" x-on:click="showMinimap = ! showMinimap" data-test="minimap-toggle"

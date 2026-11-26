@@ -181,7 +181,7 @@ return [
             'boolean' => 'boolean',
             'empty' => 'empty',
             'file' => 'file',
-            'list' => 'list',
+            'list' => 'array',
             'number' => 'number',
             'object' => 'object',
             'text' => 'text',
