@@ -46,7 +46,29 @@ return [
     ],
     'layout' => [
         'api_tokens' => 'API tokens',
+        'notifications' => 'Notifications',
         'security' => 'Security',
+    ],
+    'notifications' => [
+        'choose_how_you_want_to' => 'Choose how you want to hear about each kind of notification. Turn both off to stop getting one.',
+        'email' => 'Email',
+        'in_app' => 'In the app',
+        'kinds' => [
+            'assignment' => [
+                'description' => 'An approval or task is waiting on you. Workflows decide whether to email you as well.',
+                'label' => 'Approvals and tasks',
+            ],
+            'run_failed' => [
+                'description' => 'A run of a workflow you own failed.',
+                'label' => 'Failed runs',
+            ],
+            'workflow' => [
+                'description' => 'A workflow sends you a message with a Send notification node. Workflows decide whether to email you as well.',
+                'label' => 'Workflow messages',
+            ],
+        ],
+        'preferences_saved' => 'Notification preferences saved.',
+        'title' => 'Notification settings',
     ],
     'profile' => [
         'click_here_to_re_send' => 'Click here to re-send the verification email.',
