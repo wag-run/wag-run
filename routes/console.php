@@ -12,3 +12,4 @@ Schedule::command('workflows:sweep')->everyMinute()->withoutOverlapping();
 Schedule::command('workflows:run-schedules')->everyMinute()->withoutOverlapping();
 Schedule::command('workflows:poll-triggers')->everyMinute()->withoutOverlapping();
 Schedule::command('workflows:purge-executions')->hourly()->withoutOverlapping();
+Schedule::command('workflows:prune-store')->hourly()->withoutOverlapping();
