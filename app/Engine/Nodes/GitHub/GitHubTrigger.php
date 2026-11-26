@@ -26,6 +26,21 @@ abstract class GitHubTrigger extends Node implements EventTrigger
     protected const MEMORY = 300;
 
     /**
+     * The most pages a poll that reads every page asks for.
+     */
+    protected const MAX_PAGES = 50;
+
+    /**
+     * Whether a poll reads every page of the list rather than the first. For
+     * a list GitHub doesn't order newest first, where a new item can land on
+     * any page.
+     */
+    protected function readsEveryPage(): bool
+    {
+        return false;
+    }
+
+    /**
      * The webhook events to subscribe to.
      *
      * @return list<string>
@@ -125,6 +140,10 @@ abstract class GitHubTrigger extends Node implements EventTrigger
 
     public function poll(array $config, Workspace $workspace, ?array $state): array
     {
+        if ($this->readsEveryPage()) {
+            return $this->pollEveryPage($config, $workspace, $state);
+        }
+
         $repository = GitHub::repository($config['repository'] ?? '');
         [$path, $query] = $this->pollRequest($repository, $config);
         $request = GitHub::request($workspace, $config['credential'] ?? null);
@@ -153,6 +172,53 @@ abstract class GitHubTrigger extends Node implements EventTrigger
             'state' => [
                 'seen' => array_slice(array_values(array_unique([...$ids, ...$seen])), 0, self::MEMORY),
                 'etag' => $response->header('ETag') ?: null,
+            ],
+        ];
+    }
+
+    /**
+     * A poll that reads every page of the list, following GitHub's
+     * rel="next" link on the same path. It sends no ETag, because an
+     * unchanged first page says nothing about the others, and it remembers
+     * every item it read, so none drops out of memory and looks new again.
+     *
+     * A trigger that has only ever read the first page notes every item on
+     * its first full read and starts no runs, so items past the first page
+     * aren't taken for new.
+     *
+     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>|null  $state
+     * @return array{events: list<array<string, mixed>>, state: array<string, mixed>}
+     */
+    protected function pollEveryPage(array $config, Workspace $workspace, ?array $state): array
+    {
+        $repository = GitHub::repository($config['repository'] ?? '');
+        [$path, $query] = $this->pollRequest($repository, $config);
+        $request = GitHub::request($workspace, $config['credential'] ?? null);
+        $items = [];
+        $page = 1;
+
+        do {
+            $response = $request->get($path, [...$query, 'page' => $page]);
+
+            if (! $response->successful()) {
+                throw new RuntimeException(GitHub::failure($response));
+            }
+
+            array_push($items, ...$this->fromPoll($response->json(), $repository, $config));
+            $page++;
+        } while (str_contains($response->header('Link'), 'rel="next"') && $page <= self::MAX_PAGES);
+
+        $ids = array_column($items, 'id');
+        $firstFullRead = $state === null || ! ($state['every_page'] ?? false);
+        $seen = $firstFullRead ? $ids : (array) ($state['seen'] ?? []);
+        $new = array_reverse(array_filter($items, fn (array $item) => ! in_array($item['id'], $seen, true)));
+
+        return [
+            'events' => array_column($new, 'event'),
+            'state' => [
+                'seen' => array_slice(array_values(array_unique([...$ids, ...$seen])), 0, max(self::MEMORY, count($ids))),
+                'every_page' => true,
             ],
         ];
     }

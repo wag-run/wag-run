@@ -40,6 +40,15 @@ class NewTag extends GitHubTrigger
         ];
     }
 
+    /**
+     * GitHub lists tags by name, not newest first, so a new tag can land on
+     * any page.
+     */
+    protected function readsEveryPage(): bool
+    {
+        return true;
+    }
+
     protected function webhookEvents(): array
     {
         return ['push'];

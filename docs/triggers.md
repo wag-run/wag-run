@@ -149,7 +149,7 @@ Under **Trigger URLs** in the [workflow settings](editor.md#workflow-settings), 
 
 ### New tag
 
-Fires when a tag is pushed. Polling checks the 100 tags GitHub lists first.
+Fires when a tag is pushed. Polling reads every tag in the repository, up to 5,000, because GitHub doesn't list them newest first.
 
 | Placeholder | What it holds |
 |---|---|
