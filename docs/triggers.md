@@ -150,6 +150,10 @@ wag.run fetches the address every **Check every (minutes)** and starts one run f
 
 The address is checked like an [HTTP call's](actions.md#http-call): private addresses are refused unless the workspace allows them. The URL and headers are filled in before a run starts, so they can't read `trigger`, `nodes`, or other run data; publishing says so if they try. A redirect to another host, or from HTTPS to plain HTTP, is followed without the authentication and headers. Answers over 5 MB are refused.
 
+### Checking before you publish
+
+**Check now**, in the trigger's settings, fetches the address with the settings in the panel and shows how many items it found and the newest few, exactly as a run would receive them as `trigger`. It starts no runs and changes nothing, so use it to get **List** and **Item ID** right before you publish. It warns when **Item ID** matches none of the items, or only some of them, and shows the error when the address fails or **List** points at nothing. When a test run of the draft starts at this trigger, **Use as test sample** makes an item the sample data for [Test draft](runs.md#test-runs).
+
 What the run receives depends on the format. For a feed:
 
 | Placeholder | What it holds |

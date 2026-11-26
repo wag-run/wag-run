@@ -11,6 +11,7 @@ use App\Engine\Graph\GraphNode;
 use App\Engine\Graph\WorkflowGraph;
 use App\Engine\Node;
 use App\Engine\NodeRegistry;
+use App\Engine\PreviewableTrigger;
 use App\Enums\ConcurrencyPolicy;
 use App\Enums\NodeKind;
 use App\Models\Organization;
@@ -48,6 +49,14 @@ new class extends Component {
      * @var array{variant: string, text: string}|null
      */
     public ?array $connectionResult = null;
+
+    /**
+     * What Check now found for the selected trigger with its current
+     * settings, or the reason it couldn't check.
+     *
+     * @var array{total?: int, skipped?: int, events?: list<array<string, mixed>>, warning?: string|null, error?: string}|null
+     */
+    public ?array $triggerCheck = null;
 
     public string $nodeName = '';
 
@@ -536,7 +545,54 @@ new class extends Component {
         $this->form = $this->definition ? ConfigForm::toForm($this->definition, $node->config) : [];
         $this->editingNodeId = false;
         $this->newNodeId = $nodeId;
+        $this->triggerCheck = null;
         $this->resetValidation();
+    }
+
+    /**
+     * Fetch what the selected trigger listens to, with the settings in the
+     * panel, and show what a check would find.
+     */
+    public function checkTrigger(): void
+    {
+        $this->authorize('edit-workflows', $this->workspace);
+
+        if (! $this->selectedNode() || ! $this->definition instanceof PreviewableTrigger) {
+            return;
+        }
+
+        try {
+            $this->triggerCheck = $this->definition->preview(ConfigForm::toConfig($this->definition, $this->form), $this->workspace);
+        } catch (\RuntimeException $e) {
+            $this->triggerCheck = ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Whether a test run of the draft starts at the selected trigger, so an
+     * item Check now found can be its sample data.
+     */
+    #[Computed]
+    public function checkFillsTestSample(): bool
+    {
+        return $this->selected !== null && app(ManualRuns::class)->testTrigger($this->workflow)?->id === $this->selected;
+    }
+
+    /**
+     * Make an item Check now found the sample data test runs start with.
+     */
+    public function useCheckedItemAsTestSample(int $index): void
+    {
+        $this->authorize('edit-workflows', $this->workspace);
+
+        $event = $this->triggerCheck['events'][$index] ?? null;
+
+        if (! is_array($event) || ! $this->checkFillsTestSample) {
+            return;
+        }
+
+        $this->testPayload = (string) json_encode($event, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        Flux::toast(variant: 'success', text: __('workflows.edit.test_sample_set'));
     }
 
     public function startEditingNodeId(): void
@@ -1566,6 +1622,39 @@ new class extends Component {
                         <flux:checkbox wire:model.live="waitForAll" :label="__('workflows.edit.wait_for_all_incoming_branches')" :description="__('workflows.edit.wait_for_all_incoming_branches_help')" data-test="wait-for-all-checkbox" />
                     @endif
                 </fieldset>
+
+                @if ($definition instanceof PreviewableTrigger)
+                    <flux:separator class="my-4" />
+                    <div class="flex items-center justify-between gap-2">
+                        <flux:heading size="sm">{{ __('workflows.edit.what_a_check_finds') }}</flux:heading>
+                        <flux:button size="sm" icon="arrow-path" wire:click="checkTrigger" wire:loading.attr="disabled" wire:target="checkTrigger" data-test="check-now">{{ __('workflows.edit.check_now') }}</flux:button>
+                    </div>
+                    <flux:text class="mt-1 text-xs">{{ __('workflows.edit.check_now_help') }}</flux:text>
+                    <div wire:loading wire:target="checkTrigger" class="mt-2"><flux:text class="text-xs">{{ __('workflows.edit.checking') }}</flux:text></div>
+                    @if ($triggerCheck)
+                        <div wire:loading.remove wire:target="checkTrigger" data-test="check-result">
+                            @if (isset($triggerCheck['error']))
+                                <flux:callout class="mt-3" variant="danger" icon="exclamation-triangle" :heading="$triggerCheck['error']" data-test="check-error" />
+                            @else
+                                <flux:text class="mt-3 text-xs" data-test="check-summary">{{ trans_choice('workflows.edit.check_found_items', $triggerCheck['total'], ['count' => number_format($triggerCheck['total'])]) }}</flux:text>
+                                @if ($triggerCheck['warning'])
+                                    <flux:callout class="mt-2" variant="warning" icon="exclamation-triangle" :heading="$triggerCheck['warning']" data-test="check-warning" />
+                                @endif
+                                @foreach ($triggerCheck['events'] as $index => $event)
+                                    <div class="mt-3" wire:key="check-item-{{ $index }}">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <flux:text class="text-xs">{{ $index === 0 ? __('workflows.edit.newest_item_as_trigger') : __('workflows.edit.item_n_as_trigger', ['n' => $index + 1]) }}</flux:text>
+                                            @if ($this->checkFillsTestSample && $this->canEdit)
+                                                <flux:button size="xs" variant="subtle" icon="beaker" wire:click="useCheckedItemAsTestSample({{ $index }})" data-test="use-as-test-sample">{{ __('workflows.edit.use_as_test_sample') }}</flux:button>
+                                            @endif
+                                        </div>
+                                        <pre class="mt-1 max-h-60 overflow-auto rounded-lg whitespace-pre-wrap break-words bg-zinc-50 p-3 font-mono text-xs dark:bg-zinc-800" data-test="check-item">{{ json_encode($event, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</pre>
+                                    </div>
+                                @endforeach
+                            @endif
+                        </div>
+                    @endif
+                @endif
 
                 <flux:separator class="my-4" />
                 <flux:heading size="sm">{{ __('workflows.edit.outputs') }}</flux:heading>

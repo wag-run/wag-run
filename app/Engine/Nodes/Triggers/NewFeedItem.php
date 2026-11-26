@@ -10,6 +10,7 @@ use App\Engine\EventTrigger;
 use App\Engine\Node;
 use App\Engine\NodeContext;
 use App\Engine\NodeResult;
+use App\Engine\PreviewableTrigger;
 use App\Engine\Templates\TemplateEngine;
 use App\Enums\NodeKind;
 use App\Models\Credential;
@@ -40,7 +41,7 @@ use Throwable;
  * connection is pinned to the address that was checked. A redirect to another
  * host is followed without the authentication and headers, so they can't leak.
  */
-class NewFeedItem extends Node implements EventTrigger
+class NewFeedItem extends Node implements EventTrigger, PreviewableTrigger
 {
     /**
      * How many item ids a check remembers, at the least.

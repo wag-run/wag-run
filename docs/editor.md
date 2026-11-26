@@ -43,6 +43,8 @@ Select a node to see its settings in the settings panel:
 
 Changes save to the draft as you type.
 
+Triggers that fetch from another system, such as **New item in a feed or list**, have a **Check now** button under their settings. It shows what a check would find right now, without starting a run. See [Checking before you publish](triggers.md#checking-before-you-publish).
+
 ## Selecting, copying, and deleting
 
 Click a node to select it. Right-click a node for **Copy**, **Cut**, **Delete**, and **Node settings**. When several nodes are selected, right-click the selection to copy, cut, or delete them together. Right-click the canvas for **Paste here**, **Undo**, **Redo**, **Add sticky note**, and **Workflow settings**. Pasted nodes keep the connections between them. You're asked to confirm before nodes are deleted, and their connections are deleted with them.
