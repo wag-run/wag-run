@@ -38,11 +38,12 @@ enum WorkspaceRole: string
     {
         $guest = [P::ViewOwnAssignments];
 
-        // Viewers see that variables, secrets and authentication settings exist
-        // (names only) so they can read workflow configuration that references them.
-        $viewer = [...$guest, P::ViewWorkflows, P::ViewExecutions, P::ViewVariables, P::ViewSecrets, P::ViewCredentials, P::ViewMembers];
+        // Viewers see the data store, values included, and that secrets and
+        // authentication settings exist (names only), so they can read workflow
+        // configuration that references them.
+        $viewer = [...$guest, P::ViewWorkflows, P::ViewExecutions, P::ViewDataStore, P::ViewSecrets, P::ViewCredentials, P::ViewMembers];
 
-        $editor = [...$viewer, P::EditWorkflows, P::PublishWorkflows, P::RunWorkflows, P::CancelExecutions, P::ManageVariables, P::ViewStore, P::ManageStore];
+        $editor = [...$viewer, P::EditWorkflows, P::PublishWorkflows, P::RunWorkflows, P::CancelExecutions, P::ManageDataStore];
 
         return match ($this) {
             self::Guest => $guest,

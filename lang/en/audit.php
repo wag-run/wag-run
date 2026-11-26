@@ -21,6 +21,13 @@ return [
             'deleted' => 'Credential deleted',
             'revealed' => 'Credential revealed',
         ],
+        'data_store' => [
+            'entry_created' => 'Data store entry created',
+            'entry_updated' => 'Data store entry updated',
+            'entry_deleted' => 'Data store entry deleted',
+            'item_saved' => 'Data store item saved',
+            'item_deleted' => 'Data store item deleted',
+        ],
         'invitation' => [
             'sent' => 'Invitation sent',
             'accepted' => 'Invitation accepted',
@@ -52,15 +59,6 @@ return [
             'deactivated' => 'User deactivated',
             'reactivated' => 'User reactivated',
             'password_reset_link_generated' => 'Password reset link generated',
-        ],
-        'store' => [
-            'deleted' => 'Store value deleted',
-            'cleared' => 'Store values cleared',
-        ],
-        'variable' => [
-            'created' => 'Variable created',
-            'updated' => 'Variable updated',
-            'deleted' => 'Variable deleted',
         ],
         'workflow' => [
             'created' => 'Workflow created',
