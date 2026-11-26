@@ -16,4 +16,19 @@ return [
         'max_bytes' => (int) env('WORKFLOW_FILES_MAX_MB', 50) * 1024 * 1024,
         'text_max_bytes' => 1024 * 1024,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Data store
+    |--------------------------------------------------------------------------
+    |
+    | Limits on the values workflows keep between runs: the size of one value
+    | once saved as JSON, and how many values a workspace may hold. Values
+    | that have expired are removed hourly.
+    |
+    */
+    'store' => [
+        'max_value_bytes' => 64 * 1024,
+        'max_entries' => 10000,
+    ],
 ];

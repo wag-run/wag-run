@@ -147,6 +147,34 @@ Makes a file from text, or from base64, such as an encoded image an API sent bac
 
 Output: `file`.
 
+### Data store
+
+The store keeps values between runs: which tickets you've already handled, the last time you fetched an API, how many times something failed in a row. Values are workspace data, not run data, so a later run, or another workflow, can read what an earlier one saved. Editors and Admins can see and delete them on the workspace's [Store](workspaces.md#store) page. These nodes are under **Data › Store** in the palette.
+
+Every store node has a **Key**, the name the value is saved under. It can use placeholders, as in `ticket-{{ trigger.body.id }}`. **Shared with** chooses who can read it:
+
+- **Every workflow in the workspace** (the default): any workflow that uses the same key reads and writes the same value.
+- **This workflow only**: the value is kept apart from other workflows' values with the same key, so two workflows can both use `cursor`. It's deleted a little after the workflow is.
+
+Saved values stay until deleted, unless a node sets **Expires after**. An expired value is gone for every node, and is removed from the Store page within the hour.
+
+| Node | What it does |
+|---|---|
+| **Save value** | Saves a **Value** under the key, replacing what's there. Text is kept as text; a single placeholder keeps its type, so `{{ nodes.fetch.output.body }}` saves an object or a list. Turn on **Parse the result as JSON** to save text such as `{"a": 1}` as an object. Saving again starts a new expiry. Outputs `key` and `value`. |
+| **Get value** | Reads the key. Outputs `value` and `found`. When nothing is saved, `value` is the **Default** (empty means no value) and `found` is false, so you can tell a saved `false` from a missing key. |
+| **Delete value** | Removes the key. Outputs `deleted`, true when there was a value. |
+| **Increment** | Adds **By** (1 by default; negative subtracts) to a number, starting from 0, and outputs the new total as `value`. It fails if the key holds something that isn't a number. An expiry is set when the counter is created, so it counts a fixed window, such as `failures-{{ trigger.body.id }}` with **Expires after** 1 hour. |
+| **Seen before?** | Records the key and follows **New** the first time, and **Seen** every time after, until it expires. It outputs `seen`. For "post this once" and "email each customer at most once a day". |
+
+Increment and Seen before? are single steps, so two runs that overlap can't both count the same value or both see a key as new. A **Get value** followed by a **Save value** is not: two runs can read the same value and each save over the other. Use Increment or Seen before? when runs can overlap.
+
+A few things to know:
+
+- A **step that is retried** after a failure runs again from its start. Increment adds again if its first attempt saved before the failure, so don't rely on an exact count for something where one extra matters.
+- **Test runs** read and write the real store. A test of **Seen before?** records its key, so the published workflow sees that key as seen. Delete the test's keys on the Store page, or test with a key such as `test-{{ trigger.body.id }}`.
+- Values show in the run's step inputs and outputs, and in the Store page. Don't save secrets in them.
+- A value can be up to 64 KB once saved as JSON, and a workspace can hold 10,000 values. A save that would go over fails the step.
+
 ## Integrations
 
 ### HTTP call

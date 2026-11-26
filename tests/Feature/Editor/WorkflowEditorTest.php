@@ -541,6 +541,20 @@ class WorkflowEditorTest extends TestCase
         $this->assertContains('github.create_issue', $types('GitHub'));
     }
 
+    public function test_the_data_store_nodes_are_grouped_under_data(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor();
+
+        $palette = $this->editor($workspace, $workflow, $user)->instance()->palette();
+
+        $this->assertContains(['key' => 'Data › Store', 'name' => 'Store', 'icon' => 'circle-stack', 'count' => 5], $palette['Data']['groups']);
+        $this->assertSame(
+            ['core.store_save', 'core.store_get', 'core.store_delete', 'core.store_increment', 'core.store_seen_before'],
+            array_column($palette['Data › Store']['items'], 'type'),
+        );
+        $this->assertContains('core.compose', array_column($palette['Data']['items'], 'type'));
+    }
+
     public function test_a_sticky_note_goes_where_the_canvas_was_clicked_and_its_text_and_color_save(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor();
