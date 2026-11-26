@@ -13,6 +13,7 @@ use App\Services\Workflows;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Testing\TestResponse;
 use Illuminate\Validation\ValidationException;
 use Tests\Concerns\RunsWorkflows;
@@ -145,6 +146,93 @@ class GitHubTriggersTest extends TestCase
 
         app(Workflows::class)->delete($workflow);
         Http::assertSent(fn (Request $request) => $request->method() === 'DELETE' && str_ends_with($request->url(), '/hooks/78'));
+    }
+
+    public function test_a_hook_is_registered_at_app_url_whatever_host_the_install_was_reached_by(): void
+    {
+        config(['app.url' => 'https://wag.example.com']);
+        URL::forceRootUrl('http://192.168.1.20:8080');
+        Http::fake(['api.github.com/repos/acme/app/hooks' => Http::response(['id' => 77], 201)]);
+
+        $trigger = $this->publish('github.new_tag', ['listen' => 'webhook'])->triggers()->sole();
+
+        $url = "https://wag.example.com/integrations/events/{$trigger->key}";
+        Http::assertSent(fn (Request $request) => $request->method() === 'POST' && $request['config']['url'] === $url);
+        $this->assertSame($url, $trigger->state['url']);
+    }
+
+    public function test_changing_app_url_moves_the_hook_registering_the_new_one_before_removing_the_old(): void
+    {
+        config(['app.url' => 'https://old.example.com']);
+        Http::fake([
+            'api.github.com/repos/acme/app/hooks' => Http::sequence()->push(['id' => 77], 201)->push(['id' => 78], 201),
+            'api.github.com/repos/acme/app/hooks/*' => Http::response(null, 204),
+        ]);
+        $trigger = $this->publish('github.new_tag', ['listen' => 'webhook'])->triggers()->sole();
+        $oldSecret = $trigger->state['secret'];
+
+        config(['app.url' => 'https://new.example.com']);
+        $this->artisan('workflows:sync-webhooks')->assertSuccessful();
+
+        $requests = Http::recorded()->map(fn (array $pair) => $pair[0]->method().' '.($pair[0]['config']['url'] ?? $pair[0]->url()))->all();
+        $this->assertSame([
+            "POST https://old.example.com/integrations/events/{$trigger->key}",
+            "POST https://new.example.com/integrations/events/{$trigger->key}",
+            'DELETE https://api.github.com/repos/acme/app/hooks/77',
+        ], $requests);
+
+        $state = $trigger->refresh()->state;
+        $this->assertSame(['hook_id' => 78], $state['subscription']);
+        $this->assertSame("https://new.example.com/integrations/events/{$trigger->key}", $state['url']);
+        $this->assertNotSame($oldSecret, $state['secret']);
+        $this->deliver($trigger, 'push', ['ref' => 'refs/tags/v2.0', 'created' => true, 'after' => 'abc'])->assertAccepted();
+
+        $this->artisan('workflows:sync-webhooks')->assertSuccessful();
+        $this->assertCount(3, Http::recorded(), 'a hook already at APP_URL is left alone');
+    }
+
+    public function test_a_hook_that_cannot_be_moved_keeps_the_old_one_and_is_tried_again_on_publish(): void
+    {
+        config(['app.url' => 'https://old.example.com']);
+        Http::fake([
+            'api.github.com/repos/acme/app/hooks' => Http::sequence()
+                ->push(['id' => 77], 201)
+                ->push(['message' => 'Not Found'], 404)
+                ->push(['id' => 78], 201),
+            'api.github.com/repos/acme/app/hooks/*' => Http::response(null, 204),
+        ]);
+        $workflow = $this->publish('github.new_tag', ['listen' => 'webhook']);
+
+        config(['app.url' => 'https://new.example.com']);
+        $this->artisan('workflows:sync-webhooks')->assertFailed();
+
+        $state = $workflow->triggers()->sole()->state;
+        $this->assertSame(['hook_id' => 77], $state['subscription']);
+        $this->assertSame('GitHub answered 404: Not Found', $state['error']);
+        Http::assertNotSent(fn (Request $request) => $request->method() === 'DELETE');
+
+        app(Workflows::class)->publish($workflow->refresh());
+
+        $this->assertSame(['hook_id' => 78], $workflow->triggers()->sole()->state['subscription']);
+        Http::assertSent(fn (Request $request) => $request->method() === 'DELETE' && str_ends_with($request->url(), '/hooks/77'));
+    }
+
+    public function test_a_hook_registered_before_its_url_was_recorded_is_registered_again_once(): void
+    {
+        Http::fake([
+            'api.github.com/repos/acme/app/hooks' => Http::sequence()->push(['id' => 77], 201)->push(['id' => 78], 201),
+            'api.github.com/repos/acme/app/hooks/*' => Http::response(null, 204),
+        ]);
+        $trigger = $this->publish('github.new_tag', ['listen' => 'webhook'])->triggers()->sole();
+        $state = $trigger->state;
+        unset($state['url']);
+        $trigger->forceFill(['state' => $state])->save();
+
+        $this->artisan('workflows:sync-webhooks')->assertSuccessful();
+        $this->artisan('workflows:sync-webhooks')->assertSuccessful();
+
+        $this->assertSame(['hook_id' => 78], $trigger->refresh()->state['subscription']);
+        $this->assertCount(3, Http::recorded());
     }
 
     public function test_a_hook_github_refuses_is_noted_and_retried_on_the_next_publish(): void

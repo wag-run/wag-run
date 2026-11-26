@@ -116,7 +116,7 @@ Without this app, the **GitHub** form asks for the client ID and secret of an ap
 
 GitHub triggers can check for new events every few minutes, or register a webhook on the repository. Polling works anywhere. A webhook only works if GitHub can reach your `APP_URL`, so it doesn't work for an install on a private network, or for one on your own computer without a tunnel such as Cloudflare Tunnel or ngrok.
 
-The webhook is added to the repository, so you'll find it under the repository's **Settings → Webhooks**, not the organization's. Its **Recent Deliveries** show whether GitHub reached wag.run. If `APP_URL` changes, webhooks registered before keep the old address until the trigger's settings change and the workflow is published again.
+The webhook is added to the repository, so you'll find it under the repository's **Settings → Webhooks**, not the organization's. Its **Recent Deliveries** show whether GitHub reached wag.run. If `APP_URL` changes, the Docker image registers each webhook again at the new address when it starts, and removes the old one once the new one is in place. Publishing the workflow does the same. Without the Docker image, run `php artisan workflows:sync-webhooks` after changing `APP_URL`.
 
 ### Google
 

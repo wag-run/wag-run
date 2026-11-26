@@ -51,14 +51,20 @@ class WorkflowTrigger extends Model
         ];
     }
 
+    /**
+     * The address the trigger listens on, built from APP_URL rather than the
+     * request, so it is the same whichever hostname the install was reached by.
+     */
     public function url(): ?string
     {
-        return match ($this->type) {
-            self::WEBHOOK => route('webhooks.receive', $this->key),
-            self::FORM => route('forms.show', $this->key),
-            self::SUBSCRIPTION => route('integrations.events', $this->key),
+        $route = match ($this->type) {
+            self::WEBHOOK => 'webhooks.receive',
+            self::FORM => 'forms.show',
+            self::SUBSCRIPTION => 'integrations.events',
             default => null,
         };
+
+        return $route === null ? null : rtrim((string) config('app.url'), '/').route($route, $this->key, absolute: false);
     }
 
     /**

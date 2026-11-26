@@ -43,6 +43,7 @@ class TriggerSync
         $kept = [];
         $retiring = [];
         $subscribing = [];
+        $moving = [];
 
         foreach ($graph->nodes ?? [] as $node) {
             $listener = $this->eventTrigger($node->type);
@@ -79,6 +80,8 @@ class TriggerSync
 
                 if ($type === WorkflowTrigger::SUBSCRIPTION && ! isset($trigger->state['subscription'])) {
                     $subscribing[] = [$trigger, $node->config];
+                } elseif ($type === WorkflowTrigger::SUBSCRIPTION) {
+                    $moving[] = $trigger;
                 }
             } else {
                 $retiring[] = $trigger->state;
@@ -99,13 +102,56 @@ class TriggerSync
         WorkflowTrigger::query()->whereKey($removed->modelKeys())->delete();
 
         $workspace = $workflow->workspace;
-        DB::afterCommit(function () use ($workspace, $retiring, $subscribing) {
+        DB::afterCommit(function () use ($workspace, $retiring, $subscribing, $moving) {
             $this->unsubscribe($workspace, $retiring);
 
             foreach ($subscribing as [$trigger, $config]) {
                 $this->subscribe($trigger, $config);
             }
+
+            foreach ($moving as $trigger) {
+                $this->moveWebhook($trigger);
+            }
         });
+    }
+
+    /**
+     * Register a trigger's webhook again when its URL has changed since it
+     * was registered, as when APP_URL changes. The new webhook is registered
+     * before the old one is removed, and the old one is kept if registering
+     * fails, so the trigger is never left with none. A webhook registered
+     * before its URL was recorded is registered again once.
+     *
+     * @return bool|null true when moved, false when registering failed, null when there was nothing to move
+     */
+    public function moveWebhook(WorkflowTrigger $trigger): ?bool
+    {
+        $state = $trigger->state ?? [];
+        $url = $trigger->url();
+        $listener = $this->eventTrigger((string) ($state['node_type'] ?? ''));
+
+        if ($trigger->type !== WorkflowTrigger::SUBSCRIPTION || ! $listener || $url === null
+            || ! isset($state['subscription']) || ($state['url'] ?? null) === $url) {
+            return null;
+        }
+
+        $workspace = $trigger->workflow->workspace;
+        $secret = Str::random(40);
+
+        try {
+            $subscription = $listener->subscribe((array) ($state['config'] ?? []), $workspace, $url, $secret);
+        } catch (Throwable $e) {
+            $trigger->state = [...$state, 'error' => $e->getMessage()];
+            $trigger->save();
+
+            return false;
+        }
+
+        $trigger->state = [...$state, 'secret' => $secret, 'subscription' => $subscription, 'url' => $url, 'error' => null];
+        $trigger->save();
+        $this->unsubscribe($workspace, [$state]);
+
+        return true;
     }
 
     /**
@@ -133,7 +179,7 @@ class TriggerSync
 
         try {
             $subscription = $listener->subscribe($config, $trigger->workflow->workspace, $url, $secret);
-            $trigger->state = [...$trigger->state, 'secret' => $secret, 'subscription' => $subscription, 'config' => $config, 'error' => null];
+            $trigger->state = [...$trigger->state, 'secret' => $secret, 'subscription' => $subscription, 'config' => $config, 'url' => $url, 'error' => null];
         } catch (Throwable $e) {
             $trigger->state = [...$trigger->state, 'error' => $e->getMessage()];
         }
