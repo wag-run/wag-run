@@ -16,9 +16,11 @@ Someone starts the run from inside wag.run: with **Run** in the editor, or **Run
 |---|---|
 | **Key** | The name later nodes use, as in `trigger.values.amount`. Letters, numbers, and underscores. |
 | **Label** | What the person sees |
-| **Type** | **Text**, **Long text**, **Number**, **Email**, **Date**, **Checkbox**, or **Choice** |
+| **Type** | **Text**, **Long text**, **Number**, **Email**, **Date**, **Checkbox**, **Choice**, or **File upload** |
 | **Required** | Whether it must be filled in |
 | **Choices** | For a **Choice** input, the options, one per line as `value=Label` |
+
+A **File upload** input gives the run a [file](files.md).
 
 The values are under `trigger.values`, as a form's answers are: an input with the key `amount` is `{{ trigger.values.amount }}`. Numbers arrive as numbers and checkboxes as true or false.
 
@@ -80,6 +82,7 @@ The webhook answers as soon as the run starts. It doesn't wait for the run to fi
 | `trigger.headers` | Request headers, by lowercase name. Cookies, the `Authorization` header, and the token or signature headers are left out. |
 | `trigger.method` | The HTTP method |
 | `trigger.ip` | The caller's IP address |
+| `trigger.files` | Files sent with the request, by field name, such as `{{ trigger.files.report }}`. A field sent more than once is a list. See [Files](files.md). |
 
 For the example request above, `{{ trigger.body.order_id }}` is `1042`.
 

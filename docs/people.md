@@ -48,7 +48,7 @@ Pauses the run until someone fills in a form, then continues with their answers.
 | **Assignee** | The person who does the task |
 | **Title** | What the task is called in the Inbox, such as `Set up a laptop for {{ trigger.values.name }}` |
 | **Instructions** | What to do |
-| **Form fields** | What to ask for. Each field has a **Key**, a **Label**, a **Type** (**Text**, **Long text**, **Number**, **Email**, **Date**, **Checkbox**, or **Choice**) and whether it's **Required**. A **Choice** field lists its options, one per line as `value=Label`. |
+| **Form fields** | What to ask for. Each field has a **Key**, a **Label**, a **Type** (**Text**, **Long text**, **Number**, **Email**, **Date**, **Checkbox**, **Choice**, or **File upload**) and whether it's **Required**. A **Choice** field lists its options, one per line as `value=Label`. |
 | **Timeout (hours)** | How long they have. Defaults to 48. |
 | **Also email the assignee** | On by default |
 
@@ -74,6 +74,8 @@ The **Inbox** is in the account menu at the bottom of the sidebar. A red dot on 
 - **Approvals and tasks** assigned to you
 - **Failed runs** of workflows you own
 - **Messages** that workflows send you with a **Send notification** node
+
+Choose which of these also reach you by email, or stay out of the Inbox, under **Settings → Notifications**. Both channels are on until you turn one off.
 
 Items are newest first. Ones you've opened are greyed out, and **Mark all read** clears the count. Approvals and tasks carry a badge with where they stand:
 

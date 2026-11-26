@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\NotificationKind;
 use App\Enums\OrgRole;
 use App\Enums\WorkspacePermission;
 use App\Enums\WorkspaceRole;
@@ -35,6 +36,7 @@ use Laravel\Passport\HasApiTokens;
  * @property Carbon|null $two_factor_confirmed_at
  * @property string|null $remember_token
  * @property int|null $current_workspace_id
+ * @property array<string, array{database?: bool, mail?: bool}>|null $notification_preferences
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -55,7 +57,17 @@ class User extends Authenticatable implements MustVerifyEmail, OAuthenticatable,
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'notification_preferences' => 'array',
         ];
+    }
+
+    /**
+     * Whether this person wants a kind of notification on a channel, `database`
+     * (in the app) or `mail`. Both are on until they turn one off.
+     */
+    public function wantsNotification(NotificationKind $kind, string $channel): bool
+    {
+        return (bool) ($this->notification_preferences[$kind->value][$channel] ?? true);
     }
 
     /**

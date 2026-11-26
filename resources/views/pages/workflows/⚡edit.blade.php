@@ -751,7 +751,7 @@ new class extends Component {
      *
      * @param  list<string>  $nodeIds
      */
-    public function copyNodes(array $nodeIds): void
+    public function copyNodes(array $nodeIds, string $toastKey = 'workflows.edit.copied_n_nodes'): void
     {
         $graph = $this->graph;
         $ids = array_values(array_filter(array_map('strval', $nodeIds), fn (string $id) => $graph->has($id)));
@@ -770,7 +770,7 @@ new class extends Component {
         ]);
 
         $this->hasClipboard = true;
-        Flux::toast(text: trans_choice('workflows.edit.copied_n_nodes', count($ids), ['count' => count($ids)]));
+        Flux::toast(text: trans_choice($toastKey, count($ids), ['count' => count($ids)]));
     }
 
     /**
@@ -779,7 +779,7 @@ new class extends Component {
     public function cutNodes(array $nodeIds): void
     {
         $this->authorize('edit-workflows', $this->workspace);
-        $this->copyNodes($nodeIds);
+        $this->copyNodes($nodeIds, 'workflows.edit.cut_n_nodes');
 
         $graph = $this->graph;
 
@@ -1338,7 +1338,7 @@ new class extends Component {
         @endif
 
         {{-- Canvas --}}
-        <div class="relative min-w-0 flex-1" x-data="{ showMinimap: localStorage.getItem('wag.minimap') !== 'hidden' }"
+        <div class="relative min-w-0 flex-1" x-data="{ showMinimap: localStorage.getItem('wag.minimap') === 'shown' }"
             x-init="$watch('showMinimap', value => localStorage.setItem('wag.minimap', value ? 'shown' : 'hidden'))"
             :class="{ 'wag-minimap-hidden': ! showMinimap }">
             <button type="button" class="wag-minimap-toggle" x-on:click="showMinimap = ! showMinimap" data-test="minimap-toggle"

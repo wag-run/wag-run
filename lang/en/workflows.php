@@ -13,6 +13,7 @@ return [
         'click_or_drag_to_add' => 'Click a node to add it after the selected one or drag it onto the canvas.',
         'concurrent_runs' => 'Concurrent runs',
         'copied_n_nodes' => 'Copied :count node.|Copied :count nodes.',
+        'cut_n_nodes' => 'Cut :count node.|Cut :count nodes.',
         'copy' => 'Copy',
         'copy_keys' => '⌘C',
         'cut' => 'Cut',
@@ -178,12 +179,12 @@ return [
         'preview_no_runs_yet' => 'No runs yet, so data reads as empty. Run the workflow once to preview it with real data.',
         'preview_types' => [
             'boolean' => 'boolean',
-            'empty' => 'empty',
+            'empty' => 'null',
             'file' => 'file',
-            'list' => 'list',
+            'list' => 'array',
             'number' => 'number',
             'object' => 'object',
-            'text' => 'text',
+            'text' => 'string',
         ],
     ],
     'index' => [

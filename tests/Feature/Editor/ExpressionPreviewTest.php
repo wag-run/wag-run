@@ -60,7 +60,7 @@ class ExpressionPreviewTest extends TestCase
 
         $preview = $this->preview($editor, '{{ upper("hi") }}-{{ trigger.name }}-{{ nodes.first.output.value }}');
 
-        $this->assertSame(['status' => 'value', 'value' => 'HI--', 'type' => 'text', 'source' => __('workflows.editor.preview_no_runs_yet')], $preview);
+        $this->assertSame(['status' => 'value', 'value' => 'HI--', 'type' => 'string', 'source' => __('workflows.editor.preview_no_runs_yet')], $preview);
     }
 
     public function test_uses_the_data_the_node_saw_in_its_latest_run(): void
@@ -75,7 +75,7 @@ class ExpressionPreviewTest extends TestCase
 
         $this->assertSame('Hi Ada, from first', $text['value']);
         $this->assertStringContainsString(Execution::reference($execution->id), $text['source']);
-        $this->assertSame(['status' => 'value', 'value' => "[\n    \"start\"\n]", 'type' => 'list'], array_slice($list, 0, 3));
+        $this->assertSame(['status' => 'value', 'value' => "[\n    \"start\"\n]", 'type' => 'array'], array_slice($list, 0, 3));
     }
 
     public function test_a_node_that_has_not_run_yet_uses_what_the_latest_run_produced(): void
@@ -122,7 +122,7 @@ class ExpressionPreviewTest extends TestCase
 
         $preview = $this->preview($editor, '{{ trigger.missing }}');
 
-        $this->assertSame(['status' => 'empty', 'value' => '', 'type' => 'empty'], array_slice($preview, 0, 3));
+        $this->assertSame(['status' => 'empty', 'value' => '', 'type' => 'null'], array_slice($preview, 0, 3));
     }
 
     public function test_text_without_placeholders_is_not_previewed(): void

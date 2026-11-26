@@ -150,6 +150,15 @@ Date formats use [PHP's format letters](https://www.php.net/manual/en/datetime.f
 | `base64_encode(text)`, `base64_decode(text)` | Base64 |
 | `sha256(text)` | SHA-256 hash, in hex |
 
+### Files
+
+| Function | What it does |
+|---|---|
+| `text(file)` | Reads a [file](files.md) as text. Fails if the file isn't text. |
+| `base64(file)` | Reads a file's bytes as base64 text |
+
+Both read the file into the run's data, so they only work on files up to 1 MB.
+
 ## Secrets in logs
 
 Secret values never appear in run logs. Wherever a secret's value would show in a step's input or output, the run page shows it masked. Even so, avoid sending secrets anywhere they could be read back, such as into an email body.

@@ -45,6 +45,32 @@ class DataPickerTest extends TestCase
         $this->assertContains('execution.trigger.config', $paths['Execution']);
     }
 
+    public function test_lists_the_closest_predecessor_first(): void
+    {
+        $graph = WorkflowGraph::fromArray($this->graph(
+            ['start' => 'core.manual_trigger', 'first' => 'core.compose', 'second' => 'core.compose', 'third' => 'core.compose'],
+            ['start->first', 'first->second', 'second->third'],
+        ));
+        $graph = $graph->withNode(new GraphNode('first', 'core.compose', 'First step'))->withNode(new GraphNode('second', 'core.compose', 'Second step'));
+
+        $labels = array_keys($this->paths($graph, 'third'));
+
+        $this->assertSame(['Second step', 'First step'], array_slice($labels, 0, 2));
+        $this->assertSame('Trigger: start', $labels[2]);
+    }
+
+    public function test_lists_the_loop_item_before_the_trigger_for_a_node_inside_the_loop(): void
+    {
+        $graph = WorkflowGraph::fromArray($this->graph(
+            ['start' => ['core.webhook_trigger', ['method' => 'POST', 'verification' => 'none']], 'each' => ['core.for_loop', ['items' => '{{ trigger.body.items }}']], 'body' => 'core.compose'],
+            ['start->each', 'each:item->body'],
+        ));
+
+        $labels = array_keys($this->paths($graph, 'body'));
+
+        $this->assertLessThan(array_search('Trigger: start', $labels, true), array_search('Loop: each', $labels, true));
+    }
+
     public function test_leaves_out_a_node_no_trigger_leads_to_until_it_is_connected(): void
     {
         $nodes = ['start' => 'core.manual_trigger', 'fetch' => 'core.http_request', 'bucket' => 'core.compose', 'upload' => 'core.compose'];

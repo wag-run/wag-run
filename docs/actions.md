@@ -1,6 +1,6 @@
 # Actions
 
-Actions are the nodes that do the work after a trigger. They're grouped in the palette as **Flow**, **Data**, **Integrations**, **GitHub**, **Google**, **Investbrain**, **wag.run**, **AI**, **Messaging**, and **People**.
+Actions are the nodes that do the work after a trigger. They're grouped in the palette as **Flow**, **Data**, **Integrations**, **Storage**, **GitHub**, **Google**, **Investbrain**, **wag.run**, **AI**, **Messaging**, and **People**.
 
 Each node's outputs are available to the nodes after it as `nodes.<id>.output`, where `<id>` is shown in the node's settings under **Reference its output as**. For example, the status code of an HTTP call with the id `fetch` is `{{ nodes.fetch.output.status }}`. See [Data and placeholders](data-and-placeholders.md).
 
@@ -134,6 +134,19 @@ Keeps the items of a list that match a condition.
 
 Outputs: `items` (the ones that match), `count` (how many match), and `removed` (the ones that don't).
 
+### Create file
+
+Makes a file from text, or from base64, such as an encoded image an API sent back. Use it to give a node that takes a file, such as [Upload to S3](#upload-to-s3), a [Send email](#send-email) attachment, or an [HTTP call](#http-call) upload, something to send. See [Files](files.md).
+
+| Setting | What it does |
+|---|---|
+| **File name** | What the file is called, such as `report-{{ date(now(), 'Y-m-d') }}.csv` |
+| **Content** | The text, or the base64 text. A list or object is saved as JSON. |
+| **Content is** | **Text**, or **Base64**, which is decoded into the file's bytes |
+| **Content type** | Optional, such as `image/png`. Left empty, it's guessed from the file name. |
+
+Output: `file`.
+
 ## Integrations
 
 ### HTTP call
@@ -146,18 +159,24 @@ Makes an HTTP request.
 | **URL** | The address, with placeholders if needed, such as `https://api.example.com/orders/{{ trigger.order_id }}` |
 | **Authentication** | Optional. An **HTTP Basic** or **API token** setting from the workspace's [credentials](workspaces.md#credentials). |
 | **Query parameters** and **Headers** | Keys and values to send |
-| **Body** | **None**, **JSON**, **Form fields**, or **Raw text** |
+| **Body** | **None**, **JSON**, **Form fields**, **Raw text**, or **A file** |
+| **File** | For **A file**: one placeholder for a file, such as `{{ nodes.make.output.file }}`. It's sent as the body, with the file's content type unless you set a `Content-Type` header. |
 | **JSON or raw body** | For **JSON**, a JSON editor: it says whether the JSON is valid as you type, and **Format** indents it. Placeholders count as values, so `{"id": {{ trigger.id }}}` is valid. |
 | **Timeout (s)** | How long to wait for an answer. Defaults to 30. |
+| **Save the response as a file** | Off by default. For downloads such as images, zips, and backups, and for any body over 1 MB. The response comes back as `file`. |
 | **Follow redirects** | Follow up to 5 redirects. On by default. The authentication and headers are sent only to the host in the URL, and never over plain HTTP when the URL is HTTPS, so a redirect elsewhere doesn't get your token or password. Query parameters go with the first request only; a redirect's address is used as it is. |
 | **Fail on an error status (4xx or 5xx)** | On by default. Turn it off to handle error responses yourself, for example with a condition on `status`. |
 | **Allow insecure connections** | Off by default. Skips checking the server's TLS certificate, for an internal server with a self-signed certificate or one that doesn't match its address. See the warning below. |
 
-Outputs: `status` (the status code), `ok` (true for a 2xx status), `headers`, and `body`, which is decoded JSON when the response is JSON, or else text. Bodies over 1 MB are cut short.
+Outputs: `status` (the status code), `ok` (true for a 2xx status), `headers`, `body`, which is decoded JSON when the response is JSON, or else text, and `file`, the response as a [file](files.md), when it was saved as one or isn't text. A body over 1 MB is cut short unless the response is saved as a file.
+
+With **Form fields**, a value that is a file, such as `{{ nodes.make.output.file }}`, is uploaded as a file (multipart).
 
 HTTP calls can't reach private, loopback, or link-local addresses, such as `10.0.0.5` or `localhost`, unless a workspace admin lists them in the [internal-address allowlist](workspaces.md#workspace-settings).
 
 > **Warning:** With **Allow insecure connections** on, the connection is still encrypted, but wag.run no longer checks who it's talking to. Anyone between wag.run and the server could read or change the request and the response, including any token or password sent with it. Use it only for internal servers you control. Where you can, give the server a valid certificate instead.
+
+## Storage
 
 ### Upload to S3
 
@@ -326,6 +345,7 @@ Sends a prompt to a large language model and returns its answer.
 | **Model** | The provider's model name, such as `claude-sonnet-5-5` |
 | **Instructions** | Optional. A system prompt that sets how the model should behave. |
 | **Prompt** | What to ask, with placeholders for data, such as `Summarize this ticket: {{ trigger.body.description }}` |
+| **Images and documents** | Optional. One placeholder for a [file](files.md) or a list of files for the model to read: images, PDFs, or text files. Any other kind of file fails the step. |
 | **Response** | **Free text**, or **Structured data** |
 | **Structured fields** | For structured data: the fields the model must return. For each, a **Key**, a **Type** (**Text**, **Number**, **Whole number**, **Yes/no**, or **List of text**), a **Description** to guide the model, and whether it's **Required**. |
 | **Timeout (s)** | Defaults to 120 |
@@ -351,6 +371,7 @@ Supported providers are Anthropic, OpenAI, Google Gemini, Mistral, Groq, xAI, De
 | **Subject** | |
 | **Format** | **Plain text** or **HTML** |
 | **Body** | |
+| **Attachments** | Optional. One placeholder for a [file](files.md) or a list of files, such as `{{ nodes.fetch.output.file }}`. |
 | **SMTP server** | Optional. An **SMTP server** setting from the workspace's [credentials](workspaces.md#credentials). Leave it empty to send through the organization's [email settings](administration.md#email). |
 
 Outputs: `to` (the addresses it was sent to), `subject`, and `message_id`.

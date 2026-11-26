@@ -3,22 +3,41 @@
 namespace App\Notifications;
 
 use App\Models\Execution;
+use App\Services\Mailers;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Tells a workflow's owner, in the app, that one of its runs failed.
- * An email channel comes later.
+ * Tells a workflow's owner that one of its runs failed: in the app, and by
+ * email when they have not turned that off.
  */
 class RunFailedNotification extends Notification
 {
-    public function __construct(public Execution $execution) {}
+    /**
+     * @param  list<string>  $channels
+     */
+    public function __construct(
+        public Execution $execution,
+        public array $channels = ['database'],
+    ) {}
 
     /**
      * @return list<string>
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return $this->channels;
+    }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        $data = $this->toArray($notifiable);
+
+        return (new MailMessage)
+            ->mailer(app(Mailers::class)->forOrganization())
+            ->subject($data['title'])
+            ->line($data['body'])
+            ->action(__('notifications.run_failed.view_the_run'), $data['url']);
     }
 
     /**
