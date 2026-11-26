@@ -22,13 +22,13 @@ return [
     | Data store
     |--------------------------------------------------------------------------
     |
-    | Limits on the values workflows keep between runs: the size of one value
-    | once saved as JSON, and how many values a workspace may hold. Values
-    | that have expired are removed hourly.
+    | Limits on the workspace data store: the size of one value or collection
+    | item once saved as JSON, and how many values a workspace may hold,
+    | collection items included.
     |
     */
     'store' => [
         'max_value_bytes' => 64 * 1024,
-        'max_entries' => 10000,
+        'max_values' => 100000,
     ],
 ];

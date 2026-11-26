@@ -36,6 +36,14 @@ final readonly class Field
 
     public const WORKFLOW = 'workflow';
 
+    /**
+     * An entry of the workspace's data store, stored by its key. Sibling
+     * fields can depend on the chosen entry through "<name>.type" (a
+     * ValueType value) and "<name>.collection" ("yes" or "no") in their
+     * visibleWhen and optionsWhen.
+     */
+    public const STORE_ENTRY = 'store_entry';
+
     public const USER = 'user';
 
     /**
@@ -67,6 +75,9 @@ final readonly class Field
      *                                                           sibling field has one of these values
      * @param  array<string, string|list<string>>  $jsonWhen  edited and checked as JSON while each named
      *                                                        sibling field has one of these values
+     * @param  array<int|string, array<string, string|list<string>>>  $optionsWhen  for select fields, option value =>
+     *                                                                              the sibling values it is offered for;
+     *                                                                              an option not listed is always offered
      */
     public function __construct(
         public string $name,
@@ -81,6 +92,7 @@ final readonly class Field
         public array $fields = [],
         public array $visibleWhen = [],
         public array $jsonWhen = [],
+        public array $optionsWhen = [],
     ) {}
 
     /**
@@ -105,6 +117,22 @@ final readonly class Field
     public function isJson(array $values, array $siblings = []): bool
     {
         return $this->type === self::JSON || ($this->jsonWhen !== [] && $this->siblingsMatch($this->jsonWhen, $values, $siblings));
+    }
+
+    /**
+     * A select field's options that fit its sibling fields' values.
+     *
+     * @param  array<string, mixed>  $values
+     * @param  list<Field>  $siblings
+     * @return array<int|string, string>
+     */
+    public function optionsFor(array $values, array $siblings = []): array
+    {
+        return array_filter(
+            $this->options,
+            fn (int|string $option) => ! isset($this->optionsWhen[$option]) || $this->siblingsMatch($this->optionsWhen[$option], $values, $siblings),
+            ARRAY_FILTER_USE_KEY,
+        );
     }
 
     /**
@@ -166,6 +194,7 @@ final readonly class Field
             'fields' => array_map(fn (Field $field) => $field->toArray(), $this->fields),
             'visible_when' => $this->visibleWhen,
             'json_when' => $this->jsonWhen,
+            'options_when' => $this->optionsWhen,
         ];
     }
 }

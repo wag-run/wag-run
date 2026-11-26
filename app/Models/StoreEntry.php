@@ -2,28 +2,32 @@
 
 namespace App\Models;
 
+use App\Enums\ValueType;
 use Database\Factories\StoreEntryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * One value in a workspace's data store, which workflows save and read
- * between runs. The namespace is empty for a value shared by every workflow
- * in the workspace, or the id of the one workflow it belongs to.
+ * An entry in a workspace's data store, which keeps typed values between
+ * runs. It holds a single value, or, as a collection, many values of its
+ * type under item keys taken from data. Workflows can read a read-only
+ * entry but not change it. Its key, type, and whether it is a collection
+ * are fixed once created.
  *
  * @property int $id
  * @property int $workspace_id
- * @property string $namespace
  * @property string $key
- * @property string $value JSON
- * @property Carbon|null $expires_at
+ * @property ValueType $type
+ * @property bool $is_collection
+ * @property bool $read_only
+ * @property string|null $description
  * @property Carbon $updated_at
  */
-#[Fillable(['workspace_id', 'namespace', 'key', 'value', 'expires_at'])]
+#[Fillable(['workspace_id', 'key', 'type', 'is_collection', 'read_only', 'description'])]
 class StoreEntry extends Model
 {
     /** @use HasFactory<StoreEntryFactory> */
@@ -31,17 +35,11 @@ class StoreEntry extends Model
 
     protected function casts(): array
     {
-        return ['expires_at' => 'datetime'];
-    }
-
-    /**
-     * Entries that haven't expired.
-     *
-     * @param  Builder<StoreEntry>  $query
-     */
-    public function scopeLive(Builder $query): void
-    {
-        $query->where(fn (Builder $query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()));
+        return [
+            'type' => ValueType::class,
+            'is_collection' => 'boolean',
+            'read_only' => 'boolean',
+        ];
     }
 
     /**
@@ -50,5 +48,15 @@ class StoreEntry extends Model
     public function workspace(): BelongsTo
     {
         return $this->belongsTo(Workspace::class);
+    }
+
+    /**
+     * The entry's one value under the item key '', or a collection's items.
+     *
+     * @return HasMany<StoreValue, $this>
+     */
+    public function values(): HasMany
+    {
+        return $this->hasMany(StoreValue::class);
     }
 }
