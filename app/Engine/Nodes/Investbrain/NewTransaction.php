@@ -56,7 +56,7 @@ class NewTransaction extends Node implements EventTrigger
 
     public function paletteGroup(): array
     {
-        return [__('common.triggers'), __('common.other_apps'), __('nodes.investbrain.investbrain')];
+        return [__('common.triggers'), __('common.integrations'), __('nodes.investbrain.investbrain')];
     }
 
     public function inputs(): array

@@ -82,7 +82,7 @@ class NewFeedItem extends Node implements EventTrigger
 
     public function paletteGroup(): array
     {
-        return [__('common.triggers'), __('nodes.http_request.integrations')];
+        return [__('common.triggers'), __('common.integrations')];
     }
 
     public function inputs(): array

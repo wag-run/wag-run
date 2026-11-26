@@ -524,7 +524,7 @@ class WorkflowEditorTest extends TestCase
             ->assertSee(__('workflows.edit.add_sticky_note'));
     }
 
-    public function test_the_palette_nests_other_apps_triggers_under_triggers(): void
+    public function test_the_palette_nests_integration_triggers_under_triggers(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor();
 
@@ -532,13 +532,12 @@ class WorkflowEditorTest extends TestCase
         $types = fn (string $folder) => array_column($palette[$folder]['items'], 'type');
 
         $this->assertSame('Triggers', $palette['']['groups'][0]['name']);
-        $this->assertSame(['key' => 'Triggers › Other apps', 'name' => 'Other apps', 'icon' => 'tag', 'count' => 4], $palette['Triggers']['groups'][0]);
+        $this->assertSame([['key' => 'Triggers › Integrations', 'name' => 'Integrations', 'icon' => 'tag', 'count' => 5]], $palette['Triggers']['groups']);
         $this->assertSame(['core.manual_trigger', 'core.webhook_trigger', 'core.schedule_trigger', 'core.form_trigger'], $types('Triggers'));
-        $this->assertSame([], $types('Triggers › Other apps'));
-        $this->assertSame(['github.new_tag', 'github.new_release', 'github.workflow_run_failed'], $types('Triggers › Other apps › GitHub'));
-        $this->assertSame(['investbrain.new_transaction'], $types('Triggers › Other apps › Investbrain'));
-        $this->assertSame(['key' => 'Triggers › Integrations', 'name' => 'Integrations', 'icon' => 'rss', 'count' => 1], $palette['Triggers']['groups'][1]);
         $this->assertSame(['core.new_feed_item'], $types('Triggers › Integrations'));
+        $this->assertSame(['Triggers › Integrations › GitHub', 'Triggers › Integrations › Investbrain'], array_column($palette['Triggers › Integrations']['groups'], 'key'));
+        $this->assertSame(['github.new_tag', 'github.new_release', 'github.workflow_run_failed'], $types('Triggers › Integrations › GitHub'));
+        $this->assertSame(['investbrain.new_transaction'], $types('Triggers › Integrations › Investbrain'));
         $this->assertContains('investbrain.add_transaction', $types('Investbrain'));
         $this->assertContains('github.create_issue', $types('GitHub'));
     }

@@ -42,7 +42,7 @@ abstract class Node
 
     /**
      * Where the node sits in the editor's palette: its group, then any
-     * groups nested inside it, such as Triggers › Other apps › GitHub.
+     * groups nested inside it, such as Triggers › Integrations › GitHub.
      *
      * @return non-empty-list<string>
      */

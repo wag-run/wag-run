@@ -305,7 +305,7 @@ The default `resume()` completes the step when a timer passes or an answer arriv
 |---|---|---|
 | `defaultRetryPolicy()` | No retries | Retry by default: `new RetryPolicy(maxRetries: 3, backoffSeconds: 30)`. People can still change it on the node. |
 | `timeout()` | 300 seconds | Allow a longer attempt before the app treats the worker as dead. Call `$context->heartbeat()` during long work. |
-| `paletteGroup()` | The node's category | Nest the node in the palette, such as `['Triggers', 'Other apps', 'Acme']` |
+| `paletteGroup()` | The node's category | Nest the node in the palette, such as `['Triggers', 'Integrations', 'Acme']` |
 | `joinsBranches()` | `false` | Wait for every incoming branch before running, as Merge does |
 
 ## A trigger
@@ -364,7 +364,7 @@ class NewTicket extends Node implements EventTrigger
 
     public function paletteGroup(): array
     {
-        return [__('common.triggers'), __('common.other_apps'), 'Acme'];
+        return [__('common.triggers'), __('common.integrations'), 'Acme'];
     }
 
     public function inputs(): array

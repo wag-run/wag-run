@@ -80,7 +80,7 @@ abstract class GitHubTrigger extends Node implements EventTrigger
 
     public function paletteGroup(): array
     {
-        return [__('common.triggers'), __('common.other_apps'), __('nodes.github.github')];
+        return [__('common.triggers'), __('common.integrations'), __('nodes.github.github')];
     }
 
     public function inputs(): array

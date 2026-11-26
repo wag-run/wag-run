@@ -167,7 +167,7 @@ Items are remembered by ID, so an item whose ID changes starts a run again. Put 
 
 ## GitHub
 
-Three triggers start a workflow on a GitHub repository's events: **New tag**, **New release**, and **Actions run failed**. They're under **Triggers › Other apps › GitHub** in the palette. Each needs a **GitHub connection** that can see the repository: a GitHub account, which you can connect right from the node with **Connect GitHub** (see [Connecting an account](workspaces.md#connecting-an-account)), or a personal access token or GitHub App (see [Other ways to connect GitHub](workspaces.md#other-ways-to-connect-github)), and the **Repository**, as `owner/name`.
+Three triggers start a workflow on a GitHub repository's events: **New tag**, **New release**, and **Actions run failed**. They're under **Triggers › Integrations › GitHub** in the palette. Each needs a **GitHub connection** that can see the repository: a GitHub account, which you can connect right from the node with **Connect GitHub** (see [Connecting an account](workspaces.md#connecting-an-account)), or a personal access token or GitHub App (see [Other ways to connect GitHub](workspaces.md#other-ways-to-connect-github)), and the **Repository**, as `owner/name`.
 
 ### Polling or a webhook
 
@@ -223,7 +223,7 @@ A workflow that a GitHub trigger starts, and that changes the same repository, c
 
 ### New transaction
 
-Fires when a buy or a sale is added to a portfolio in [Investbrain](https://investbra.in). It's under **Triggers › Other apps › Investbrain** in the palette, and needs an **API token**: an **Investbrain API token** setting from the workspace's [credentials](workspaces.md#credentials).
+Fires when a buy or a sale is added to a portfolio in [Investbrain](https://investbra.in). It's under **Triggers › Integrations › Investbrain** in the palette, and needs an **API token**: an **Investbrain API token** setting from the workspace's [credentials](workspaces.md#credentials).
 
 Leave **Portfolio** and **Symbol** empty to hear about every transaction you can see, or set them to only hear about one portfolio (its ID or its address in Investbrain) or one ticker symbol. **Type** narrows it to **Buys** or **Sales**. Investbrain adds transactions of its own for stock splits and reinvested dividends; turn on **Include splits and reinvested dividends** to start runs for those too.
 
