@@ -50,7 +50,7 @@ return [
         'condition' => 'Condition',
         'conditional_logic' => 'Conditional logic',
         'condition_must_be_one_placeholder' => 'its condition must be one {{ }} placeholder, such as {{ trigger.values.amount > 100 }}.',
-        'one_placeholder_such_as' => 'One {{ }} placeholder that is true or false, such as {{ nodes.fetch.output.status == 200 and trigger.values.amount > 100 }}.',
+        'one_placeholder_such_as' => 'One {{ }} placeholder that evaluates to a boolean, such as {{ nodes.fetch.output.status == 200 and trigger.values.amount > 100 }}.',
         'result' => 'Result',
         'routes_the_flow_based_on' => 'Routes the flow based on a condition.',
     ],

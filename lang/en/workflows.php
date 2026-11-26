@@ -177,7 +177,7 @@ return [
         'preview_from_run' => 'With data from run :run, :when',
         'preview_no_runs_yet' => 'No runs yet, so data reads as empty. Run the workflow once to preview it with real data.',
         'preview_types' => [
-            'boolean' => 'true/false',
+            'boolean' => 'boolean',
             'empty' => 'empty',
             'file' => 'file',
             'list' => 'list',
