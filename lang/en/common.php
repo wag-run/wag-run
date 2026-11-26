@@ -82,6 +82,7 @@ return [
     'submitted_by_user_id' => 'Submitted by (user id)',
     'submitted_values' => 'Submitted values',
     'system' => 'System',
+    'store' => 'Store',
     'task' => 'Task',
     'timeout_hours' => 'Timeout (hours)',
     'timeout_seconds' => 'Timeout (seconds)',

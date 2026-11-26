@@ -29,6 +29,8 @@ class WorkspaceRoleTest extends TestCase
             'run workflows' => [P::RunWorkflows, WorkspaceRole::Editor],
             'cancel executions' => [P::CancelExecutions, WorkspaceRole::Editor],
             'manage variables' => [P::ManageVariables, WorkspaceRole::Editor],
+            'view the data store' => [P::ViewStore, WorkspaceRole::Editor],
+            'manage the data store' => [P::ManageStore, WorkspaceRole::Editor],
             'manage secrets' => [P::ManageSecrets, WorkspaceRole::Admin],
             'reveal secrets' => [P::RevealSecrets, WorkspaceRole::Admin],
             'manage credentials' => [P::ManageCredentials, WorkspaceRole::Admin],

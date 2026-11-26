@@ -42,7 +42,7 @@ enum WorkspaceRole: string
         // (names only) so they can read workflow configuration that references them.
         $viewer = [...$guest, P::ViewWorkflows, P::ViewExecutions, P::ViewVariables, P::ViewSecrets, P::ViewCredentials, P::ViewMembers];
 
-        $editor = [...$viewer, P::EditWorkflows, P::PublishWorkflows, P::RunWorkflows, P::CancelExecutions, P::ManageVariables];
+        $editor = [...$viewer, P::EditWorkflows, P::PublishWorkflows, P::RunWorkflows, P::CancelExecutions, P::ManageVariables, P::ViewStore, P::ManageStore];
 
         return match ($this) {
             self::Guest => $guest,

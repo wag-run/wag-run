@@ -61,6 +61,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->middleware('can:view-own-assignments,workspace')->name('inbox.show');
             Route::livewire('variables', 'pages::workspaces.variables')
                 ->middleware('can:view-variables,workspace')->name('variables');
+            Route::livewire('store', 'pages::workspaces.store')
+                ->middleware('can:view-store,workspace')->name('store');
             Route::livewire('secrets', 'pages::workspaces.secrets')
                 ->middleware('can:view-secrets,workspace')->name('secrets');
             Route::livewire('credentials', 'pages::workspaces.credentials')

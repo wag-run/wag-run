@@ -19,6 +19,7 @@ Switch workspaces with the menu at the top of the sidebar. Organization admins c
 | See the names of variables, secrets, and credentials | | ✓ | ✓ | ✓ |
 | Build, publish, test, and run workflows, and cancel runs | | | ✓ | ✓ |
 | Add, change, and delete variables | | | ✓ | ✓ |
+| See and delete the values in the data store | | | ✓ | ✓ |
 | Manage members, secrets, and credentials | | | | ✓ |
 | Reveal secret values | | | | ✓ |
 | Change workspace settings and read the audit log | | | | ✓ |
@@ -47,6 +48,14 @@ Click **Add variable** and give it a **Key** (letters, numbers, and underscores)
 Changing a variable affects every run from then on, without republishing. If you delete a variable, workflows that use it get an empty value.
 
 Variables are not secret: anyone who can see the workspace's runs can see their values in step inputs. Use a secret for anything sensitive.
+
+## Store
+
+The store holds the values that workflows save while they run, so a later run can read them: tickets already handled, the time of the last fetch, a count of failures in a row. Where variables are settings that people type in, the store holds data that workflows write. The workflows use the [data store nodes](actions.md#data-store) to save and read it; people can't add or change values here.
+
+**Store** lists every value with its **Key**, its **Value** as JSON, who it's **Shared with** (the whole workspace, or the one workflow it belongs to), when it **Expires**, and when it was last **Updated**. Search filters the list by key. Editors and Admins can delete a value with the trash button, or **Clear all values** (or, with a search, **Clear matching values**) to remove everything in the list. Deleting a value that a workflow uses isn't harmful: it reads as if nothing was saved, and **Seen before?** treats the key as new.
+
+Values aren't secret: they show here, and in the step inputs and outputs of runs. Use a secret for anything sensitive.
 
 ## Secrets
 
@@ -135,6 +144,6 @@ Admins can change these under **Settings**:
 
 ## Audit log
 
-**Audit log** lists changes to this workspace: workflows created, imported, published, rolled back, or deleted; variables, secrets, and credentials created, changed, deleted, or revealed; members added, removed, or given a new role; and invitations. Each entry shows who did it and when.
+**Audit log** lists changes to this workspace: workflows created, imported, published, rolled back, or deleted; variables, secrets, and credentials created, changed, deleted, or revealed; store values deleted or cleared; members added, removed, or given a new role; and invitations. Each entry shows who did it and when.
 
 Admins can read it. The dropdown at the top switches between the workspaces whose log you can read, and the action filter narrows entries by type. Organization admins also see **Organization**: every entry in the organization, including those that belong to no workspace, such as sign-ins (with how each person signed in), users promoted or deactivated, single sign-on, organization settings, and deleted workspaces.

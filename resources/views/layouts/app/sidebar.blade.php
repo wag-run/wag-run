@@ -71,6 +71,11 @@
                                 {{ __('common.variables') }}
                             </flux:sidebar.item>
                         @endif
+                        @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewStore))
+                            <flux:sidebar.item icon="circle-stack" :href="route('workspaces.store', $activeWorkspace)" :current="request()->routeIs('workspaces.store')" wire:navigate>
+                                {{ __('common.store') }}
+                            </flux:sidebar.item>
+                        @endif
                         @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewSecrets))
                             <flux:sidebar.item icon="lock-closed" :href="route('workspaces.secrets', $activeWorkspace)" :current="request()->routeIs('workspaces.secrets')" wire:navigate>
                                 {{ __('common.secrets') }}
