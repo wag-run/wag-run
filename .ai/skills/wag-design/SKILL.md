@@ -127,7 +127,7 @@ Prefer Tailwind utilities in the view. When a style needs CSS (the canvas, the e
 
 ### Dark mode
 
-Every colour utility has a `dark:` pair, and every new screen is checked in both modes. People switch between Light, Dark and System under **Settings › Appearance**.
+Every colour utility has a `dark:` pair, and every new screen is checked in both modes. People switch between Light, Dark and System under **Preferences › Appearance**.
 
 ### Illustration
 
@@ -145,7 +145,7 @@ Motion explains a change, such as a dot travelling along a connection into a run
 - **Errors say what went wrong and what to do**, in the person's terms. "upper() needs 1 argument, but got 0." Never a PHP message, class name or server path.
 - **Empty states** say what's missing and, where it helps, how to get it. "No runs yet, so data reads as empty. Run the workflow once to preview it with real data."
 - **Destructive confirmations** name the thing and the consequence. "Delete this node? Its connections will be deleted too."
-- In the docs, names of things on screen are **bold**, and paths through the UI use › (**Settings › Appearance**).
+- In the docs, names of things on screen are **bold**, and paths through the UI use › (**Preferences › Appearance**).
 
 ## Accessibility
 

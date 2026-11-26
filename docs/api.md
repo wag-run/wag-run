@@ -9,10 +9,10 @@ Both act as you. They can only do what your role allows in each workspace: a Vie
 
 ## Connecting an AI assistant
 
-The MCP server is on unless the install's administrator turned it off with `MCP_SERVER_ENABLED=false` (see [Self-hosting](self-hosting.md#settings)). When it's off, **Settings → API tokens** doesn't show its URL.
+The MCP server is on unless the install's administrator turned it off with `MCP_SERVER_ENABLED=false` (see [Self-hosting](self-hosting.md#settings)). When it's off, **Preferences → API tokens** doesn't show its URL.
 
 
-1. Open **Settings → API tokens** and copy the **MCP server URL**. It's your install's address followed by `/mcp`, such as `https://wag.example.com/mcp`.
+1. Open **Preferences → API tokens** and copy the **MCP server URL**. It's your install's address followed by `/mcp`, such as `https://wag.example.com/mcp`.
 2. In the assistant, add it as a custom connector or remote MCP server.
 3. The assistant opens a wag.run page asking you to sign in and approve it. Choose **Authorize**.
 
@@ -34,7 +34,7 @@ An assistant that can't connect through OAuth can use a personal access token in
 
 ## Personal access tokens
 
-Under **Settings → API tokens**, give the token a name, choose what it may do, and choose **Create token**. Copy the token right away: it's shown only once. Tokens expire after a year, and you can revoke one at any time.
+Under **Preferences → API tokens**, give the token a name, choose what it may do, and choose **Create token**. Copy the token right away: it's shown only once. Tokens expire after a year, and you can revoke one at any time.
 
 | Scope | What it allows |
 |---|---|
