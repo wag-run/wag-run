@@ -147,14 +147,7 @@ class NewFeedItem extends Node implements EventTrigger
 
     public function poll(array $config, Workspace $workspace, ?array $state): array
     {
-        $validators = array_filter(['If-None-Match' => $state['etag'] ?? null, 'If-Modified-Since' => $state['last_modified'] ?? null]);
-        $answer = $this->fetch($config, $workspace, $validators);
-
-        if ($answer['body'] === null) {
-            return ['events' => [], 'state' => [...$state ?? [], 'etag' => $answer['etag'] ?? $state['etag'] ?? null, 'last_modified' => $answer['last_modified'] ?? $state['last_modified'] ?? null]];
-        }
-
-        $body = $answer['body'];
+        $body = $this->fetch($config, $workspace);
         $items = ($config['format'] ?? 'feed') === 'json' ? $this->jsonItems($body, $config) : $this->feedItems($body);
 
         $ids = array_map(fn (array $item) => (string) $item['id'], $items);
@@ -163,11 +156,7 @@ class NewFeedItem extends Node implements EventTrigger
 
         return [
             'events' => array_map(fn (array $item) => $item['event'], $new),
-            'state' => [
-                'seen' => array_slice(array_values(array_unique([...$ids, ...$seen])), 0, max(self::MEMORY, count($ids))),
-                'etag' => $answer['etag'],
-                'last_modified' => $answer['last_modified'],
-            ],
+            'state' => ['seen' => array_slice(array_values(array_unique([...$ids, ...$seen])), 0, max(self::MEMORY, count($ids)))],
         ];
     }
 
@@ -185,19 +174,13 @@ class NewFeedItem extends Node implements EventTrigger
 
     /**
      * The body of the feed or list, with the address and headers' placeholders
-     * (workspace variables only) filled in, and the validators the source
-     * gave for it. With $validators (If-None-Match and If-Modified-Since from
-     * the last check), a source that says nothing changed gives a null body.
-     * They are sent only to the host the address names, and a header the
-     * workflow sets itself wins.
+     * (workspace variables only) filled in.
      *
      * @param  array<string, mixed>  $config
-     * @param  array<string, string>  $validators
-     * @return array{body: string|null, etag: string|null, last_modified: string|null}
      *
      * @throws RuntimeException when the address isn't allowed or the source didn't answer
      */
-    protected function fetch(array $config, Workspace $workspace, array $validators = []): array
+    protected function fetch(array $config, Workspace $workspace): string
     {
         $data = ['vars' => $workspace->variables()->pluck('value', 'key')->all()];
         $url = trim((string) $this->templates->render((string) ($config['url'] ?? ''), $data));
@@ -209,7 +192,6 @@ class NewFeedItem extends Node implements EventTrigger
             }
         }
 
-        $headers = [...$validators, ...$headers];
         $allowlist = new AddressAllowlist($workspace->internal_allowlist ?? []);
         $origin = strtolower((string) parse_url($url, PHP_URL_HOST));
 
@@ -235,18 +217,11 @@ class NewFeedItem extends Node implements EventTrigger
             throw new RuntimeException($e->getPrevious()?->getMessage() ?? $e->getMessage());
         }
 
-        $etag = $response->header('ETag') ?: null;
-        $lastModified = $response->header('Last-Modified') ?: null;
-
-        if ($response->status() === 304 && $validators !== []) {
-            return ['body' => null, 'etag' => $etag, 'last_modified' => $lastModified];
-        }
-
         if (! $response->successful()) {
             throw new RuntimeException(__('nodes.feed.answered', ['status' => $response->status(), 'reason' => $response->reason()]));
         }
 
-        return ['body' => $response->body(), 'etag' => $etag, 'last_modified' => $lastModified];
+        return $response->body();
     }
 
     /**

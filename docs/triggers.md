@@ -148,7 +148,7 @@ Fires for each new item in an RSS or Atom feed, or in a list a JSON API returns.
 
 wag.run fetches the address every **Check every (minutes)** and starts one run for each item it hasn't seen, oldest first. The first check after publishing only notes what's already there, so publishing doesn't start runs for old items. A feed entry is identified by its `guid` or `id`, or its link when it has neither. Entries and JSON items with no ID are skipped. Under **Trigger URLs** in the [workflow settings](editor.md#workflow-settings), the trigger shows when it last checked, and what's wrong if it isn't working.
 
-The address is checked like an [HTTP call's](actions.md#http-call): private addresses are refused unless the workspace allows them. A redirect to another host is followed without the authentication and headers. Answers over 5 MB are refused. After the first check, wag.run asks the source only for what has changed, with the `ETag` and `Last-Modified` it gave last time, so a source that supports this answers "not modified" and sends nothing. A header you set yourself, such as `If-None-Match`, is used instead.
+The address is checked like an [HTTP call's](actions.md#http-call): private addresses are refused unless the workspace allows them. A redirect to another host is followed without the authentication and headers. Answers over 5 MB are refused.
 
 What the run receives depends on the format. For a feed:
 
