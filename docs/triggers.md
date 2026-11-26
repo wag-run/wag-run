@@ -137,10 +137,10 @@ Fires for each new item in an RSS or Atom feed, or in a list a JSON API returns.
 
 | Setting | What it does |
 |---|---|
-| **URL** | The address of the feed or list. It can read workspace variables, as in `https://{{ vars.api_host }}/orders`. |
+| **URL** | The address of the feed or list. It can read workspace variables and secrets, as in `https://{{ vars.api_host }}/orders`. |
 | **Format** | **RSS or Atom feed**, or **JSON** |
 | **Authentication** | Optional: an **HTTP Basic** or **API token** setting from the workspace's [credentials](workspaces.md#credentials) |
-| **Headers** | Optional. Values can read workspace variables. |
+| **Headers** | Optional. Values can read workspace variables and secrets, such as `{{ secrets.api_key }}` for a key the source wants in a header. |
 | **List** | For JSON: where the items are, such as `data.items`. Leave it empty when the answer is the list itself. |
 | **Item ID** | For JSON: the field that identifies an item, such as `id`. It can reach into the item, as in `ref.id`. |
 | **Newest item is listed first** | For JSON: on by default. Turn it off if the list starts with the oldest item, so runs start oldest first. |
@@ -148,7 +148,7 @@ Fires for each new item in an RSS or Atom feed, or in a list a JSON API returns.
 
 wag.run fetches the address every **Check every (minutes)** and starts one run for each item it hasn't seen, oldest first. The first check after publishing only notes what's already there, so publishing doesn't start runs for old items. A feed entry is identified by its `guid` or `id`, or its link when it has neither. Entries and JSON items with no ID are skipped. Under **Trigger URLs** in the [workflow settings](editor.md#workflow-settings), the trigger shows when it last checked, and what's wrong if it isn't working.
 
-The address is checked like an [HTTP call's](actions.md#http-call): private addresses are refused unless the workspace allows them. A redirect to another host is followed without the authentication and headers. Answers over 5 MB are refused.
+The address is checked like an [HTTP call's](actions.md#http-call): private addresses are refused unless the workspace allows them. The URL and headers are filled in before a run starts, so they can't read `trigger`, `nodes`, or other run data; publishing says so if they try. A redirect to another host, or from HTTPS to plain HTTP, is followed without the authentication and headers. Answers over 5 MB are refused.
 
 What the run receives depends on the format. For a feed:
 

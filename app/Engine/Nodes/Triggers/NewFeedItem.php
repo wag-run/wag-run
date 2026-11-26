@@ -88,13 +88,13 @@ class NewFeedItem extends Node implements EventTrigger
     public function inputs(): array
     {
         return [
-            new Field('url', __('nodes.http_request.url'), Field::TEXT, required: true, description: __('nodes.feed.url_help')),
+            new Field('url', __('nodes.http_request.url'), Field::TEXT, required: true, templated: true, description: __('nodes.feed.url_help')),
             new Field('format', __('nodes.feed.format'), Field::SELECT, required: true, default: 'feed', options: [
                 'feed' => __('nodes.feed.rss_or_atom_feed'),
                 'json' => __('nodes.http_request.json'),
             ]),
             new Field('credential', __('common.authentication'), Field::CREDENTIAL, credentialTypes: ['http_basic', 'api_token']),
-            new Field('headers', __('common.headers'), Field::KEY_VALUE),
+            new Field('headers', __('common.headers'), Field::KEY_VALUE, templated: true, description: __('nodes.feed.headers_help')),
             new Field('list_path', __('nodes.feed.list'), Field::TEXT, description: __('nodes.feed.list_help'), visibleWhen: ['format' => 'json']),
             new Field('id_path', __('nodes.feed.item_id'), Field::TEXT, required: true, description: __('nodes.feed.item_id_help'), visibleWhen: ['format' => 'json']),
             new Field('newest_first', __('nodes.feed.newest_first'), Field::BOOLEAN, default: true, description: __('nodes.feed.newest_first_help'), visibleWhen: ['format' => 'json']),
@@ -123,11 +123,48 @@ class NewFeedItem extends Node implements EventTrigger
 
     public function configProblems(array $config): array
     {
+        $problems = [];
+
         if (($config['format'] ?? 'feed') === 'json' && trim((string) ($config['id_path'] ?? '')) === '') {
-            return [__('nodes.feed.item_id_is_required')];
+            $problems[] = __('nodes.feed.item_id_is_required');
         }
 
-        return [];
+        $templates = [(string) ($config['url'] ?? ''), ...array_map(fn (mixed $value) => (string) $value, array_values((array) ($config['headers'] ?? [])))];
+
+        foreach ($templates as $template) {
+            if (preg_match_all('/\{\{(.*?)\}\}/s', $template, $matches) && array_any($matches[1], fn (string $expression) => preg_match('/(?<![.\w])(trigger|nodes|execution|item|loop|error)\b/', $expression) === 1)) {
+                $problems[] = __('nodes.feed.only_vars_and_secrets');
+
+                break;
+            }
+        }
+
+        return $problems;
+    }
+
+    /**
+     * Fetch the feed or list now and say what a check would find: how many
+     * items it lists, how many have no ID and would be skipped, and the
+     * newest few as a run would receive them, for the editor's Check now.
+     *
+     * @param  array<string, mixed>  $config
+     * @return array{total: int, skipped: int, events: list<array<string, mixed>>, warning: string|null}
+     *
+     * @throws RuntimeException when the source can't be read with these settings
+     */
+    public function preview(array $config, Workspace $workspace, int $limit = 3): array
+    {
+        ['items' => $items, 'total' => $total] = $this->items($this->fetch($config, $workspace), $config);
+        $skipped = $total - count($items);
+
+        $warning = $this->previewWarning($config, $total, count($items));
+
+        return [
+            'total' => $total,
+            'skipped' => $skipped,
+            'events' => array_map(fn (array $item) => $item['event'], array_slice(array_reverse($items), 0, $limit)),
+            'warning' => $warning,
+        ];
     }
 
     public function execute(NodeContext $context): NodeResult
@@ -147,8 +184,7 @@ class NewFeedItem extends Node implements EventTrigger
 
     public function poll(array $config, Workspace $workspace, ?array $state): array
     {
-        $body = $this->fetch($config, $workspace);
-        $items = ($config['format'] ?? 'feed') === 'json' ? $this->jsonItems($body, $config) : $this->feedItems($body);
+        $items = $this->items($this->fetch($config, $workspace), $config)['items'];
 
         $ids = array_map(fn (array $item) => (string) $item['id'], $items);
         $seen = $state === null ? $ids : (array) ($state['seen'] ?? []);
@@ -173,8 +209,51 @@ class NewFeedItem extends Node implements EventTrigger
     }
 
     /**
+     * What Check now should point out about what a check found, if anything.
+     *
+     * @param  array<string, mixed>  $config
+     */
+    protected function previewWarning(array $config, int $total, int $kept): ?string
+    {
+        if ($total === 0) {
+            return __('nodes.feed.nothing_listed');
+        }
+
+        if ($kept === 0 && ($config['format'] ?? 'feed') === 'json') {
+            return __('nodes.feed.no_item_has_an_id', ['total' => $total, 'path' => trim((string) ($config['id_path'] ?? ''))]);
+        }
+
+        if ($kept === 0) {
+            return __('nodes.feed.no_entry_has_an_id', ['total' => $total]);
+        }
+
+        if ($kept < $total) {
+            return trans_choice('nodes.feed.some_items_skipped', $total - $kept, ['skipped' => $total - $kept, 'total' => $total]);
+        }
+
+        return null;
+    }
+
+    /**
+     * The items in a body, oldest first, and how many it listed, counting
+     * those without an ID that are skipped.
+     *
+     * @param  array<string, mixed>  $config
+     * @return array{items: list<array{id: string, event: array<string, mixed>}>, total: int}
+     *
+     * @throws RuntimeException when the body isn't what the format says
+     */
+    protected function items(string $body, array $config): array
+    {
+        return ($config['format'] ?? 'feed') === 'json' ? $this->jsonItems($body, $config) : $this->feedItems($body);
+    }
+
+    /**
      * The body of the feed or list, with the address and headers' placeholders
-     * (workspace variables only) filled in.
+     * (workspace variables and secrets) filled in.
+     *
+     * The authentication and headers go only to the address's own host, and
+     * never over plain HTTP when the address is HTTPS.
      *
      * @param  array<string, mixed>  $config
      *
@@ -182,7 +261,10 @@ class NewFeedItem extends Node implements EventTrigger
      */
     protected function fetch(array $config, Workspace $workspace): string
     {
-        $data = ['vars' => $workspace->variables()->pluck('value', 'key')->all()];
+        $data = [
+            'vars' => $workspace->variables()->pluck('value', 'key')->all(),
+            'secrets' => $workspace->secrets()->get()->pluck('value', 'key')->all(),
+        ];
         $url = trim((string) $this->templates->render((string) ($config['url'] ?? ''), $data));
         $headers = [];
 
@@ -194,12 +276,13 @@ class NewFeedItem extends Node implements EventTrigger
 
         $allowlist = new AddressAllowlist($workspace->internal_allowlist ?? []);
         $origin = strtolower((string) parse_url($url, PHP_URL_HOST));
+        $originIsSecure = strtolower((string) parse_url($url, PHP_URL_SCHEME)) === 'https';
 
         try {
             for ($hop = 0; ; $hop++) {
                 $target = $this->guard->check($url, $allowlist);
-                $sameHost = $target['host'] === $origin;
-                $response = $this->request($target, $sameHost ? $headers : [], $sameHost ? $this->credential($workspace, $config['credential'] ?? null) : null)->get($url);
+                $trusted = $target['host'] === $origin && (! $originIsSecure || strtolower((string) parse_url($url, PHP_URL_SCHEME)) === 'https');
+                $response = $this->request($target, $trusted ? $headers : [], $trusted ? $this->credential($workspace, $config['credential'] ?? null) : null)->get($url);
 
                 if (! $response->redirect() || ! $response->header('Location')) {
                     break;
@@ -280,9 +363,9 @@ class NewFeedItem extends Node implements EventTrigger
 
     /**
      * The entries of an RSS 2.0, RSS 1.0, or Atom feed, as ids and events,
-     * oldest first.
+     * oldest first, and how many entries it has.
      *
-     * @return list<array{id: string, event: array<string, mixed>}>
+     * @return array{items: list<array{id: string, event: array<string, mixed>}>, total: int}
      *
      * @throws RuntimeException when the body isn't a feed
      */
@@ -310,7 +393,7 @@ class NewFeedItem extends Node implements EventTrigger
             ]];
         }
 
-        return array_reverse($items);
+        return ['items' => array_reverse($items), 'total' => count($entries)];
     }
 
     /**
@@ -405,10 +488,11 @@ class NewFeedItem extends Node implements EventTrigger
     }
 
     /**
-     * The items of a JSON list, as ids and events, oldest first.
+     * The items of a JSON list, as ids and events, oldest first, and how
+     * many items it has.
      *
      * @param  array<string, mixed>  $config
-     * @return list<array{id: string, event: array<string, mixed>}>
+     * @return array{items: list<array{id: string, event: array<string, mixed>}>, total: int}
      *
      * @throws RuntimeException when the body isn't JSON, or holds no list where the settings say
      */
@@ -437,6 +521,6 @@ class NewFeedItem extends Node implements EventTrigger
             }
         }
 
-        return ($config['newest_first'] ?? true) ? array_reverse($items) : $items;
+        return ['items' => ($config['newest_first'] ?? true) ? array_reverse($items) : $items, 'total' => count($list)];
     }
 }

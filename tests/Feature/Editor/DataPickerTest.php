@@ -96,6 +96,16 @@ class DataPickerTest extends TestCase
         $this->assertStringNotContainsString('hidden-value', json_encode(app(DataPicker::class)->optionsFor($graph, 'a', $workspace)));
     }
 
+    public function test_a_triggers_own_fields_are_offered_only_workspace_values(): void
+    {
+        $workspace = Workspace::factory()->create();
+        Variable::factory()->for($workspace)->create(['key' => 'feed_url']);
+        Secret::factory()->for($workspace)->create(['key' => 'api_key']);
+        $graph = WorkflowGraph::fromArray($this->graph(['feed' => 'core.new_feed_item', 'a' => 'core.compose'], ['feed->a']));
+
+        $this->assertSame(['Variables' => ['vars.feed_url'], 'Secrets' => ['secrets.api_key']], $this->paths($graph, 'feed', $workspace));
+    }
+
     public function test_structured_llm_fields_appear_for_later_nodes(): void
     {
         $graph = WorkflowGraph::fromArray($this->graph(

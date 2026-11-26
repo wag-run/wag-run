@@ -4,6 +4,7 @@ namespace Tests\Feature\Integrations;
 
 use App\Models\Credential;
 use App\Models\Execution;
+use App\Models\Secret;
 use App\Models\Variable;
 use App\Models\Workflow;
 use App\Models\WorkflowTrigger;
@@ -178,6 +179,62 @@ class FeedTriggerTest extends TestCase
         Http::assertSent(fn (Request $request) => $request->url() === 'https://cdn.example.net/feed.xml' && ! $request->hasHeader('Authorization') && ! $request->hasHeader('X-Site'));
     }
 
+    public function test_headers_can_read_secrets(): void
+    {
+        Secret::factory()->for($this->workspace)->create(['key' => 'api_key', 'value' => 'k-123']);
+        $this->publish(['headers' => ['X-Api-Key' => '{{ secrets.api_key }}']]);
+        Http::fake(['example.com/feed.xml' => $this->rss([])]);
+
+        $this->artisan('workflows:poll-triggers');
+
+        Http::assertSent(fn (Request $request) => $request->header('X-Api-Key') === ['k-123']);
+    }
+
+    public function test_a_redirect_from_https_to_http_on_the_same_host_drops_the_authentication_and_headers(): void
+    {
+        $credential = Credential::factory()->for($this->workspace)->create(['type' => 'api_token', 'description' => 'feed token', 'config' => ['header' => 'Authorization', 'prefix' => 'Bearer', 'token' => 's3cret']]);
+        $this->publish(['credential' => $credential->id, 'headers' => ['X-Site' => 'mine']]);
+        Http::fake([
+            'https://example.com/feed.xml' => Http::response('', 301, ['Location' => 'http://example.com/feed.xml']),
+            'http://example.com/feed.xml' => $this->rss([]),
+        ]);
+
+        $this->artisan('workflows:poll-triggers');
+
+        Http::assertSent(fn (Request $request) => $request->url() === 'https://example.com/feed.xml' && $request->hasHeader('Authorization'));
+        Http::assertSent(fn (Request $request) => $request->url() === 'http://example.com/feed.xml' && ! $request->hasHeader('Authorization') && ! $request->hasHeader('X-Site'));
+    }
+
+    public function test_a_plain_http_address_still_gets_its_authentication(): void
+    {
+        $credential = Credential::factory()->for($this->workspace)->create(['type' => 'api_token', 'description' => 'feed token', 'config' => ['header' => 'Authorization', 'prefix' => 'Bearer', 'token' => 's3cret']]);
+        $this->publish(['url' => 'http://example.com/feed.xml', 'credential' => $credential->id]);
+        Http::fake(['http://example.com/feed.xml' => $this->rss([])]);
+
+        $this->artisan('workflows:poll-triggers');
+
+        Http::assertSent(fn (Request $request) => $request->hasHeader('Authorization'));
+    }
+
+    public function test_placeholders_that_only_exist_during_a_run_cant_be_published(): void
+    {
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The URL and headers can only read workspace variables and secrets');
+
+        $this->publish(['url' => 'https://example.com/{{ trigger.path }}']);
+    }
+
+    public function test_a_variable_whose_name_contains_a_run_word_is_allowed(): void
+    {
+        Variable::factory()->for($this->workspace)->create(['key' => 'trigger_host', 'value' => 'example.com']);
+        $this->publish(['url' => 'https://{{ vars.trigger_host }}/feed.xml']);
+        Http::fake(['example.com/feed.xml' => $this->rss([])]);
+
+        $this->artisan('workflows:poll-triggers');
+
+        Http::assertSentCount(1);
+    }
+
     public function test_a_private_address_is_refused_unless_the_workspace_allows_it(): void
     {
         $workflow = $this->publish(['url' => 'http://127.0.0.1/feed.xml']);
@@ -204,7 +261,7 @@ class FeedTriggerTest extends TestCase
 
         $this->artisan('workflows:poll-triggers');
         $this->poll();
-        $this->assertSame('The feed answered 503 Service Unavailable.', $workflow->triggers()->sole()->state['error']);
+        $this->assertSame('The address answered 503 Service Unavailable.', $workflow->triggers()->sole()->state['error']);
 
         $this->poll();
         $this->assertSame('The address did not return an RSS or Atom feed.', $workflow->triggers()->sole()->state['error']);

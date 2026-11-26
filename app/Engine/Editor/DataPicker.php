@@ -105,6 +105,12 @@ class DataPicker
             $groups[] = ['label' => __('common.secrets'), 'items' => $secrets];
         }
 
+        // A trigger's own fields are filled in before a run starts, so only
+        // workspace values exist for them.
+        if ($this->registry->has($graph->node($nodeId)->type) && $this->registry->make($graph->node($nodeId)->type)->kind() === NodeKind::Trigger) {
+            return $groups;
+        }
+
         $groups[] = ['label' => __('workflows.editor.execution'), 'items' => [
             ['label' => __('common.execution_id'), 'path' => 'execution.id', 'type' => 'number'],
             ['label' => __('workflows.editor.workflow_name'), 'path' => 'execution.workflow', 'type' => 'string'],
