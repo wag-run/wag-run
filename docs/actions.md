@@ -149,7 +149,7 @@ Makes an HTTP request.
 | **Body** | **None**, **JSON**, **Form fields**, or **Raw text** |
 | **JSON or raw body** | For **JSON**, a JSON editor: it says whether the JSON is valid as you type, and **Format** indents it. Placeholders count as values, so `{"id": {{ trigger.id }}}` is valid. |
 | **Timeout (s)** | How long to wait for an answer. Defaults to 30. |
-| **Follow redirects** | Follow up to 5 redirects. On by default. |
+| **Follow redirects** | Follow up to 5 redirects. On by default. The authentication and headers are sent only to the host in the URL, and never over plain HTTP when the URL is HTTPS, so a redirect elsewhere doesn't get your token or password. Query parameters go with the first request only; a redirect's address is used as it is. |
 | **Fail on an error status (4xx or 5xx)** | On by default. Turn it off to handle error responses yourself, for example with a condition on `status`. |
 | **Allow insecure connections** | Off by default. Skips checking the server's TLS certificate, for an internal server with a self-signed certificate or one that doesn't match its address. See the warning below. |
 

@@ -179,6 +179,78 @@ class HttpRequestTest extends TestCase
         $this->assertSame('arrived', $this->stepFor($execution, 'call')->output['body']);
     }
 
+    /**
+     * A workflow calling https://redirector.example.com/go with a token, a custom header, and a query parameter.
+     */
+    private function authenticatedRedirect(): Workflow
+    {
+        $workspace = Workspace::factory()->create();
+        Credential::factory()->for($workspace)->create(['id' => $this->settingId('shop'), 'description' => 'shop', 'config' => ['header' => 'Authorization', 'prefix' => 'Bearer', 'token' => 'tok_123456']]);
+
+        return $this->httpWorkflow([
+            'url' => 'https://redirector.example.com/go',
+            'credential' => $this->settingId('shop'),
+            'headers' => ['X-Api-Key' => 'key-abc'],
+            'query' => ['api_key' => 'q-secret'],
+        ], $workspace);
+    }
+
+    public function test_a_redirect_to_another_host_gets_no_authentication_headers_or_query(): void
+    {
+        Http::fake([
+            'redirector.example.com/*' => Http::response('', 302, ['Location' => 'https://api.example.com/final']),
+            'api.example.com/*' => Http::response('arrived'),
+        ]);
+
+        $execution = $this->runWorkflow($this->authenticatedRedirect());
+
+        $this->assertSame('arrived', $this->stepFor($execution, 'call')->output['body']);
+        Http::assertSent(fn (Request $request) => $request->url() === 'https://redirector.example.com/go?api_key=q-secret'
+            && $request->header('Authorization') === ['Bearer tok_123456'] && $request->header('X-Api-Key') === ['key-abc']);
+        Http::assertSent(fn (Request $request) => $request->url() === 'https://api.example.com/final'
+            && ! $request->hasHeader('Authorization') && ! $request->hasHeader('X-Api-Key'));
+    }
+
+    public function test_a_redirect_from_https_to_http_on_the_same_host_gets_no_authentication_or_headers(): void
+    {
+        Http::fake([
+            'https://redirector.example.com/*' => Http::response('', 301, ['Location' => 'http://redirector.example.com/plain']),
+            'http://redirector.example.com/*' => Http::response('arrived'),
+        ]);
+
+        $this->runWorkflow($this->authenticatedRedirect());
+
+        Http::assertSent(fn (Request $request) => $request->url() === 'http://redirector.example.com/plain'
+            && ! $request->hasHeader('Authorization') && ! $request->hasHeader('X-Api-Key'));
+    }
+
+    public function test_a_redirect_on_the_same_host_over_https_keeps_the_authentication_and_headers(): void
+    {
+        Http::fake([
+            'redirector.example.com/go*' => Http::response('', 302, ['Location' => '/v2/go?api_key=q-secret']),
+            'redirector.example.com/v2/*' => Http::response('arrived'),
+        ]);
+
+        $this->runWorkflow($this->authenticatedRedirect());
+
+        Http::assertSent(fn (Request $request) => $request->url() === 'https://redirector.example.com/v2/go?api_key=q-secret'
+            && $request->header('Authorization') === ['Bearer tok_123456'] && $request->header('X-Api-Key') === ['key-abc']);
+    }
+
+    public function test_a_plain_http_url_keeps_its_authentication_across_same_host_redirects(): void
+    {
+        Http::fake([
+            'http://redirector.example.com/go*' => Http::response('', 302, ['Location' => 'http://redirector.example.com/next']),
+            'http://redirector.example.com/next' => Http::response('arrived'),
+        ]);
+        $workspace = Workspace::factory()->create();
+        Credential::factory()->for($workspace)->httpBasic()->create(['id' => $this->settingId('intranet'), 'description' => 'intranet', 'config' => ['username' => 'svc', 'password' => 'pw-secret']]);
+
+        $this->runWorkflow($this->httpWorkflow(['url' => 'http://redirector.example.com/go', 'credential' => $this->settingId('intranet')], $workspace));
+
+        Http::assertSent(fn (Request $request) => $request->url() === 'http://redirector.example.com/next' && $request->hasHeader('Authorization'));
+    }
+
     #[TestWith(['file:///etc/passwd'])]
     #[TestWith(['gopher://api.example.com/'])]
     #[TestWith(['not a url'])]
