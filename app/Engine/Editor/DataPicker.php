@@ -23,8 +23,7 @@ use App\Models\Workspace;
  * the same way. A loop and a Merge also offer the outputs of the nodes
  * they gathered: a loop's first and last iteration or pass, and each
  * branch. Inside a While loop, and in its own condition, the pass before
- * and every earlier pass are offered through loop.previous and
- * loop.results.
+ * is offered through loop.previous.
  */
 class DataPicker
 {
@@ -322,7 +321,7 @@ class DataPicker
 
     /**
      * What a step inside a While loop's pass reads about the loop: the
-     * pass's index, each node of the pass before, and every earlier pass.
+     * pass's index, and each node of the pass before.
      *
      * @param  array<string, array<string, true>>  $loopBodies
      * @return list<array{label: mixed, path: string, type: string}>
@@ -334,8 +333,6 @@ class DataPicker
         foreach ($this->directBody($loopId, $loopBodies) as $id) {
             array_push($items, ...$this->outputsOf($graph->node($id), "loop.previous.{$id}.output", __('workflows.editor.previous_pass_name', ['name' => $graph->node($id)->name])));
         }
-
-        $items[] = ['label' => __('workflows.editor.earlier_passes'), 'path' => 'loop.results', 'type' => 'array'];
 
         return $items;
     }

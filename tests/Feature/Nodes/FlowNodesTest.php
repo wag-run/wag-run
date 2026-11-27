@@ -99,7 +99,7 @@ class FlowNodesTest extends TestCase
             ['start' => 'core.manual_trigger',
                 'pages' => ['core.while_loop', ['condition' => '{{ nodes.fetch == null or nodes.fetch.output.value < 3 }}']],
                 'fetch' => ['core.compose', ['template' => '{{ (loop.previous.fetch.output.value ?? 0) + 1 }}']],
-                'seen' => ['core.compose', ['template' => '{{ loop.index }}:{{ length(loop.results) }}']],
+                'seen' => ['core.compose', ['template' => '{{ loop.index }}:{{ loop.previous.fetch.output.value ?? "none" }}']],
                 'after' => ['core.compose', ['template' => '{{ nodes.pages.output.count }} / {{ nodes.pages.output.last.fetch.output.value }} / {{ nodes.pages.output.results[0].fetch.output.value }} / {{ nodes.pages.output.results[1].seen.output.value }} / {{ nodes.pages.output.last.fetch.port }}']]],
             ['start->pages', 'pages:pass->fetch', 'fetch->seen', 'pages:done->after'],
         ));
@@ -108,7 +108,7 @@ class FlowNodesTest extends TestCase
 
         $this->assertSame(ExecutionStatus::Complete, $execution->status);
         $this->assertSame([1, 2, 3], $execution->steps()->where('node_id', 'fetch')->orderBy('id')->get()->map(fn ($step) => $step->output['value'])->all());
-        $this->assertSame(['0:0', '1:1', '2:2'], $execution->steps()->where('node_id', 'seen')->orderBy('id')->get()->map(fn ($step) => $step->output['value'])->all());
+        $this->assertSame(['0:none', '1:1', '2:2'], $execution->steps()->where('node_id', 'seen')->orderBy('id')->get()->map(fn ($step) => $step->output['value'])->all());
         $this->assertSame('3 / 3 / 1 / 1:1 / main', $this->stepFor($execution, 'after')->output['value']);
         $this->assertSame(['count' => 3], $this->stepFor($execution, 'pages')->output);
     }

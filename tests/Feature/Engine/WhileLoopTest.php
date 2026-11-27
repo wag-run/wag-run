@@ -145,7 +145,7 @@ class WhileLoopTest extends TestCase
     {
         $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
             ['start' => 'start', 'each' => ['core.for_loop', ['items' => '{{ [10, 20] }}']],
-                'poll' => ['core.while_loop', ['condition' => '{{ loop.index === null and loop.previous === null and length(loop.results) == 0 }}']],
+                'poll' => ['core.while_loop', ['condition' => '{{ loop.index === null and loop.previous === null }}']],
                 'body' => ['core.compose', ['template' => '{{ item }}:{{ loop.index }}']]],
             ['start->each', 'each:item->poll', 'poll:pass->body'],
         )));

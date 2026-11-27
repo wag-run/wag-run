@@ -97,7 +97,7 @@ What a placeholder can read:
 | `store.<key>` | An entry of the workspace's data store, as it is when the step runs |
 | `secrets.<key>` | A workspace secret. Its value is masked in run logs. |
 | `execution` | The run's `id`, `workflow` name, `trigger_type`, and `started_at`, and `trigger`, the `id`, `type`, and `config` of the trigger that started it |
-| `item`, `loop` | Inside a For loop: the current item, and its `index` and `count`. Inside a While loop: `loop.index`, `loop.previous`, and `loop.results`. |
+| `item`, `loop` | Inside a For loop: the current item, and its `index` and `count`. Inside a While loop: `loop.index` and `loop.previous`. |
 | `error` | On a node reached through an **on error** connection: what went wrong |
 
 Placeholders can also do arithmetic, comparisons, and simple transformations, such as `{{ upper(trigger.values.name) }}` or `{{ trigger.values.price * trigger.values.quantity }}`. A field that holds only one placeholder keeps the value's type, so `{{ nodes.fetch.output.body.items }}` stays a list instead of turning into text.

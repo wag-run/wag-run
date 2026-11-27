@@ -2,7 +2,6 @@
 
 namespace App\Engine;
 
-use App\Engine\Templates\LazyList;
 use App\Enums\StepStatus;
 use App\Models\Execution;
 use App\Models\ExecutionStep;
@@ -22,9 +21,9 @@ use App\Services\DataStore;
  *                        trigger: the id, node type, and settings of the
  *                        trigger node that started the run
  *     item, loop         inside a For loop: the current item, and loop.index
- *                        and loop.count. Inside a While loop: loop.index,
- *                        loop.previous (the pass before, each node as in
- *                        nodes.<id>), and loop.results (every earlier pass)
+ *                        and loop.count. Inside a While loop: loop.index
+ *                        and loop.previous (the pass before, each node as
+ *                        in nodes.<id>)
  *     error              for steps reached through an error output
  */
 class ContextBuilder
@@ -60,7 +59,7 @@ class ContextBuilder
         $data = [...$data, ...$this->loopData($scope, $results)];
 
         if ($beforeFirstPass) {
-            $data['loop'] = ['index' => null, 'previous' => null, 'results' => []];
+            $data['loop'] = ['index' => null, 'previous' => null];
         }
 
         if ($step->entry_port === 'error' && $step->previousStep) {
@@ -122,12 +121,9 @@ class ContextBuilder
                 break;
             }
 
-            $pass = fn (int $number): array => $results->nodesIn(Scope::forIteration(Scope::parent($at), $frame['loop_step_id'], $number));
-
             $data['loop'] ??= [
                 'index' => $index,
-                'previous' => $index > 0 ? $pass($index - 1) : null,
-                'results' => new LazyList(fn (): array => array_map($pass, $index > 0 ? range(0, $index - 1) : [])),
+                'previous' => $index > 0 ? $results->nodesIn(Scope::forIteration(Scope::parent($at), $frame['loop_step_id'], $index - 1)) : null,
             ];
         }
 

@@ -132,7 +132,7 @@ class DataPickerTest extends TestCase
         $inside = $this->paths($graph, 'keep');
         $after = $this->paths($graph, 'after');
 
-        $this->assertSame(['loop.index', 'loop.previous.fetch.output.value', 'loop.previous.keep.output.value', 'loop.results'], $inside['Loop: pages']);
+        $this->assertSame(['loop.index', 'loop.previous.fetch.output.value', 'loop.previous.keep.output.value'], $inside['Loop: pages']);
         $this->assertSame(['nodes.fetch.output.value'], $inside['fetch']);
         $this->assertSame([
             'nodes.pages.output.results', 'nodes.pages.output.count', 'nodes.pages.output.last',
@@ -153,7 +153,7 @@ class DataPickerTest extends TestCase
         $own = $this->paths($graph, 'pages');
 
         $this->assertSame(['nodes.fetch.output.value'], $own['Pass just finished › fetch']);
-        $this->assertSame(['loop.index', 'loop.previous.fetch.output.value', 'loop.results'], $own['Loop: pages']);
+        $this->assertSame(['loop.index', 'loop.previous.fetch.output.value'], $own['Loop: pages']);
     }
 
     public function test_inside_nested_loops_offers_loop_for_the_innermost_and_the_item_of_the_nearest_for_loop(): void
@@ -167,7 +167,7 @@ class DataPickerTest extends TestCase
         $inWhile = $this->paths($graph, 'check');
         $inFor = $this->paths($graph, 'deep');
 
-        $this->assertSame(['loop.index', 'loop.previous.check.output.value', 'loop.results'], $inWhile['Loop: poll']);
+        $this->assertSame(['loop.index', 'loop.previous.check.output.value'], $inWhile['Loop: poll']);
         $this->assertSame(['item'], $inWhile['Loop: each']);
         $this->assertSame(['item', 'loop.index', 'loop.count'], $inFor['Loop: inner']);
         $this->assertArrayNotHasKey('Loop: outer', $inFor);

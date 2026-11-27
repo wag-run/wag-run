@@ -25,8 +25,9 @@ use App\Enums\ResumeReason;
  * pass sees no pass at all, and loop.index and loop.previous are null. A loop whose condition is still true after its
  * maximum number of passes fails.
  *
- * Inside a pass, templates can read loop.index, loop.previous (the pass
- * before, each node as in nodes.<id>), and loop.results (every earlier pass).
+ * Inside a pass, templates can read loop.index and loop.previous (the pass
+ * before, each node as in nodes.<id>). A pass reads no pass further back:
+ * anything carried longer belongs in a workflow variable.
  */
 class WhileLoop extends Node
 {

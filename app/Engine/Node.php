@@ -180,8 +180,8 @@ abstract class Node
     /**
      * Whether this node runs part of the flow in passes (NodeResult::repeat).
      * Its own step then always reads loop as its own: before the first pass
-     * loop.index and loop.previous are null and loop.results is empty, and
-     * after a pass they are what a step inside that pass reads.
+     * loop.index and loop.previous are null, and after a pass they are what
+     * a step inside that pass reads.
      */
     public function repeats(): bool
     {

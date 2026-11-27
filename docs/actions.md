@@ -101,9 +101,10 @@ Nodes in a pass can read the nodes before them in the same pass as `nodes.<id>`,
 |---|---|
 | `loop.index` | The pass's position, starting at 0 |
 | `loop.previous` | Every node of the pass before this one, keyed by node id, in the [same shape as `nodes.<id>`](data-and-placeholders.md#nodes-inside-results). Empty on the first pass. |
-| `loop.results` | A list of every earlier pass, each like `loop.previous` |
 
 `loop.previous` is how one pass hands data to the next. An HTTP call `fetch` asks for the next page with the cursor the previous pass got: `https://api.example.com/issues?cursor={{ url_encode(loop.previous.fetch.output.body.next_cursor) }}`. On the first pass the cursor is empty, so it gets the first page.
+
+A pass can read only the pass before it. To keep something across more passes, such as a running total or everything collected so far, use a [workflow variable](editor.md#variables) and an [Update variable](#update-variable) node.
 
 A While loop inside a [For loop](#for-loop) can still read the For loop's `item`.
 
