@@ -35,15 +35,27 @@ class WorkflowsIndexTest extends TestCase
         $this->assertNull($workflow->published_version_id);
     }
 
-    public function test_viewers_cannot_create_workflows(): void
+    public function test_viewers_cannot_create_import_or_delete_workflows(): void
     {
         $workspace = Workspace::factory()->create();
         $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
+        $workflow = Workflow::factory()->for($workspace)->create();
 
         Livewire::actingAs($viewer)->test('pages::workflows.index', ['workspace' => $workspace])
             ->set('name', 'Nope')
             ->call('create')
             ->assertForbidden();
+
+        Livewire::actingAs($viewer)->test('pages::workflows.index', ['workspace' => $workspace])
+            ->set('import', UploadedFile::fake()->createWithContent('nope.workflow.json', json_encode(WorkflowExport::export($workflow))))
+            ->call('importFile')
+            ->assertForbidden();
+
+        Livewire::actingAs($viewer)->test('pages::workflows.index', ['workspace' => $workspace])
+            ->call('delete', $workflow->id)
+            ->assertForbidden();
+
+        $this->assertSame([$workflow->id], Workflow::pluck('id')->all());
     }
 
     public function test_export_and_import_round_trip_the_draft_and_settings(): void

@@ -171,19 +171,23 @@ class CredentialsTest extends TestCase
     {
         $workspace = Workspace::factory()->create();
         $credential = Credential::factory()->for($workspace)->create();
+        $elsewhere = Credential::factory()->create();
         $admin = User::factory()->memberOf($workspace, WorkspaceRole::Admin)->create();
 
         $page = Livewire::actingAs($admin)->test('pages::workspaces.credentials', ['workspace' => $workspace]);
 
         $page->call('reveal', $credential->id, 'token')->assertReturned($credential->config['token']);
         $page->call('reveal', $credential->id, 'header')->assertNotFound();
+        Livewire::actingAs($admin)->test('pages::workspaces.credentials', ['workspace' => $workspace])->call('reveal', $elsewhere->id, 'token')->assertNotFound();
 
         $this->assertDatabaseHas('audit_logs', ['action' => 'credential.revealed', 'subject_id' => $credential->id]);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'credential.revealed', 'subject_id' => $elsewhere->id]);
     }
 
     public function test_editor_cannot_manage_authentication_settings(): void
     {
         $workspace = Workspace::factory()->create();
+        $credential = Credential::factory()->for($workspace)->create();
         $editor = User::factory()->memberOf($workspace, WorkspaceRole::Editor)->create();
 
         Livewire::actingAs($editor)
@@ -193,7 +197,18 @@ class CredentialsTest extends TestCase
             ->call('save')
             ->assertForbidden();
 
-        $this->assertDatabaseCount('credentials', 0);
+        Livewire::actingAs($editor)
+            ->test('pages::workspaces.credentials', ['workspace' => $workspace])
+            ->call('reveal', $credential->id, 'token')
+            ->assertForbidden();
+
+        Livewire::actingAs($editor)
+            ->test('pages::workspaces.credentials', ['workspace' => $workspace])
+            ->call('delete', $credential->id)
+            ->assertForbidden();
+
+        $this->assertSame([$credential->id], $workspace->credentials()->pluck('id')->all());
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'credential.revealed']);
     }
 
     public function test_page_shows_setting_names_but_not_secret_values(): void

@@ -20,8 +20,10 @@ class WorkspaceAccessTest extends TestCase
     public static function refusedPages(): array
     {
         return [
+            'guest on workflows' => ['workspaces.workflows', WorkspaceRole::Guest],
             'guest on the data store' => ['workspaces.data-store', WorkspaceRole::Guest],
             'guest on secrets' => ['workspaces.secrets', WorkspaceRole::Guest],
+            'guest on authentication' => ['workspaces.credentials', WorkspaceRole::Guest],
             'guest on members' => ['workspaces.members', WorkspaceRole::Guest],
             'viewer on settings' => ['workspaces.settings', WorkspaceRole::Viewer],
             'editor on settings' => ['workspaces.settings', WorkspaceRole::Editor],

@@ -53,6 +53,7 @@ class SecretsTest extends TestCase
     {
         $workspace = Workspace::factory()->create();
         $secret = Secret::factory()->for($workspace)->create(['value' => 'revealed-value']);
+        $elsewhere = Secret::factory()->create();
         $admin = User::factory()->memberOf($workspace, WorkspaceRole::Admin)->create();
 
         Livewire::actingAs($admin)
@@ -60,12 +61,18 @@ class SecretsTest extends TestCase
             ->call('reveal', $secret->id)
             ->assertReturned('revealed-value');
 
+        Livewire::actingAs($admin)
+            ->test('pages::workspaces.secrets', ['workspace' => $workspace])
+            ->call('reveal', $elsewhere->id)
+            ->assertNotFound();
+
         $this->assertDatabaseHas('audit_logs', [
             'workspace_id' => $workspace->id,
             'user_id' => $admin->id,
             'action' => 'secret.revealed',
             'subject_id' => $secret->id,
         ]);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'secret.revealed', 'subject_id' => $elsewhere->id]);
     }
 
     public function test_org_admin_reveal_is_audited_against_the_workspace(): void
@@ -98,8 +105,16 @@ class SecretsTest extends TestCase
             ->call('delete', $secret->id)
             ->assertForbidden();
 
+        Livewire::actingAs($editor)
+            ->test('pages::workspaces.secrets', ['workspace' => $workspace])
+            ->set('key', 'sneaky')
+            ->set('value', 'added-by-an-editor')
+            ->call('save')
+            ->assertForbidden();
+
         $this->assertDatabaseMissing('audit_logs', ['action' => 'secret.revealed']);
         $this->assertModelExists($secret);
+        $this->assertSame([$secret->key], $workspace->secrets()->pluck('key')->all());
     }
 
     public function test_editing_without_a_new_value_keeps_the_current_value(): void
