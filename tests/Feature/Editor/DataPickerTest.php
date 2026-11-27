@@ -150,4 +150,28 @@ class DataPickerTest extends TestCase
         $this->assertSame(['vars.attempts' => 'number', 'vars.due' => 'string'], array_column($group['items'], 'type', 'path'));
         $this->assertArrayNotHasKey('Variables', $this->paths(WorkflowGraph::fromArray($this->graph(['start' => 'core.manual_trigger', 'a' => 'core.compose'], ['start->a'])), 'a'));
     }
+
+    public function test_a_starting_value_is_offered_the_triggers_the_data_store_and_the_run_only(): void
+    {
+        $workspace = Workspace::factory()->create();
+        StoreEntry::factory()->for($workspace)->create(['key' => 'cursor']);
+        Secret::factory()->for($workspace)->create(['key' => 'api_key']);
+        $graph = WorkflowGraph::fromArray([
+            ...$this->graph(
+                ['start' => ['core.manual_trigger', ['fields' => [['name' => 'order_id', 'label' => 'Order', 'type' => 'number']]]],
+                    'hook' => 'core.webhook_trigger', 'fetch' => 'core.http_request'],
+                ['start->fetch', 'hook->fetch'],
+            ),
+            'variables' => [['name' => 'attempts', 'type' => 'number', 'value' => '0']],
+        ]);
+
+        $groups = collect(app(DataPicker::class)->optionsForStartingValue($graph, $workspace))
+            ->mapWithKeys(fn ($group) => [$group['label'] => array_column($group['items'], 'path')]);
+
+        $this->assertSame(['Trigger: start', 'Trigger: hook', 'Data store', 'Execution'], $groups->keys()->all());
+        $this->assertContains('trigger.values.order_id', $groups['Trigger: start']);
+        $this->assertContains('trigger.body', $groups['Trigger: hook']);
+        $this->assertSame(['store.cursor'], $groups['Data store']);
+        $this->assertContains('execution.id', $groups['Execution']);
+    }
 }

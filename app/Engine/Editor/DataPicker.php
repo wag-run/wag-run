@@ -28,10 +28,74 @@ class DataPicker
      */
     public function optionsFor(WorkflowGraph $graph, string $nodeId, Workspace $workspace): array
     {
+        return $this->withTextLabels($this->groups($graph, $nodeId, $workspace));
+    }
+
+    /**
+     * What a workflow variable's starting value can reference. It is worked
+     * out when a run starts, before any node has run, so that is each
+     * trigger's outputs, the data store, and the run itself.
+     *
+     * @return list<array{label: string, items: list<array{label: string, path: string, type: string}>}>
+     */
+    public function optionsForStartingValue(WorkflowGraph $graph, Workspace $workspace): array
+    {
+        $groups = [];
+
+        foreach ($graph->nodes as $node) {
+            $definition = $this->registry->has($node->type) ? $this->registry->make($node->type) : null;
+            $items = $definition?->kind() === NodeKind::Trigger ? $this->flatten($definition->outputs($node->config), 'trigger') : [];
+
+            if ($items !== []) {
+                $groups[] = ['label' => __('workflows.editor.trigger_name', ['name' => $node->name]), 'items' => $items];
+            }
+        }
+
+        $entries = $this->storeEntries($workspace);
+
+        if ($entries !== []) {
+            $groups[] = ['label' => __('common.data_store'), 'items' => $entries];
+        }
+
+        $groups[] = $this->executionGroup();
+
+        return $this->withTextLabels($groups);
+    }
+
+    /**
+     * @param  list<array{label: mixed, items: array<array{label: mixed, path: string, type: string}>}>  $groups
+     * @return list<array{label: string, items: list<array{label: string, path: string, type: string}>}>
+     */
+    protected function withTextLabels(array $groups): array
+    {
         return array_map(fn (array $group) => [
             'label' => (string) $group['label'],
             'items' => array_values(array_map(fn (array $item) => [...$item, 'label' => (string) $item['label']], $group['items'])),
-        ], $this->groups($graph, $nodeId, $workspace));
+        ], $groups);
+    }
+
+    /**
+     * @return list<array{label: string, path: string, type: string}>
+     */
+    protected function storeEntries(Workspace $workspace): array
+    {
+        return array_values($workspace->storeEntries()->orderBy('key')->get()
+            ->map(fn (StoreEntry $entry) => ['label' => $entry->key, 'path' => "store.{$entry->key}", 'type' => $entry->is_collection ? 'object' : $entry->type->pickerType()])->all());
+    }
+
+    /**
+     * @return array{label: mixed, items: list<array{label: mixed, path: string, type: string}>}
+     */
+    protected function executionGroup(): array
+    {
+        return ['label' => __('workflows.editor.execution'), 'items' => [
+            ['label' => __('common.execution_id'), 'path' => 'execution.id', 'type' => 'number'],
+            ['label' => __('workflows.editor.workflow_name'), 'path' => 'execution.workflow', 'type' => 'string'],
+            ['label' => __('workflows.editor.started_at'), 'path' => 'execution.started_at', 'type' => 'string'],
+            ['label' => __('workflows.editor.trigger_node_id'), 'path' => 'execution.trigger.id', 'type' => 'string'],
+            ['label' => __('workflows.editor.trigger_node_type'), 'path' => 'execution.trigger.type', 'type' => 'string'],
+            ['label' => __('workflows.editor.trigger_settings'), 'path' => 'execution.trigger.config', 'type' => 'object'],
+        ]];
     }
 
     /**
@@ -101,8 +165,7 @@ class DataPicker
             }
         }
 
-        $entries = $workspace->storeEntries()->orderBy('key')->get()
-            ->map(fn (StoreEntry $entry) => ['label' => $entry->key, 'path' => "store.{$entry->key}", 'type' => $entry->is_collection ? 'object' : $entry->type->pickerType()])->all();
+        $entries = $this->storeEntries($workspace);
         $secrets = $workspace->secrets()->orderBy('key')->pluck('key')->map(fn (string $key) => ['label' => $key, 'path' => "secrets.{$key}", 'type' => 'string'])->values()->all();
 
         $variables = array_values(array_map(
@@ -122,14 +185,7 @@ class DataPicker
             $groups[] = ['label' => __('common.secrets'), 'items' => $secrets];
         }
 
-        $groups[] = ['label' => __('workflows.editor.execution'), 'items' => [
-            ['label' => __('common.execution_id'), 'path' => 'execution.id', 'type' => 'number'],
-            ['label' => __('workflows.editor.workflow_name'), 'path' => 'execution.workflow', 'type' => 'string'],
-            ['label' => __('workflows.editor.started_at'), 'path' => 'execution.started_at', 'type' => 'string'],
-            ['label' => __('workflows.editor.trigger_node_id'), 'path' => 'execution.trigger.id', 'type' => 'string'],
-            ['label' => __('workflows.editor.trigger_node_type'), 'path' => 'execution.trigger.type', 'type' => 'string'],
-            ['label' => __('workflows.editor.trigger_settings'), 'path' => 'execution.trigger.config', 'type' => 'object'],
-        ]];
+        $groups[] = $this->executionGroup();
 
         return $groups;
     }

@@ -105,7 +105,7 @@ Under **Variables** in the workflow settings, click **Add variable** and give it
 
 - A **Name**, with letters, numbers, and underscores. Nodes read it as `{{ vars.<name> }}`. The name can't change later.
 - A **Type**: String, Number, Boolean, Object, Array, or Date & time.
-- A **Starting value**, worked out once when a run starts. It can be plain, such as `0`, or use placeholders that read the trigger, the data store, or the run, such as `{{ trigger.values.customer }}` or `{{ store.cursor }}`. It can't read other variables, node outputs, or secrets. Left empty, or when it reads something that isn't there, the variable starts as empty text, 0, false, an empty object or array, or no date.
+- A **Starting value**, worked out once when a run starts. It can be plain, such as `0`, or use placeholders that read the trigger, the data store, or the run, such as `{{ trigger.values.customer }}` or `{{ store.cursor }}`. It can't read other variables, node outputs, or secrets. **Insert data** under the field lists what it can read, along with the helper functions. Left empty, or when it reads something that isn't there, the variable starts as empty text, 0, false, an empty object or array, or no date.
 
 Change a variable during a run with the [Update variable](actions.md#update-variable) node.
 
