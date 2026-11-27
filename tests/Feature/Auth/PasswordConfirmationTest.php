@@ -16,6 +16,6 @@ class PasswordConfirmationTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('password.confirm'));
 
-        $response->assertOk();
+        $response->assertOk()->assertSee('data-test="confirm-password-button"', false);
     }
 }
