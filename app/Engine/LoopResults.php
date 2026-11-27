@@ -17,6 +17,10 @@ use Closure;
  *
  * Every node that completed in an iteration is there, in the same shape as
  * nodes.<id>. A loop inside an iteration carries its own results.
+ *
+ * A For loop's row holds its count. A loop that repeats, such as a While
+ * loop, holds how many passes it ran as "passes" and also gets "last": the
+ * final pass, or null when there was none.
  */
 class LoopResults
 {
@@ -58,17 +62,21 @@ class LoopResults
      */
     public function outputOf(ExecutionStep $step): mixed
     {
-        if (! $this->isFinishedLoop($step)) {
+        $count = $this->iterations($step);
+
+        if ($count === null) {
             return $step->output;
         }
 
         $results = [];
 
-        for ($index = 0; $index < (int) $step->output['count']; $index++) {
+        for ($index = 0; $index < $count; $index++) {
             $results[] = $this->nodesIn(Scope::forIteration($step->scope_key, $step->id, $index));
         }
 
-        return ['results' => $results, ...$step->output];
+        return array_key_exists('passes', $step->output)
+            ? ['last' => $results === [] ? null : $results[$count - 1], ...$step->output, 'results' => $results]
+            : ['results' => $results, ...$step->output];
     }
 
     /**
@@ -88,12 +96,19 @@ class LoopResults
         return $nodes;
     }
 
-    protected function isFinishedLoop(ExecutionStep $step): bool
+    /**
+     * How many iterations a finished loop ran, or null when the step is
+     * not one.
+     */
+    protected function iterations(ExecutionStep $step): ?int
     {
-        return $step->status === StepStatus::Complete
-            && $step->wait_type === WaitType::Loop
-            && is_array($step->output)
-            && isset($step->output['count']);
+        if ($step->status !== StepStatus::Complete || $step->wait_type !== WaitType::Loop || ! is_array($step->output)) {
+            return null;
+        }
+
+        $count = $step->output['count'] ?? $step->output['passes'] ?? null;
+
+        return is_numeric($count) ? (int) $count : null;
     }
 
     /**

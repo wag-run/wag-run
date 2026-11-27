@@ -9,6 +9,7 @@ enum ResultKind: string
     case Wait = 'wait';
     case Terminate = 'terminate';
     case Iterate = 'iterate';
+    case Repeat = 'repeat';
     case RunChild = 'run_child';
     case UpdateVariable = 'update_variable';
 }

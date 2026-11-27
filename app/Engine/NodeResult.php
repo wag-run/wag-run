@@ -99,6 +99,18 @@ final readonly class NodeResult
     }
 
     /**
+     * Run the part of the flow on $bodyPort once. When that pass has
+     * finished, the node's resume() is called with PassFinished, seeing the
+     * run's data as a step inside the pass does, and returns repeat() again
+     * for another pass or complete() to stop. The engine adds every pass's
+     * results to an output that holds their count as "passes".
+     */
+    public static function repeat(string $bodyPort = 'pass', string $donePort = 'done'): self
+    {
+        return new self(ResultKind::Repeat, bodyPort: $bodyPort, donePort: $donePort);
+    }
+
+    /**
      * Start another workflow and wait for it. Its output becomes this step's
      * output; if it fails, this step fails.
      *

@@ -56,6 +56,7 @@ class Coordinator
                 ResultKind::Wait => $this->park($fresh, $result->external ? WaitType::External : WaitType::Timer, $result->until, $result->state, $redactor),
                 ResultKind::Terminate => $this->terminate($fresh, $result, $redactor),
                 ResultKind::Iterate => $this->iterate($fresh, $result, $redactor),
+                ResultKind::Repeat => $this->repeat($fresh, $result, $redactor),
                 ResultKind::RunChild => $this->runChild($fresh, $result, $redactor),
                 ResultKind::UpdateVariable => $this->updateVariable($fresh, $result, $redactor),
             };
@@ -341,6 +342,25 @@ class Coordinator
         $this->startIteration($step, 0);
     }
 
+    /**
+     * Start a pass of a loop that repeats: its first, or the one after the
+     * pass its node has just looked at.
+     */
+    protected function repeat(ExecutionStep $step, NodeResult $result, Redactor $redactor): void
+    {
+        $state = $step->state ?? [];
+        $index = $step->wait_type === WaitType::Loop && ($state['repeat'] ?? false) ? ($state['index'] ?? 0) + 1 : 0;
+
+        $this->park($step, WaitType::Loop, null, [
+            'repeat' => true,
+            'index' => $index,
+            'body_port' => $result->bodyPort,
+            'done_port' => $result->donePort,
+        ], $redactor);
+
+        $this->startIteration($step, $index);
+    }
+
     protected function runChild(ExecutionStep $step, NodeResult $result, Redactor $redactor): void
     {
         $this->park($step, WaitType::Child, null, ['workflow_id' => $result->childWorkflow?->id], $redactor);
@@ -479,7 +499,10 @@ class Coordinator
 
     /**
      * Move every loop whose current iteration has no open steps left to its
-     * next item, or complete it after the last one.
+     * next item, or complete it after the last one. A loop that repeats
+     * (NodeResult::repeat) is handed back to its node on a worker instead,
+     * which decides whether another pass runs. Its resume_at marks that the
+     * finished pass is waiting to be looked at, so it is asked only once.
      */
     protected function advanceLoops(Execution $execution): bool
     {
@@ -496,7 +519,14 @@ class Coordinator
             $index = $state['index'] ?? 0;
             $scope = Scope::forIteration($loop->scope_key, $loop->id, $index);
 
-            if ($this->hasOpenStepsIn($execution, $scope)) {
+            if ($loop->resume_at !== null || $this->hasOpenStepsIn($execution, $scope)) {
+                continue;
+            }
+
+            if ($state['repeat'] ?? false) {
+                $loop->forceFill(['resume_at' => now()])->save();
+                $this->dispatchResume($loop, ResumeReason::PassFinished);
+
                 continue;
             }
 

@@ -155,6 +155,17 @@ abstract class Node
         return false;
     }
 
+    /**
+     * Whether this node runs part of the flow in passes (NodeResult::repeat).
+     * Its own step then always reads loop as its own: before the first pass
+     * loop.index and loop.previous are null and loop.results is empty, and
+     * after a pass they are what a step inside that pass reads.
+     */
+    public function repeats(): bool
+    {
+        return false;
+    }
+
     public function defaultRetryPolicy(): RetryPolicy
     {
         return new RetryPolicy;
@@ -170,7 +181,8 @@ abstract class Node
 
     /**
      * Continue a waiting step. The default handles timers and child workflows;
-     * nodes that wait for a response override this.
+     * nodes that wait for a response override this, and so do nodes that
+     * repeat part of the flow, which otherwise stop after one pass.
      */
     public function resume(NodeContext $context, Resumption $resumption): NodeResult
     {
@@ -179,6 +191,7 @@ abstract class Node
             ResumeReason::ChildCompleted => NodeResult::complete($resumption->payload['output'] ?? null),
             ResumeReason::ChildFailed => NodeResult::fail($resumption->payload['message'] ?? __('engine.child_workflow_failed')),
             ResumeReason::External => NodeResult::complete($resumption->payload),
+            ResumeReason::PassFinished => NodeResult::complete(['passes' => ($context->state()['index'] ?? 0) + 1], $context->state()['done_port'] ?? 'done'),
         };
     }
 
