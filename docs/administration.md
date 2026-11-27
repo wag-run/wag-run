@@ -57,6 +57,120 @@ To add one:
 
 The list shows how many people have linked their account to each provider. Deleting a provider doesn't delete those accounts: people can still sign in with their password.
 
+#### Redirect URI
+
+The redirect URI is `APP_URL/auth/oidc/<name>/callback`, where `<name>` is the provider's name in lowercase with spaces turned into hyphens. A provider named **Authentik** on `https://wag.example.com` uses `https://wag.example.com/auth/oidc/authentik/callback`, so you can register it with the provider before adding it here. It's fixed when you first save the provider, so renaming the provider later doesn't change it.
+
+The address must match `APP_URL` exactly, including `https`. If wag.run sits behind a proxy, see [HTTPS](self-hosting.md#https).
+
+#### Authentik
+
+1. In Authentik, go to **Applications → Applications** and create an application with a provider (**Create with provider**). Give it a name and slug, such as `wag-run`.
+2. Choose **OAuth2/OpenID Provider**, with an authorization flow such as `default-provider-authorization-implicit-consent`.
+3. Set **Client type** to **Confidential** and add the redirect URI under **Redirect URIs/Origins**, with **Strict** matching. Copy the **Client ID** and **Client Secret**.
+4. Leave the default `openid`, `email`, and `profile` scope mappings selected, and finish the wizard.
+5. Open the new provider and copy its **OpenID Configuration Issuer**, such as `https://authentik.example.com/application/o/wag-run/`. That's the **Issuer URL** in wag.run.
+
+To limit who can sign in, bind users, groups, or policies to the application in Authentik.
+
+#### Authelia
+
+1. Generate a client secret and its digest:
+
+   ```bash
+   docker run --rm authelia/authelia:latest authelia crypto hash generate pbkdf2 --variant sha512 --random --random.length 72 --random.charset rfc3986
+   ```
+
+   Keep the **Random Password** for wag.run and put the **Digest** in Authelia's configuration.
+
+2. Add a client to Authelia's `configuration.yml`, then restart Authelia:
+
+   ```yaml
+   identity_providers:
+     oidc:
+       clients:
+         - client_id: 'wag-run'
+           client_name: 'wag.run'
+           client_secret: '$pbkdf2-sha512$...' # the digest from step 1
+           public: false
+           authorization_policy: 'two_factor'
+           require_pkce: true
+           pkce_challenge_method: 'S256'
+           redirect_uris:
+             - 'https://wag.example.com/auth/oidc/authelia/callback'
+           scopes:
+             - 'openid'
+             - 'email'
+             - 'profile'
+           response_types:
+             - 'code'
+           grant_types:
+             - 'authorization_code'
+           token_endpoint_auth_method: 'client_secret_basic'
+   ```
+
+3. In wag.run, use Authelia's own address, such as `https://auth.example.com`, as the **Issuer URL**, `wag-run` as the **Client ID**, and the random password from step 1 as the **Client secret**.
+
+`authorization_policy` decides whether people need one factor or two in Authelia before they reach wag.run.
+
+#### Keycloak
+
+1. In the Keycloak admin console, pick the realm your users are in and go to **Clients → Create client**.
+2. Leave **Client type** as **OpenID Connect** and enter a **Client ID**, such as `wag-run`.
+3. Turn **Client authentication** on and, under **Authentication flow**, keep only **Standard flow**.
+4. Add the redirect URI under **Valid redirect URIs** and save.
+5. On the client's **Credentials** tab, copy the **Client Secret**.
+6. In wag.run, use `https://keycloak.example.com/realms/<realm>` as the **Issuer URL**. Keycloak versions before 17 add `/auth` before `/realms`.
+
+Keycloak marks each user's email as verified or not. Until a user's **Email verified** is on, their first sign-in can't link to an existing wag.run account with the same email, unless you turn on **Trust email addresses from this provider**.
+
+#### Microsoft Entra ID
+
+1. In the Microsoft Entra admin center, go to **App registrations → New registration**.
+2. Enter a name, choose **Accounts in this organizational directory only**, and add the redirect URI with the **Web** platform. A provider named **Entra ID** uses `https://wag.example.com/auth/oidc/entra-id/callback`. Click **Register**.
+3. From the app's **Overview**, copy the **Application (client) ID** and the **Directory (tenant) ID**.
+4. Under **Certificates & secrets → Client secrets**, add a secret and copy its **Value**, not its Secret ID. Secrets expire, so note the date and replace it in wag.run before then.
+5. In wag.run, use `https://login.microsoftonline.com/<tenant-id>/v2.0` as the **Issuer URL**, with the directory (tenant) ID. Don't use `common` or `organizations` in place of the tenant ID: their issuer doesn't match a single tenant, so **Check discovery** fails.
+
+A few things to know:
+
+- Entra ID doesn't tell wag.run whether an email address is verified. To link sign-ins to existing wag.run accounts, turn on **Trust email addresses from this provider**. Do this only for a single-tenant app in a directory you control.
+- The email comes from each user's **Email** property. Users without a mailbox may not have one, and can't sign in until it's set.
+- To limit who can sign in, open the app under **Enterprise applications**, turn on **Assignment required** in its **Properties**, and assign users or groups under **Users and groups**.
+- People may be asked to consent the first time they sign in. To skip that, click **Grant admin consent** under the app's **API permissions**.
+
+#### Google Workspace
+
+1. In the [Google Cloud console](https://console.cloud.google.com/), create or pick a project in your Google Workspace organization.
+2. Set up the OAuth consent screen (**Google Auth Platform**) and choose **Internal** as the audience, so that only accounts in your Workspace can sign in.
+3. Under **APIs & Services → Credentials**, choose **Create credentials → OAuth client ID**, of type **Web application**. Add the redirect URI as an **Authorized redirect URI**. A provider named **Google** uses `https://wag.example.com/auth/oidc/google/callback`. Copy the client ID and secret.
+4. In wag.run, use `https://accounts.google.com` as the **Issuer URL**.
+
+wag.run doesn't check which Workspace domain an account belongs to, so the **Internal** audience is what keeps other Google accounts out. With **External**, anyone with a Google account could sign in, and get an account if **Create accounts for new people** is on.
+
+This is a separate OAuth client from the one in [Connecting GitHub and Google](self-hosting.md#google), which lets workflows use Google APIs.
+
+#### Other providers
+
+Any provider that supports OpenID Connect discovery and the authorization code flow should work. Set it up as a confidential client (sometimes called a web application) that:
+
+- sends its client secret with HTTP Basic authentication (`client_secret_basic`), which is usually the default;
+- accepts PKCE with `S256`, which wag.run always sends; and
+- shares the person's `email`, which wag.run reads from the ID token or the userinfo endpoint.
+
+The issuer must use `https`. Plain `http` works only for `localhost`.
+
+#### Troubleshooting
+
+| Message | What to check |
+|---|---|
+| **Could not reach …** or **… did not return a valid OpenID Connect discovery document** | The **Issuer URL** is wrong, or the wag.run server can't reach it. Open `<issuer>/.well-known/openid-configuration` from the server to check. |
+| **The issuer in …'s discovery document does not match the configured issuer** | Copy the `issuer` value from that discovery document exactly. A trailing slash doesn't matter. |
+| An error about the redirect URI on the provider's page | The redirect URI registered with the provider doesn't match the one shown in wag.run, often because of `http` and `https`, or a different `APP_URL`. |
+| **… did not accept the sign-in** | The client secret is wrong, or the provider expects a different client authentication method. |
+| **… has not verified this email address** | The provider doesn't mark the email as verified. Verify it in the provider, or turn on **Trust email addresses from this provider** if you control who can set email addresses there. |
+| **There is no account for this sign-in** | **Create accounts for new people** is off. Invite the person first, or turn it on. |
+
 ## Email
 
 **Org settings → Email** sets the SMTP server wag.run sends through: for invitations, approval and task emails, notification emails, and **Send email** nodes. Workspaces can add their own SMTP server for **Send email** nodes under [Credentials](workspaces.md#credentials).

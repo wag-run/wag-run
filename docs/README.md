@@ -17,7 +17,7 @@ wag.run is a workflow automation app for teams. You build a workflow on a visual
 | [Runs](runs.md) | Test runs, the run page, statuses, retries, error paths, concurrency, and log retention |
 | [Workspaces](workspaces.md) | Members and roles, the data store, secrets, credentials, workspace settings, and the audit log |
 | [API and MCP server](api.md) | Personal access tokens, the REST API, and connecting AI assistants such as Claude |
-| [Organization administration](administration.md) | Users, workspaces, sign-in, sign-in providers, email, and organization defaults |
+| [Organization administration](administration.md) | Users, workspaces, sign-in, sign-in providers (with guides for Authentik, Authelia, Keycloak, Microsoft Entra ID, and Google Workspace), email, and organization defaults |
 | [Self-hosting](self-hosting.md) | Running wag.run with Docker: settings, HTTPS, backups, and upgrades |
 | [Local development](development.md) | Setting up a checkout to work on the code, including the AI agent skills |
 | [Creating nodes](custom-nodes.md) | Writing your own actions, triggers, and credential types as PHP classes |
