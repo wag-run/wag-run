@@ -109,11 +109,11 @@ A While loop inside a [For loop](#for-loop) can still read the For loop's `item`
 
 #### Outputs
 
-On **done**:
+On **done**, the same three as a [For loop](#for-loop):
 
-- `last`: every node of the final pass, keyed by node id, in the [same shape as `nodes.<id>`](data-and-placeholders.md#nodes-inside-results). Empty if no pass ran.
-- `passes`: how many passes ran.
-- `results`: a list with one entry per pass, each like `last`.
+- `results`: a list with one entry per pass. Each entry holds every node that ran in that pass, keyed by node id, in the [same shape as `nodes.<id>`](data-and-placeholders.md#nodes-inside-results).
+- `count`: how many passes ran.
+- `last`: the final pass on its own, like one entry of `results`. Empty if no pass ran.
 
 For a loop `pages` whose body has a node `fetch`:
 
@@ -121,7 +121,7 @@ For a loop `pages` whose body has a node `fetch`:
 |---|---|
 | `{{ nodes.pages.output.last.fetch.output.body }}` | What `fetch` got in the final pass |
 | `{{ nodes.pages.output.results[0].fetch.output.body }}` | What `fetch` got in the first pass |
-| `{{ nodes.pages.output.passes }}` | How many passes ran |
+| `{{ nodes.pages.output.count }}` | How many passes ran |
 
 #### Waiting between passes
 

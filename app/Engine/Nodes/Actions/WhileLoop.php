@@ -13,9 +13,9 @@ use App\Enums\ResumeReason;
 
 /**
  * Repeats the steps connected to "each pass" while a condition is true, one
- * pass at a time, then continues down "done" with the last pass, every
- * pass's results, and how many passes ran. The results are read from the
- * step rows (LoopResults).
+ * pass at a time, then continues down "done" with every pass's results,
+ * their count, and the last pass on its own, the same outputs as a For
+ * loop. The results are read from the step rows (LoopResults).
  *
  * The condition is one {{ }} placeholder and always means "keep going while
  * this is true". It is checked before each pass, or after each pass when
@@ -108,9 +108,9 @@ class WhileLoop extends Node
     public function outputs(array $config = []): array
     {
         return [
-            new Output('last', __('nodes.while_loop.last_pass'), 'object', __('nodes.while_loop.what_every_node_produced_in_the_last')),
-            new Output('passes', __('nodes.while_loop.passes_run'), 'number'),
             new Output('results', __('nodes.for_loop.results'), 'array', __('nodes.while_loop.what_every_node_produced_in')),
+            new Output('count', __('nodes.while_loop.passes_run'), 'number'),
+            new Output('last', __('nodes.while_loop.last_pass'), 'object', __('nodes.while_loop.what_every_node_produced_in_the_last')),
         ];
     }
 
@@ -140,7 +140,7 @@ class WhileLoop extends Node
         }
 
         if (! static::checksAfterPass($context->config()) && ! Conditional::isTrue($context->input('condition'))) {
-            return NodeResult::complete(['last' => null, 'passes' => 0, 'results' => []], 'done');
+            return NodeResult::complete(['results' => [], 'count' => 0, 'last' => null], 'done');
         }
 
         return NodeResult::repeat();
@@ -155,13 +155,13 @@ class WhileLoop extends Node
         $passes = (int) ($context->state()['index'] ?? 0) + 1;
 
         if (! Conditional::isTrue($context->input('condition'))) {
-            return NodeResult::complete(['passes' => $passes], 'done');
+            return NodeResult::complete(['count' => $passes], 'done');
         }
 
         $max = static::maxPasses($context->config()) ?? self::DEFAULT_MAX_PASSES;
 
         if ($passes >= $max) {
-            return NodeResult::fail(trans_choice('nodes.while_loop.condition_still_true_after', $max, ['max' => number_format($max)]), retryable: false, output: ['passes' => $passes]);
+            return NodeResult::fail(trans_choice('nodes.while_loop.condition_still_true_after', $max, ['max' => number_format($max)]), retryable: false, output: ['count' => $passes]);
         }
 
         return NodeResult::repeat();

@@ -328,13 +328,13 @@ public function resume(NodeContext $context, Resumption $resumption): NodeResult
         return NodeResult::repeat();
     }
 
-    return NodeResult::complete(['passes' => $passes], 'done');
+    return NodeResult::complete(['count' => $passes], 'done');
 }
 ```
 
 In that call the node's inputs are filled in from the run's data as a node inside the finished pass reads it, so a placeholder such as `{{ nodes.fetch.output.done }}` refers to that pass. `$context->state()['index']` is the position of the pass that just finished, from 0.
 
-Complete with the number of passes as `passes`, and the app adds `last` and `results` to the step's output, as for a While loop. Always limit the passes yourself: nothing else stops a node that keeps returning `repeat()`. The default `resume()` stops after one pass.
+Complete with the number of passes as `count`, and the app adds `results` and `last` to the step's output, as for a While loop. Always limit the passes yourself: nothing else stops a node that keeps returning `repeat()`. The default `resume()` stops after one pass.
 
 ### Other things to override
 

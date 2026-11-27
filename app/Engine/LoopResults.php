@@ -20,9 +20,9 @@ use Closure;
  * Every node that completed in an iteration is there, in the same shape as
  * nodes.<id>. A loop inside an iteration carries its own results.
  *
- * A For loop's row holds its count. A loop that repeats, such as a While
- * loop, holds how many passes it ran as "passes" and also gets "last": the
- * final pass, or null when there was none.
+ * A loop's row holds how many times its body ran as "count": a For
+ * loop's iterations, and the passes of a loop that repeats, such as a
+ * While loop.
  */
 class LoopResults
 {
@@ -107,7 +107,7 @@ class LoopResults
             return null;
         }
 
-        $count = $step->output['count'] ?? $step->output['passes'] ?? null;
+        $count = $step->output['count'] ?? null;
 
         return is_numeric($count) ? (int) $count : null;
     }

@@ -50,7 +50,7 @@ class WhileLoopTest extends TestCase
         $this->sweep();
 
         $this->assertSame(ExecutionStatus::Complete, $execution->refresh()->status);
-        $this->assertSame(['passes' => 2], $loop->refresh()->output);
+        $this->assertSame(['count' => 2], $loop->refresh()->output);
         $this->assertSame(2, $execution->output['poll']['output']['last']['tick']['output']['value']);
     }
 
@@ -73,7 +73,7 @@ class WhileLoopTest extends TestCase
 
         $this->assertSame(ExecutionStatus::Complete, $caught->status);
         $this->assertSame(2, $caught->steps()->where('node_id', 'caught')->count());
-        $this->assertSame(['passes' => 2], $this->stepFor($caught, 'spin')->output);
+        $this->assertSame(['count' => 2], $this->stepFor($caught, 'spin')->output);
     }
 
     public function test_cancelling_a_run_cancels_its_loop_and_a_late_check_changes_nothing(): void
@@ -127,7 +127,7 @@ class WhileLoopTest extends TestCase
             ['start' => 'start', 'outer' => ['core.while_loop', ['condition' => '{{ loop.index < 1 }}', 'check_after' => true]],
                 'inner' => ['core.while_loop', ['condition' => '{{ nodes.tick.output.value < 2 }}', 'check_after' => true]],
                 'tick' => ['core.compose', ['template' => '{{ loop.index + 1 }}']],
-                'tail' => ['core.compose', ['template' => '{{ loop.index }}:{{ nodes.inner.output.passes }}:{{ loop.previous.inner.output.passes ?? "none" }}']]],
+                'tail' => ['core.compose', ['template' => '{{ loop.index }}:{{ nodes.inner.output.count }}:{{ loop.previous.inner.output.count ?? "none" }}']]],
             ['start->outer', 'outer:pass->inner', 'inner:pass->tick', 'inner:done->tail'],
         )));
 
@@ -136,7 +136,7 @@ class WhileLoopTest extends TestCase
         $this->assertSame(ExecutionStatus::Complete, $execution->status);
         $this->assertSame([1, 2, 1, 2], $execution->steps()->where('node_id', 'tick')->orderBy('id')->get()->map(fn ($step) => $step->output['value'])->all());
         $this->assertSame(['0:2:none', '1:2:2'], $execution->steps()->where('node_id', 'tail')->orderBy('id')->get()->map(fn ($step) => $step->output['value'])->all());
-        $this->assertSame(2, $outer['passes']);
+        $this->assertSame(2, $outer['count']);
         $this->assertSame(2, $outer['results'][1]['inner']['output']['last']['tick']['output']['value']);
         $this->assertSame($outer['results'][1], $outer['last']);
     }
@@ -152,7 +152,7 @@ class WhileLoopTest extends TestCase
 
         $this->assertSame(ExecutionStatus::Complete, $execution->status);
         $this->assertSame(['10:0', '20:0'], $execution->steps()->where('node_id', 'body')->orderBy('id')->get()->map(fn ($step) => $step->output['value'])->all());
-        $this->assertSame([['passes' => 1], ['passes' => 1]], $execution->steps()->where('node_id', 'poll')->orderBy('id')->get()->map(fn ($step) => $step->output)->all());
+        $this->assertSame([['count' => 1], ['count' => 1]], $execution->steps()->where('node_id', 'poll')->orderBy('id')->get()->map(fn ($step) => $step->output)->all());
     }
 
     public function test_a_node_that_repeats_without_its_own_check_stops_after_one_pass(): void
@@ -163,7 +163,7 @@ class WhileLoopTest extends TestCase
         )));
 
         $this->assertSame(['start', 'once', 'body', 'after'], $this->nodesRun($execution));
-        $this->assertSame(['passes' => 1], $this->stepFor($execution, 'once')->output);
+        $this->assertSame(['count' => 1], $this->stepFor($execution, 'once')->output);
     }
 
     /**

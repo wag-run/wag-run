@@ -100,7 +100,7 @@ class FlowNodesTest extends TestCase
                 'pages' => ['core.while_loop', ['condition' => '{{ nodes.fetch == null or nodes.fetch.output.value < 3 }}']],
                 'fetch' => ['core.compose', ['template' => '{{ (loop.previous.fetch.output.value ?? 0) + 1 }}']],
                 'seen' => ['core.compose', ['template' => '{{ loop.index }}:{{ length(loop.results) }}']],
-                'after' => ['core.compose', ['template' => '{{ nodes.pages.output.passes }} / {{ nodes.pages.output.last.fetch.output.value }} / {{ nodes.pages.output.results[0].fetch.output.value }} / {{ nodes.pages.output.results[1].seen.output.value }} / {{ nodes.pages.output.last.fetch.port }}']]],
+                'after' => ['core.compose', ['template' => '{{ nodes.pages.output.count }} / {{ nodes.pages.output.last.fetch.output.value }} / {{ nodes.pages.output.results[0].fetch.output.value }} / {{ nodes.pages.output.results[1].seen.output.value }} / {{ nodes.pages.output.last.fetch.port }}']]],
             ['start->pages', 'pages:pass->fetch', 'fetch->seen', 'pages:done->after'],
         ));
 
@@ -110,7 +110,7 @@ class FlowNodesTest extends TestCase
         $this->assertSame([1, 2, 3], $execution->steps()->where('node_id', 'fetch')->orderBy('id')->get()->map(fn ($step) => $step->output['value'])->all());
         $this->assertSame(['0:0', '1:1', '2:2'], $execution->steps()->where('node_id', 'seen')->orderBy('id')->get()->map(fn ($step) => $step->output['value'])->all());
         $this->assertSame('3 / 3 / 1 / 1:1 / main', $this->stepFor($execution, 'after')->output['value']);
-        $this->assertSame(['passes' => 3], $this->stepFor($execution, 'pages')->output);
+        $this->assertSame(['count' => 3], $this->stepFor($execution, 'pages')->output);
     }
 
     public function test_while_loop_skips_its_body_when_the_condition_is_false_before_the_first_pass(): void
@@ -118,7 +118,7 @@ class FlowNodesTest extends TestCase
         $workflow = $this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger', 'pages' => ['core.while_loop', ['condition' => '{{ trigger.values.go }}']],
                 'body' => ['core.compose', ['template' => 'ran']],
-                'after' => ['core.compose', ['template' => '{{ nodes.pages.output.passes }}|{{ nodes.pages.output.last == null }}|{{ length(nodes.pages.output.results) }}']]],
+                'after' => ['core.compose', ['template' => '{{ nodes.pages.output.count }}|{{ nodes.pages.output.last == null }}|{{ length(nodes.pages.output.results) }}']]],
             ['start->pages', 'pages:pass->body', 'pages:done->after'],
         ));
 
@@ -139,7 +139,7 @@ class FlowNodesTest extends TestCase
         $execution = $this->runWorkflow($workflow, ['values' => ['go' => false]]);
 
         $this->assertSame(['start', 'pages', 'body'], $this->nodesRun($execution));
-        $this->assertSame(1, $execution->output['pages']['output']['passes']);
+        $this->assertSame(1, $execution->output['pages']['output']['count']);
         $this->assertSame('ran', $execution->output['pages']['output']['last']['body']['output']['value']);
     }
 
@@ -172,7 +172,7 @@ class FlowNodesTest extends TestCase
             ['start' => 'core.manual_trigger', 'each' => ['core.for_loop', ['items' => '{{ [2, 1] }}']],
                 'poll' => ['core.while_loop', ['condition' => '{{ nodes.tick.output.value < item }}', 'check_after' => true]],
                 'tick' => ['core.compose', ['template' => '{{ loop.index + 1 }}']],
-                'after' => ['core.compose', ['template' => "{{ join(column(column(column(nodes.each.output.results, 'poll'), 'output'), 'passes'), ',') }}"]]],
+                'after' => ['core.compose', ['template' => "{{ join(column(column(column(nodes.each.output.results, 'poll'), 'output'), 'count'), ',') }}"]]],
             ['start->each', 'each:item->poll', 'poll:pass->tick', 'each:done->after'],
         ));
 

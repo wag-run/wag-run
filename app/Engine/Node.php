@@ -213,7 +213,7 @@ abstract class Node
             ResumeReason::ChildCompleted => NodeResult::complete($resumption->payload['output'] ?? null),
             ResumeReason::ChildFailed => NodeResult::fail($resumption->payload['message'] ?? __('engine.child_workflow_failed')),
             ResumeReason::External => NodeResult::complete($resumption->payload),
-            ResumeReason::PassFinished => NodeResult::complete(['passes' => ($context->state()['index'] ?? 0) + 1], $context->state()['done_port'] ?? 'done'),
+            ResumeReason::PassFinished => NodeResult::complete(['count' => ($context->state()['index'] ?? 0) + 1], $context->state()['done_port'] ?? 'done'),
         };
     }
 

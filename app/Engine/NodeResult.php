@@ -104,7 +104,7 @@ final readonly class NodeResult
      * finished, the node's resume() is called with PassFinished, seeing the
      * run's data as a step inside the pass does, and returns repeat() again
      * for another pass or complete() to stop. The engine adds every pass's
-     * results to an output that holds their count as "passes".
+     * results and the last pass to an output that holds their count as "count".
      */
     public static function repeat(string $bodyPort = 'pass', string $donePort = 'done'): self
     {

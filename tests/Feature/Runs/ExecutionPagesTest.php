@@ -137,7 +137,7 @@ class ExecutionPagesTest extends TestCase
             ->assertSee('Iteration 2 › Pass 2 · Complete')
             ->assertDontSee('Pass 2 of 4')
             ->call('selectNode', 'poll')
-            ->assertSee('"passes": 2')
+            ->assertSee('"count": 2')
             ->assertSee('"last"')
             ->assertSee('tick 1');
     }

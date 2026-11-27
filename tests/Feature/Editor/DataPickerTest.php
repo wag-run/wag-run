@@ -135,7 +135,7 @@ class DataPickerTest extends TestCase
         $this->assertSame(['loop.index', 'loop.previous.fetch.output.value', 'loop.previous.keep.output.value', 'loop.results'], $inside['Loop: pages']);
         $this->assertSame(['nodes.fetch.output.value'], $inside['fetch']);
         $this->assertSame([
-            'nodes.pages.output.last', 'nodes.pages.output.passes', 'nodes.pages.output.results',
+            'nodes.pages.output.results', 'nodes.pages.output.count', 'nodes.pages.output.last',
             'nodes.pages.output.results[0].fetch.output.value', 'nodes.pages.output.last.fetch.output.value',
             'nodes.pages.output.results[0].keep.output.value', 'nodes.pages.output.last.keep.output.value',
         ], $after['pages']);
