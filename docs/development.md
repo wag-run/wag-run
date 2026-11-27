@@ -54,4 +54,4 @@ vendor/bin/pint              # code style
 composer run types:check     # static analysis (Larastan)
 ```
 
-`composer test` runs all three, which is what CI runs on every pull request.
+`composer test` runs all three. CI runs the same three on every pull request with `composer ci:check`, which runs the test suite in parallel.

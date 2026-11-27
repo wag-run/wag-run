@@ -25,6 +25,7 @@
         "symfony/expression-language": "^8.1"
     },
     "require-dev": {
+        "brianium/paratest": "^7.20",
         "fakerphp/faker": "^1.24",
         "larastan/larastan": "^3.9",
         "laravel/boost": "^2.10",
@@ -70,7 +71,10 @@
         ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
-            "@test"
+            "@php artisan config:clear --ansi",
+            "@lint:check",
+            "@types:check",
+            "@php artisan test --parallel"
         ],
         "types:check": [
             "phpstan analyse"
