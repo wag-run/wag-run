@@ -9,7 +9,7 @@ You need an account on a wag.run install and the **Editor** or **Admin** role in
 Open your wag.run address and sign in with your email and password, a passkey, or a sign-in provider button such as **Sign in with Okta** if your install has one set up.
 
 - **Invited by email?** Open the invitation link to create your account and join. Invitations expire, so ask for a new one if yours no longer works.
-- **First person on a new install?** Register an account. The first account becomes the organization admin. To set up an install, see [Self-hosting](self-hosting.md).
+- **First person on a new install?** Register an account. The first account becomes the organization admin, and its email address counts as confirmed. To set up an install, see [Self-hosting](self-hosting.md).
 
 Once you're in, open **Preferences** from the account menu at the bottom of the sidebar to add a passkey or turn on two-factor authentication.
 
