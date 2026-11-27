@@ -10,6 +10,8 @@ return [
     'platform' => 'Platform',
     'preferences' => 'Preferences',
     'repository' => 'Repository',
+    'resize_sidebar' => 'Resize sidebar',
     'search' => 'Search',
+    'toggle_sidebar' => 'Toggle sidebar',
     'account_menu_unread' => 'Account menu, :count unread item in your inbox|Account menu, :count unread items in your inbox',
 ];

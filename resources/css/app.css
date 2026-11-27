@@ -102,6 +102,13 @@ select:focus[data-flux-control] {
     background-image: url('../images/noise.svg');
 }
 
+/* While the sidebar's edge is being dragged: the resize cursor everywhere, and no text selection */
+.wag-sidebar-resizing,
+.wag-sidebar-resizing * {
+    cursor: col-resize !important;
+    user-select: none;
+}
+
 /* Workflow editor canvas nodes */
 .flow-container .flow-node:has(.wag-node) {
     --flow-node-padding: 0;
