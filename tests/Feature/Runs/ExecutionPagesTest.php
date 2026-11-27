@@ -3,6 +3,7 @@
 namespace Tests\Feature\Runs;
 
 use App\Engine\Editor\CanvasMapper;
+use App\Engine\Editor\RunCanvas;
 use App\Enums\ExecutionStatus;
 use App\Enums\StepStatus;
 use App\Enums\WorkspaceRole;
@@ -111,6 +112,34 @@ class ExecutionPagesTest extends TestCase
             ->assertSee('"results"')
             ->assertSee('Hi Grace')
             ->assertSee('"count": 2');
+    }
+
+    public function test_a_while_loops_steps_read_as_passes_without_a_count_and_its_type_follows_its_settings(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
+        $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger', 'each' => ['core.for_loop', ['items' => '{{ [1, 2] }}']],
+                'poll' => ['core.while_loop', ['condition' => '{{ loop.index < 1 }}', 'check_after' => true]], 'tick' => ['core.compose', ['template' => 'tick {{ loop.index }}']]],
+            ['start->each', 'each:item->poll', 'poll:pass->tick'],
+        ), $workspace));
+        $loops = $execution->steps()->where('node_id', 'poll')->orderBy('id')->pluck('id')->all();
+        $last = $execution->steps()->where('node_id', 'tick')->orderBy('id')->get()->last();
+
+        $this->assertSame('Iteration 2 › Pass 2', RunCanvas::scopeLabel($last->scope_key, $loops));
+        $this->assertSame('Pass 2', RunCanvas::iterationLabel($last, $loops));
+        $this->assertSame('Iteration 2 › 2', RunCanvas::scopeLabel($last->scope_key));
+
+        Livewire::actingAs($viewer)->test('pages::executions.show', ['workspace' => $workspace, 'execution' => $execution])
+            ->assertSee('Do while loop')
+            ->call('selectStep', $last->id)
+            ->assertSeeHtml('data-test="iteration-switcher"')
+            ->assertSee('Iteration 2 › Pass 2 · Complete')
+            ->assertDontSee('Pass 2 of 4')
+            ->call('selectNode', 'poll')
+            ->assertSee('"passes": 2')
+            ->assertSee('"last"')
+            ->assertSee('tick 1');
     }
 
     public function test_each_attempt_of_a_retried_step_can_be_opened(): void

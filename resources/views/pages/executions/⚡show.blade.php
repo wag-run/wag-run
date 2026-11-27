@@ -5,6 +5,7 @@ use App\Engine\Engine;
 use App\Engine\LoopResults;
 use App\Engine\NodeRegistry;
 use App\Engine\RunVariables;
+use App\Engine\Scope;
 use App\Models\Assignment;
 use App\Models\Execution;
 use App\Models\ExecutionStep;
@@ -115,11 +116,38 @@ new class extends Component {
         return array_values(array_diff(array_keys($this->nodeNames), $ran));
     }
 
-    public function typeLabel(string $type): string
+    /**
+     * A step's type as the editor labels its node, which can depend on the
+     * node's settings in the run's version.
+     */
+    public function typeLabel(ExecutionStep $step): string
     {
         $registry = app(NodeRegistry::class);
 
-        return $registry->has($type) ? $registry->make($type)->label() : $type;
+        return $registry->has($step->node_type) ? $registry->make($step->node_type)->labelFor($this->nodeSettings[$step->node_id] ?? []) : $step->node_type;
+    }
+
+    /**
+     * Settings of the version's nodes, by id.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    #[Computed]
+    public function nodeSettings(): array
+    {
+        return array_map(fn ($node) => $node->config, $this->execution->version->toGraph()->nodes);
+    }
+
+    /**
+     * Ids of the steps of loops that count passes, such as a While loop,
+     * whose steps read "Pass 3" where a For loop's read "Iteration 3".
+     *
+     * @return list<int>
+     */
+    #[Computed]
+    public function passLoops(): array
+    {
+        return $this->steps->filter(fn (ExecutionStep $step) => (bool) ($step->state['repeat'] ?? false))->pluck('id')->values()->all();
     }
 
     /**
@@ -127,7 +155,10 @@ new class extends Component {
      * they started, each pointing at its latest attempt. Empty when the node
      * ran outside a loop.
      *
-     * @return list<array{scope: string, label: string, step_id: int, status: \App\Enums\StepStatus}>
+     * A loop that counts passes has no total to show, so its entries are
+     * not counted ("Pass 3", not "Pass 3 of 5").
+     *
+     * @return list<array{scope: string, label: string, counted: bool, step_id: int, status: \App\Enums\StepStatus}>
      */
     #[Computed]
     public function iterations(): array
@@ -141,7 +172,8 @@ new class extends Component {
             ->groupBy('scope_key')
             ->map(fn ($attempts, string $scope) => [
                 'scope' => $scope,
-                'label' => (string) RunCanvas::scopeLabel($scope),
+                'label' => (string) RunCanvas::scopeLabel($scope, $this->passLoops),
+                'counted' => ! in_array(Scope::innermost($scope)['loop_step_id'] ?? null, $this->passLoops, true),
                 'step_id' => $attempts->last()->id,
                 'status' => $attempts->last()->status,
                 'first_id' => $attempts->first()->id,
@@ -208,7 +240,7 @@ new class extends Component {
     public function refreshRun(): void
     {
         $this->execution->refresh();
-        unset($this->steps, $this->canvas, $this->step, $this->notRun, $this->canCancel, $this->loopResults);
+        unset($this->steps, $this->canvas, $this->step, $this->notRun, $this->canCancel, $this->loopResults, $this->passLoops);
 
         $runCanvas = app(RunCanvas::class);
         $statuses = $runCanvas->statuses($this->steps);
@@ -364,8 +396,8 @@ new class extends Component {
                     <div class="min-w-0">
                         <flux:heading class="truncate">{{ $this->nodeNames[$step->node_id] ?? $step->node_id }}</flux:heading>
                         <flux:text class="text-xs">
-                            {{ $this->typeLabel($step->node_type) }} · {{ __('runs.show.attempt_n', ['n' => $step->attempt]) }}
-                            @if ($iteration = \App\Engine\Editor\RunCanvas::iterationLabel($step)) · {{ $iteration }} @endif
+                            {{ $this->typeLabel($step) }} · {{ __('runs.show.attempt_n', ['n' => $step->attempt]) }}
+                            @if ($iteration = \App\Engine\Editor\RunCanvas::iterationLabel($step, $this->passLoops)) · {{ $iteration }} @endif
                         </flux:text>
                     </div>
                     <flux:button size="sm" variant="ghost" icon="x-mark" wire:click="deselect" :aria-label="__('runs.show.back_to_all_steps')" />
@@ -380,7 +412,7 @@ new class extends Component {
                         <flux:select size="sm" wire:model.live="selectedStep" class="min-w-0 flex-1" data-test="iteration-select">
                             @foreach ($iterations as $index => $iteration)
                                 <flux:select.option :value="$iteration['scope'] === $step->scope_key ? $step->id : $iteration['step_id']">
-                                    {{ __('runs.show.iteration_label_of_count', ['label' => $iteration['label'], 'count' => count($iterations)]) }} · {{ $iteration['status']->label() }}
+                                    {{ $iteration['counted'] ? __('runs.show.iteration_label_of_count', ['label' => $iteration['label'], 'count' => count($iterations)]) : $iteration['label'] }} · {{ $iteration['status']->label() }}
                                 </flux:select.option>
                             @endforeach
                         </flux:select>
@@ -471,9 +503,9 @@ new class extends Component {
                             <span class="min-w-0 flex-1">
                                 <span class="block truncate font-medium">{{ $this->nodeNames[$step->node_id] ?? $step->node_id }}</span>
                                 <span class="block truncate text-xs text-zinc-500">
-                                    {{ $this->typeLabel($step->node_type) }}
+                                    {{ $this->typeLabel($step) }}
                                     @if ($step->attempt > 1) · {{ __('runs.show.attempt_n_2', ['n' => $step->attempt]) }} @endif
-                                    @if ($iteration = \App\Engine\Editor\RunCanvas::iterationLabel($step)) · {{ $iteration }} @endif
+                                    @if ($iteration = \App\Engine\Editor\RunCanvas::iterationLabel($step, $this->passLoops)) · {{ $iteration }} @endif
                                 </span>
                             </span>
                             <flux:badge size="sm" :color="$step->status->color()">{{ $step->status->label() }}</flux:badge>
