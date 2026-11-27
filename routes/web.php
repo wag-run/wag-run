@@ -53,14 +53,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::livewire('runs', 'pages::executions.index')
                 ->middleware('can:view-executions,workspace')->name('executions');
             Route::livewire('runs/{execution}', 'pages::executions.show')
-                ->middleware('can:view-executions,workspace')->name('executions.show');
+                ->middleware('can:view-executions,workspace')->name('executions.show')
+                ->missing(fn (Request $request) => redirect()
+                    ->route('workspaces.executions', $request->route('workspace'))
+                    ->with('run_removed', true));
             Route::get('runs/{execution}/files/{file}', [WorkflowFileController::class, 'download'])
                 ->middleware('can:view-executions,workspace')->name('executions.files.download');
             Route::get('inbox', fn () => redirect()->route('inbox'))->name('inbox');
             Route::livewire('inbox/{assignment}', 'pages::inbox.show')
                 ->middleware('can:view-own-assignments,workspace')->name('inbox.show');
-            Route::livewire('variables', 'pages::workspaces.variables')
-                ->middleware('can:view-variables,workspace')->name('variables');
+            Route::livewire('data-store', 'pages::workspaces.data-store')
+                ->middleware('can:view-data-store,workspace')->name('data-store');
             Route::livewire('secrets', 'pages::workspaces.secrets')
                 ->middleware('can:view-secrets,workspace')->name('secrets');
             Route::livewire('credentials', 'pages::workspaces.credentials')

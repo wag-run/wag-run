@@ -5,12 +5,14 @@ namespace App\Engine\Editor;
 use App\Engine\ContextBuilder;
 use App\Engine\LoopResults;
 use App\Engine\Redactor;
+use App\Engine\StoreData;
 use App\Engine\Templates\TemplateEngine;
 use App\Engine\Templates\TemplateError;
 use App\Enums\StepStatus;
 use App\Models\Execution;
 use App\Models\ExecutionStep;
 use App\Models\Workflow;
+use App\Services\DataStore;
 use App\Services\WorkflowFiles;
 use RuntimeException;
 
@@ -19,8 +21,8 @@ use RuntimeException;
  * to show as the person types. It uses the data of the workflow's latest
  * run that reached the node: what the node itself saw, when it ran, or
  * otherwise what that run's trigger and steps produced. With no runs yet,
- * references read as empty. Secrets read as masked, so their values never
- * reach the editor.
+ * references read as empty. The data store reads as it is now. Secrets
+ * read as masked, so their values never reach the editor.
  */
 class ExpressionPreview
 {
@@ -33,6 +35,7 @@ class ExpressionPreview
         protected TemplateEngine $templates,
         protected ContextBuilder $contexts,
         protected WorkflowFiles $files,
+        protected DataStore $store,
     ) {}
 
     /**
@@ -82,7 +85,7 @@ class ExpressionPreview
         return [$this->withMaskedSecrets($workflow, [
             'trigger' => $execution->input ?? [],
             'nodes' => $execution ? $this->outputsOf($execution) : [],
-            'vars' => $workflow->workspace->variables()->pluck('value', 'key')->all(),
+            'store' => new StoreData($workflow->workspace, $this->store),
             'execution' => [
                 'id' => $execution?->id,
                 'workflow' => $workflow->name,

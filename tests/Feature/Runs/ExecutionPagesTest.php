@@ -132,7 +132,7 @@ class ExecutionPagesTest extends TestCase
             ->assertSee('Failed attempt 1');
     }
 
-    public function test_guests_cannot_open_runs_and_runs_of_other_workspaces_are_not_found(): void
+    public function test_guests_cannot_open_runs_and_runs_of_other_workspaces_are_treated_as_removed(): void
     {
         $workspace = Workspace::factory()->create();
         $execution = $this->runWorkflow($this->branchingWorkflow($workspace));
@@ -142,7 +142,7 @@ class ExecutionPagesTest extends TestCase
 
         $this->actingAs($guest)->get(route('workspaces.executions', $workspace))->assertForbidden();
         $this->actingAs($guest)->get(route('workspaces.executions.show', [$workspace, $execution]))->assertForbidden();
-        $this->actingAs($viewer)->get(route('workspaces.executions.show', [$workspace, $foreign]))->assertNotFound();
+        $this->actingAs($viewer)->get(route('workspaces.executions.show', [$workspace, $foreign]))->assertRedirect(route('workspaces.executions', $workspace));
         $this->actingAs($viewer)->get(route('workspaces.executions.show', [$workspace, $execution]))->assertOk();
     }
 

@@ -5,6 +5,7 @@ namespace App\Engine;
 use App\Enums\StepStatus;
 use App\Models\Execution;
 use App\Models\ExecutionStep;
+use App\Services\DataStore;
 
 /**
  * Builds the data a step can read: the trigger input, outputs of earlier
@@ -13,7 +14,7 @@ use App\Models\ExecutionStep;
  *     trigger            the execution's input
  *     nodes.<id>.output  the latest output of that node visible from this step;
  *                        a finished loop's includes its results (LoopResults)
- *     vars.<key>         workspace variables
+ *     store.<key>        the workspace's data store, read when used (see StoreData)
  *     secrets.<key>      workspace secrets (in memory only; masked in logs)
  *     execution          id, workflow, trigger type, started_at, and
  *                        trigger: the id, node type, and settings of the
@@ -23,6 +24,8 @@ use App\Models\ExecutionStep;
  */
 class ContextBuilder
 {
+    public function __construct(protected DataStore $store) {}
+
     /**
      * @return array<string, mixed>
      */
@@ -33,7 +36,7 @@ class ContextBuilder
         $data = [
             'trigger' => $execution->input ?? [],
             'nodes' => $this->visibleOutputs($execution, $step),
-            'vars' => $execution->workspace->variables()->pluck('value', 'key')->all(),
+            'store' => new StoreData($execution->workspace, $this->store),
             'secrets' => $execution->workspace->secrets()->get()->pluck('value', 'key')->all(),
             'execution' => [
                 'id' => $execution->id,

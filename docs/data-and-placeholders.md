@@ -14,7 +14,7 @@ Fields that accept placeholders have an **Insert data** button. It lists everyth
 - **Each earlier node**, by name, with its outputs. After a For loop, that includes the outputs of each node in its first iteration, and after a Merge, the outputs of the last node on each branch.
 - **Loop:** inside a For loop, **Current item**, **Item index**, and **Item count**.
 - **Error:** on a node connected to an **on error** output, **Error message** and **Attempt**.
-- **Variables** and **Secrets** of the workspace.
+- **Data store** entries and **Secrets** of the workspace.
 - **Execution:** the run's ID, workflow name, trigger type, and start time.
 
 Pick a value to insert its placeholder at the cursor. If the cursor is already inside a placeholder, such as between the parentheses of `{{ upper() }}`, the value goes in without braces, as part of that expression. The picker only lists nodes that come before this one on a path to it, because those are the only ones whose output can exist when it runs. A node marked **No input**, because no trigger leads to it, isn't listed either.
@@ -27,7 +27,7 @@ To see what an output really contains, run the workflow once (a [test run](runs.
 
 In fields that accept placeholders, each `{{ }}` placeholder is highlighted, with function names and quoted text in their own colours. A placeholder that is never closed is underlined in red.
 
-While such a field has focus, a **Preview** below it shows what the field would become, and its type. It uses the data of the workflow's latest run: what this node saw if it ran, otherwise what that run's trigger and earlier nodes produced. With no runs yet, data reads as empty, but functions and literals still preview. Secrets show masked. If an expression can't be worked out, the preview shows the error the run would fail with.
+While such a field has focus, a **Preview** below it shows what the field would become, and its type. It uses the data of the workflow's latest run: what this node saw if it ran, otherwise what that run's trigger and earlier nodes produced. With no runs yet, data reads as empty, but functions and literals still preview. The data store previews with its current values. Secrets show masked. If an expression can't be worked out, the preview shows the error the run would fail with.
 
 ## What placeholders can read
 
@@ -35,7 +35,7 @@ While such a field has focus, a **Preview** below it shows what the field would 
 |---|---|
 | `trigger` | What the trigger received. See [Triggers](triggers.md) for each trigger's data. |
 | `nodes.<id>.output` | The output of an earlier node. The id is shown in the node's settings, under **Reference its output as**, where you can [change it](editor.md#configuring-a-node). |
-| `vars.<key>` | A workspace [variable](workspaces.md#variables) |
+| `store.<key>` | An entry of the workspace's [data store](workspaces.md#data-store), as it is when the step runs. `store.<key>[<item key>]` is one item of a collection, and `store.<key>` alone is the whole collection as an object. An entry or item that doesn't exist reads as empty. |
 | `secrets.<key>` | A workspace [secret](workspaces.md#secrets) |
 | `execution.id`, `execution.workflow`, `execution.trigger_type`, `execution.started_at` | About the run itself |
 | `execution.trigger.id`, `execution.trigger.type`, `execution.trigger.config` | The trigger that started the run: its ID, its node type (such as `core.form_trigger` or `core.schedule_trigger`), and its settings as the run's version has them, such as `execution.trigger.config.title` for a form. Useful when a workflow has more than one trigger. Secret settings hold the secret's name, never its value. |

@@ -57,7 +57,7 @@ docker compose up -d
 | `DB_PASSWORD` | required | Password for the bundled PostgreSQL database. Compose won't start without it. |
 | `WAG_VERSION` | `latest` | The release to run. `latest` follows every release, a minor version such as `1.2` gets only its patch updates, and an exact version such as `1.2.3` stays on it. See [Upgrading](#upgrading). |
 | `APP_KEY` | generated | Encrypts sessions and stored secrets. Left empty, one is generated on first run and kept in the storage volume as `app.key`. See [The encryption key](#the-encryption-key). |
-| `APP_URL` | `http://localhost:8080` | The address people use to reach wag.run. Webhook and form trigger links are built from it, so set it to your real address. |
+| `APP_URL` | `http://localhost:8080` | The address people use to reach wag.run. Webhook and form trigger links are built from it, so set it to your real address. If you change it later, [publish workflows with GitHub webhooks again](#polling-or-webhooks). |
 | `APP_BIND` | `127.0.0.1` | The host address the port is published on. Keep it when a reverse proxy on the same machine forwards to the app. Use `0.0.0.0` to expose the port directly. |
 | `APP_PORT` | `8080` | The host port |
 | `TRUSTED_PROXIES` | empty | Your reverse proxy's IP addresses or CIDR ranges, comma-separated, or `*` if the app can only be reached through the proxy |
@@ -116,7 +116,9 @@ Without this app, the **GitHub** form asks for the client ID and secret of an ap
 
 GitHub triggers can check for new events every few minutes, or register a webhook on the repository. Polling works anywhere. A webhook only works if GitHub can reach your `APP_URL`, so it doesn't work for an install on a private network, or for one on your own computer without a tunnel such as Cloudflare Tunnel or ngrok.
 
-The webhook is added to the repository, so you'll find it under the repository's **Settings → Webhooks**, not the organization's. Its **Recent Deliveries** show whether GitHub reached wag.run. If `APP_URL` changes, webhooks registered before keep the old address until the trigger's settings change and the workflow is published again.
+The webhook is added to the repository, so you'll find it under the repository's **Settings → Webhooks**, not the organization's. Its **Recent Deliveries** show whether GitHub reached wag.run.
+
+If you change `APP_URL`, publish each workflow that has a GitHub trigger set to a webhook again, once wag.run is running with the new address. Publishing registers the webhook at the new address and removes the old one once the new one is in place. If GitHub refuses, the old webhook stays and the editor shows the error. Publishing also makes any unpublished changes in the draft live, so discard or finish those first.
 
 ### Google
 

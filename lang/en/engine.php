@@ -20,6 +20,16 @@ return [
     'worker_running_this_step_stopped' => 'The worker running this step stopped responding.',
     'workflow_name_has_no_published' => 'Workflow ":name" has no published version.',
     'workflow_name_has_no_trigger' => 'Workflow ":name" has no trigger to start from.',
+    'values' => [
+        'given_array' => 'an array',
+        'given_nothing' => 'nothing',
+        'given_object' => 'an object',
+        'given_text' => 'the text ":text"',
+        'not_a_type' => 'Expected :type, but got :given.',
+        'nothing_to_append' => 'There is nothing to append: the value is empty.',
+        'number_too_large' => 'The number is too large.',
+        'operation_does_not_fit' => ':operation doesn\'t work on :type.',
+    ],
     'function_categories' => [
         'text' => 'Text',
         'numbers' => 'Numbers',

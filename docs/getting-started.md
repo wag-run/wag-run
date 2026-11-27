@@ -22,7 +22,7 @@ The sidebar shows the current workspace at the top. Use it to switch workspaces.
 | **Overview** | The workspace's workflows and the approvals and tasks waiting on you |
 | **Workflows** | Create, import, and open workflows |
 | **Runs** | Every run in the workspace, newest first, filterable by status |
-| **Variables**, **Secrets**, **Credentials** | Shared values and sign-in details your workflows use |
+| **Data store**, **Secrets**, **Credentials** | Shared values and sign-in details your workflows use |
 | **Members**, **Settings**, **Audit log** | Workspace administration (Admins) |
 
 Organization admins also see **Org settings** in the account menu, for workspaces, users, sign-in, email, and organization-wide defaults.
