@@ -46,12 +46,12 @@ The editor opens with three areas:
 
 Your changes save to a draft as you go. The toolbar shows **Draft saved** with the time.
 
-## 4. Add a trigger
+## 4. Set up the trigger
 
-Every workflow starts with a trigger. This one will be started by hand.
+Every workflow starts with a trigger. A new workflow already has one: the **Run manually** node on the canvas, a Manual trigger that starts the run by hand.
 
-1. In the palette, click **Manual**.
-2. With the node selected, find **Inputs to ask for** in the settings panel and click **Add** twice to add two inputs:
+1. Click the **Run manually** node to select it.
+2. In the settings panel, find **Inputs to ask for** and click **Add** twice to add two inputs:
 
    | Key | Label | Type | Required |
    |---|---|---|---|
