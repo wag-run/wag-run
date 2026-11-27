@@ -8,17 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('variables', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('workspace_id')->constrained()->cascadeOnDelete();
-            $table->string('key');
-            $table->text('value')->nullable();
-            $table->string('description')->nullable();
-            $table->timestamps();
-
-            $table->unique(['workspace_id', 'key']);
-        });
-
         Schema::create('secrets', function (Blueprint $table) {
             $table->id();
             $table->foreignId('workspace_id')->constrained()->cascadeOnDelete();
@@ -65,6 +54,5 @@ return new class extends Migration
         Schema::dropIfExists('audit_logs');
         Schema::dropIfExists('credentials');
         Schema::dropIfExists('secrets');
-        Schema::dropIfExists('variables');
     }
 };

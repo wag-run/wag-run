@@ -10,6 +10,7 @@ use App\Enums\NodeKind;
 use App\Enums\StepStatus;
 use App\Models\Execution;
 use App\Models\Organization;
+use App\Models\StoreEntry;
 use App\Models\Workspace;
 use App\Providers\WorkflowServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,7 +27,7 @@ class FlowNodesTest extends TestCase
         $registry = app(NodeRegistry::class);
         $types = array_map(fn (string $class) => $class::type(), WorkflowServiceProvider::BUILT_IN_NODES);
 
-        $this->assertCount(42, array_unique($types));
+        $this->assertCount(43, array_unique($types));
         $this->assertSame(8, count($registry->ofKind(NodeKind::Trigger)));
 
         foreach ($types as $type) {
@@ -151,12 +152,12 @@ class FlowNodesTest extends TestCase
     {
         $workflow = $this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger',
-                'greeting' => ['core.compose', ['template' => 'Hi {{ title(trigger.values.name) }} from {{ vars.team }}']],
+                'greeting' => ['core.compose', ['template' => 'Hi {{ title(trigger.values.name) }} from {{ store.team }}']],
                 'math' => ['core.compose', ['template' => '{{ round(trigger.values.amount * 1.2, 2) }}']],
                 'json' => ['core.compose', ['template' => '{"id": {{ trigger.values.id }}, "ok": true}', 'parse_json' => true]]],
             ['start->greeting', 'greeting->math', 'math->json'],
         ));
-        $workflow->workspace->variables()->create(['key' => 'team', 'value' => 'Ops']);
+        StoreEntry::factory()->for($workflow->workspace)->holding('Ops')->create(['key' => 'team']);
 
         $execution = $this->runWorkflow($workflow, ['values' => ['name' => 'ada lovelace', 'amount' => 10.5, 'id' => 7]]);
 

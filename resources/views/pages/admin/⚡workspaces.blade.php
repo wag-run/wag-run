@@ -19,7 +19,7 @@ new class extends Component {
     {
         return Workspace::query()
             ->where('organization_id', Organization::current()?->id)
-            ->withCount(['members', 'variables', 'secrets', 'credentials'])
+            ->withCount(['members', 'storeEntries', 'secrets', 'credentials'])
             ->orderBy('name')
             ->get();
     }
@@ -91,7 +91,7 @@ new class extends Component {
             <flux:table.columns>
                 <flux:table.column>{{ __('common.name') }}</flux:table.column>
                 <flux:table.column>{{ __('common.members') }}</flux:table.column>
-                <flux:table.column>{{ __('common.variables') }}</flux:table.column>
+                <flux:table.column>{{ __('admin.workspaces.data_store_entries') }}</flux:table.column>
                 <flux:table.column>{{ __('common.secrets') }}</flux:table.column>
                 <flux:table.column>{{ __('common.credentials') }}</flux:table.column>
                 <flux:table.column></flux:table.column>
@@ -104,7 +104,7 @@ new class extends Component {
                             <div class="font-mono text-xs text-zinc-500">{{ $workspace->slug }}</div>
                         </flux:table.cell>
                         <flux:table.cell>{{ $workspace->members_count }}</flux:table.cell>
-                        <flux:table.cell>{{ $workspace->variables_count }}</flux:table.cell>
+                        <flux:table.cell>{{ $workspace->store_entries_count }}</flux:table.cell>
                         <flux:table.cell>{{ $workspace->secrets_count }}</flux:table.cell>
                         <flux:table.cell>{{ $workspace->credentials_count }}</flux:table.cell>
                         <flux:table.cell align="end">

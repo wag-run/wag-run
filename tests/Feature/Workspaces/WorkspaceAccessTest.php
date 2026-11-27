@@ -20,7 +20,7 @@ class WorkspaceAccessTest extends TestCase
     public static function refusedPages(): array
     {
         return [
-            'guest on variables' => ['workspaces.variables', WorkspaceRole::Guest],
+            'guest on the data store' => ['workspaces.data-store', WorkspaceRole::Guest],
             'guest on secrets' => ['workspaces.secrets', WorkspaceRole::Guest],
             'guest on members' => ['workspaces.members', WorkspaceRole::Guest],
             'viewer on settings' => ['workspaces.settings', WorkspaceRole::Viewer],
@@ -45,7 +45,7 @@ class WorkspaceAccessTest extends TestCase
     {
         return [
             'guest on overview' => ['workspaces.show', WorkspaceRole::Guest],
-            'viewer on variables' => ['workspaces.variables', WorkspaceRole::Viewer],
+            'viewer on the data store' => ['workspaces.data-store', WorkspaceRole::Viewer],
             'viewer on secret names' => ['workspaces.secrets', WorkspaceRole::Viewer],
             'viewer on authentication' => ['workspaces.credentials', WorkspaceRole::Viewer],
             'viewer on members' => ['workspaces.members', WorkspaceRole::Viewer],

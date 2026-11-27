@@ -107,11 +107,11 @@ class Workspace extends Model
     }
 
     /**
-     * @return HasMany<Variable, $this>
+     * @return HasMany<StoreEntry, $this>
      */
-    public function variables(): HasMany
+    public function storeEntries(): HasMany
     {
-        return $this->hasMany(Variable::class);
+        return $this->hasMany(StoreEntry::class);
     }
 
     /**

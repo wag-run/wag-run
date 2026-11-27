@@ -20,8 +20,8 @@ class AuditLogTest extends TestCase
     {
         $mine = Workspace::factory()->create();
         $theirs = Workspace::factory()->create();
-        Audit::record('variable.created', workspace: $mine, label: 'visible_entry');
-        Audit::record('variable.created', workspace: $theirs, label: 'other_workspace_entry');
+        Audit::record('data_store.entry_created', workspace: $mine, label: 'visible_entry');
+        Audit::record('data_store.entry_created', workspace: $theirs, label: 'other_workspace_entry');
         Audit::record('user.promoted', label: 'org_entry');
         $admin = User::factory()->memberOf($mine, WorkspaceRole::Admin)->create();
 
@@ -38,8 +38,8 @@ class AuditLogTest extends TestCase
     {
         $workspace = Workspace::factory()->create();
         $deleted = Workspace::factory()->create();
-        Audit::record('variable.created', workspace: Workspace::factory()->create(), label: 'workspace_entry');
-        Audit::record('variable.created', workspace: $deleted, label: 'retired_entry');
+        Audit::record('data_store.entry_created', workspace: Workspace::factory()->create(), label: 'workspace_entry');
+        Audit::record('data_store.entry_created', workspace: $deleted, label: 'retired_entry');
         Audit::record('user.promoted', label: 'org_entry');
         $deleted->delete();
         $orgAdmin = User::factory()->orgAdmin()->create();
@@ -57,7 +57,7 @@ class AuditLogTest extends TestCase
     public function test_workspace_scope_hides_organization_entries_from_org_admins(): void
     {
         $workspace = Workspace::factory()->create();
-        Audit::record('variable.created', workspace: $workspace, label: 'workspace_entry');
+        Audit::record('data_store.entry_created', workspace: $workspace, label: 'workspace_entry');
         Audit::record('user.promoted', label: 'org_entry');
 
         $this->actingAs(User::factory()->orgAdmin()->create())
@@ -138,7 +138,7 @@ class AuditLogTest extends TestCase
     public function test_filters_entries_by_action(): void
     {
         $workspace = Workspace::factory()->create();
-        Audit::record('variable.created', workspace: $workspace, label: 'variable_entry');
+        Audit::record('data_store.entry_created', workspace: $workspace, label: 'data_store_entry');
         Audit::record('secret.created', workspace: $workspace, label: 'secret_entry');
         $admin = User::factory()->memberOf($workspace, WorkspaceRole::Admin)->create();
 
@@ -146,7 +146,7 @@ class AuditLogTest extends TestCase
             ->test('pages::workspaces.audit', ['workspace' => $workspace])
             ->set('action', 'secret')
             ->assertSee('secret_entry')
-            ->assertDontSee('variable_entry');
+            ->assertDontSee('data_store_entry');
     }
 
     public function test_old_organization_url_redirects_to_the_organization_scope(): void
@@ -179,7 +179,7 @@ class AuditLogTest extends TestCase
     public function test_escapes_user_supplied_labels(): void
     {
         $workspace = Workspace::factory()->create();
-        Audit::record('variable.created', workspace: $workspace, label: '<script>alert(1)</script>');
+        Audit::record('data_store.entry_created', workspace: $workspace, label: '<script>alert(1)</script>');
         $admin = User::factory()->memberOf($workspace, WorkspaceRole::Admin)->create();
 
         $this->actingAs($admin)

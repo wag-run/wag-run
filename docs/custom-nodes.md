@@ -189,6 +189,7 @@ Reload the editor and the node is in the palette under **Acme**.
 | `Field::CREDENTIAL` | The workspace's credentials of the types in `credentialTypes` | The credential's ID. Load it with `$context->credential($id)`. |
 | `Field::SECRET` | The workspace's secrets | The secret's key. Read the value with `$context->secret($key)`. |
 | `Field::WORKFLOW` | The workspace's workflows | The workflow's ID |
+| `Field::STORE_ENTRY` | The workspace's data store entries | The entry's name. Read its value with `$context->store($key)`. |
 | `Field::USER`, `Field::USERS` | A person, or several | A user ID, or a list of them |
 | `Field::CRON`, `Field::TIMEZONE` | A cron expression put into words, and a time zone list | Text |
 | `Field::DURATION`, `Field::SCHEMA` | Used by built-in nodes (timeouts, the LLM call's structured output) | See `Approval` and `LlmCall` for how they are read |
@@ -203,6 +204,7 @@ Other arguments:
 | `templated: true` | Accepts `{{ }}` placeholders and shows the **Insert data** picker |
 | `visibleWhen: ['mode' => 'advanced']` | Shows and saves the field only while the sibling field `mode` has that value (or one of a list of values) |
 | `jsonWhen: ['body_type' => 'json']` | Edits the field as JSON while a sibling field has that value |
+| `optionsWhen: ['append' => ['entry.type' => ['string', 'array']]]` | For a select, offers that option only while the sibling field has one of those values. A `Field::STORE_ENTRY` field named `entry` adds `entry.type` and `entry.collection` (`yes` or `no`) to what `visibleWhen` and `optionsWhen` can test. |
 
 To check settings beyond "required", override `configProblems(array $config): array` and return a list of messages. They are reported when someone publishes or tests the workflow.
 
@@ -232,7 +234,8 @@ Outputs are a description for the editor. Nothing checks that `execute()` return
 | `$context->config('name')` | The setting exactly as saved, placeholders untouched |
 | `$context->render($template, $extra)` | A template rendered against the run's data, with `$extra` added on top. Filter uses this to check each item. |
 | `$context->credential($id)` | The workspace credential with that ID, or null. Its `config` is the decrypted values. |
-| `$context->secret($key)`, `$context->variable($key)` | A workspace secret or variable |
+| `$context->secret($key)` | A workspace secret |
+| `$context->store($key)`, `$context->store($key, $itemKey)` | A data store entry's value as it is now, or one item of a collection. Null when there is none. |
 | `$context->workspace()` | The workspace the run belongs to |
 | `$context->triggerInput()` | What the trigger received |
 | `$context->file($reference)`, `$context->files($value)` | Files an input points to |

@@ -42,7 +42,7 @@ new class extends Component
     public function counts(): array
     {
         return [
-            'variables' => $this->workspace->variables()->count(),
+            'data_store' => $this->workspace->storeEntries()->count(),
             'secrets' => $this->workspace->secrets()->count(),
             'credentials' => $this->workspace->credentials()->count(),
             'members' => $this->workspace->members()->count(),
@@ -75,7 +75,7 @@ new class extends Component
     @if ($this->role?->can(WorkspacePermission::ViewWorkflows))
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             @foreach ([
-                ['label' => __('common.variables'), 'count' => $this->counts['variables'], 'route' => 'workspaces.variables', 'icon' => 'variable'],
+                ['label' => __('common.data_store'), 'count' => $this->counts['data_store'], 'route' => 'workspaces.data-store', 'icon' => 'circle-stack'],
                 ['label' => __('common.secrets'), 'count' => $this->counts['secrets'], 'route' => 'workspaces.secrets', 'icon' => 'lock-closed'],
                 ['label' => __('common.credentials'), 'count' => $this->counts['credentials'], 'route' => 'workspaces.credentials', 'icon' => 'key'],
                 ['label' => __('common.members'), 'count' => $this->counts['members'], 'route' => 'workspaces.members', 'icon' => 'users'],

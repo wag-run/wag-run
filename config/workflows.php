@@ -16,4 +16,19 @@ return [
         'max_bytes' => (int) env('WORKFLOW_FILES_MAX_MB', 50) * 1024 * 1024,
         'text_max_bytes' => 1024 * 1024,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Data store
+    |--------------------------------------------------------------------------
+    |
+    | Limits on the workspace data store: the size of one value or collection
+    | item once saved as JSON, and how many values a workspace may hold,
+    | collection items included.
+    |
+    */
+    'store' => [
+        'max_value_bytes' => 64 * 1024,
+        'max_values' => 100000,
+    ],
 ];
