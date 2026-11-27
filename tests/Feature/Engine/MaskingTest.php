@@ -27,8 +27,8 @@ class MaskingTest extends TestCase
         Secret::factory()->for($workspace)->create(['value' => 'sk_live_supersecret']);
         Credential::factory()->for($workspace)->create(['config' => ['header' => 'Authorization', 'prefix' => 'Bearer', 'token' => 'ghp_tokenvalue']]);
         $workflow = $this->publishedWorkflow($this->graph(
-            ['start' => 'start', 'leak' => ['emit', ['value' => 'key=sk_live_supersecret token=ghp_tokenvalue']]],
-            ['start->leak'],
+            ['start' => 'start', 'leak' => ['emit', ['value' => 'key=sk_live_supersecret token=ghp_tokenvalue']], 'denied' => ['flaky', ['message' => 'Rejected ghp_tokenvalue']]],
+            ['start->leak', 'leak->denied'],
         ), $workspace);
 
         $execution = $this->runWorkflow($workflow, ['password' => 'sk_live_supersecret']);
@@ -38,8 +38,10 @@ class MaskingTest extends TestCase
         $this->assertSame($masked, $leak->input['value']);
         $this->assertSame($masked, $leak->output['value']);
         $this->assertSame(['password' => Redactor::MASK], $execution->input);
+        $this->assertSame('Rejected '.Redactor::MASK, $this->stepFor($execution, 'denied')->error['message']);
+        $this->assertSame('Rejected '.Redactor::MASK, $execution->error['message']);
 
-        $rows = json_encode($execution->steps()->get(['input', 'output'])->toArray()).json_encode($execution->withoutRelations()->toArray());
+        $rows = json_encode($execution->steps()->get()->toArray()).json_encode($execution->withoutRelations()->toArray());
         $this->assertStringNotContainsString('sk_live_supersecret', $rows);
         $this->assertStringNotContainsString('ghp_tokenvalue', $rows);
     }

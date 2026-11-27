@@ -12,7 +12,7 @@ use RuntimeException;
 /**
  * Fails its first "fail_times" attempts, then succeeds. With "throw" set it
  * throws instead of returning a failure; with "permanent" set the failure is
- * not retryable.
+ * not retryable; "message" replaces the failure's message.
  */
 class Flaky extends Node
 {
@@ -43,7 +43,7 @@ class Flaky extends Node
                 throw new RuntimeException("Exploded on attempt {$context->step->attempt}");
             }
 
-            return NodeResult::fail("Failed attempt {$context->step->attempt}", retryable: ! $context->config('permanent'));
+            return NodeResult::fail($context->config('message', "Failed attempt {$context->step->attempt}"), retryable: ! $context->config('permanent'));
         }
 
         return NodeResult::complete(['attempt' => $context->step->attempt]);

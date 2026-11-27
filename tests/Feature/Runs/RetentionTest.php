@@ -43,8 +43,8 @@ class RetentionTest extends TestCase
         $workspace = Workspace::factory()->create(['retention_days' => 7]);
         $workflow = $this->workflowIn($workspace);
 
-        $oldComplete = $this->runFinishedDaysAgo($workflow, 8);
-        $oldFailed = $this->runFinishedDaysAgo($workflow, 8, ExecutionStatus::Failed);
+        $oldComplete = $this->runFinishedDaysAgo($workflow, 7);
+        $oldFailed = $this->runFinishedDaysAgo($workflow, 7, ExecutionStatus::Failed);
         $recent = $this->runFinishedDaysAgo($workflow, 6);
 
         $this->artisan('workflows:purge-executions')->assertSuccessful();
@@ -58,7 +58,7 @@ class RetentionTest extends TestCase
     public function test_a_workflow_override_wins_over_the_workspace_and_organization_defaults(): void
     {
         Organization::factory()->create(['default_retention_days' => 30]);
-        $workspace = Workspace::factory()->create();
+        $workspace = Workspace::factory()->create(['retention_days' => 20]);
 
         $usesDefault = $this->workflowIn($workspace);
         $overridden = $this->workflowIn($workspace, 2);

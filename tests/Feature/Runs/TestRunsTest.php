@@ -148,5 +148,11 @@ class TestRunsTest extends TestCase
             ->assertDontSeeHtml('data-test="test-draft"')
             ->call('startTestRun')
             ->assertForbidden();
+
+        Livewire::actingAs($viewer)->test('pages::workflows.edit', ['workspace' => $workspace, 'workflow' => $workflow])
+            ->call('runTest')
+            ->assertForbidden();
+
+        $this->assertSame(0, Execution::count());
     }
 }

@@ -136,6 +136,7 @@ class WaitingAndSweepTest extends TestCase
         $step = $this->stepFor($execution, 'call');
         $finishedAt = $step->finished_at;
 
+        $this->travel(5)->seconds();
         (new RunStep($step->id))->handle(app(StepRunner::class));
 
         $this->assertSame(1, $execution->steps()->where('node_id', 'call')->count());
@@ -144,8 +145,12 @@ class WaitingAndSweepTest extends TestCase
 
     public function test_sweep_command_reports_what_it_did(): void
     {
+        Queue::fake();
+        $execution = app(Engine::class)->start($this->publishedWorkflow($this->graph(['start' => 'start'])));
+        $this->stepFor($execution, 'start')->forceFill(['queued_at' => null])->save();
+
         $this->artisan('workflows:sweep')
-            ->expectsOutputToContain('Requeued 0, worker lost 0, resumed 0, resettled 0.')
+            ->expectsOutputToContain('Requeued 1, worker lost 0, resumed 0, resettled 0.')
             ->assertSuccessful();
     }
 }
