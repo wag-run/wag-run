@@ -166,16 +166,22 @@ class GitHubTriggersTest extends TestCase
 
     public function test_a_release_poll_sends_the_last_etag_and_an_unchanged_answer_starts_nothing(): void
     {
-        $this->publish('github.new_release', ['poll_minutes' => 5]);
+        $trigger = $this->publish('github.new_release', ['poll_minutes' => 5])->triggers()->sole();
+        $one = ['id' => 1, 'tag_name' => 'v1', 'draft' => false, 'prerelease' => false];
         Http::fake(['api.github.com/repos/acme/app/releases*' => Http::sequence()
-            ->push([['id' => 1, 'tag_name' => 'v1', 'draft' => false, 'prerelease' => false]], 200, ['ETag' => '"one"'])
-            ->push(null, 304)]);
+            ->push([$one], 200, ['ETag' => '"one"'])
+            ->push(null, 304)
+            ->push([['id' => 2, 'tag_name' => 'v2', 'draft' => false, 'prerelease' => false], $one], 200, ['ETag' => '"two"'])]);
 
         $this->poll();
         $this->poll();
 
         Http::assertSent(fn (Request $request) => $request->header('If-None-Match') === ['"one"']);
         $this->assertSame(0, Execution::count());
+        $this->assertNull($trigger->refresh()->state['error'], 'an unchanged answer is not a failed poll');
+
+        $this->poll();
+        $this->assertSame(['v2'], Execution::pluck('input')->pluck('tag')->all(), 'what was seen before the unchanged answer is still known');
     }
 
     public function test_a_failed_poll_is_noted_on_the_trigger(): void
@@ -347,6 +353,7 @@ class GitHubTriggersTest extends TestCase
         $this->deliver($failures, 'workflow_run', ['action' => 'completed', 'workflow_run' => ['id' => 5, 'name' => 'CI', 'path' => '.github/workflows/ci.yml', 'head_branch' => 'feature', 'conclusion' => 'failure']]);
         $this->deliver($failures, 'workflow_run', ['action' => 'completed', 'workflow_run' => ['id' => 6, 'name' => 'CI', 'path' => '.github/workflows/ci.yml', 'head_branch' => 'main', 'conclusion' => 'success']]);
         $this->deliver($failures, 'workflow_run', ['action' => 'completed', 'workflow_run' => ['id' => 7, 'name' => 'CI', 'path' => '.github/workflows/ci.yml', 'head_branch' => 'main', 'conclusion' => 'failure', 'actor' => ['login' => 'octocat']]]);
+        $this->deliver($failures, 'workflow_run', ['action' => 'completed', 'workflow_run' => ['id' => 8, 'name' => 'Deploy', 'path' => '.github/workflows/deploy.yml', 'head_branch' => 'main', 'conclusion' => 'failure']]);
 
         $inputs = Execution::query()->orderBy('id')->pluck('input')->all();
         $this->assertCount(2, $inputs);
