@@ -38,6 +38,12 @@ docker-compose.yml
 docs
 README.md
 
-# Tests and their tooling never run in the image.
+# Tests, code checks, and agent tooling never run in the image.
 tests
 phpunit.xml
+phpstan.neon
+pint.json
+.ai
+AGENTS.md
+boost.json
+.mcp.json
