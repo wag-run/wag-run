@@ -131,10 +131,10 @@ class DataStoreInEditorTest extends TestCase
 
         $this->editor($workflow)
             ->call('selectNode', 'node')
-            ->assertSeeHtml('data-test="store-problems"')
+            ->assertSeeHtml('data-test="node-problems"')
             ->assertSee('{{ store.missing }} reads a data store entry that doesn\'t exist.')
             ->call('selectNode', 'start')
-            ->assertDontSeeHtml('data-test="store-problems"')
+            ->assertDontSeeHtml('data-test="node-problems"')
             ->call('publish')
             ->assertSet('publishErrors', ['Node "node": {{ store.missing }} reads a data store entry that doesn\'t exist. Add it on the Data store page.']);
     }

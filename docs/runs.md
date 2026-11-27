@@ -43,6 +43,7 @@ Click **Back to all steps** to return to the list.
 Also on the page:
 
 - **Trigger input**: what the trigger received.
+- **Variables**: the workflow's [variables](editor.md#variables) with their values in this run, kept up to date while the run is going. Each **Update variable** step also shows the value before and after in its output.
 - **Run output**: what the run produced, such as the output of a **Terminate** node.
 - **Not reached yet** or **Not run**: nodes the run hasn't reached, or didn't take.
 - **Started by run …**: for a run started by another workflow, a link to the run that started it.

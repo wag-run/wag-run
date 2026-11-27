@@ -95,7 +95,25 @@ Click an empty part of the canvas, or right-click it and choose **Workflow setti
 - **Override run limit**: let this workflow start a different number of runs a minute than the organization default (60). See [Runs per minute](runs.md#runs-per-minute).
 - **Trigger URLs**: the addresses of the workflow's webhook and form triggers. They appear once the workflow is published. GitHub and Investbrain triggers show here too, with when they last checked or whether their webhook is registered.
 
-Click **Save settings** to apply them. Workflow settings take effect immediately and aren't part of the draft.
+Click **Save settings** to apply them. These settings take effect immediately and aren't part of the draft. **Variables**, in the same panel, are the exception.
+
+### Variables
+
+A workflow variable is a typed value that lasts for one run: a running total, a list you build up in a loop, a flag one branch sets and a later node checks. To keep a value for the next run, use the workspace's [data store](workspaces.md#data-store) instead.
+
+Under **Variables** in the workflow settings, click **Add variable** and give it:
+
+- A **Name**, with letters, numbers, and underscores. Nodes read it as `{{ vars.<name> }}`. The name can't change later.
+- A **Type**: String, Number, Boolean, Object, Array, or Date & time.
+- A **Starting value**, worked out once when a run starts. It can be plain, such as `0`, or use placeholders that read the trigger, the data store, or the run, such as `{{ trigger.values.customer }}` or `{{ store.cursor }}`. It can't read other variables, node outputs, or secrets. Left empty, or when it reads something that isn't there, the variable starts as empty text, 0, false, an empty object or array, or no date.
+
+Change a variable during a run with the [Update variable](actions.md#update-variable) node.
+
+Variables are **part of the draft**, unlike the settings above: adding, editing, or deleting one is saved with the draft, can be undone, and takes effect when you publish. A run uses the variables of the version it started with. A workflow can declare up to 50 variables, and each value can be up to 64 KB.
+
+Publishing is blocked, with the reason listed, while a placeholder reads a variable that isn't declared, an Update variable node names one that isn't declared or uses an operation that doesn't fit its type, or a starting value couldn't start a run, such as `lots` for a Number.
+
+If a starting value can't be worked out when a run starts, for example because a trigger input isn't a number, the run fails before its first step and says which variable.
 
 ## Export and import
 

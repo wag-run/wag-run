@@ -3,6 +3,7 @@
 namespace App\Engine\Editor;
 
 use App\Engine\Definitions\Field;
+use App\Engine\Graph\GraphVariable;
 use App\Engine\Node;
 use App\Enums\ValueType;
 use App\Models\StoreEntry;
@@ -13,7 +14,8 @@ use App\Models\Workspace;
  * other fields can depend on in their visibleWhen and optionsWhen. A data
  * store entry field named "entry" adds "entry.type" and
  * "entry.collection", so the node can offer only the operations that fit
- * the entry's type and ask for an item key only for a collection.
+ * the entry's type and ask for an item key only for a collection. A
+ * workflow variable field named "variable" adds "variable.type".
  */
 class FieldFacts
 {
@@ -32,18 +34,25 @@ class FieldFacts
     /**
      * @param  array<string, mixed>  $values  the node's config or form values
      * @param  array<string, array{type: ValueType, collection: bool, read_only: bool}>  $storeEntries
+     * @param  array<string, GraphVariable>  $variables  the workflow's declared variables, by name
      * @return array<string, string>
      */
-    public static function for(Node $node, array $values, array $storeEntries): array
+    public static function for(Node $node, array $values, array $storeEntries, array $variables = []): array
     {
         $facts = [];
 
         foreach ($node->inputs() as $field) {
-            $entry = $field->type === Field::STORE_ENTRY ? ($storeEntries[(string) ($values[$field->name] ?? '')] ?? null) : null;
+            $chosen = is_scalar($values[$field->name] ?? null) ? (string) $values[$field->name] : '';
+            $entry = $field->type === Field::STORE_ENTRY ? ($storeEntries[$chosen] ?? null) : null;
+            $variableType = $field->type === Field::VARIABLE ? ($variables[$chosen] ?? null)?->valueType() : null;
 
             if ($entry) {
                 $facts["{$field->name}.type"] = $entry['type']->value;
                 $facts["{$field->name}.collection"] = $entry['collection'] ? 'yes' : 'no';
+            }
+
+            if ($variableType) {
+                $facts["{$field->name}.type"] = $variableType->value;
             }
         }
 

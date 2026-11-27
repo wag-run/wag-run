@@ -98,6 +98,27 @@ enum ValueType: string
     }
 
     /**
+     * A value of this type as the JSON it is saved as. An empty Object is
+     * {}, not [], and whole floats keep their fraction.
+     *
+     * @throws RuntimeException when the value can't be saved as JSON or is larger than $maxBytes
+     */
+    public function encode(mixed $value, int $maxBytes): string
+    {
+        $json = json_encode($this === self::Object && $value === [] ? (object) [] : $value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION);
+
+        if ($json === false) {
+            throw new RuntimeException(__('engine.values.cannot_be_saved', ['error' => json_last_error_msg()]));
+        }
+
+        if (strlen($json) > $maxBytes) {
+            throw new RuntimeException(__('engine.values.too_large', ['max' => round($maxBytes / 1024).' KB']));
+        }
+
+        return $json;
+    }
+
+    /**
      * A short description of a value for an error message, such as
      * text "abc" or an array.
      */

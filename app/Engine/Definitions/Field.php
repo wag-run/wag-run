@@ -44,6 +44,13 @@ final readonly class Field
      */
     public const STORE_ENTRY = 'store_entry';
 
+    /**
+     * One of the workflow's variables, stored by its name. Sibling fields
+     * can depend on the chosen variable's type through "<name>.type" (a
+     * ValueType value) in their visibleWhen and optionsWhen.
+     */
+    public const VARIABLE = 'variable';
+
     public const USER = 'user';
 
     /**

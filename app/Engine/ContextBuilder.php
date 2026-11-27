@@ -13,6 +13,7 @@ use App\Services\DataStore;
  *
  *     trigger            the execution's input
  *     nodes.<id>.output  the latest output of that node visible from this step
+ *     vars.<name>        the run's workflow variables, read when used (see VariableData)
  *     store.<key>        the workspace's data store, read when used (see StoreData)
  *     secrets.<key>      workspace secrets (in memory only; masked in logs)
  *     execution          id, workflow, trigger type, started_at, and
@@ -35,15 +36,10 @@ class ContextBuilder
         $data = [
             'trigger' => $execution->input ?? [],
             'nodes' => $this->visibleOutputs($execution, $step),
+            'vars' => new VariableData($execution),
             'store' => new StoreData($execution->workspace, $this->store),
             'secrets' => $execution->workspace->secrets()->get()->pluck('value', 'key')->all(),
-            'execution' => [
-                'id' => $execution->id,
-                'workflow' => $execution->workflow->name,
-                'trigger_type' => $execution->trigger_type,
-                'trigger' => $execution->triggerDetails(),
-                'started_at' => $execution->started_at?->toIso8601String(),
-            ],
+            'execution' => $this->aboutRun($execution),
         ];
 
         if ($frame = Scope::innermost($step->scope_key)) {
@@ -59,6 +55,35 @@ class ContextBuilder
         }
 
         return $data;
+    }
+
+    /**
+     * The data a run's variables can read for their starting values, before
+     * any step has run: the trigger input, the data store, and the run.
+     *
+     * @return array<string, mixed>
+     */
+    public function atStart(Execution $execution): array
+    {
+        return [
+            'trigger' => $execution->input ?? [],
+            'store' => new StoreData($execution->workspace, $this->store),
+            'execution' => $this->aboutRun($execution),
+        ];
+    }
+
+    /**
+     * @return array{id: string, workflow: string, trigger_type: string, trigger: array<string, mixed>|null, started_at: string|null}
+     */
+    protected function aboutRun(Execution $execution): array
+    {
+        return [
+            'id' => $execution->id,
+            'workflow' => $execution->workflow->name,
+            'trigger_type' => $execution->trigger_type,
+            'trigger' => $execution->triggerDetails(),
+            'started_at' => $execution->started_at?->toIso8601String(),
+        ];
     }
 
     /**

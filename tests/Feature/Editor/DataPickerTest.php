@@ -137,4 +137,17 @@ class DataPickerTest extends TestCase
 
         $this->assertContains('nodes.ai.output.data.sentiment', $this->paths($graph, 'next')['ai']);
     }
+
+    public function test_offers_the_workflows_variables_with_their_types(): void
+    {
+        $graph = WorkflowGraph::fromArray([
+            ...$this->graph(['start' => 'core.manual_trigger', 'a' => 'core.compose'], ['start->a']),
+            'variables' => [['name' => 'attempts', 'type' => 'number', 'value' => '0'], ['name' => 'due', 'type' => 'datetime', 'value' => '']],
+        ]);
+
+        $group = collect(app(DataPicker::class)->optionsFor($graph, 'a', Workspace::factory()->create()))->firstWhere('label', 'Variables');
+
+        $this->assertSame(['vars.attempts' => 'number', 'vars.due' => 'string'], array_column($group['items'], 'type', 'path'));
+        $this->assertArrayNotHasKey('Variables', $this->paths(WorkflowGraph::fromArray($this->graph(['start' => 'core.manual_trigger', 'a' => 'core.compose'], ['start->a'])), 'a'));
+    }
 }

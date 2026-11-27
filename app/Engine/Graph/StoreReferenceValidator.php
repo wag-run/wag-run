@@ -6,18 +6,10 @@ use App\Engine\Definitions\Field;
 use App\Engine\Editor\FieldFacts;
 use App\Engine\NodeRegistry;
 use App\Engine\Nodes\Store\UpdateDataStore;
-use App\Engine\Templates\ExpressionTemplateEngine;
-use App\Engine\Templates\SafeExpressionLanguage;
 use App\Enums\NodeKind;
 use App\Enums\ValueOperation;
 use App\Enums\ValueType;
 use App\Models\Workspace;
-use Symfony\Component\ExpressionLanguage\Node\ConstantNode;
-use Symfony\Component\ExpressionLanguage\Node\GetAttrNode;
-use Symfony\Component\ExpressionLanguage\Node\NameNode;
-use Symfony\Component\ExpressionLanguage\Node\Node;
-use Symfony\Component\ExpressionLanguage\Parser;
-use Throwable;
 
 /**
  * Checks a graph's use of the workspace's data store, which the
@@ -25,14 +17,14 @@ use Throwable;
  * exist, and Update data store nodes that write to a missing or read-only
  * entry, use an operation that doesn't fit its type, or leave out a
  * collection's item key. These would read as empty or fail the step when
- * the workflow runs.
+ * the workflow runs. A workflow variable's starting value is checked for
+ * missing entries too.
  */
 class StoreReferenceValidator
 {
     public function __construct(
         protected NodeRegistry $registry,
-        protected ExpressionTemplateEngine $templates,
-        protected SafeExpressionLanguage $expressions,
+        protected PlaceholderReferences $references,
     ) {}
 
     /**
@@ -42,6 +34,12 @@ class StoreReferenceValidator
     {
         $errors = [];
 
+        foreach ($this->declarationProblems($graph, $workspace) as $name => $problems) {
+            foreach ($problems as $problem) {
+                $errors[] = __('workflows.editor.variable_name_problem', ['name' => $name, 'problem' => $problem]);
+            }
+        }
+
         foreach ($this->problems($graph, $workspace) as $nodeId => $problems) {
             foreach ($problems as $problem) {
                 $errors[] = __('workflows.editor.node_name_problem', ['name' => $graph->node($nodeId)->name, 'problem' => $problem]);
@@ -49,6 +47,30 @@ class StoreReferenceValidator
         }
 
         return $errors;
+    }
+
+    /**
+     * Workflow variables whose starting value reads an entry that doesn't
+     * exist, by variable name. Every run would get an empty value there.
+     *
+     * @return array<string, list<string>>
+     */
+    public function declarationProblems(WorkflowGraph $graph, Workspace $workspace): array
+    {
+        $entries = null;
+        $problems = [];
+
+        foreach ($graph->variables as $variable) {
+            foreach ($this->entriesRead($variable->value) as $key) {
+                $entries ??= FieldFacts::storeEntries($workspace);
+
+                if (! isset($entries[$key])) {
+                    $problems[$variable->name][] = __('workflows.editor.reads_missing_entry', ['key' => $key]);
+                }
+            }
+        }
+
+        return $problems;
     }
 
     /**
@@ -131,53 +153,13 @@ class StoreReferenceValidator
     }
 
     /**
-     * The keys of the entries a config value's placeholders read by name,
-     * as store.key or store['key'], in everything nested in it. An entry
-     * chosen by an expression, as in store[trigger.name], can't be known.
+     * The keys of the entries a value's placeholders read by name, as
+     * store.key or store['key'].
      *
      * @return list<string>
      */
     public function entriesRead(mixed $value): array
     {
-        if (is_array($value)) {
-            return array_values(array_unique(array_merge([], ...array_map($this->entriesRead(...), array_values($value)))));
-        }
-
-        if (! is_string($value) || ! str_contains($value, '{{') || ! str_contains($value, 'store')) {
-            return [];
-        }
-
-        $keys = [];
-
-        try {
-            foreach ($this->templates->expressions($value) as $expression) {
-                $parsed = $this->expressions->parse($expression, ['store'], Parser::IGNORE_UNKNOWN_VARIABLES | Parser::IGNORE_UNKNOWN_FUNCTIONS);
-                $this->collect($parsed->getNodes(), $keys);
-            }
-        } catch (Throwable) {
-            // A placeholder that can't be parsed fails when it runs, with its own message.
-        }
-
-        return array_values(array_unique($keys));
-    }
-
-    /**
-     * @param  list<string>  $keys
-     */
-    protected function collect(Node $node, array &$keys): void
-    {
-        if ($node instanceof GetAttrNode
-            && ($node->nodes['node'] ?? null) instanceof NameNode
-            && $node->nodes['node']->attributes['name'] === 'store'
-            && ($node->nodes['attribute'] ?? null) instanceof ConstantNode
-            && is_scalar($node->nodes['attribute']->attributes['value'])) {
-            $keys[] = (string) $node->nodes['attribute']->attributes['value'];
-        }
-
-        foreach ($node->nodes as $child) {
-            if ($child instanceof Node) {
-                $this->collect($child, $keys);
-            }
-        }
+        return $this->references->under('store', $value);
     }
 }

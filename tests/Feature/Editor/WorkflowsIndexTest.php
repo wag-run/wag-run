@@ -55,7 +55,10 @@ class WorkflowsIndexTest extends TestCase
             'name' => 'Nightly sync',
             'concurrency' => 'skip',
             'retention_days' => 14,
-            'draft_graph' => $this->graph(['start' => 'core.manual_trigger', 'call' => ['core.http_request', ['url' => 'https://x.test', 'credential' => $this->settingId('shop')]]], ['start->call']),
+            'draft_graph' => [
+                ...$this->graph(['start' => 'core.manual_trigger', 'call' => ['core.http_request', ['url' => 'https://x.test', 'credential' => $this->settingId('shop')]]], ['start->call']),
+                'variables' => [['name' => 'attempts', 'type' => 'number', 'value' => '{{ store.attempts }}']],
+            ],
         ]);
 
         $response = $this->actingAs($editor)->get(route('workspaces.workflows.export', [$workspace, $source]));
@@ -75,6 +78,8 @@ class WorkflowsIndexTest extends TestCase
         $this->assertSame('skip', $imported->concurrency->value);
         $this->assertSame(14, $imported->retention_days);
         $this->assertEquals($source->draft()->toArray(), $imported->draft()->toArray());
+        $this->assertSame([['name' => 'attempts', 'type' => 'number', 'value' => '{{ store.attempts }}']], json_decode($json, true)['graph']['variables']);
+        $this->assertSame('{{ store.attempts }}', $imported->draft()->variables['attempts']->value);
         $this->assertNull($imported->published_version_id, 'imports arrive as drafts');
         $this->assertDatabaseHas('audit_logs', ['action' => 'workflow.imported', 'subject_id' => $imported->id]);
 

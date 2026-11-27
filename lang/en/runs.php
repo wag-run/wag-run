@@ -39,6 +39,8 @@ return [
         'steps' => 'Steps',
         'times_out_time' => 'Times out :time',
         'trigger_input' => 'Trigger input',
+        'empty_value' => '(empty)',
+        'variables' => 'Variables',
         'type_for_name' => ':type for :name',
     ],
     'trigger_types' => [

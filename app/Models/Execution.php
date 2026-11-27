@@ -136,6 +136,16 @@ class Execution extends Model
     }
 
     /**
+     * The current values of the workflow's variables in this run.
+     *
+     * @return HasMany<ExecutionVariable, $this>
+     */
+    public function variables(): HasMany
+    {
+        return $this->hasMany(ExecutionVariable::class);
+    }
+
+    /**
      * @return HasMany<ExecutionStep, $this>
      */
     public function openSteps(): HasMany

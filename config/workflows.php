@@ -31,4 +31,18 @@ return [
         'max_value_bytes' => 64 * 1024,
         'max_values' => 100000,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Workflow variables
+    |--------------------------------------------------------------------------
+    |
+    | Limits on the variables a workflow declares for its runs: the size of
+    | one value once saved as JSON, and how many a workflow may declare.
+    |
+    */
+    'variables' => [
+        'max_value_bytes' => 64 * 1024,
+        'max_count' => 50,
+    ],
 ];

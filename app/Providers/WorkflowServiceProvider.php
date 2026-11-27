@@ -12,6 +12,7 @@ use App\Engine\Nodes\Investbrain;
 use App\Engine\Nodes\Note;
 use App\Engine\Nodes\Store;
 use App\Engine\Nodes\Triggers;
+use App\Engine\Nodes\Variables;
 use App\Engine\Nodes\WagRun;
 use App\Engine\Templates\ExpressionTemplateEngine;
 use App\Engine\Templates\TemplateEngine;
@@ -44,6 +45,7 @@ class WorkflowServiceProvider extends ServiceProvider
         Actions\Compose::class,
         Actions\Filter::class,
         Store\UpdateDataStore::class,
+        Variables\UpdateVariable::class,
         Actions\CreateFile::class,
         Actions\LlmCall::class,
         Actions\Merge::class,
