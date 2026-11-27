@@ -134,7 +134,7 @@
             x-on:pointercancel="end"
             x-on:dblclick="toggle"
             x-on:keydown="key"
-            class="wag-sidebar-handle group/resize fixed inset-y-0 z-10 hidden w-3 cursor-col-resize touch-none focus:outline-hidden lg:block"
+            class="wag-sidebar-handle group/resize fixed inset-y-0 z-30 hidden w-3 cursor-col-resize touch-none focus:outline-hidden lg:block"
             :data-dragging="dragging"
             data-test="sidebar-resize-handle"
         >
