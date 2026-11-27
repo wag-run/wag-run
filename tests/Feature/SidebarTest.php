@@ -21,6 +21,7 @@ class SidebarTest extends TestCase
             ->get(route('workspaces.show', $workspace))
             ->assertOk()
             ->assertSee('collapsible="true"', false)
+            ->assertSee('data-flux-sidebar-backdrop', false)
             ->assertSee('x-data="wagSidebarResize"', false)
             ->assertSee('aria-label="'.__('navigation.resize_sidebar').'"', false)
             ->assertSee(__('navigation.double_click_to_toggle_sidebar'))
