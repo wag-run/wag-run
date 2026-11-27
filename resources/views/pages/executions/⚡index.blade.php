@@ -68,6 +68,10 @@ new class extends Component {
 <section class="w-full" @if ($this->hasRunsInProgress) wire:poll.5s @endif>
     <x-page-heading :heading="__('common.runs')" :subheading="__('runs.index.every_run_of_this_workspace')" />
 
+    @if (session('run_removed'))
+        <flux:callout class="mb-4" variant="secondary" icon="information-circle" :heading="__('runs.index.that_run_no_longer_exists')" :text="__('runs.index.runs_are_removed_after_retention')" data-test="run-removed" />
+    @endif
+
     <div class="mb-4 flex flex-wrap gap-3">
         <flux:select wire:model.live="workflow" class="max-w-64" data-test="workflow-filter">
             <flux:select.option value="">{{ __('common.all_workflows') }}</flux:select.option>
