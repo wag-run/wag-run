@@ -284,4 +284,24 @@ class VariablesInEditorTest extends TestCase
             ->assertSee('gone (not declared)')
             ->assertSee('This workflow has no variable "gone".');
     }
+
+    public function test_the_starting_value_field_has_an_insert_data_picker_that_follows_the_draft(): void
+    {
+        StoreEntry::factory()->for($this->workspace)->create(['key' => 'cursor']);
+        $workflow = Workflow::factory()->for($this->workspace)->create(['draft_graph' => $this->graph(
+            ['start' => ['core.manual_trigger', ['fields' => [['name' => 'order_id', 'label' => 'Order', 'type' => 'number']]]], 'node' => 'core.compose'],
+            ['start->node'],
+        )]);
+
+        $editor = $this->editor($workflow)
+            ->assertSeeHtml('data-test="starting-value-field"')
+            ->assertSeeHtml('data-path="trigger.values.order_id"')
+            ->assertSeeHtml('data-path="store.cursor"')
+            ->assertSeeHtml('data-path="execution.id"')
+            ->assertDontSeeHtml('data-path="nodes.node.output.value"');
+
+        $this->assertSame(['Trigger: start', 'Data store', 'Execution'], array_column($editor->instance()->startingValuePicker(), 'label'));
+
+        $this->editor($workflow, WorkspaceRole::Viewer)->assertSeeHtml('data-test="starting-value-field"');
+    }
 }

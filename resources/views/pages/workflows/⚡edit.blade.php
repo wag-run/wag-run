@@ -527,6 +527,17 @@ new class extends Component {
         ];
     }
 
+    /**
+     * What a workflow variable's starting value can reference.
+     *
+     * @return list<array{label: string, items: list<array{label: string, path: string, type: string}>}>
+     */
+    #[Computed]
+    public function startingValuePicker(): array
+    {
+        return app(DataPicker::class)->optionsForStartingValue($this->graph, $this->workspace);
+    }
+
     #[Computed]
     public function versions()
     {
@@ -1246,7 +1257,7 @@ new class extends Component {
         }
 
         app(Workflows::class)->saveDraft($this->workflow, $graph);
-        unset($this->graph, $this->canvas, $this->picker);
+        unset($this->graph, $this->canvas, $this->picker, $this->startingValuePicker);
         $this->refreshHistoryState();
     }
 
@@ -1859,7 +1870,11 @@ new class extends Component {
                     <flux:select.option :value="$case->value">{{ $case->label() }}</flux:select.option>
                 @endforeach
             </flux:select>
-            <flux:textarea wire:model="variableForm.value" :label="__('workflows.edit.starting_value')" class="font-mono" rows="3" :description="__('workflows.edit.starting_value_help')" />
+            <div x-data="wagInsert" class="wag-expr relative" data-test="starting-value-field">
+                <flux:textarea x-ref="input" wire:model="variableForm.value" :label="__('workflows.edit.starting_value')" class="font-mono" rows="3" :description="__('workflows.edit.starting_value_help')" />
+                <div wire:ignore x-ref="highlight" class="wag-expr-layer" aria-hidden="true"></div>
+                @include('partials.workflow-picker', ['picker' => $this->startingValuePicker])
+            </div>
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
                     <flux:button variant="ghost">{{ __('common.cancel') }}</flux:button>
