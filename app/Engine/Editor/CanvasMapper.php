@@ -71,7 +71,7 @@ class CanvasMapper
             'data' => [
                 'name' => $node->name,
                 'type' => $node->type,
-                'typeLabel' => $definition?->label() ?? __('workflows.editor.unknown_type'),
+                'typeLabel' => $definition?->labelFor($node->config) ?? __('workflows.editor.unknown_type'),
                 'icon' => $definition?->icon() ?? 'question-mark-circle',
                 'category' => $definition?->category() ?? '',
                 'isTrigger' => $definition?->kind() === NodeKind::Trigger,

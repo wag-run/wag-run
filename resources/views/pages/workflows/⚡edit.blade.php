@@ -865,7 +865,7 @@ new class extends Component {
 
         $id = $graph->freeId(str($type)->afterLast('.')->replace('_trigger', '')->toString());
         $config = collect($definition->inputs())->filter(fn (Field $field) => $field->default !== null)->mapWithKeys(fn (Field $field) => [$field->name => $field->default])->all();
-        $node = new GraphNode($id, $type, $definition->label(), $config, position: $position);
+        $node = new GraphNode($id, $type, $definition->labelFor($config), $config, position: $position);
 
         $graph = $graph->withNode($node);
 
@@ -1199,6 +1199,12 @@ new class extends Component {
         $retry = (int) $this->retry['max_retries'] > 0
             ? ['max_retries' => (int) $this->retry['max_retries'], 'backoff_seconds' => (int) ($this->retry['backoff_seconds'] ?? 30)]
             : null;
+
+        // A node still called by its type's label keeps following that
+        // label when a setting changes it, such as While loop to Do while loop.
+        if ($this->nodeName === $this->definition->labelFor($node->config)) {
+            $this->nodeName = $this->definition->labelFor($config);
+        }
 
         $errorPath = $this->errorPath && $this->definition->hasErrorPort();
         $oldPorts = $this->definition->ports($node->config);
@@ -1668,7 +1674,7 @@ new class extends Component {
                 @php($definition = $this->definition)
                 <div class="mb-4 flex items-start justify-between gap-2 pe-8">
                     <div>
-                        <flux:heading>{{ $definition->label() }}</flux:heading>
+                        <flux:heading data-test="inspector-heading">{{ $definition->labelFor($this->selectedNode()->config) }}</flux:heading>
                         <flux:text class="text-xs">{{ $definition->description() }}</flux:text>
                     </div>
                 </div>
@@ -1715,7 +1721,7 @@ new class extends Component {
                     @foreach ($definition->inputs() as $field)
                         @continue(! $field->isVisible($formValues, $definition->inputs()))
                         <div wire:key="field-{{ $selected }}-{{ $field->name }}">
-                            @include('partials.workflow-field', ['field' => $field, 'model' => 'form.'.$field->name, 'value' => $form[$field->name] ?? null, 'values' => $formValues, 'siblings' => $definition->inputs(), 'choices' => $this->choices, 'variables' => $this->graph->variables, 'picker' => $this->picker, 'canConnectAccounts' => $this->canConnectAccounts])
+                            @include('partials.workflow-field', ['field' => $field->withDescription($definition->fieldHelp($field, $formValues)), 'model' => 'form.'.$field->name, 'value' => $form[$field->name] ?? null, 'values' => $formValues, 'siblings' => $definition->inputs(), 'choices' => $this->choices, 'variables' => $this->graph->variables, 'picker' => $this->picker, 'canConnectAccounts' => $this->canConnectAccounts])
                         </div>
                     @endforeach
 

@@ -23,6 +23,17 @@ abstract class Node
 
     abstract public function label(): string;
 
+    /**
+     * The label for a node with these settings. Most nodes have one label;
+     * a While loop that checks after each pass reads "Do while loop".
+     *
+     * @param  array<string, mixed>  $config
+     */
+    public function labelFor(array $config): string
+    {
+        return $this->label();
+    }
+
     abstract public function kind(): NodeKind;
 
     abstract public function execute(NodeContext $context): NodeResult;
@@ -65,6 +76,17 @@ abstract class Node
     public function inputs(): array
     {
         return [];
+    }
+
+    /**
+     * The help text under one of this node's fields, given its settings so
+     * far. Most nodes show the field's own description.
+     *
+     * @param  array<string, mixed>  $config
+     */
+    public function fieldHelp(Field $field, array $config): ?string
+    {
+        return $field->description;
     }
 
     /**
