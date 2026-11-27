@@ -497,12 +497,12 @@ new class extends Component {
                     @php($settings = $part === 'input' ? $this->settingsOf($step) : null)
                     @if ($settings !== null)
                         <flux:heading size="sm" class="mt-4 mb-1">{{ $label }}</flux:heading>
-                        <div class="relative" x-data="{ written: false }" wire:key="step-input-{{ $step->id }}">
-                            <div class="absolute end-3 top-2">
+                        <div class="rounded-lg bg-zinc-50 dark:bg-zinc-800" x-data="{ written: false }" wire:key="step-input-{{ $step->id }}">
+                            <div class="flex justify-end px-3 pt-3">
                                 <flux:checkbox x-model="written" :label="__('runs.show.show_placeholders')" data-test="step-input-toggle" />
                             </div>
-                            <pre x-show="! written" class="max-h-80 overflow-auto rounded-lg whitespace-pre-wrap break-words bg-zinc-50 p-3 pt-9 text-xs dark:bg-zinc-800" data-test="step-input">{{ $this->json($value) }}</pre>
-                            <pre x-show="written" style="display: none" class="max-h-80 overflow-auto rounded-lg whitespace-pre-wrap break-words bg-zinc-50 p-3 pt-9 text-xs dark:bg-zinc-800" data-test="step-settings">{{ $this->json($settings) }}</pre>
+                            <pre x-show="! written" class="max-h-80 overflow-auto whitespace-pre-wrap break-words p-3 pt-2 text-xs" data-test="step-input">{{ $this->json($value) }}</pre>
+                            <pre x-show="written" style="display: none" class="max-h-80 overflow-auto whitespace-pre-wrap break-words p-3 pt-2 text-xs" data-test="step-settings">{{ $this->json($settings) }}</pre>
                         </div>
                         @include('partials.run-files', ['value' => $value, 'key' => $part])
                     @elseif ($value !== null && $value !== [])
