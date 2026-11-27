@@ -116,11 +116,13 @@ return [
         'items' => 'Items',
         'items_must_be_a_list' => 'Items must be an array.',
         'iterations_run' => 'Iterations run',
+        'last_iteration' => 'Last iteration',
         'list_to_loop_over_such' => 'An array to loop over, such as {{ nodes.fetch.output.body.items }}',
         'loop_can_run_at_most' => 'A loop can run at most :max items.',
         'repeats_part_of_the_flow' => 'Repeats part of the flow for each item.',
         'results' => 'Results',
         'what_every_node_produced_in' => 'What every node produced in each iteration, keyed by node id.',
+        'what_every_node_produced_in_the_last' => 'What every node produced in the final iteration, keyed by node id.',
     ],
     'form_trigger' => [
         'anyone_with_the_link' => 'Anyone with the link',

@@ -149,6 +149,7 @@ return [
         'item_count' => 'Item count',
         'item_index' => 'Item index',
         'iteration_n' => 'Iteration :n',
+        'last_iteration_name' => 'Last iteration › :name',
         'last_pass_name' => 'Last pass › :name',
         'key' => 'key',
         'loop_name' => 'Loop: :name',

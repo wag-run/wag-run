@@ -14,6 +14,8 @@ use Closure;
  *
  *     results[n].<id>.output  what that node produced in iteration n
  *     results[n].<id>.port    the output it left by
+ *     last                    the final iteration, like one entry of
+ *                             results, or null when the loop never ran
  *
  * Every node that completed in an iteration is there, in the same shape as
  * nodes.<id>. A loop inside an iteration carries its own results.
@@ -58,7 +60,8 @@ class LoopResults
     }
 
     /**
-     * A step's output, with results added when it is a finished loop.
+     * A step's output, with results and last added when it is a finished
+     * loop.
      */
     public function outputOf(ExecutionStep $step): mixed
     {
@@ -74,9 +77,7 @@ class LoopResults
             $results[] = $this->nodesIn(Scope::forIteration($step->scope_key, $step->id, $index));
         }
 
-        return array_key_exists('passes', $step->output)
-            ? ['last' => $results === [] ? null : $results[$count - 1], ...$step->output, 'results' => $results]
-            : ['results' => $results, ...$step->output];
+        return ['results' => $results, ...$step->output, 'last' => $results === [] ? null : $results[count($results) - 1]];
     }
 
     /**

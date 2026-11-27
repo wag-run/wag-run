@@ -56,6 +56,7 @@ Outputs, on **done**:
 
 - `results`: a list with one entry per iteration. Each entry holds every node that ran in that iteration, keyed by node id, in the [same shape as `nodes.<id>`](data-and-placeholders.md#nodes-inside-results).
 - `count`: how many iterations ran.
+- `last`: the final iteration on its own, like one entry of `results`. Empty if the list had no items.
 
 For a loop `each` whose body has a node `line`:
 
@@ -64,6 +65,7 @@ For a loop `each` whose body has a node `line`:
 | `{{ nodes.each.output.results[0].line.output.value }}` | What `line` produced in the first iteration |
 | `{{ column(column(column(nodes.each.output.results, 'line'), 'output'), 'value') }}` | What `line` produced in every iteration, as a list |
 | `{{ nodes.each.output.count }}` | How many iterations ran |
+| `{{ nodes.each.output.last.line.output.value }}` | What `line` produced in the final iteration |
 
 A node on a path that an iteration didn't take is missing from that iteration's entry. A loop inside the loop appears in each entry with its own `results`.
 

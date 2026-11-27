@@ -11,7 +11,8 @@ use App\Enums\NodeKind;
 
 /**
  * Runs the steps connected to "each item" once per item, one item at a time,
- * then continues down "done" with every iteration's results and their count.
+ * then continues down "done" with every iteration's results, their count,
+ * and the last iteration on its own.
  * The results are read from the step rows (LoopResults). Inside the loop,
  * templates can read item, loop.index and loop.count.
  */
@@ -62,6 +63,7 @@ class ForLoop extends Node
         return [
             new Output('results', __('nodes.for_loop.results'), 'array', __('nodes.for_loop.what_every_node_produced_in')),
             new Output('count', __('nodes.for_loop.iterations_run'), 'number'),
+            new Output('last', __('nodes.for_loop.last_iteration'), 'object', __('nodes.for_loop.what_every_node_produced_in_the_last')),
         ];
     }
 

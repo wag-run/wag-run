@@ -89,7 +89,8 @@ final readonly class NodeResult
 
     /**
      * Run the part of the flow on $bodyPort once per item, one item at a time,
-     * then continue down $donePort with every iteration's results.
+     * then continue down $donePort with every iteration's results, their
+     * count, and the last iteration.
      *
      * @param  array<int|string, mixed>  $items
      */
