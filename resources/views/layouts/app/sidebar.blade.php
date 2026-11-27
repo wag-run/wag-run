@@ -119,29 +119,28 @@
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" :unread="$unreadNotifications" />
         </flux:sidebar>
 
-        <div x-data="wagSidebarResize" class="wag-sidebar-handle fixed inset-y-0 z-10 hidden w-3 lg:block" data-test="sidebar-resize-handle">
-            <flux:tooltip :content="__('navigation.double_click_to_toggle_sidebar')" position="right" class="block h-full" x-bind:disabled="dragging">
-                <div
-                    role="separator"
-                    aria-orientation="vertical"
-                    tabindex="0"
-                    aria-label="{{ __('navigation.resize_sidebar') }}"
-                    :aria-valuenow="width"
-                    :aria-valuemin="minWidth"
-                    :aria-valuemax="maxWidth"
-                    x-on:pointerdown="start"
-                    x-on:pointermove="move"
-                    x-on:pointerup="end"
-                    x-on:pointercancel="end"
-                    x-on:dblclick="toggle"
-                    x-on:keydown="key"
-                    class="group/resize relative h-full w-full cursor-col-resize touch-none focus:outline-hidden"
-                    :data-dragging="dragging"
-                >
-                    <span class="sr-only">{{ __('navigation.resize_sidebar') }}</span>
-                    <div class="absolute inset-y-0 start-1/2 w-0.5 -translate-x-1/2 transition-colors group-hover/resize:bg-zinc-400 group-focus-visible/resize:bg-zinc-400 group-data-[dragging=true]/resize:bg-zinc-400 dark:group-hover/resize:bg-zinc-500 dark:group-focus-visible/resize:bg-zinc-500 dark:group-data-[dragging=true]/resize:bg-zinc-500"></div>
-                    <div class="absolute start-1/2 top-1/2 h-10 w-2 -translate-1/2 rounded-full border border-zinc-400 bg-white opacity-0 transition-opacity group-hover/resize:opacity-100 group-focus-visible/resize:opacity-100 group-data-[dragging=true]/resize:opacity-100 dark:border-zinc-500 dark:bg-zinc-800"></div>
-                </div>
+        <div
+            x-data="wagSidebarResize"
+            role="separator"
+            aria-orientation="vertical"
+            tabindex="0"
+            aria-label="{{ __('navigation.resize_sidebar') }}"
+            :aria-valuenow="width"
+            :aria-valuemin="minWidth"
+            :aria-valuemax="maxWidth"
+            x-on:pointerdown="start"
+            x-on:pointermove="move"
+            x-on:pointerup="end"
+            x-on:pointercancel="end"
+            x-on:dblclick="toggle"
+            x-on:keydown="key"
+            class="wag-sidebar-handle group/resize fixed inset-y-0 z-10 hidden w-3 cursor-col-resize touch-none focus:outline-hidden lg:block"
+            :data-dragging="dragging"
+            data-test="sidebar-resize-handle"
+        >
+            <div class="absolute inset-y-0 start-1/2 w-0.5 -translate-x-1/2 transition-colors group-hover/resize:bg-zinc-400 group-focus-visible/resize:bg-zinc-400 group-data-[dragging=true]/resize:bg-zinc-400 dark:group-hover/resize:bg-zinc-500 dark:group-focus-visible/resize:bg-zinc-500 dark:group-data-[dragging=true]/resize:bg-zinc-500"></div>
+            <flux:tooltip :content="__('navigation.double_click_to_toggle_sidebar')" position="right" class="absolute start-1/2 top-1/2 -translate-1/2" x-bind:disabled="dragging">
+                <div class="h-10 w-2 rounded-full border border-zinc-400 bg-white opacity-0 transition-opacity group-hover/resize:opacity-100 group-focus-visible/resize:opacity-100 group-data-[dragging=true]/resize:opacity-100 dark:border-zinc-500 dark:bg-zinc-800"></div>
             </flux:tooltip>
         </div>
 
