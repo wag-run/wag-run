@@ -116,6 +116,57 @@ class DataPickerTest extends TestCase
         ], $this->paths($graph, 'after')['outer']);
     }
 
+    public function test_offers_the_previous_pass_inside_a_while_loop_and_its_last_and_first_pass_after_it(): void
+    {
+        $graph = WorkflowGraph::fromArray($this->graph(
+            ['start' => 'core.manual_trigger', 'pages' => ['core.while_loop', ['condition' => '{{ nodes.fetch.output.value }}']], 'fetch' => 'core.compose', 'keep' => 'core.compose', 'after' => 'core.compose'],
+            ['start->pages', 'pages:pass->fetch', 'fetch->keep', 'pages:done->after'],
+        ));
+
+        $inside = $this->paths($graph, 'keep');
+        $after = $this->paths($graph, 'after');
+
+        $this->assertSame(['loop.index', 'loop.previous.fetch.output.value', 'loop.previous.keep.output.value', 'loop.results'], $inside['Loop: pages']);
+        $this->assertSame(['nodes.fetch.output.value'], $inside['fetch']);
+        $this->assertSame([
+            'nodes.pages.output.last', 'nodes.pages.output.passes', 'nodes.pages.output.results',
+            'nodes.pages.output.last.fetch.output.value', 'nodes.pages.output.results[0].fetch.output.value',
+            'nodes.pages.output.last.keep.output.value', 'nodes.pages.output.results[0].keep.output.value',
+        ], $after['pages']);
+        $this->assertArrayNotHasKey('fetch', $after);
+        $this->assertArrayNotHasKey('Loop: pages', $after);
+    }
+
+    public function test_a_while_loops_own_condition_is_offered_the_nodes_of_the_pass_it_checks(): void
+    {
+        $graph = WorkflowGraph::fromArray($this->graph(
+            ['start' => 'core.manual_trigger', 'pages' => ['core.while_loop', ['condition' => '{{ nodes.fetch.output.value }}']], 'fetch' => 'core.compose'],
+            ['start->pages', 'pages:pass->fetch'],
+        ));
+
+        $own = $this->paths($graph, 'pages');
+
+        $this->assertSame(['nodes.fetch.output.value'], $own['Pass just finished › fetch']);
+        $this->assertSame(['loop.index', 'loop.previous.fetch.output.value', 'loop.results'], $own['Loop: pages']);
+    }
+
+    public function test_inside_nested_loops_offers_loop_for_the_innermost_and_the_item_of_the_nearest_for_loop(): void
+    {
+        $graph = WorkflowGraph::fromArray($this->graph(
+            ['start' => 'core.manual_trigger', 'each' => ['core.for_loop', ['items' => '{{ [1] }}']], 'poll' => ['core.while_loop', ['condition' => '{{ true }}']], 'check' => 'core.compose',
+                'outer' => ['core.for_loop', ['items' => '{{ [1] }}']], 'inner' => ['core.for_loop', ['items' => '{{ item }}']], 'deep' => 'core.compose'],
+            ['start->each', 'each:item->poll', 'poll:pass->check', 'start->outer', 'outer:item->inner', 'inner:item->deep'],
+        ));
+
+        $inWhile = $this->paths($graph, 'check');
+        $inFor = $this->paths($graph, 'deep');
+
+        $this->assertSame(['loop.index', 'loop.previous.check.output.value', 'loop.results'], $inWhile['Loop: poll']);
+        $this->assertSame(['item'], $inWhile['Loop: each']);
+        $this->assertSame(['item', 'loop.index', 'loop.count'], $inFor['Loop: inner']);
+        $this->assertArrayNotHasKey('Loop: outer', $inFor);
+    }
+
     public function test_offers_the_last_node_of_each_branch_a_merge_gathered(): void
     {
         $graph = WorkflowGraph::fromArray($this->graph(
