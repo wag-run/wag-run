@@ -38,7 +38,8 @@ class ChildWorkflowTest extends TestCase
         $call = $this->stepFor($execution, 'call');
         $this->assertSame($call->id, $childRun->parent_step_id);
         $this->assertSame(['from' => 'parent'], $childRun->input);
-        $this->assertSame('from child', $call->output['result']['value']);
+        $this->assertSame('from child', $call->output['result']['output']['value']);
+        $this->assertSame('main', $call->output['result']['port']);
         $this->assertSame(ExecutionStatus::Complete, $execution->status);
     }
 

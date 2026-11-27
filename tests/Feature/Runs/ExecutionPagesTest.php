@@ -96,6 +96,23 @@ class ExecutionPagesTest extends TestCase
         $page->call('selectNode', 'start')->assertDontSeeHtml('data-test="iteration-switcher"');
     }
 
+    public function test_a_finished_loop_shows_its_results_as_placeholders_read_them(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
+        $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
+            ['start' => ['core.webhook_trigger', ['method' => 'POST', 'verification' => 'none']], 'each' => ['core.for_loop', ['items' => '{{ trigger.body.names }}']], 'greet' => ['core.compose', ['template' => 'Hi {{ item }}']]],
+            ['start->each', 'each:item->greet'],
+        ), $workspace), ['body' => ['names' => ['Ada', 'Grace']]]);
+
+        Livewire::actingAs($viewer)->test('pages::executions.show', ['workspace' => $workspace, 'execution' => $execution])
+            ->call('selectNode', 'each')
+            ->assertSeeHtml('data-test="step-output"')
+            ->assertSee('"results"')
+            ->assertSee('Hi Grace')
+            ->assertSee('"count": 2');
+    }
+
     public function test_each_attempt_of_a_retried_step_can_be_opened(): void
     {
         $workspace = Workspace::factory()->create();

@@ -2,6 +2,7 @@
 
 use App\Engine\Editor\RunCanvas;
 use App\Engine\Engine;
+use App\Engine\LoopResults;
 use App\Engine\NodeRegistry;
 use App\Models\Assignment;
 use App\Models\Execution;
@@ -66,6 +67,21 @@ new class extends Component {
     public function step(): ?ExecutionStep
     {
         return $this->selectedStep ? $this->steps->firstWhere('id', $this->selectedStep) : null;
+    }
+
+    /**
+     * A step's error, input, or output as the panel shows it. A finished
+     * loop's output includes its results, as placeholders read it.
+     */
+    public function part(ExecutionStep $step, string $part): mixed
+    {
+        return $part === 'output' ? $this->loopResults->outputOf($step) : $step->{$part};
+    }
+
+    #[Computed]
+    public function loopResults(): LoopResults
+    {
+        return new LoopResults($this->steps);
     }
 
     #[Computed]
@@ -191,7 +207,7 @@ new class extends Component {
     public function refreshRun(): void
     {
         $this->execution->refresh();
-        unset($this->steps, $this->canvas, $this->step, $this->notRun, $this->canCancel);
+        unset($this->steps, $this->canvas, $this->step, $this->notRun, $this->canCancel, $this->loopResults);
 
         $runCanvas = app(RunCanvas::class);
         $statuses = $runCanvas->statuses($this->steps);
@@ -376,10 +392,11 @@ new class extends Component {
                 @endforeach
 
                 @foreach (['error' => __('common.error'), 'input' => __('common.input'), 'output' => __('common.output')] as $part => $label)
-                    @if ($step->{$part} !== null && $step->{$part} !== [])
+                    @php($value = $this->part($step, $part))
+                    @if ($value !== null && $value !== [])
                         <flux:heading size="sm" class="mt-4 mb-1">{{ $label }}</flux:heading>
-                        <pre class="max-h-80 overflow-auto rounded-lg whitespace-pre-wrap break-words bg-zinc-50 p-3 text-xs dark:bg-zinc-800 {{ $part === 'error' ? 'text-red-600 dark:text-red-400' : '' }}" data-test="step-{{ $part }}">{{ $this->json($step->{$part}) }}</pre>
-                        @include('partials.run-files', ['value' => $step->{$part}, 'key' => $part])
+                        <pre class="max-h-80 overflow-auto rounded-lg whitespace-pre-wrap break-words bg-zinc-50 p-3 text-xs dark:bg-zinc-800 {{ $part === 'error' ? 'text-red-600 dark:text-red-400' : '' }}" data-test="step-{{ $part }}">{{ $this->json($value) }}</pre>
+                        @include('partials.run-files', ['value' => $value, 'key' => $part])
                     @endif
                 @endforeach
             @else

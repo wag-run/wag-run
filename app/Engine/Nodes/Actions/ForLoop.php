@@ -11,8 +11,9 @@ use App\Enums\NodeKind;
 
 /**
  * Runs the steps connected to "each item" once per item, one item at a time,
- * then continues down "done" with every iteration's results. Inside the
- * loop, templates can read item, loop.index and loop.count.
+ * then continues down "done" with every iteration's results and their count.
+ * The results are read from the step rows (LoopResults). Inside the loop,
+ * templates can read item, loop.index and loop.count.
  */
 class ForLoop extends Node
 {
@@ -58,7 +59,10 @@ class ForLoop extends Node
 
     public function outputs(array $config = []): array
     {
-        return [new Output('results', __('nodes.for_loop.results'), 'array', __('nodes.for_loop.what_each_iteration_produced_keyed'))];
+        return [
+            new Output('results', __('nodes.for_loop.results'), 'array', __('nodes.for_loop.what_every_node_produced_in')),
+            new Output('count', __('nodes.for_loop.iterations_run'), 'number'),
+        ];
     }
 
     public function ports(array $config = []): array

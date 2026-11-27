@@ -301,14 +301,15 @@ class Coordinator
     protected function iterate(ExecutionStep $step, NodeResult $result, Redactor $redactor): void
     {
         if ($result->items === []) {
-            $this->complete($step, ['results' => []], [$result->donePort], $redactor);
+            $step->wait_type = WaitType::Loop;
+            $this->complete($step, ['count' => 0], [$result->donePort], $redactor);
 
             return;
         }
 
         $this->park($step, WaitType::Loop, null, [
             'items' => $result->items,
-            'results' => [],
+            'index' => 0,
             'body_port' => $result->bodyPort,
             'done_port' => $result->donePort,
         ], $redactor);
@@ -438,7 +439,7 @@ class Coordinator
         $open = $execution->openSteps()->pluck('status')->all();
 
         if ($open === []) {
-            $this->finish($execution, ExecutionStatus::Complete, output: $this->leafOutputs($execution, ''));
+            $this->finish($execution, ExecutionStatus::Complete, output: $this->leafOutputs($execution));
 
             return;
         }
@@ -468,18 +469,17 @@ class Coordinator
         foreach ($loops as $loop) {
             $loop->setRelation('execution', $execution);
             $state = $loop->state ?? [];
-            $index = count($state['results'] ?? []);
+            $index = $state['index'] ?? 0;
             $scope = Scope::forIteration($loop->scope_key, $loop->id, $index);
 
             if ($this->hasOpenStepsIn($execution, $scope)) {
                 continue;
             }
 
-            $state['results'][] = $this->leafOutputs($execution, $scope);
-            $loop->forceFill(['state' => $state])->save();
             $advanced = true;
 
             if ($index + 1 < count($state['items'] ?? [])) {
+                $loop->forceFill(['state' => [...$state, 'index' => $index + 1]])->save();
                 $this->startIteration($loop, $index + 1);
 
                 continue;
@@ -487,7 +487,7 @@ class Coordinator
 
             $loop->forceFill([
                 'status' => StepStatus::Complete,
-                'output' => ['results' => $state['results']],
+                'output' => ['count' => $index + 1],
                 'output_ports' => [$state['done_port'] ?? 'done'],
                 'finished_at' => now(),
             ])->save();
@@ -551,19 +551,20 @@ class Coordinator
     }
 
     /**
-     * Outputs of the completed steps in a scope that nothing continued from,
-     * keyed by node id. This is an execution's (or loop iteration's) result.
+     * The run's result: the completed top-level steps that nothing continued
+     * from, keyed by node id, each in the same shape as nodes.<id>.
      *
-     * @return array<string, mixed>
+     * @return array<string, array{output: mixed, port: string|null}>
      */
-    protected function leafOutputs(Execution $execution, string $scope): array
+    protected function leafOutputs(Execution $execution): array
     {
-        $steps = $execution->steps()->where('scope_key', $scope)->orderBy('id')->get(['id', 'node_id', 'status', 'output', 'previous_step_id']);
+        $steps = $execution->steps()->where('scope_key', '')->orderBy('id')->get(['id', 'node_id', 'scope_key', 'status', 'wait_type', 'output', 'output_ports', 'previous_step_id']);
         $continued = $steps->pluck('previous_step_id')->filter()->flip();
+        $results = LoopResults::for($execution);
 
         return $steps
             ->filter(fn (ExecutionStep $step) => $step->status === StepStatus::Complete && ! $continued->has($step->id))
-            ->mapWithKeys(fn (ExecutionStep $step) => [$step->node_id => $step->output])
+            ->mapWithKeys(fn (ExecutionStep $step) => [$step->node_id => $results->entry($step)])
             ->all();
     }
 }

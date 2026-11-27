@@ -2,7 +2,9 @@
 
 namespace App\Http\Resources;
 
+use App\Engine\LoopResults;
 use App\Models\Execution;
+use App\Models\ExecutionStep;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -31,7 +33,11 @@ class ExecutionResource extends JsonResource
             'started_at' => $this->started_at?->toIso8601String(),
             'finished_at' => $this->finished_at?->toIso8601String(),
             'url' => route('workspaces.executions.show', [$this->workspace, $this->resource]),
-            'steps' => ExecutionStepResource::collection($this->whenLoaded('steps')),
+            'steps' => $this->whenLoaded('steps', function () {
+                $loopResults = new LoopResults($this->steps);
+
+                return $this->steps->map(fn (ExecutionStep $step) => (new ExecutionStepResource($step))->withLoopResults($loopResults));
+            }),
         ];
     }
 }

@@ -105,6 +105,23 @@ class RestApiTest extends TestCase
             ->assertJsonPath('data.steps.1.status', 'waiting');
     }
 
+    public function test_a_run_shows_a_finished_loops_results_and_wraps_its_output_like_nodes(): void
+    {
+        $this->actingAsMember();
+        $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
+            ['start' => 'start', 'each' => ['each', ['items' => ['a', 'b']]], 'body' => 'emit'],
+            ['start->each', 'each:item->body'],
+        ), $this->workspace));
+
+        $this->getJson($this->url("runs/{$execution->id}"))->assertOk()
+            ->assertJsonPath('data.steps.1.node_id', 'each')
+            ->assertJsonPath('data.steps.1.output.count', 2)
+            ->assertJsonPath('data.steps.1.output.results.1.body.output.item', 'b')
+            ->assertJsonPath('data.steps.1.output.results.1.body.port', 'main')
+            ->assertJsonPath('data.output.each.port', 'done')
+            ->assertJsonPath('data.output.each.output.results.0.body.output.item', 'a');
+    }
+
     public function test_lists_runs_with_filters_and_cancels_one(): void
     {
         $this->actingAsMember();
