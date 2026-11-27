@@ -265,6 +265,7 @@ If the address your node calls comes from a setting, check it with `App\Support\
 | `NodeResult::waitUntil($time, $state)` | Parks the step with no worker held, and resumes it at `$time` |
 | `NodeResult::waitForResponse($timeout, $state)` | Parks the step until something answers it, or until the timeout |
 | `NodeResult::iterate($items)` | Runs the part of the flow on the `item` output once per item, then continues from `done`. The step's output is `results`, with every node of each iteration, and `count`, as for a [For loop](actions.md#for-loop). |
+| `NodeResult::repeat()` | Runs the part of the flow on the `pass` output once, then calls the node's `resume()` so it can decide whether to run it again. See [Repeating](#repeating). |
 | `NodeResult::runChild($workflow, $input)` | Starts another workflow and waits for it |
 | `NodeResult::updateVariable($name, $operation, $operand)` | Changes one of the workflow's variables and completes the step. The engine applies the change, so parallel branches can't lose each other's, and the step's output is the value before and after. `$operation` is an `App\Enums\ValueOperation`. |
 | `NodeResult::terminate($status, $output)` | Ends the whole run with that status |
@@ -305,6 +306,36 @@ public function resume(NodeContext $context, Resumption $resumption): NodeResult
 
 The default `resume()` completes the step when a timer passes or an answer arrives, so a simple timer needs no override. To answer a step that is waiting for a response, call `app(App\Engine\Engine::class)->respond($step, $payload)` from wherever the answer arrives, such as a controller. The Approval and Task nodes work this way.
 
+### Repeating
+
+A node that repeats part of the flow without knowing how often, as the [While loop](actions.md#while-loop) does, returns `NodeResult::repeat()` from `execute()` and declares `repeats()` as true. The steps connected to its `pass` output run once. When they have all finished, the app calls `resume()` with `ResumeReason::PassFinished`, and the node returns `repeat()` for another pass or `complete()` to stop:
+
+```php
+public function repeats(): bool
+{
+    return true;
+}
+
+public function resume(NodeContext $context, Resumption $resumption): NodeResult
+{
+    if ($resumption->reason !== ResumeReason::PassFinished) {
+        return parent::resume($context, $resumption);
+    }
+
+    $passes = $context->state()['index'] + 1;
+
+    if ($passes < 50 && $context->input('keep_going')) {
+        return NodeResult::repeat();
+    }
+
+    return NodeResult::complete(['passes' => $passes], 'done');
+}
+```
+
+In that call the node's inputs are filled in from the run's data as a node inside the finished pass reads it, so a placeholder such as `{{ nodes.fetch.output.done }}` refers to that pass. `$context->state()['index']` is the position of the pass that just finished, from 0.
+
+Complete with the number of passes as `passes`, and the app adds `last` and `results` to the step's output, as for a While loop. Always limit the passes yourself: nothing else stops a node that keeps returning `repeat()`. The default `resume()` stops after one pass.
+
 ### Other things to override
 
 | Method | Default | Override to |
@@ -313,6 +344,8 @@ The default `resume()` completes the step when a timer passes or an answer arriv
 | `timeout()` | 300 seconds | Allow a longer attempt before the app treats the worker as dead. Call `$context->heartbeat()` during long work. |
 | `paletteGroup()` | The node's category | Nest the node in the palette, such as `['Triggers', 'Other apps', 'Acme']` |
 | `joinsBranches()` | `false` | Wait for every incoming branch before running, as Merge does |
+| `labelFor(array $config)` | `label()` | Change the node's label with its settings, as a While loop that checks after each pass reads "Do while loop". A node still called by its label is renamed with it. |
+| `fieldHelp(Field $field, array $config)` | The field's description | Change the help text under a field with the node's other settings |
 
 ## A trigger
 

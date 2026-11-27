@@ -23,7 +23,7 @@ Drag from a node's output on its right edge to another node's input on its left 
 - **Several outputs.** Some nodes have more than one output, such as **true** and **false** on **Conditional logic**. Only the connections from the output the node takes are followed.
 - **Parallel branches.** Connect one output to several nodes to run them at the same time. Use **Merge** to wait for all of them before carrying on.
 - **Branches that meet.** A node with several incoming connections runs once for each one that arrives, as soon as it arrives. To run it once, after all of them, turn on **Wait for all incoming branches** in its settings, or put a **Merge** in front of it.
-- **No cycles.** A connection can't lead back to an earlier node. To repeat steps, use a **For loop**.
+- **No cycles.** A connection can't lead back to an earlier node. To repeat steps, use a **For loop** or a **While loop**.
 - **Triggers have no inputs.** Nothing can connect into a trigger.
 - **Unconnected nodes don't run.** A run starts at a trigger and follows the connections from it. A node no trigger leads to is drawn faded with a dashed border and marked **No input**, even if it connects into a node that does run. Its outgoing connections are drawn dashed too. Leave a node like that to set it aside, or connect something that runs into it to bring it back.
 

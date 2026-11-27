@@ -69,6 +69,70 @@ A node on a path that an iteration didn't take is missing from that iteration's 
 
 On the run page, use the arrows on a loop's steps to step through the iterations.
 
+### While loop
+
+Repeats part of the workflow while a condition is true, one pass at a time. Use it when you don't know up front how many times to repeat: fetching every page of an API, checking a job until it's done, or trying again until a result passes a check. It replaces the old workaround of a Conditional that starts the same workflow again with Trigger other workflow.
+
+| Setting | What it does |
+|---|---|
+| **Condition** | One `{{ }}` placeholder that is true or false, such as `{{ nodes.fetch.output.body.next_cursor }}`. The loop keeps going while it is true. |
+| **Check condition after pass** | Off: the condition is checked before each pass, so the loop may not run at all. On: it is checked after each pass, so the loop runs at least once. The node is then called **Do while loop**. |
+| **Maximum passes** | The most passes the loop may run. 100 by default, 10,000 at most. |
+
+Connect the steps to repeat to the **each pass** output. When the condition is false, the run continues down **done**.
+
+Turning **Check condition after pass** on or off never changes what the condition means, only when it is first checked. Publishing is refused if the condition isn't a single placeholder.
+
+If the condition is still true after **Maximum passes**, the loop fails. Like any failed step, it then follows its [**on error** path](runs.md#retries-and-error-paths) if it has one, or fails the run. A loop never stops quietly at its limit.
+
+#### What the condition reads
+
+A check that follows a pass reads the run's data the way a node inside that pass does, so `nodes.fetch` is what `fetch` produced in the pass that just finished.
+
+The check before the first pass has no pass to read. Nodes inside the loop read as empty there, so allow for it: `{{ nodes.fetch == null or nodes.fetch.output.body.next_cursor }}`. With **Check condition after pass** on there is no such check, and `{{ nodes.fetch.output.body.next_cursor }}` is enough.
+
+#### Inside a pass
+
+Nodes in a pass can read the nodes before them in the same pass as `nodes.<id>`, and:
+
+| Placeholder | What it holds |
+|---|---|
+| `loop.index` | The pass's position, starting at 0 |
+| `loop.previous` | Every node of the pass before this one, keyed by node id, in the [same shape as `nodes.<id>`](data-and-placeholders.md#nodes-inside-results). Empty on the first pass. |
+| `loop.results` | A list of every earlier pass, each like `loop.previous` |
+
+`loop.previous` is how one pass hands data to the next. An HTTP call `fetch` asks for the next page with the cursor the previous pass got: `https://api.example.com/issues?cursor={{ url_encode(loop.previous.fetch.output.body.next_cursor) }}`. On the first pass the cursor is empty, so it gets the first page.
+
+A While loop inside a [For loop](#for-loop) can still read the For loop's `item`.
+
+#### Outputs
+
+On **done**:
+
+- `last`: every node of the final pass, keyed by node id, in the [same shape as `nodes.<id>`](data-and-placeholders.md#nodes-inside-results). Empty if no pass ran.
+- `passes`: how many passes ran.
+- `results`: a list with one entry per pass, each like `last`.
+
+For a loop `pages` whose body has a node `fetch`:
+
+| Placeholder | What it holds |
+|---|---|
+| `{{ nodes.pages.output.last.fetch.output.body }}` | What `fetch` got in the final pass |
+| `{{ nodes.pages.output.results[0].fetch.output.body }}` | What `fetch` got in the first pass |
+| `{{ nodes.pages.output.passes }}` | How many passes ran |
+
+#### Waiting between passes
+
+The loop has no delay of its own. To check something every so often, put a [Wait](#wait) node inside the pass:
+
+1. A **While loop** with **Check condition after pass** on and the condition `{{ nodes.status.output.body.state != "done" }}`.
+2. On **each pass**, a **Wait** of 30 seconds.
+3. After it, an **HTTP call** `status` that asks for the job's state.
+
+The run is **Waiting** between checks and holds no worker. Set **Maximum passes** to cover how long you're willing to wait: 120 passes of 30 seconds is an hour.
+
+On the run page, a While loop's steps are labelled **Pass 1**, **Pass 2**, and so on.
+
 ### Merge
 
 Waits for parallel branches to finish, then continues once.
@@ -217,7 +281,7 @@ The value has to fit the variable's type. [Exact conversions](workspaces.md#valu
 How variables behave across a run:
 
 - **Parallel branches.** Append and Increment from branches that run at the same time all apply: two branches that each add 1 add 2. With **Set**, the branch that finishes last wins, and which one that is isn't predictable, so don't Set the same variable from two branches.
-- **Loops.** A variable belongs to the run, not to a loop item. One changed inside a [For loop](#for-loop) keeps its value for the next item and after the loop, which makes a variable the way to total or collect across items.
+- **Loops.** A variable belongs to the run, not to a loop item or pass. One changed inside a [For loop](#for-loop) or a [While loop](#while-loop) keeps its value for the next item and after the loop, which makes a variable the way to total or collect across items.
 - **Retries.** A change is saved together with its step, so a step that fails and is retried never applies its change twice.
 - **Other workflows.** A workflow started by [Trigger other workflow](#trigger-other-workflow) has its own variables and doesn't see the caller's. Pass values through its inputs and read its output.
 - **Secrets.** Values show in the run's steps and on the run page, and a secret put in a variable is saved masked, so it can't be read back.

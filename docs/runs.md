@@ -51,7 +51,7 @@ Also on the page:
 
 ### Loops
 
-Nodes inside a [For loop](actions.md#for-loop) run once per item. Select one, then use **Previous iteration** and **Next iteration** to step through the items and see each iteration's input and output.
+Nodes inside a [For loop](actions.md#for-loop) run once per item, and nodes inside a [While loop](actions.md#while-loop) once per pass. Select one, then use **Previous iteration** and **Next iteration** to step through them and see each one's input and output. A For loop's are labelled **Iteration 1 of 3**. A While loop's are labelled **Pass 1**, with no total, since the loop doesn't know how many passes it will run.
 
 ### Waiting runs
 
