@@ -3,6 +3,7 @@
 use App\Engine\Editor\RunCanvas;
 use App\Engine\Engine;
 use App\Engine\NodeRegistry;
+use App\Engine\RunVariables;
 use App\Models\Assignment;
 use App\Models\Execution;
 use App\Models\ExecutionStep;
@@ -228,6 +229,41 @@ new class extends Component {
             ->values();
     }
 
+    /**
+     * The workflow variables this run's version declares, with their
+     * values as they are now. Read on every refresh, so they follow a run
+     * in progress.
+     *
+     * @return list<array{name: string, type: string, value: string}>
+     */
+    public function variables(): array
+    {
+        $declared = $this->execution->version->toGraph()->variables;
+
+        if ($declared === []) {
+            return [];
+        }
+
+        $values = app(RunVariables::class)->all($this->execution);
+        $variables = [];
+
+        foreach ($declared as $variable) {
+            $value = $values[$variable->name] ?? null;
+
+            $variables[] = [
+                'name' => $variable->name,
+                'type' => $variable->valueType()?->label() ?? $variable->type,
+                'value' => \Illuminate\Support\Str::limit(match (true) {
+                    $value === null => '',
+                    is_string($value) => $value,
+                    default => $this->json($value),
+                }, 2000),
+            ];
+        }
+
+        return $variables;
+    }
+
     public function json(mixed $value): string
     {
         return (string) json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
@@ -390,6 +426,24 @@ new class extends Component {
                         <summary class="cursor-pointer text-sm text-zinc-500">{{ __('runs.show.trigger_input') }}</summary>
                         <pre class="mt-2 max-h-60 overflow-auto rounded-lg bg-zinc-50 p-3 text-xs dark:bg-zinc-800">{{ $this->json($execution->input) }}</pre>
                         @include('partials.run-files', ['value' => $execution->input, 'key' => 'trigger'])
+                    </details>
+                @endif
+
+                @php($variables = $this->variables())
+                @if ($variables)
+                    <details class="mb-4" open data-test="run-variables">
+                        <summary class="cursor-pointer text-sm text-zinc-500">{{ __('runs.show.variables') }}</summary>
+                        <dl class="mt-2 divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-700 dark:border-zinc-700">
+                            @foreach ($variables as $variable)
+                                <div class="px-3 py-2" wire:key="variable-{{ $variable['name'] }}">
+                                    <dt class="flex items-baseline gap-2">
+                                        <span class="truncate font-mono text-sm">{{ $variable['name'] }}</span>
+                                        <span class="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">{{ $variable['type'] }}</span>
+                                    </dt>
+                                    <dd><pre class="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono text-xs">{{ $variable['value'] === '' ? __('runs.show.empty_value') : $variable['value'] }}</pre></dd>
+                                </div>
+                            @endforeach
+                        </dl>
                     </details>
                 @endif
 

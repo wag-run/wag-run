@@ -201,4 +201,33 @@ class ExecutionPagesTest extends TestCase
 
         $this->assertSame([CanvasMapper::EDGE_TYPE], array_values(array_unique([...array_column($runEdges, 'type'), ...array_column($editorEdges, 'type')])));
     }
+
+    public function test_the_run_page_lists_the_runs_variables_with_their_current_values(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
+        $workflow = $this->publishedWorkflow([
+            ...$this->graph(
+                ['start' => 'start', 'add' => ['core.variable_update', ['variable' => 'attempts', 'operation' => 'increment', 'amount' => 2]], 'wait' => 'pause'],
+                ['start->add', 'add->wait'],
+            ),
+            'variables' => [
+                ['name' => 'attempts', 'type' => 'number', 'value' => '1'],
+                ['name' => 'tags', 'type' => 'array', 'value' => '["new"]'],
+                ['name' => 'due', 'type' => 'datetime', 'value' => ''],
+            ],
+        ], $workspace);
+        $execution = $this->runWorkflow($workflow);
+
+        $page = Livewire::actingAs($viewer)->test('pages::executions.show', ['workspace' => $workspace, 'execution' => $execution])
+            ->assertSeeHtml('data-test="run-variables"')
+            ->assertSeeInOrder(['Variables', 'attempts', 'Number', '3', 'tags', 'Array', 'new', 'due', 'Date & time', '(empty)']);
+
+        $execution->variables()->where('name', 'attempts')->update(['value' => '7']);
+        $this->assertSame('7', $page->call('refreshRun')->instance()->variables()[0]['value']);
+
+        $plain = $this->runWorkflow($this->branchingWorkflow($workspace));
+        Livewire::actingAs($viewer)->test('pages::executions.show', ['workspace' => $workspace, 'execution' => $plain])
+            ->assertDontSeeHtml('data-test="run-variables"');
+    }
 }

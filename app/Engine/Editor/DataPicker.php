@@ -3,6 +3,7 @@
 namespace App\Engine\Editor;
 
 use App\Engine\Definitions\Output;
+use App\Engine\Graph\GraphVariable;
 use App\Engine\Graph\WorkflowGraph;
 use App\Engine\NodeRegistry;
 use App\Engine\Nodes\Actions\ForLoop;
@@ -13,9 +14,10 @@ use App\Models\Workspace;
 /**
  * Lists the values a node can reference: its trigger's outputs, outputs of
  * every node that runs before it (one no trigger leads to never runs, so it
- * is left out), the current loop item, the error it was
- * reached from, and the workspace's data store entries and secrets. Built from each
- * node's declared outputs, so custom nodes appear the same way.
+ * is left out), the current loop item, the error it was reached from, the
+ * workflow's variables, and the workspace's data store entries and
+ * secrets. Built from each node's declared outputs, so custom nodes appear
+ * the same way.
  */
 class DataPicker
 {
@@ -102,6 +104,15 @@ class DataPicker
         $entries = $workspace->storeEntries()->orderBy('key')->get()
             ->map(fn (StoreEntry $entry) => ['label' => $entry->key, 'path' => "store.{$entry->key}", 'type' => $entry->is_collection ? 'object' : $entry->type->pickerType()])->all();
         $secrets = $workspace->secrets()->orderBy('key')->pluck('key')->map(fn (string $key) => ['label' => $key, 'path' => "secrets.{$key}", 'type' => 'string'])->values()->all();
+
+        $variables = array_values(array_map(
+            fn (GraphVariable $variable) => ['label' => $variable->name, 'path' => "vars.{$variable->name}", 'type' => $variable->valueType()?->pickerType() ?? 'any'],
+            $graph->variables,
+        ));
+
+        if ($variables !== []) {
+            $groups[] = ['label' => __('workflows.edit.variables'), 'items' => $variables];
+        }
 
         if ($entries !== []) {
             $groups[] = ['label' => __('common.data_store'), 'items' => $entries];

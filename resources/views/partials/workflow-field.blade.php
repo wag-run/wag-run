@@ -15,6 +15,16 @@
             <flux:select.option :value="$optionValue">{{ $optionLabel }}</flux:select.option>
         @endforeach
     </flux:select>
+@elseif ($field->type === Field::VARIABLE)
+    <flux:select wire:model.live="{{ $model }}" :label="$field->label" :description="$field->description" data-test="variable-field">
+        <flux:select.option value="">{{ __('common.choose') }}</flux:select.option>
+        @foreach ($variables ?? [] as $variable)
+            <flux:select.option :value="$variable->name">{{ $variable->name }} · {{ $variable->valueType()?->label() ?? $variable->type }}</flux:select.option>
+        @endforeach
+        @if (filled($value) && ! isset(($variables ?? [])[$value]))
+            <flux:select.option :value="$value">{{ __('workflows.editor.missing_variable', ['name' => $value]) }}</flux:select.option>
+        @endif
+    </flux:select>
 @elseif ($field->type === Field::STORE_ENTRY)
     <flux:select wire:model.live="{{ $model }}" :label="$field->label" :description="$field->description" data-test="store-entry-field">
         <flux:select.option value="">{{ __('common.choose') }}</flux:select.option>
