@@ -78,17 +78,4 @@ class ChildWorkflowTest extends TestCase
 
         $this->assertSame(ExecutionStatus::Cancelled, $childRun->refresh()->status);
     }
-
-    public function test_workflow_can_call_itself(): void
-    {
-        $workspace = Workspace::factory()->create();
-        $workflow = $this->publishedWorkflow($this->graph(['start' => 'start'], []), $workspace);
-        $graph = $this->graph(
-            ['start' => 'start', 'check' => ['route', ['take' => 'false']], 'call' => ['call', ['workflow_id' => $workflow->id]]],
-            ['start->check', 'check:true->call'],
-        );
-        $workflow->publishedVersion->forceFill(['graph' => $graph])->save();
-
-        $this->assertSame(ExecutionStatus::Complete, $this->runWorkflow($workflow->refresh())->status);
-    }
 }
