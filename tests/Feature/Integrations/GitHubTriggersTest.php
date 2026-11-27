@@ -66,10 +66,11 @@ class GitHubTriggersTest extends TestCase
         $trigger = $workflow->triggers()->sole();
         $this->assertSame(WorkflowTrigger::POLL, $trigger->type);
 
+        $both = [['name' => 'v1.2', 'commit' => ['sha' => 'ccc']], ['name' => 'v1.1', 'commit' => ['sha' => 'bbb']], ['name' => 'v1.0', 'commit' => ['sha' => 'aaa']]];
         Http::fake(['api.github.com/repos/acme/app/tags*' => Http::sequence()
             ->push([['name' => 'v1.0', 'commit' => ['sha' => 'aaa']]], 200, ['ETag' => '"one"'])
-            ->push([['name' => 'v1.2', 'commit' => ['sha' => 'ccc']], ['name' => 'v1.1', 'commit' => ['sha' => 'bbb']], ['name' => 'v1.0', 'commit' => ['sha' => 'aaa']]], 200, ['ETag' => '"two"'])
-            ->push(null, 304)]);
+            ->push($both)
+            ->push($both)]);
 
         $this->artisan('workflows:poll-triggers')->assertSuccessful();
         $this->assertSame(0, Execution::count(), 'the first poll only records what exists');
@@ -84,11 +85,96 @@ class GitHubTriggersTest extends TestCase
         $this->assertSame(['v1.1', 'v1.2'], $runs->pluck('input.tag')->all());
         $this->assertSame('event', $runs[0]->trigger_type);
         $this->assertSame(['tag' => 'v1.1', 'sha' => 'bbb', 'repository' => 'acme/app', 'url' => 'https://github.com/acme/app/tree/v1.1'], $runs[0]->input);
-        Http::assertSent(fn (Request $request) => $request->header('If-None-Match') === ['"one"'] && $request->header('Authorization') === ['Bearer gho_access']);
+        Http::assertSent(fn (Request $request) => $request->header('Authorization') === ['Bearer gho_access']);
+        Http::assertNotSent(fn (Request $request) => $request->hasHeader('If-None-Match'));
 
         $this->travel(5)->minutes();
         $this->artisan('workflows:poll-triggers');
         $this->assertSame(2, Execution::count(), 'an unchanged answer starts nothing');
+    }
+
+    /**
+     * Answer the tags endpoint from a list that tests change between polls,
+     * 100 a page with GitHub's rel="next" link while more follow.
+     *
+     * @param  list<string>  $tags
+     */
+    private function fakeTags(array &$tags): void
+    {
+        Http::fake(['api.github.com/repos/acme/app/tags*' => function (Request $request) use (&$tags) {
+            $page = (int) ($request['page'] ?? 1);
+            $link = count($tags) > $page * 100 ? '<https://api.github.com/repos/acme/app/tags?per_page=100&page='.($page + 1).'>; rel="next"' : '';
+
+            return Http::response(
+                array_map(fn (string $tag) => ['name' => $tag, 'commit' => ['sha' => "sha-{$tag}"]], array_slice($tags, ($page - 1) * 100, 100)),
+                200,
+                $link === '' ? [] : ['Link' => $link],
+            );
+        }]);
+    }
+
+    private function poll(): void
+    {
+        $this->artisan('workflows:poll-triggers')->assertSuccessful();
+        $this->travel(5)->minutes();
+    }
+
+    public function test_new_tag_reads_every_page_so_a_new_tag_on_a_later_page_starts_a_run(): void
+    {
+        $this->publish('github.new_tag', ['poll_minutes' => 5]);
+        $tags = array_map(fn (int $i) => "v{$i}.0", range(250, 1, -1));
+        $this->fakeTags($tags);
+
+        $this->poll();
+        $this->assertSame(0, Execution::count());
+        $this->assertSame(3, Http::recorded()->count(), 'three pages of tags');
+
+        array_splice($tags, 230, 0, ['v0.9']);
+        $this->poll();
+
+        $this->assertSame(['v0.9'], Execution::pluck('input')->pluck('tag')->all());
+    }
+
+    public function test_new_tag_remembers_every_tag_it_read_so_none_looks_new_again(): void
+    {
+        $this->publish('github.new_tag', ['poll_minutes' => 5]);
+        $tags = array_map(fn (int $i) => "v{$i}", range(1, 350));
+        $this->fakeTags($tags);
+
+        $this->poll();
+        $this->poll();
+        $this->poll();
+
+        $this->assertSame(0, Execution::count());
+    }
+
+    public function test_a_tag_trigger_that_only_read_the_first_page_starts_no_runs_on_its_first_full_read(): void
+    {
+        $trigger = $this->publish('github.new_tag', ['poll_minutes' => 5])->triggers()->sole();
+        $tags = array_map(fn (int $i) => "v{$i}", range(1, 150));
+        $trigger->forceFill(['state' => [...$trigger->state, 'memory' => ['seen' => array_slice($tags, 0, 100), 'etag' => '"old"']]])->save();
+        $this->fakeTags($tags);
+
+        $this->poll();
+        $this->assertSame(0, Execution::count(), 'tags past the first page are not taken for new');
+
+        $tags[] = 'v151';
+        $this->poll();
+        $this->assertSame(['v151'], Execution::pluck('input')->pluck('tag')->all());
+    }
+
+    public function test_a_release_poll_sends_the_last_etag_and_an_unchanged_answer_starts_nothing(): void
+    {
+        $this->publish('github.new_release', ['poll_minutes' => 5]);
+        Http::fake(['api.github.com/repos/acme/app/releases*' => Http::sequence()
+            ->push([['id' => 1, 'tag_name' => 'v1', 'draft' => false, 'prerelease' => false]], 200, ['ETag' => '"one"'])
+            ->push(null, 304)]);
+
+        $this->poll();
+        $this->poll();
+
+        Http::assertSent(fn (Request $request) => $request->header('If-None-Match') === ['"one"']);
+        $this->assertSame(0, Execution::count());
     }
 
     public function test_a_failed_poll_is_noted_on_the_trigger(): void
