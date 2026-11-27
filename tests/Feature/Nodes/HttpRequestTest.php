@@ -29,6 +29,7 @@ class HttpRequestTest extends TestCase
         {
             /** @var array<string, list<string>> */
             public array $answers = [
+                'localhost' => ['127.0.0.1'],
                 'api.example.com' => ['93.184.215.14'],
                 'redirector.example.com' => ['93.184.215.15'],
                 'gitlab.corp.internal' => ['10.20.0.5'],

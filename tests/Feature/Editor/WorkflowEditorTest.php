@@ -69,7 +69,7 @@ class WorkflowEditorTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/interactive(\\\\u0022|&quot;|"):false/', $html);
     }
 
-    public function test_the_canvas_can_mark_nodes_no_trigger_leads_to(): void
+    public function test_the_canvas_template_is_wired_to_mark_nodes_no_trigger_leads_to(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor();
 

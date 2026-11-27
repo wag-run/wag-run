@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Laravel\Passport\ClientRepository;
@@ -27,6 +28,7 @@ class ApiTokensTest extends TestCase
     public function test_a_person_creates_a_token_that_works_with_its_scopes_and_revokes_it(): void
     {
         $user = User::factory()->orgAdmin()->create();
+        $workspace = Workspace::factory()->create();
 
         $page = Livewire::actingAs($user)->test('pages::settings.api-tokens')
             ->set('name', 'Deploy script')
@@ -49,7 +51,7 @@ class ApiTokensTest extends TestCase
 
         $this->withToken($plain)->getJson('/api/v1/workspaces')->assertOk();
         $this->app['auth']->forgetGuards();
-        $this->withToken($plain)->getJson('/api/v1/workspaces/any/runs')->assertNotFound();
+        $this->withToken($plain)->getJson("/api/v1/workspaces/{$workspace->slug}/runs")->assertForbidden();
 
         $page->call('revoke', $token->id);
         $this->assertTrue($token->refresh()->revoked);
