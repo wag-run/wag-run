@@ -10,4 +10,5 @@ enum ResultKind: string
     case Terminate = 'terminate';
     case Iterate = 'iterate';
     case RunChild = 'run_child';
+    case UpdateVariable = 'update_variable';
 }

@@ -177,7 +177,7 @@ class WorkflowApi
     {
         $this->authorize($user, self::SCOPE_RUNS_READ, WorkspacePermission::ViewExecutions, $workspace);
 
-        return $workspace->executions()->with(['workflow', 'steps' => fn ($query) => $query->orderBy('id')])->findOrFail($this->uuid($id, Execution::class))
+        return $workspace->executions()->with(['workflow', 'variables' => fn ($query) => $query->orderBy('id'), 'steps' => fn ($query) => $query->orderBy('id')])->findOrFail($this->uuid($id, Execution::class))
             ->setRelation('workspace', $workspace);
     }
 
@@ -193,7 +193,7 @@ class WorkflowApi
             $this->engine->cancel($execution, $user);
         }
 
-        return $execution->refresh()->load(['workflow', 'steps' => fn ($query) => $query->orderBy('id')])
+        return $execution->refresh()->load(['workflow', 'variables' => fn ($query) => $query->orderBy('id'), 'steps' => fn ($query) => $query->orderBy('id')])
             ->setRelation('workspace', $workspace);
     }
 

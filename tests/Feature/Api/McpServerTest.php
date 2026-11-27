@@ -77,6 +77,22 @@ class McpServerTest extends TestCase
         $server->tool(CancelRun::class, ['workspace' => $this->workspace->slug, 'run' => $run->id])->assertOk()->assertSee('"status":"cancelled"');
     }
 
+    public function test_get_run_includes_the_runs_workflow_variables(): void
+    {
+        $workflow = $this->publishedWorkflow([
+            ...$this->graph(
+                ['start' => 'core.manual_trigger', 'add' => ['core.variable_update', ['variable' => 'attempts', 'operation' => 'increment', 'amount' => 2]]],
+                ['start->add'],
+            ),
+            'variables' => [['name' => 'attempts', 'type' => 'number', 'value' => '1']],
+        ], $this->workspace);
+        $run = $this->runWorkflow($workflow);
+
+        WorkflowServer::actingAs($this->member())
+            ->tool(GetRun::class, ['workspace' => $this->workspace->slug, 'run' => $run->id])
+            ->assertOk()->assertSee('"variables":{"attempts":3}');
+    }
+
     public function test_errors_come_back_as_tool_errors(): void
     {
         $server = WorkflowServer::actingAs($this->member(WorkspaceRole::Viewer));

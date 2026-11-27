@@ -12,7 +12,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('Get one run with its status, input, output, error and every step it took.')]
+#[Description('Get one run with its status, input, output, error, the current values of its workflow variables, and every step it took.')]
 class GetRun extends WorkflowApiTool
 {
     public function schema(JsonSchema $schema): array

@@ -122,6 +122,27 @@ class RestApiTest extends TestCase
             ->assertJsonPath('data.output.each.output.results.0.body.output.item', 'a');
     }
 
+    public function test_a_run_shows_the_current_values_of_its_workflow_variables_and_a_list_leaves_them_out(): void
+    {
+        $this->actingAsMember();
+        $workflow = $this->publishedWorkflow([
+            ...$this->graph(
+                ['start' => 'core.manual_trigger', 'add' => ['core.variable_update', ['variable' => 'attempts', 'operation' => 'increment', 'amount' => 2]], 'wait' => 'pause'],
+                ['start->add', 'add->wait'],
+            ),
+            'variables' => [['name' => 'attempts', 'type' => 'number', 'value' => '1'], ['name' => 'tags', 'type' => 'array', 'value' => '["new"]']],
+        ], $this->workspace);
+        $run = $this->runWorkflow($workflow);
+        $plain = $this->runWorkflow($this->workflow, ['values' => ['order' => 1]]);
+
+        $this->getJson($this->url("runs/{$run->id}"))->assertOk()
+            ->assertJsonPath('data.variables', ['attempts' => 3, 'tags' => ['new']])
+            ->assertJsonPath('data.steps.1.output.after', 3);
+        $this->assertSame('{}', json_encode($this->getJson($this->url("runs/{$plain->id}"))->assertOk()->getData()->data->variables));
+        $this->getJson($this->url('runs'))->assertOk()->assertJsonMissingPath('data.0.variables');
+        $this->postJson($this->url("runs/{$run->id}/cancel"))->assertOk()->assertJsonPath('data.variables.attempts', 3);
+    }
+
     public function test_lists_runs_with_filters_and_cancels_one(): void
     {
         $this->actingAsMember();

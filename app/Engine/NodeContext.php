@@ -107,6 +107,15 @@ class NodeContext
     }
 
     /**
+     * A workflow variable's value in this run as it is now, or null when
+     * the workflow declares none by that name.
+     */
+    public function variable(string $name): mixed
+    {
+        return DataBag::unwrap($this->data['vars'][$name] ?? null);
+    }
+
+    /**
      * A data store entry's value as it is now, one item of a collection,
      * or, with no item key, a whole collection. Null when there is none.
      */

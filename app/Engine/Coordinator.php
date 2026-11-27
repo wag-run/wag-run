@@ -7,6 +7,7 @@ use App\Engine\Graph\WorkflowGraph;
 use App\Enums\ExecutionStatus;
 use App\Enums\ResumeReason;
 use App\Enums\StepStatus;
+use App\Enums\ValueOperation;
 use App\Enums\WaitType;
 use App\Jobs\ResumeStep;
 use App\Jobs\RunStep;
@@ -15,6 +16,7 @@ use App\Models\ExecutionStep;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 /**
  * Owns every status change of steps and executions. Each change runs in a
@@ -30,7 +32,7 @@ class Coordinator
      */
     protected array $graphs = [];
 
-    public function __construct(protected NodeRegistry $registry) {}
+    public function __construct(protected NodeRegistry $registry, protected RunVariables $variables) {}
 
     /**
      * Apply what a node returned for a step this worker claimed. The result is
@@ -55,6 +57,7 @@ class Coordinator
                 ResultKind::Terminate => $this->terminate($fresh, $result, $redactor),
                 ResultKind::Iterate => $this->iterate($fresh, $result, $redactor),
                 ResultKind::RunChild => $this->runChild($fresh, $result, $redactor),
+                ResultKind::UpdateVariable => $this->updateVariable($fresh, $result, $redactor),
             };
 
             $this->settle($execution);
@@ -216,6 +219,27 @@ class Coordinator
         foreach ($ports as $port) {
             $this->follow($step, $port);
         }
+    }
+
+    /**
+     * Change a workflow variable for a step and complete it, both under
+     * the run's lock, so parallel branches can't lose each other's changes
+     * and a step that is retried can't apply its change twice. A change
+     * that can't be made fails the step without retrying.
+     */
+    protected function updateVariable(ExecutionStep $step, NodeResult $result, Redactor $redactor): void
+    {
+        $operation = $result->operation ?? ValueOperation::Set;
+
+        try {
+            $change = $this->variables->apply($step->execution, $this->graphFor($step->execution), (string) $result->variable, $operation, $result->operand, $redactor);
+        } catch (RuntimeException $e) {
+            $this->fail($step, $e->getMessage(), false, null, $redactor);
+
+            return;
+        }
+
+        $this->complete($step, ['variable' => $result->variable, 'operation' => $operation->value, ...$change], $result->ports, $redactor);
     }
 
     protected function fail(ExecutionStep $step, string $message, bool $retryable, mixed $output, Redactor $redactor): void

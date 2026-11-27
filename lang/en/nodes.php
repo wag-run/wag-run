@@ -251,6 +251,15 @@ return [
         'response_file' => 'File',
         'response_file_help' => 'The response as a file, when it was saved as one or is not text.',
     ],
+    'variables' => [
+        'amount_help' => 'How much to add. A negative number subtracts.',
+        'update_variable' => 'Update variable',
+        'update_variable_description' => 'Sets, appends to, or increments one of this workflow\'s variables for the rest of the run. Values show in run logs, so don\'t keep secrets in them.',
+        'value_after_help' => 'The value once this step changed it.',
+        'value_before_help' => 'The value before this step.',
+        'variable' => 'Variable',
+        'variable_help' => 'Add variables under Variables in the workflow settings.',
+    ],
     'store' => [
         'amount' => 'Amount',
         'amount_help' => 'How much to add. A negative number subtracts.',
@@ -263,7 +272,6 @@ return [
         'item_key_is_required' => 'Item key is required for a collection.',
         'item_key_output_help' => 'The item that was changed, for a collection.',
         'item_key_too_long' => 'Item key can be at most :max characters.',
-        'not_json' => 'The value can\'t be saved: :error',
         'operation' => 'Operation',
         'store_is_full' => 'The data store is full: a workspace can hold :max values. Delete entries or items on the Data store page.',
         'update_data_store' => 'Update data store',
@@ -273,7 +281,6 @@ return [
         'value_before' => 'Value before',
         'value_before_help' => 'The value before this step, or empty for a new collection item.',
         'value_help' => 'Text, or one placeholder to keep its type, such as {{ nodes.fetch.output.body }} for an object or an array.',
-        'value_too_large' => 'The value is larger than :max.',
     ],
     'investbrain' => [
         'add_transaction' => 'Add transaction',

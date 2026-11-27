@@ -8,6 +8,7 @@ use App\Engine\Redactor;
 use App\Engine\StoreData;
 use App\Engine\Templates\TemplateEngine;
 use App\Engine\Templates\TemplateError;
+use App\Engine\VariableData;
 use App\Enums\StepStatus;
 use App\Models\Execution;
 use App\Models\ExecutionStep;
@@ -21,8 +22,9 @@ use RuntimeException;
  * to show as the person types. It uses the data of the workflow's latest
  * run that reached the node: what the node itself saw, when it ran, or
  * otherwise what that run's trigger and steps produced. With no runs yet,
- * references read as empty. The data store reads as it is now. Secrets
- * read as masked, so their values never reach the editor.
+ * references read as empty. Workflow variables read as that run left
+ * them, and the data store as it is now. Secrets read as masked, so their
+ * values never reach the editor.
  */
 class ExpressionPreview
 {
@@ -85,6 +87,7 @@ class ExpressionPreview
         return [$this->withMaskedSecrets($workflow, [
             'trigger' => $execution->input ?? [],
             'nodes' => $execution ? $this->outputsOf($execution) : [],
+            'vars' => new VariableData($execution),
             'store' => new StoreData($workflow->workspace, $this->store),
             'execution' => [
                 'id' => $execution?->id,
