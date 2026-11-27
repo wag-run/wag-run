@@ -507,6 +507,25 @@ new class extends Component {
     }
 
     /**
+     * What the variable in the form would start a run as, worked out with
+     * the latest run's trigger input and the data store as it is now, for
+     * the starting-value field's preview.
+     *
+     * @return array{status: 'value'|'empty'|'error', value: string, type: string, source: string}|null
+     */
+    #[Renderless]
+    public function previewStartingValue(string $template): ?array
+    {
+        if (! str_contains($template, '{{') || mb_strlen($template) > RunVariables::STARTING_VALUE_MAX_LENGTH) {
+            return null;
+        }
+
+        $variable = new GraphVariable((string) ($this->editingVariable ?? $this->variableForm['name']), (string) $this->variableForm['type'], $template);
+
+        return app(ExpressionPreview::class)->previewStartingValue($this->workflow, $variable);
+    }
+
+    /**
      * Choices for credential, secret, workflow and user fields. Settings are
      * listed by description and stored by UUID.
      *
@@ -1876,10 +1895,11 @@ new class extends Component {
                     <flux:select.option :value="$case->value">{{ $case->label() }}</flux:select.option>
                 @endforeach
             </flux:select>
-            <div x-data="wagInsert" class="wag-expr relative" data-test="starting-value-field">
+            <div x-data="wagInsert('previewStartingValue')" class="wag-expr relative" data-test="starting-value-field">
                 <flux:textarea x-ref="input" wire:model="variableForm.value" :label="__('workflows.edit.starting_value')" class="font-mono" rows="3" :description="__('workflows.edit.starting_value_help')" />
                 <div wire:ignore x-ref="highlight" class="wag-expr-layer" aria-hidden="true"></div>
                 @include('partials.workflow-picker', ['picker' => $this->startingValuePicker])
+                @include('partials.expression-preview')
             </div>
             <div class="flex justify-end gap-2">
                 <flux:modal.close>

@@ -6,7 +6,9 @@ use App\Engine\Editor\FieldFacts;
 use App\Engine\Graph\PlaceholderReferences;
 use App\Engine\Graph\WorkflowGraph;
 use App\Engine\NodeRegistry;
+use App\Enums\ValueType;
 use App\Enums\WorkspaceRole;
+use App\Models\Execution;
 use App\Models\StoreEntry;
 use App\Models\User;
 use App\Models\Workflow;
@@ -303,5 +305,53 @@ class VariablesInEditorTest extends TestCase
         $this->assertSame(['Trigger: start', 'Data store', 'Execution'], array_column($editor->instance()->startingValuePicker(), 'label'));
 
         $this->editor($workflow, WorkspaceRole::Viewer)->assertSeeHtml('data-test="starting-value-field"');
+    }
+
+    /**
+     * @return array<string, string>|null
+     */
+    private function startingValuePreview(Testable $editor, string $type, string $template): ?array
+    {
+        return data_get($editor->set('variableForm.type', $type)->call('previewStartingValue', $template)->effects, 'returns.0');
+    }
+
+    public function test_a_starting_value_previews_as_the_value_a_run_would_start_with(): void
+    {
+        StoreEntry::factory()->for($this->workspace)->type(ValueType::Number)->holding(250)->create(['key' => 'threshold']);
+        $workflow = $this->publishedWorkflow($this->graph(['start' => 'core.manual_trigger', 'node' => 'core.compose'], ['start->node']), $this->workspace);
+        $editor = $this->editor($workflow);
+
+        $this->assertSame(
+            ['status' => 'value', 'value' => '250', 'type' => 'number', 'source' => __('workflows.editor.preview_no_runs_yet')],
+            $this->startingValuePreview($editor, 'number', '{{ store.threshold }}'),
+        );
+        $this->assertSame('0', $this->startingValuePreview($editor, 'number', '{{ trigger.values.amount }}')['value']);
+        $this->assertSame('empty', $this->startingValuePreview($editor, 'string', '{{ execution.started_at }}')['status']);
+        $this->assertNull($this->startingValuePreview($editor, 'number', '12'));
+
+        $run = $this->runWorkflow($workflow, ['values' => ['amount' => '12.5', 'tags' => '["a","b"]']]);
+        $editor = $this->editor($workflow);
+
+        $amount = $this->startingValuePreview($editor, 'number', '{{ trigger.values.amount }}');
+        $this->assertSame(['value', '12.5', 'number'], [$amount['status'], $amount['value'], $amount['type']]);
+        $this->assertStringContainsString(Execution::reference($run->id), $amount['source']);
+        $this->assertSame('array', $this->startingValuePreview($editor, 'array', '{{ trigger.values.tags }}')['type']);
+        $this->assertSame($run->started_at->toIso8601String(), $this->startingValuePreview($editor, 'datetime', '{{ execution.started_at }}')['value']);
+    }
+
+    public function test_a_starting_value_that_would_stop_a_run_from_starting_previews_the_reason(): void
+    {
+        StoreEntry::factory()->for($this->workspace)->holding('soon')->create(['key' => 'label']);
+        $editor = $this->editor($this->draft([]));
+
+        $this->assertSame(
+            ['status' => 'error', 'value' => __('workflows.editor.starting_value_cannot_read', ['name' => 'nodes'])],
+            array_slice($this->startingValuePreview($editor, 'string', '{{ nodes.node.output.value }}'), 0, 2),
+        );
+        $this->assertSame(
+            ['status' => 'error', 'value' => __('engine.values.not_a_type', ['type' => 'Number', 'given' => 'the text "soon"'])],
+            array_slice($this->startingValuePreview($editor, 'number', '{{ store.label }}'), 0, 2),
+        );
+        $this->assertSame(__('workflows.editor.starting_value_cannot_be_read'), $this->startingValuePreview($editor, 'string', '{{ upper( }}')['value']);
     }
 }

@@ -172,6 +172,7 @@ function highlightTemplate(text) {
  * the field, whose own text turns transparent once the layer is ready. If
  * the field has a preview (x-ref="preview"), what it would become is
  * worked out on the server as the person types, while the field has focus.
+ * previewWith names the Livewire method that works it out.
  */
 const expressionField = {
     ...insertsText,
@@ -291,7 +292,7 @@ const expressionField = {
         this.previewLoading = true;
         this.previewTimer = setTimeout(async () => {
             const request = ++this.previewRequest;
-            const preview = await this.$wire.previewTemplate(field.value);
+            const preview = await this.$wire[this.previewWith ?? 'previewTemplate'](field.value);
 
             if (request === this.previewRequest) {
                 this.preview = preview;
@@ -372,8 +373,9 @@ document.addEventListener('alpine:init', () => {
 });
 
 document.addEventListener('alpine:init', () => {
-    window.Alpine.data('wagInsert', () => ({
+    window.Alpine.data('wagInsert', (previewWith = 'previewTemplate') => ({
         ...expressionField,
+        previewWith,
 
         init() {
             this.$nextTick(() => this.setUpExpressionField());

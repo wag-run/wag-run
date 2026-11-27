@@ -2,6 +2,7 @@
 
 namespace App\Engine;
 
+use App\Engine\Graph\GraphVariable;
 use App\Engine\Graph\WorkflowGraph;
 use App\Engine\Templates\TemplateEngine;
 use App\Enums\ValueOperation;
@@ -54,14 +55,10 @@ class RunVariables
 
         foreach ($graph->variables as $variable) {
             try {
-                $type = $variable->valueType() ?? throw new RuntimeException(__('engine.variables.unknown_type', ['type' => $variable->type]));
-                $rendered = $this->templates->render($variable->value, $data);
-                $value = $rendered === null || ($rendered === '' && $type !== ValueType::String) ? $type->emptyValue() : $type->convert($rendered);
-
                 $rows[] = [
                     'execution_id' => $execution->id,
                     'name' => $variable->name,
-                    'value' => $this->encode($type, $redactor->mask($value)),
+                    'value' => $this->workOut($variable, $data, $redactor)['json'],
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -71,6 +68,35 @@ class RunVariables
         }
 
         ExecutionVariable::query()->insert($rows);
+    }
+
+    /**
+     * What a variable would start a run as, given the data its starting
+     * value can read (see ContextBuilder::atStart): converted to its type
+     * and masked, as it would be saved.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @throws RuntimeException when the starting value can't be worked out, converted, or saved
+     */
+    public function startingValue(GraphVariable $variable, array $data, Redactor $redactor): mixed
+    {
+        return $this->workOut($variable, $data, $redactor)['value'];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{value: mixed, json: string}
+     *
+     * @throws RuntimeException
+     */
+    protected function workOut(GraphVariable $variable, array $data, Redactor $redactor): array
+    {
+        $type = $variable->valueType() ?? throw new RuntimeException(__('engine.variables.unknown_type', ['type' => $variable->type]));
+        $rendered = $this->templates->render($variable->value, $data);
+        $value = $redactor->mask($rendered === null || ($rendered === '' && $type !== ValueType::String) ? $type->emptyValue() : $type->convert($rendered));
+
+        return ['value' => $value, 'json' => $this->encode($type, $value)];
     }
 
     /**

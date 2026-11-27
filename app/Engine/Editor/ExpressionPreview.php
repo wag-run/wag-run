@@ -3,8 +3,11 @@
 namespace App\Engine\Editor;
 
 use App\Engine\ContextBuilder;
+use App\Engine\Graph\GraphVariable;
+use App\Engine\Graph\VariableValidator;
 use App\Engine\LoopResults;
 use App\Engine\Redactor;
+use App\Engine\RunVariables;
 use App\Engine\StoreData;
 use App\Engine\Templates\TemplateEngine;
 use App\Engine\Templates\TemplateError;
@@ -25,6 +28,9 @@ use RuntimeException;
  * references read as empty. Workflow variables read as that run left
  * them, and the data store as it is now. Secrets read as masked, so their
  * values never reach the editor.
+ *
+ * It also works out what a workflow variable would start a run as, from
+ * the latest run's trigger input and the data store as it is now.
  */
 class ExpressionPreview
 {
@@ -38,6 +44,8 @@ class ExpressionPreview
         protected ContextBuilder $contexts,
         protected WorkflowFiles $files,
         protected DataStore $store,
+        protected RunVariables $variables,
+        protected VariableValidator $validator,
     ) {}
 
     /**
@@ -46,9 +54,7 @@ class ExpressionPreview
     public function preview(Workflow $workflow, string $nodeId, string $template): array
     {
         [$data, $execution] = $this->sampleData($workflow, $nodeId);
-        $source = $execution
-            ? __('workflows.editor.preview_from_run', ['run' => Execution::reference($execution->id), 'when' => $execution->created_at?->diffForHumans()])
-            : __('workflows.editor.preview_no_runs_yet');
+        $source = $this->sourceOf($execution);
 
         $this->files->scopeTo($workflow->workspace);
 
@@ -58,11 +64,72 @@ class ExpressionPreview
             return ['status' => 'error', 'value' => $e->getMessage(), 'type' => '', 'source' => $source];
         }
 
+        return $this->shown($value, $source);
+    }
+
+    /**
+     * @return array{status: 'value'|'empty', value: string, type: string, source: string}
+     */
+    protected function shown(mixed $value, string $source): array
+    {
         if ($value === null || $value === '' || $value === []) {
             return ['status' => 'empty', 'value' => '', 'type' => $this->typeOf($value), 'source' => $source];
         }
 
         return ['status' => 'value', 'value' => $this->display($value), 'type' => $this->typeOf($value), 'source' => $source];
+    }
+
+    /**
+     * Which run the previewed data comes from, in words.
+     */
+    protected function sourceOf(?Execution $execution): string
+    {
+        return $execution
+            ? __('workflows.editor.preview_from_run', ['run' => Execution::reference($execution->id), 'when' => $execution->created_at?->diffForHumans()])
+            : __('workflows.editor.preview_no_runs_yet');
+    }
+
+    /**
+     * What {{ execution }} reads before the workflow has run.
+     *
+     * @return array{id: null, workflow: string, trigger_type: null, trigger: null, started_at: null}
+     */
+    protected function aboutNoRun(Workflow $workflow): array
+    {
+        return ['id' => null, 'workflow' => $workflow->name, 'trigger_type' => null, 'trigger' => null, 'started_at' => null];
+    }
+
+    /**
+     * What the variable would start a run as: its starting value worked
+     * out as a run does it, converted to the variable's type. Anything
+     * that would stop a run from starting previews as the error.
+     *
+     * @return array{status: 'value'|'empty'|'error', value: string, type: string, source: string}
+     */
+    public function previewStartingValue(Workflow $workflow, GraphVariable $variable): array
+    {
+        $execution = $workflow->executions()->latest()->latest('id')->first();
+        $source = $this->sourceOf($execution);
+
+        if ($problems = $this->validator->startingValueProblems($variable)) {
+            return ['status' => 'error', 'value' => $problems[0], 'type' => '', 'source' => $source];
+        }
+
+        $data = $execution ? $this->contexts->atStart($execution) : [
+            'trigger' => [],
+            'store' => new StoreData($workflow->workspace, $this->store),
+            'execution' => $this->aboutNoRun($workflow),
+        ];
+
+        $this->files->scopeTo($workflow->workspace);
+
+        try {
+            $value = $this->variables->startingValue($variable, $data, Redactor::forWorkspace($workflow->workspace));
+        } catch (RuntimeException $e) {
+            return ['status' => 'error', 'value' => $e->getMessage(), 'type' => '', 'source' => $source];
+        }
+
+        return $this->shown($value, $source);
     }
 
     /**
