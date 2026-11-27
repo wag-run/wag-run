@@ -219,10 +219,27 @@ const expressionField = {
         layer.dataset.ready = '';
     },
 
+    /**
+     * Where the field sits inside the root, in layout pixels. A modal scales
+     * as it opens, and everything measured on screen scales with it, so the
+     * distance on screen is divided by how much the root is scaled.
+     */
+    fieldOffset(field) {
+        const rootStyle = getComputedStyle(this.$root);
+        const rootBox = this.$root.getBoundingClientRect();
+        const fieldBox = field.getBoundingClientRect();
+        const scaleX = rootBox.width / parseFloat(rootStyle.width) || 1;
+        const scaleY = rootBox.height / parseFloat(rootStyle.height) || 1;
+
+        return {
+            top: (fieldBox.top - rootBox.top) / scaleY,
+            left: (fieldBox.left - rootBox.left) / scaleX,
+        };
+    },
+
     placeHighlight(field, layer) {
         const style = getComputedStyle(field);
-        const fieldBox = field.getBoundingClientRect();
-        const rootBox = this.$root.getBoundingClientRect();
+        const offset = this.fieldOffset(field);
         const isInput = field.tagName === 'INPUT';
         const borders = parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth);
         const scrollbar = isInput ? 0 : Math.max(0, field.offsetWidth - field.clientWidth - borders);
@@ -233,8 +250,8 @@ const expressionField = {
         }
 
         Object.assign(layer.style, {
-            top: `${fieldBox.top - rootBox.top}px`,
-            left: `${fieldBox.left - rootBox.left}px`,
+            top: `${offset.top}px`,
+            left: `${offset.left}px`,
             width: `${field.offsetWidth}px`,
             height: `${field.offsetHeight}px`,
             paddingRight: `${parseFloat(style.paddingRight) + scrollbar}px`,
