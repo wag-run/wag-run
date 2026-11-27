@@ -221,6 +221,39 @@ class GitHubTriggersTest extends TestCase
         $this->assertSame(['v2.0'], Execution::pluck('input')->pluck('tag')->all());
     }
 
+    public function test_a_disabled_workflow_keeps_polling_but_drops_new_tags_instead_of_running_them_later(): void
+    {
+        $workflow = $this->publish('github.new_tag', ['poll_minutes' => 5]);
+        $tags = ['v1.0'];
+        $this->fakeTags($tags);
+        $this->poll();
+
+        $workflow->forceFill(['is_enabled' => false])->save();
+        $tags = ['v1.1', 'v1.0'];
+        $this->poll();
+        $this->assertSame(0, Execution::count());
+
+        $workflow->forceFill(['is_enabled' => true])->save();
+        $this->poll();
+        $this->assertSame(0, Execution::count(), 'the tag missed while disabled is not run');
+
+        $tags = ['v1.2', 'v1.1', 'v1.0'];
+        $this->poll();
+        $this->assertSame(['v1.2'], Execution::pluck('input')->pluck('tag')->all());
+    }
+
+    public function test_a_disabled_workflow_accepts_deliveries_from_its_hook_but_starts_no_runs(): void
+    {
+        Http::fake(['api.github.com/repos/acme/app/hooks' => Http::response(['id' => 77], 201)]);
+        $workflow = $this->publish('github.new_tag', ['listen' => 'webhook']);
+        $trigger = $workflow->triggers()->sole();
+        $workflow->forceFill(['is_enabled' => false])->save();
+
+        $this->deliver($trigger, 'push', ['ref' => 'refs/tags/v2.0', 'created' => true, 'after' => 'abc'])->assertAccepted()->assertJson(['execution_ids' => []]);
+        $this->deliver($trigger, 'push', ['ref' => 'refs/tags/v3.0', 'created' => true, 'after' => 'def'], secret: 'wrong')->assertForbidden();
+        $this->assertSame(0, Execution::count());
+    }
+
     public function test_changing_or_deleting_a_webhook_trigger_removes_its_hook(): void
     {
         Http::fake([

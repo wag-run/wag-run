@@ -39,6 +39,14 @@ class WorkflowFactory extends Factory
         });
     }
 
+    /**
+     * Turned off, so its triggers, the API, and other workflows cannot start it.
+     */
+    public function disabled(): static
+    {
+        return $this->state(['is_enabled' => false]);
+    }
+
     public function concurrency(ConcurrencyPolicy $policy): static
     {
         return $this->state(['concurrency' => $policy]);

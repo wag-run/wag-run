@@ -84,9 +84,22 @@ new #[Layout('layouts::auth')] class extends Component {
         return $role !== null && $role !== \App\Enums\WorkspaceRole::Guest;
     }
 
+    /**
+     * Whether the form takes responses: not while its workflow is disabled.
+     */
+    #[Computed]
+    public function isAccepting(): bool
+    {
+        return (bool) $this->trigger?->workflow->is_enabled;
+    }
+
     public function submit(Engine $engine): void
     {
         abort_unless($this->trigger && $this->canSubmit(), 403);
+
+        if (! $this->isAccepting) {
+            return;
+        }
 
         $rules = [];
         $attributes = [];
@@ -118,6 +131,10 @@ new #[Layout('layouts::auth')] class extends Component {
     @if ($submitted)
         <flux:callout icon="check-circle" variant="success">
             {{ $this->config['success_message'] ?? __('forms.show.thanks_your_response_was_submitted') }}
+        </flux:callout>
+    @elseif (! $this->isAccepting)
+        <flux:callout icon="pause-circle" data-test="form-not-accepting">
+            {{ __('forms.show.not_accepting_responses') }}
         </flux:callout>
     @else
         <form wire:submit="submit" class="flex flex-col gap-6">

@@ -10,7 +10,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Server\Attributes\Description;
 
-#[Description('Start a run of a workflow\'s published version. The run continues in the background: use get-run to follow it.')]
+#[Description('Start a run of a workflow\'s published version. A workflow whose enabled is false cannot be started. The run continues in the background: use get-run to follow it.')]
 class StartRun extends WorkflowApiTool
 {
     public function schema(JsonSchema $schema): array

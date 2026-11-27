@@ -127,12 +127,16 @@ class WorkflowApi
      * @param  array<string, mixed>  $input  values for the Manual trigger's fields
      * @param  Execution|null  $startedBy  the run of this install that made the request, if any
      *
-     * @throws ValidationException when the workflow is not published or the input does not match its fields
+     * @throws ValidationException when the workflow is disabled or not published, or the input does not match its fields
      */
     public function startRun(User $user, Workspace $workspace, string $workflowId, array $input = [], ?Execution $startedBy = null): Execution
     {
         $this->authorize($user, self::SCOPE_RUNS_WRITE, WorkspacePermission::RunWorkflows, $workspace);
         $workflow = $workspace->workflows()->with('publishedVersion')->findOrFail($this->uuid($workflowId, Workflow::class));
+
+        if (! $workflow->is_enabled) {
+            throw ValidationException::withMessages(['workflow' => __('workflows.workflow_is_disabled')]);
+        }
 
         return $this->manualRuns->start($workflow, $user, $input, self::TRIGGER_TYPE, $startedBy)
             ->refresh()

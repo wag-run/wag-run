@@ -34,7 +34,7 @@ class RunScheduledWorkflows extends Command
                 ->where('next_run_at', $scheduledAt)
                 ->update(['next_run_at' => $next]);
 
-            if ($claimed === 0 || ! $trigger->workflow->publishedVersion) {
+            if ($claimed === 0 || ! $trigger->workflow->publishedVersion || ! $trigger->workflow->is_enabled) {
                 continue;
             }
 
