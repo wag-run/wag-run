@@ -121,10 +121,8 @@ class TriggerSync
      * before the old one is removed, and the old one is kept if registering
      * fails, so the trigger is never left with none. A webhook registered
      * before its URL was recorded is registered again once.
-     *
-     * @return bool|null true when moved, false when registering failed, null when there was nothing to move
      */
-    public function moveWebhook(WorkflowTrigger $trigger): ?bool
+    protected function moveWebhook(WorkflowTrigger $trigger): void
     {
         $state = $trigger->state ?? [];
         $url = $trigger->url();
@@ -132,7 +130,7 @@ class TriggerSync
 
         if ($trigger->type !== WorkflowTrigger::SUBSCRIPTION || ! $listener || $url === null
             || ! isset($state['subscription']) || ($state['url'] ?? null) === $url) {
-            return null;
+            return;
         }
 
         $workspace = $trigger->workflow->workspace;
@@ -144,14 +142,12 @@ class TriggerSync
             $trigger->state = [...$state, 'error' => $e->getMessage()];
             $trigger->save();
 
-            return false;
+            return;
         }
 
         $trigger->state = [...$state, 'secret' => $secret, 'subscription' => $subscription, 'url' => $url, 'error' => null];
         $trigger->save();
         $this->unsubscribe($workspace, [$state]);
-
-        return true;
     }
 
     /**

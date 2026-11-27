@@ -161,18 +161,19 @@ class GitHubTriggersTest extends TestCase
         $this->assertSame($url, $trigger->state['url']);
     }
 
-    public function test_changing_app_url_moves_the_hook_registering_the_new_one_before_removing_the_old(): void
+    public function test_republishing_after_app_url_changes_moves_the_hook_registering_the_new_one_before_removing_the_old(): void
     {
         config(['app.url' => 'https://old.example.com']);
         Http::fake([
             'api.github.com/repos/acme/app/hooks' => Http::sequence()->push(['id' => 77], 201)->push(['id' => 78], 201),
             'api.github.com/repos/acme/app/hooks/*' => Http::response(null, 204),
         ]);
-        $trigger = $this->publish('github.new_tag', ['listen' => 'webhook'])->triggers()->sole();
+        $workflow = $this->publish('github.new_tag', ['listen' => 'webhook']);
+        $trigger = $workflow->triggers()->sole();
         $oldSecret = $trigger->state['secret'];
 
         config(['app.url' => 'https://new.example.com']);
-        $this->artisan('workflows:sync-webhooks')->assertSuccessful();
+        app(Workflows::class)->publish($workflow->refresh());
 
         $requests = Http::recorded()->map(fn (array $pair) => $pair[0]->method().' '.($pair[0]['config']['url'] ?? $pair[0]->url()))->all();
         $this->assertSame([
@@ -187,11 +188,11 @@ class GitHubTriggersTest extends TestCase
         $this->assertNotSame($oldSecret, $state['secret']);
         $this->deliver($trigger, 'push', ['ref' => 'refs/tags/v2.0', 'created' => true, 'after' => 'abc'])->assertAccepted();
 
-        $this->artisan('workflows:sync-webhooks')->assertSuccessful();
+        app(Workflows::class)->publish($workflow->refresh());
         $this->assertCount(3, Http::recorded(), 'a hook already at APP_URL is left alone');
     }
 
-    public function test_a_hook_that_cannot_be_moved_keeps_the_old_one_and_is_tried_again_on_publish(): void
+    public function test_a_hook_that_cannot_be_moved_keeps_the_old_one_and_is_tried_again_on_the_next_publish(): void
     {
         config(['app.url' => 'https://old.example.com']);
         Http::fake([
@@ -204,7 +205,7 @@ class GitHubTriggersTest extends TestCase
         $workflow = $this->publish('github.new_tag', ['listen' => 'webhook']);
 
         config(['app.url' => 'https://new.example.com']);
-        $this->artisan('workflows:sync-webhooks')->assertFailed();
+        app(Workflows::class)->publish($workflow->refresh());
 
         $state = $workflow->triggers()->sole()->state;
         $this->assertSame(['hook_id' => 77], $state['subscription']);
@@ -223,13 +224,14 @@ class GitHubTriggersTest extends TestCase
             'api.github.com/repos/acme/app/hooks' => Http::sequence()->push(['id' => 77], 201)->push(['id' => 78], 201),
             'api.github.com/repos/acme/app/hooks/*' => Http::response(null, 204),
         ]);
-        $trigger = $this->publish('github.new_tag', ['listen' => 'webhook'])->triggers()->sole();
+        $workflow = $this->publish('github.new_tag', ['listen' => 'webhook']);
+        $trigger = $workflow->triggers()->sole();
         $state = $trigger->state;
         unset($state['url']);
         $trigger->forceFill(['state' => $state])->save();
 
-        $this->artisan('workflows:sync-webhooks')->assertSuccessful();
-        $this->artisan('workflows:sync-webhooks')->assertSuccessful();
+        app(Workflows::class)->publish($workflow->refresh());
+        app(Workflows::class)->publish($workflow->refresh());
 
         $this->assertSame(['hook_id' => 78], $trigger->refresh()->state['subscription']);
         $this->assertCount(3, Http::recorded());
