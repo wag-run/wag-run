@@ -41,7 +41,7 @@ class DemoWorkflowSeederTest extends TestCase
         $this->seed(DatabaseSeeder::class);
 
         $this->assertSame(
-            ['Daily post digest', 'New hire onboarding', 'Order status updates', 'Refund approval'],
+            ['Daily post digest', 'Expense report', 'New hire onboarding', 'Order status updates', 'Refund approval'],
             Workflow::query()->whereNotNull('published_version_id')->orderBy('name')->pluck('name')->all(),
         );
     }
@@ -109,5 +109,25 @@ class DemoWorkflowSeederTest extends TestCase
 
         Notification::assertSentTo($this->admin(), WorkflowNotification::class, fn (WorkflowNotification $notification) => $notification->title === '2 new posts'
             && $notification->body === "1. First post\n2. Second post");
+    }
+
+    public function test_expense_report_totals_the_amounts_and_lists_those_over_the_limit_with_variables(): void
+    {
+        Notification::fake();
+        $this->seed(DatabaseSeeder::class);
+
+        $execution = $this->start('Expense report', ['values' => ['employee' => 'Ada', 'amounts' => '23.50, 140, 10']]);
+        $none = $this->start('Expense report', ['values' => ['employee' => 'Grace', 'amounts' => '5']]);
+
+        $this->assertSame(ExecutionStatus::Complete, $execution->status);
+        $this->assertEquals(
+            ['total' => 173.5, 'over_limit' => ['140'], 'limit' => 100],
+            $execution->variables()->get()->mapWithKeys(fn ($variable) => [$variable->name => $variable->decoded()])->all(),
+        );
+        Notification::assertSentTo($this->admin(), WorkflowNotification::class, fn (WorkflowNotification $notification) => $notification->title === 'Ada claimed 173.50'
+            && $notification->body === 'Amounts: 3. Over 100: 140.');
+        Notification::assertSentTo($this->admin(), WorkflowNotification::class, fn (WorkflowNotification $notification) => $notification->title === 'Grace claimed 5.00'
+            && $notification->body === 'Amounts: 1. Over 100: none.');
+        $this->assertSame(ExecutionStatus::Complete, $none->status);
     }
 }

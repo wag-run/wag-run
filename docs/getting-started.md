@@ -29,7 +29,7 @@ Organization admins also see **Org settings** in the account menu, for workspace
 
 Your **Inbox** is in the account menu at the bottom of the sidebar. It collects approvals and tasks assigned to you, failed runs of workflows you own, and messages from workflows, across all your workspaces. A red dot on your avatar means something in it is unread.
 
-> **Tip:** If your workspace has the demo workflows (**Refund approval**, **Order status updates**, **New hire onboarding**, and **Daily post digest**), open one to see a finished workflow before building your own.
+> **Tip:** If your workspace has the demo workflows (**Refund approval**, **Order status updates**, **New hire onboarding**, **Daily post digest**, and **Expense report**), open one to see a finished workflow before building your own.
 
 ## 3. Create a workflow
 
@@ -143,4 +143,4 @@ Right-click a node or the canvas for the same actions.
 
 - Read the [overview](README.md) for the concepts behind workspaces, versions, runs, and placeholders.
 - Learn the rest of [the editor](editor.md), then browse the [triggers](triggers.md) and [actions](actions.md) you can build with.
-- Open the demo workflows to see webhooks, forms, schedules, loops, tasks, and error handling working together.
+- Open the demo workflows to see webhooks, forms, schedules, loops, tasks, variables, and error handling working together.

@@ -33,6 +33,7 @@ class DemoWorkflowSeeder extends Seeder
             'Order status updates' => $this->orderStatusUpdates($admin, $editor),
             'New hire onboarding' => $this->newHireOnboarding($admin, $editor),
             'Daily post digest' => $this->postDigest($admin),
+            'Expense report' => $this->expenseReport($admin),
         ];
 
         foreach ($demos as $name => [$description, $graph]) {
@@ -242,6 +243,52 @@ class DemoWorkflowSeeder extends Seeder
     }
 
     /**
+     * Adds up the amounts of an expense report in a loop and lists the ones
+     * over a limit, using workflow variables for the running total, the
+     * list, and the limit.
+     *
+     * @return array{string, array<string, mixed>}
+     */
+    protected function expenseReport(User $admin): array
+    {
+        return ['Totals a list of amounts with workflow variables. Run it manually with amounts such as 23.50, 140, 10.', $this->graph([
+            $this->node('start', 'core.manual_trigger', 'Expense report', 0, 200, [
+                'fields' => [
+                    ['name' => 'employee', 'label' => 'Employee', 'type' => 'text', 'required' => true],
+                    ['name' => 'amounts', 'label' => 'Amounts, separated by commas', 'type' => 'text', 'required' => true],
+                ],
+            ]),
+            $this->node('each', 'core.for_loop', 'Each amount', 300, 200, ['items' => '{{ split(trigger.values.amounts, ",") }}']),
+            $this->node('add', 'core.variable_update', 'Add to total', 600, 80, [
+                'variable' => 'total',
+                'operation' => 'increment',
+                'amount' => '{{ trim(item) }}',
+            ]),
+            $this->node('check', 'core.conditional', 'Over the limit?', 900, 80, ['condition' => '{{ float(trim(item)) > vars.limit }}']),
+            $this->node('note', 'core.variable_update', 'Note it', 1200, 80, [
+                'variable' => 'over_limit',
+                'operation' => 'append',
+                'value' => '{{ trim(item) }}',
+            ]),
+            $this->node('summary', 'core.send_notification', 'Send the total', 600, 340, [
+                'recipients' => [$admin->id],
+                'title' => '{{ trigger.values.employee }} claimed {{ number_format(vars.total, 2) }}',
+                'message' => 'Amounts: {{ length(nodes.each.output.results) }}. Over {{ vars.limit }}: {{ length(vars.over_limit) > 0 ? join(vars.over_limit, ", ") : "none" }}.',
+            ]),
+        ], [
+            ['start', 'main', 'each'],
+            ['each', 'item', 'add'],
+            ['add', 'main', 'check'],
+            ['check', 'true', 'note'],
+            ['each', 'done', 'summary'],
+        ], [
+            ['name' => 'total', 'type' => 'number', 'value' => '0'],
+            ['name' => 'over_limit', 'type' => 'array', 'value' => ''],
+            ['name' => 'limit', 'type' => 'number', 'value' => '100'],
+        ])];
+    }
+
+    /**
      * @param  array<string, mixed>  $config
      * @return array<string, mixed>
      */
@@ -260,11 +307,13 @@ class DemoWorkflowSeeder extends Seeder
     /**
      * @param  list<array<string, mixed>>  $nodes
      * @param  list<array{string, string, string}>  $edges  source, port, target
+     * @param  list<array{name: string, type: string, value: string}>  $variables  the workflow's variables
      * @return array<string, mixed>
      */
-    protected function graph(array $nodes, array $edges): array
+    protected function graph(array $nodes, array $edges, array $variables = []): array
     {
         return [
+            'variables' => $variables,
             'version' => WorkflowGraph::FORMAT_VERSION,
             'nodes' => $nodes,
             'edges' => array_map(fn (array $edge) => [
