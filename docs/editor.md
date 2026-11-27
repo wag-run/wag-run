@@ -86,6 +86,12 @@ To go back to an old version, click **Roll back** next to it. This publishes a c
 
 Click an empty part of the canvas, or right-click it and choose **Workflow settings**, to see the workflow's settings in the panel:
 
+- **Enabled**: turn it off to stop the workflow from starting runs without deleting or unpublishing it. While it's off:
+  - Its webhook answers `409`, its forms say they aren't accepting responses, and its schedules and GitHub and Investbrain triggers start nothing. What they miss isn't run later when you turn it back on.
+  - The [API](api.md), the MCP server, and [Trigger other workflow](actions.md#trigger-other-workflow) can't start it.
+  - **Run** and **Test draft** in the editor still work, so you can fix it before turning it back on. Runs already going carry on.
+
+  The **Workflows** list shows it as **Disabled**. The switch takes effect as soon as you flip it, and only people who can publish workflows can change it. Publishing doesn't change it.
 - **Name** and **Description**: shown on the **Workflows** list.
 - **Concurrent runs**: what happens when the workflow is started while a run is already going:
   - **Allow concurrent runs**: both run (the default).
@@ -95,7 +101,7 @@ Click an empty part of the canvas, or right-click it and choose **Workflow setti
 - **Override run limit**: let this workflow start a different number of runs a minute than the organization default (60). See [Runs per minute](runs.md#runs-per-minute).
 - **Trigger URLs**: the addresses of the workflow's webhook and form triggers. They appear once the workflow is published. GitHub and Investbrain triggers show here too, with when they last checked or whether their webhook is registered.
 
-Click **Save settings** to apply them. These settings take effect immediately and aren't part of the draft. **Variables**, in the same panel, are the exception.
+Except for **Enabled**, click **Save settings** to apply them. These settings take effect immediately and aren't part of the draft. **Variables**, in the same panel, are the exception.
 
 ### Variables
 

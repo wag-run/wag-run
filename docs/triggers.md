@@ -69,6 +69,7 @@ https://wag.example.com/hooks/9f2c…
 | `403` | The request failed verification |
 | `404` | The address doesn't exist, or the workflow has no published version |
 | `405` | The request used a method the trigger doesn't accept |
+| `409` | The workflow is [disabled](editor.md#workflow-settings). No run is recorded. |
 | `429` | Too many requests: each caller can send up to 120 webhook requests a minute, and each workflow can start only so many runs a minute (see [Runs per minute](runs.md#runs-per-minute)). A run refused for the workflow's limit is still recorded, as **Cancelled**. |
 
 The webhook answers as soon as the run starts. It doesn't wait for the run to finish or return its output.

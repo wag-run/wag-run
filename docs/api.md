@@ -88,7 +88,7 @@ curl -X POST https://wag.example.com/api/v1/workspaces/ops/workflows/$WORKFLOW_I
   -d '{"input": {"order_id": 991}}'
 ```
 
-The answer is `201` with the new run. A workflow without a Manual trigger starts at its first trigger with no input. The run shows **API** as its trigger, and you as the person who started it.
+The answer is `201` with the new run. A workflow without a Manual trigger starts at its first trigger with no input. A workflow whose `enabled` is `false` has been [turned off](editor.md#workflow-settings) and can't be started over the API. The run shows **API** as its trigger, and you as the person who started it.
 
 The request returns as soon as the run starts. To follow it, get the run until its `status` is `complete`, `failed`, `cancelled`, or `skipped`. A run that waits for an approval can stay `waiting` for a long time.
 
@@ -120,7 +120,7 @@ The answer has the runs under `data`, and the page details under `meta` and `lin
 | `401` | The token is missing, expired, or revoked |
 | `403` | The token doesn't have the scope, your role in the workspace doesn't allow it, or your account is deactivated |
 | `404` | The workspace, workflow, or run doesn't exist, or you can't see it |
-| `422` | The input doesn't match the workflow's inputs, the workflow isn't published, or a filter is invalid. `errors` says which field. |
+| `422` | The input doesn't match the workflow's inputs, the workflow is disabled or isn't published, or a filter is invalid. `errors` says which field. |
 | `429` | Too many requests |
 
 Each error has a `message`.
