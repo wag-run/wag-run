@@ -1102,9 +1102,18 @@ new class extends Component {
         $this->saveSelected();
     }
 
+    /**
+     * Save the workflow settings form. Turning the workflow on or off is part
+     * of it, and needs permission to publish: off, its triggers, the API, and
+     * other workflows cannot start it, though runs from the editor still can.
+     */
     public function saveSettings(): void
     {
         $this->authorize('edit-workflows', $this->workspace);
+
+        if ($this->enabled !== $this->workflow->is_enabled) {
+            $this->authorize('publish-workflows', $this->workspace);
+        }
 
         $this->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -1122,32 +1131,23 @@ new class extends Component {
             'max_runs_per_minute' => $this->customRunLimit ? (int) $this->maxRunsPerMinute : null,
         ]);
 
+        $this->workflow->forceFill(['is_enabled' => $this->enabled]);
+
         if ($this->workflow->isDirty()) {
             $changed = array_keys($this->workflow->getDirty());
             $this->workflow->save();
-            Audit::record('workflow.settings_updated', $this->workflow, $this->workspace, ['changed' => $changed]);
+
+            if (in_array('is_enabled', $changed, true)) {
+                Audit::record($this->enabled ? 'workflow.enabled' : 'workflow.disabled', $this->workflow, $this->workspace);
+                $changed = array_values(array_diff($changed, ['is_enabled']));
+            }
+
+            if ($changed !== []) {
+                Audit::record('workflow.settings_updated', $this->workflow, $this->workspace, ['changed' => $changed]);
+            }
         }
 
         Flux::toast(variant: 'success', text: __('workflows.edit.workflow_settings_saved'));
-    }
-
-    /**
-     * Turn the workflow on or off as soon as the switch moves. Off, its
-     * triggers, the API, and other workflows cannot start it; runs from the
-     * editor still can.
-     */
-    public function updatedEnabled(bool $enabled): void
-    {
-        $this->authorize('publish-workflows', $this->workspace);
-
-        if ($this->workflow->is_enabled === $enabled) {
-            return;
-        }
-
-        $this->workflow->forceFill(['is_enabled' => $enabled])->save();
-        Audit::record($enabled ? 'workflow.enabled' : 'workflow.disabled', $this->workflow, $this->workspace);
-
-        Flux::toast(variant: 'success', text: $enabled ? __('workflows.edit.workflow_enabled') : __('workflows.edit.workflow_disabled'));
     }
 
     public function publish(Workflows $workflows): void
@@ -1805,12 +1805,10 @@ new class extends Component {
             @else
                 <flux:heading class="pe-8">{{ __('workflows.edit.workflow_settings') }}</flux:heading>
                 <flux:text class="mb-4 text-xs">{{ __('workflows.edit.select_a_node_to_configure') }}</flux:text>
-                <div class="mb-4">
-                    <flux:switch wire:model.live="enabled" :label="__('workflows.edit.enabled')" :description="__('workflows.edit.enabled_help')"
-                        :disabled="! $this->canPublish" data-test="workflow-enabled" />
-                </div>
                 <form wire:submit="saveSettings" class="space-y-4">
                     <fieldset class="space-y-4" @disabled(! $this->canEdit)>
+                        <flux:switch wire:model="enabled" :label="__('workflows.edit.enabled')" :description="__('workflows.edit.enabled_help')"
+                            :disabled="! $this->canPublish" data-test="workflow-enabled" />
                         <flux:input wire:model="name" :label="__('common.name')" required />
                         <flux:textarea wire:model="description" :label="__('common.description')" rows="2" />
                         <flux:select wire:model="concurrency" :label="__('workflows.edit.concurrent_runs')">

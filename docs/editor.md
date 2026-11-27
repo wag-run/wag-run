@@ -91,7 +91,7 @@ Click an empty part of the canvas, or right-click it and choose **Workflow setti
   - The [API](api.md), the MCP server, and [Trigger other workflow](actions.md#trigger-other-workflow) can't start it.
   - **Run** and **Test draft** in the editor still work, so you can fix it before turning it back on. Runs already going carry on.
 
-  The **Workflows** list shows it as **Disabled**. The switch takes effect as soon as you flip it, and only people who can publish workflows can change it. Publishing doesn't change it.
+  The **Workflows** list shows it as **Disabled**. Only people who can publish workflows can change it, and publishing doesn't change it.
 - **Name** and **Description**: shown on the **Workflows** list.
 - **Concurrent runs**: what happens when the workflow is started while a run is already going:
   - **Allow concurrent runs**: both run (the default).
@@ -101,7 +101,7 @@ Click an empty part of the canvas, or right-click it and choose **Workflow setti
 - **Override run limit**: let this workflow start a different number of runs a minute than the organization default (60). See [Runs per minute](runs.md#runs-per-minute).
 - **Trigger URLs**: the addresses of the workflow's webhook and form triggers. They appear once the workflow is published. GitHub and Investbrain triggers show here too, with when they last checked or whether their webhook is registered.
 
-Except for **Enabled**, click **Save settings** to apply them. These settings take effect immediately and aren't part of the draft. **Variables**, in the same panel, are the exception.
+Click **Save settings** to apply them. These settings take effect immediately and aren't part of the draft. **Variables**, in the same panel, are the exception.
 
 ### Variables
 

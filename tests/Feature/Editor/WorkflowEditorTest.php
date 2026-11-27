@@ -13,6 +13,7 @@ use App\Models\Workspace;
 use App\Services\Workflows;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -551,21 +552,35 @@ class WorkflowEditorTest extends TestCase
         $this->assertSame(200, $workflow->max_runs_per_minute);
     }
 
-    public function test_the_enabled_switch_turns_the_workflow_off_and_on_at_once_for_people_who_can_publish(): void
+    public function test_the_enabled_switch_is_saved_with_the_settings_by_people_who_can_publish(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor();
-        $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
 
-        $this->editor($workspace, $workflow, $viewer)->assertSet('enabled', true)->set('enabled', false)->assertForbidden();
-        $this->assertTrue($workflow->refresh()->is_enabled);
+        $editor = $this->editor($workspace, $workflow, $user)->assertSet('enabled', true)->set('enabled', false);
+        $this->assertTrue($workflow->refresh()->is_enabled, 'nothing changes until the settings are saved');
 
-        $this->editor($workspace, $workflow, $user)->set('enabled', false)->assertHasNoErrors();
+        $editor->call('saveSettings')->assertHasNoErrors();
         $this->assertFalse($workflow->refresh()->is_enabled);
         $this->assertDatabaseHas('audit_logs', ['action' => 'workflow.disabled', 'workspace_id' => $workspace->id]);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'workflow.settings_updated']);
 
-        $this->editor($workspace, $workflow, $user)->assertSet('enabled', false)->set('enabled', true);
+        $this->editor($workspace, $workflow, $user)->assertSet('enabled', false)->set('enabled', true)->set('name', 'Renamed')->call('saveSettings');
         $this->assertTrue($workflow->refresh()->is_enabled);
         $this->assertDatabaseHas('audit_logs', ['action' => 'workflow.enabled', 'workspace_id' => $workspace->id]);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'workflow.settings_updated', 'workspace_id' => $workspace->id]);
+    }
+
+    public function test_people_who_cannot_publish_cannot_turn_a_workflow_off(): void
+    {
+        [$workspace, $workflow] = $this->setUpEditor();
+        $editor = User::factory()->memberOf($workspace, WorkspaceRole::Editor)->create();
+        Gate::before(fn (User $user, string $ability) => $user->is($editor) && $ability === 'publish-workflows' ? false : null);
+
+        $this->editor($workspace, $workflow, $editor)->set('name', 'Renamed')->call('saveSettings')->assertHasNoErrors();
+        $this->assertSame('Renamed', $workflow->refresh()->name);
+
+        $this->editor($workspace, $workflow, $editor)->set('enabled', false)->call('saveSettings')->assertForbidden();
+        $this->assertTrue($workflow->refresh()->is_enabled);
     }
 
     public function test_publishing_leaves_a_disabled_workflow_disabled(): void

@@ -117,8 +117,6 @@ return [
         'versions' => 'Versions',
         'webhook_and_form_triggers_get' => 'Webhook and form triggers get their URL when the workflow is published.',
         'what_the_trigger_receives' => 'JSON the trigger receives, available to later nodes as trigger.*',
-        'workflow_disabled' => 'Workflow disabled.',
-        'workflow_enabled' => 'Workflow enabled.',
         'workflow_settings' => 'Workflow settings',
         'workflow_settings_saved' => 'Workflow settings saved.',
         'you_can_view_this_workflow' => 'You can view this workflow but not edit it.',
