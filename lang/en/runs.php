@@ -15,6 +15,7 @@ return [
         'title' => 'Runs',
     ],
     'show' => [
+        'as_written' => 'As written',
         'at_node' => 'At :node',
         'attempt_n' => 'Attempt :n',
         'attempts' => 'Attempts',
@@ -40,6 +41,8 @@ return [
         'times_out_time' => 'Times out :time',
         'trigger_input' => 'Trigger input',
         'empty_value' => '(empty)',
+        'filled_in' => 'Filled in',
+        'show_input' => 'Show the input',
         'variables' => 'Variables',
         'type_for_name' => ':type for :name',
     ],

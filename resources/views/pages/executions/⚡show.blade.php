@@ -4,6 +4,7 @@ use App\Engine\Editor\RunCanvas;
 use App\Engine\Engine;
 use App\Engine\LoopResults;
 use App\Engine\NodeRegistry;
+use App\Engine\Redactor;
 use App\Engine\RunVariables;
 use App\Engine\Scope;
 use App\Models\Assignment;
@@ -78,6 +79,38 @@ new class extends Component {
     public function part(ExecutionStep $step, string $part): mixed
     {
         return $part === 'output' ? $this->loopResults->outputOf($step) : $step->{$part};
+    }
+
+    /**
+     * A step's settings as they were written in the run's version, with
+     * placeholders left as typed, for the fields its input recorded. A
+     * field the node left unset reads as its input does. Null when that is
+     * no different from the input, or the version no longer has the node.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function settingsOf(ExecutionStep $step): ?array
+    {
+        $written = $this->nodeSettings[$step->node_id] ?? null;
+        $input = $step->input;
+
+        if ($written === null || ! is_array($input) || $input === []) {
+            return null;
+        }
+
+        $settings = [];
+
+        foreach ($input as $name => $value) {
+            $settings[$name] = array_key_exists($name, $written) ? $this->redactor->mask($written[$name]) : $value;
+        }
+
+        return $settings === $input ? null : $settings;
+    }
+
+    #[Computed]
+    public function redactor(): Redactor
+    {
+        return Redactor::forWorkspace($this->workspace);
     }
 
     #[Computed]
@@ -461,7 +494,21 @@ new class extends Component {
 
                 @foreach (['error' => __('common.error'), 'input' => __('common.input'), 'output' => __('common.output')] as $part => $label)
                     @php($value = $this->part($step, $part))
-                    @if ($value !== null && $value !== [])
+                    @php($settings = $part === 'input' ? $this->settingsOf($step) : null)
+                    @if ($settings !== null)
+                        <div x-data="{ view: 'filled' }" wire:key="step-input-{{ $step->id }}">
+                            <div class="mt-4 mb-1 flex items-center justify-between gap-2">
+                                <flux:heading size="sm">{{ $label }}</flux:heading>
+                                <flux:radio.group variant="segmented" size="sm" x-model="view" :aria-label="__('runs.show.show_input')" data-test="step-input-toggle">
+                                    <flux:radio value="filled">{{ __('runs.show.filled_in') }}</flux:radio>
+                                    <flux:radio value="written">{{ __('runs.show.as_written') }}</flux:radio>
+                                </flux:radio.group>
+                            </div>
+                            <pre x-show="view === 'filled'" class="max-h-80 overflow-auto rounded-lg whitespace-pre-wrap break-words bg-zinc-50 p-3 text-xs dark:bg-zinc-800" data-test="step-input">{{ $this->json($value) }}</pre>
+                            <pre x-show="view === 'written'" style="display: none" class="max-h-80 overflow-auto rounded-lg whitespace-pre-wrap break-words bg-zinc-50 p-3 text-xs dark:bg-zinc-800" data-test="step-settings">{{ $this->json($settings) }}</pre>
+                        </div>
+                        @include('partials.run-files', ['value' => $value, 'key' => $part])
+                    @elseif ($value !== null && $value !== [])
                         <flux:heading size="sm" class="mt-4 mb-1">{{ $label }}</flux:heading>
                         <pre class="max-h-80 overflow-auto rounded-lg whitespace-pre-wrap break-words bg-zinc-50 p-3 text-xs dark:bg-zinc-800 {{ $part === 'error' ? 'text-red-600 dark:text-red-400' : '' }}" data-test="step-{{ $part }}">{{ $this->json($value) }}</pre>
                         @include('partials.run-files', ['value' => $value, 'key' => $part])
