@@ -69,7 +69,7 @@ class WorkflowEditorTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/interactive(\\\\u0022|&quot;|"):false/', $html);
     }
 
-    public function test_the_canvas_can_mark_nodes_no_trigger_leads_to(): void
+    public function test_the_canvas_template_is_wired_to_mark_nodes_no_trigger_leads_to(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor();
 
@@ -223,7 +223,10 @@ class WorkflowEditorTest extends TestCase
 
         $this->editor($workspace, $workflow, $user)
             ->call('canConnect', $source, $target, $port, 'in')
-            ->assertReturned(['allowed' => false, 'reason' => $reason]);
+            ->assertReturned(['allowed' => false, 'reason' => $reason])
+            ->call('onConnect', $source, $target, $port, 'in');
+
+        $this->assertSame($graph['edges'], $workflow->refresh()->draft_graph['edges']);
     }
 
     public function test_canvas_events_update_the_saved_draft(): void
@@ -359,6 +362,7 @@ class WorkflowEditorTest extends TestCase
     {
         [$workspace, $workflow, $user] = $this->setUpEditor();
         $other = Workflow::factory()->for($workspace)->create(['name' => 'Billing']);
+        Workflow::factory()->create(['name' => 'In another workspace']);
 
         $this->editor($workspace, $workflow, $user)->assertSet('choices.workflows', [$other->id => 'Billing']);
     }
@@ -521,6 +525,11 @@ class WorkflowEditorTest extends TestCase
         $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
 
         $this->editor($workspace, $workflow, $viewer)->call('publish')->assertForbidden();
+        $this->editor($workspace, $workflow, $viewer)->set('name', 'Sneaky')->call('saveSettings')->assertForbidden();
+
+        $published = app(Workflows::class)->publish($workflow);
+        $this->editor($workspace, $workflow, $viewer)->call('rollback', $published->id)->assertForbidden();
+        $this->assertSame(1, $workflow->versions()->count());
 
         $this->editor($workspace, $workflow, $user)
             ->set('name', 'Renamed')

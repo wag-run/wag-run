@@ -105,7 +105,8 @@ class OAuthConnectionsTest extends TestCase
         Http::assertSent(fn (Request $request) => $request->url() === 'https://github.com/login/oauth/access_token'
             && $request['code'] === 'abc'
             && $request['client_secret'] === 'gh-secret'
-            && strlen($request['code_verifier']) === 64);
+            && strlen($request['code_verifier']) === 64
+            && $query['code_challenge'] === rtrim(strtr(base64_encode(hash('sha256', $request['code_verifier'], true)), '+/', '-_'), '='));
         $credential = Credential::sole();
         $this->assertSame(['GitHub (octocat)', 'github'], [$credential->description, $credential->type]);
         $this->assertSame('gho_new', $credential->config['access_token']);
@@ -265,6 +266,10 @@ class OAuthConnectionsTest extends TestCase
 
         $this->get(route('integrations.oauth.callback', ['type' => 'github', 'state' => $query['state'], 'code' => 'abc']))
             ->assertSessionHas('oauth_error', 'This connection attempt expired or was started by someone else. Try connecting again.');
+
+        Http::fake(['github.com/login/oauth/access_token' => Http::response(['error' => 'bad_verification_code', 'error_description' => 'The code passed is incorrect or expired.'])]);
+        $this->get(route('integrations.oauth.callback', ['type' => 'github', 'state' => $this->connect($credential)['state'], 'code' => 'stale']))
+            ->assertSessionHas('oauth_error', 'The provider refused the token request: The code passed is incorrect or expired.');
         $this->assertSame([], $credential->refresh()->config);
     }
 

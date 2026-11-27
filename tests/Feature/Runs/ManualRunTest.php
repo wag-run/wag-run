@@ -93,6 +93,10 @@ class ManualRunTest extends TestCase
             ->call('startRun')
             ->assertForbidden();
 
+        Livewire::actingAs($viewer)->test('pages::workflows.edit', ['workspace' => $workspace, 'workflow' => $workflow])
+            ->call('run')
+            ->assertForbidden();
+
         $editor = User::factory()->memberOf($workspace, WorkspaceRole::Editor)->create();
         $draft = Workflow::factory()->for($workspace)->create();
 

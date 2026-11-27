@@ -27,7 +27,7 @@ class EmailVerificationTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('verification.notice'));
 
-        $response->assertOk();
+        $response->assertOk()->assertSee('Resend verification email');
     }
 
     public function test_unverified_users_are_redirected_to_the_email_verification_prompt(): void

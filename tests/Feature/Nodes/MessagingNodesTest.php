@@ -172,7 +172,7 @@ class MessagingNodesTest extends TestCase
 
         $execution = $this->runChatMessage($workspace, 'Order {{ trigger.values.id }} shipped', ['id' => 7]);
 
-        Http::assertSent(fn ($request) => $request->url() === 'https://hooks.example.com/services/T000/B000/secret' && $request->data() === $payload);
+        Http::assertSent(fn ($request) => $request->method() === 'POST' && $request->url() === 'https://hooks.example.com/services/T000/B000/secret' && $request->data() === $payload);
         $this->assertSame(['service' => $service, 'status' => 200], $this->stepFor($execution, 'chat')->output);
     }
 

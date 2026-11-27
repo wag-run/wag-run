@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Workflow;
 use App\Notifications\WorkflowNotification;
 use App\Services\Assignments;
+use App\Support\HostResolver;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -102,6 +103,13 @@ class DemoWorkflowSeederTest extends TestCase
     {
         Notification::fake();
         Http::preventStrayRequests();
+        $this->app->instance(HostResolver::class, new class extends HostResolver
+        {
+            public function resolve(string $host): array
+            {
+                return ['93.184.215.14'];
+            }
+        });
         Http::fake(['jsonplaceholder.typicode.com/posts*' => Http::response([['id' => 1, 'title' => 'first post'], ['id' => 2, 'title' => 'second post']])]);
         $this->seed(DatabaseSeeder::class);
 

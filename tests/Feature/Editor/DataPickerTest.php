@@ -202,6 +202,8 @@ class DataPickerTest extends TestCase
         StoreEntry::factory()->for($workspace)->type(ValueType::Number)->create(['key' => 'attempts']);
         StoreEntry::factory()->for($workspace)->type(ValueType::Number)->collection()->create(['key' => 'failures']);
         Secret::factory()->for($workspace)->create(['key' => 'api_key', 'value' => 'hidden-value']);
+        StoreEntry::factory()->create(['key' => 'elsewhere']);
+        Secret::factory()->create(['key' => 'elsewhere_key']);
         $graph = WorkflowGraph::fromArray($this->graph(['start' => 'core.manual_trigger', 'a' => 'core.compose'], ['start->a']));
 
         $paths = $this->paths($graph, 'a', $workspace);

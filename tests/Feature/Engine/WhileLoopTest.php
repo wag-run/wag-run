@@ -81,6 +81,12 @@ class WhileLoopTest extends TestCase
         $execution = $this->waitingInsideAPass();
         $loop = $this->stepFor($execution, 'poll');
 
+        // The pass finishes and its check is queued, but the run is cancelled before a worker runs it.
+        Queue::fake([ResumeStep::class]);
+        $this->travel(6)->minutes();
+        app(StepRunner::class)->resume($this->stepFor($execution, 'wait')->id, ResumeReason::TimerElapsed);
+        $this->assertNotNull($loop->refresh()->resume_at);
+
         app(Engine::class)->cancel($execution);
         app(StepRunner::class)->resume($loop->id, ResumeReason::PassFinished);
 
@@ -117,6 +123,7 @@ class WhileLoopTest extends TestCase
         app(StepRunner::class)->resume($loop->id, ResumeReason::PassFinished);
 
         $this->assertSame(1, $loop->refresh()->state['index']);
+        $this->assertSame(StepStatus::Waiting, $loop->status, 'the second pass is still running');
         $this->assertNull($loop->resume_at);
         $this->assertSame(2, $execution->steps()->where('node_id', 'wait')->count());
     }

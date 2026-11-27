@@ -21,7 +21,7 @@ class RegistrationTest extends TestCase
     {
         $response = $this->get(route('register'));
 
-        $response->assertOk();
+        $response->assertOk()->assertSee('data-test="register-user-button"', false);
     }
 
     public function test_new_users_can_register(): void

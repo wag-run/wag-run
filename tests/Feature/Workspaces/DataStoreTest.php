@@ -57,7 +57,7 @@ class DataStoreTest extends TestCase
     {
         StoreEntry::factory()->for($this->workspace)->type(ValueType::Number)->holding(42)->create(['key' => 'threshold', 'description' => 'Alert above this']);
         StoreEntry::factory()->for($this->workspace)->type(ValueType::Boolean)->collection()->readOnly()->holding(['T-1' => true])->create(['key' => 'seen_tickets']);
-        $other = StoreEntry::factory()->holding('elsewhere')->create(['key' => 'other_workspace']);
+        $other = StoreEntry::factory()->collection()->holding(['T-9' => 'elsewhere'])->create(['key' => 'other_workspace']);
 
         $this->actingAs($this->user(WorkspaceRole::Viewer))->get(route('workspaces.data-store', $this->workspace))
             ->assertOk()

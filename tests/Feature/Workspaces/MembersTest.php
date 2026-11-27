@@ -8,6 +8,7 @@ use App\Models\Invitation;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Notifications\InvitationNotification;
+use App\Services\Invitations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
@@ -80,7 +81,10 @@ class MembersTest extends TestCase
     {
         $workspace = Workspace::factory()->create();
         $editor = User::factory()->memberOf($workspace, WorkspaceRole::Editor)->create();
+        $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
         $other = User::factory()->orgMember()->create();
+        Notification::fake();
+        [$invitation] = app(Invitations::class)->invite($workspace->organization, 'pending@example.com', $viewer, workspace: $workspace);
 
         Livewire::actingAs($editor)
             ->test('pages::workspaces.members', ['workspace' => $workspace])
@@ -88,7 +92,25 @@ class MembersTest extends TestCase
             ->call('add')
             ->assertForbidden();
 
+        Livewire::actingAs($editor)
+            ->test('pages::workspaces.members', ['workspace' => $workspace])
+            ->call('changeRole', $editor->id, 'admin')
+            ->assertForbidden();
+
+        Livewire::actingAs($editor)
+            ->test('pages::workspaces.members', ['workspace' => $workspace])
+            ->call('remove', $viewer->id)
+            ->assertForbidden();
+
+        Livewire::actingAs($editor)
+            ->test('pages::workspaces.members', ['workspace' => $workspace])
+            ->call('revoke', $invitation->id)
+            ->assertForbidden();
+
         $this->assertNull($other->roleIn($workspace));
+        $this->assertSame(WorkspaceRole::Editor, $editor->roleIn($workspace));
+        $this->assertSame(WorkspaceRole::Viewer, $viewer->roleIn($workspace));
+        $this->assertModelExists($invitation);
     }
 
     public function test_cannot_change_a_role_in_another_workspace(): void

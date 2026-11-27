@@ -125,7 +125,7 @@ class InvestbrainTriggersTest extends TestCase
             ->push(['data' => [$this->transaction('t1')]])
             ->push(['message' => 'Unauthenticated.'], 401)
             ->push('<html>Sign in</html>')
-            ->push(['data' => [$this->transaction('t1')]])]);
+            ->push(['data' => [$this->transaction('t2'), $this->transaction('t1')]])]);
 
         $this->artisan('workflows:poll-triggers');
         $this->poll();
@@ -136,7 +136,7 @@ class InvestbrainTriggersTest extends TestCase
 
         $this->poll();
         $this->assertNull($workflow->triggers()->sole()->state['error']);
-        $this->assertSame(0, Execution::count());
+        $this->assertSame(['t2'], Execution::pluck('input')->pluck('id')->all(), 't1 was seen before the failures');
     }
 
     public function test_a_portfolio_that_isnt_one_cant_be_published(): void

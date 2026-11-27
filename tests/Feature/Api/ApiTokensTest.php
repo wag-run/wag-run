@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Laravel\Passport\ClientRepository;
@@ -27,6 +28,7 @@ class ApiTokensTest extends TestCase
     public function test_a_person_creates_a_token_that_works_with_its_scopes_and_revokes_it(): void
     {
         $user = User::factory()->orgAdmin()->create();
+        $workspace = Workspace::factory()->create();
 
         $page = Livewire::actingAs($user)->test('pages::settings.api-tokens')
             ->set('name', 'Deploy script')
@@ -43,9 +45,13 @@ class ApiTokensTest extends TestCase
         $this->assertSame('api_token.created', AuditLog::sole()->action);
         $page->assertSee('Deploy script');
 
+        $theirs = User::factory()->create()->createToken('Theirs')->getToken();
+        Livewire::actingAs($user)->test('pages::settings.api-tokens')->call('revoke', $theirs->id)->assertNotFound();
+        $this->assertFalse($theirs->refresh()->revoked);
+
         $this->withToken($plain)->getJson('/api/v1/workspaces')->assertOk();
         $this->app['auth']->forgetGuards();
-        $this->withToken($plain)->getJson('/api/v1/workspaces/any/runs')->assertNotFound();
+        $this->withToken($plain)->getJson("/api/v1/workspaces/{$workspace->slug}/runs")->assertForbidden();
 
         $page->call('revoke', $token->id);
         $this->assertTrue($token->refresh()->revoked);
@@ -58,6 +64,8 @@ class ApiTokensTest extends TestCase
         $user = User::factory()->orgAdmin()->create();
         $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Claude', ['https://claude.ai/api/mcp/auth_callback'], confidential: false);
         $token = $user->tokens()->forceCreate(['id' => str_repeat('a', 80), 'user_id' => $user->id, 'client_id' => $client->id, 'scopes' => ['mcp:use'], 'revoked' => false, 'expires_at' => now()->addDay()]);
+        $refreshToken = $token->refreshToken()->forceCreate(['id' => str_repeat('b', 80), 'revoked' => false, 'expires_at' => now()->addMonth()]);
+        $theirs = User::factory()->create()->tokens()->forceCreate(['id' => str_repeat('c', 80), 'client_id' => $client->id, 'scopes' => ['mcp:use'], 'revoked' => false, 'expires_at' => now()->addDay()]);
 
         Livewire::actingAs($user)->test('pages::settings.api-tokens')
             ->assertSee('data-test="connected-app"', false)
@@ -65,6 +73,8 @@ class ApiTokensTest extends TestCase
             ->assertDontSee('data-test="connected-app"', false);
 
         $this->assertTrue($token->refresh()->revoked);
+        $this->assertTrue($refreshToken->refresh()->revoked);
+        $this->assertFalse($theirs->refresh()->revoked, 'someone else\'s connection to the same app stays');
     }
 
     public function test_the_consent_screen_names_the_app_and_what_it_can_do(): void
