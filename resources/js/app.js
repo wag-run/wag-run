@@ -712,3 +712,195 @@ document.addEventListener('alpine:init', () => {
 
     window.Alpine.magic('confirm', () => (options) => window.Alpine.store('confirmDialog').ask(options));
 });
+
+/**
+ * The handle on the desktop sidebar's edge, a sibling of the sidebar so its
+ * knob can straddle the border. Dragging it sets the sidebar's
+ * width, which is remembered in this browser. Dragging narrower than
+ * snapWidth collapses the sidebar to Flux's icon rail, and dragging out from
+ * the rail opens it again. Double-clicking the handle, or pressing Enter on
+ * it, collapses or expands the sidebar, and the arrow keys change its width.
+ * Collapsing by dragging keeps the width it had before, for when it opens
+ * again. Flux remembers whether the sidebar is collapsed.
+ *
+ * The handle is the one place that collapses and expands the sidebar, so
+ * Flux's own single click on the collapsed rail's padding is stopped here,
+ * and the sidebar's markup turns off the expand cursor Flux shows for it.
+ *
+ * resources/views/partials/sidebar-width.blade.php applies the saved width
+ * before the page paints, with the same storage key and limits.
+ */
+document.addEventListener('alpine:init', () => {
+    const storageKey = 'wag.sidebar-width';
+    const defaultWidth = 256;
+
+    window.Alpine.data('wagSidebarResize', () => ({
+        minWidth: 200,
+        maxWidth: 360,
+        snapWidth: 180,
+        keyStep: 16,
+        width: defaultWidth,
+        dragging: false,
+        drag: null,
+        railClick: null,
+
+        init() {
+            let saved = null;
+
+            try {
+                saved = Number(window.localStorage.getItem(storageKey));
+            } catch {}
+
+            this.width = saved ? this.clamp(saved) : defaultWidth;
+            this.apply();
+
+            this.railClick = (event) => {
+                if (event.target === event.currentTarget) {
+                    event.stopImmediatePropagation();
+                }
+            };
+            this.sidebar()?.addEventListener('click', this.railClick, { capture: true });
+        },
+
+        destroy() {
+            this.sidebar()?.removeEventListener('click', this.railClick, { capture: true });
+            document.body.classList.remove('wag-sidebar-resizing');
+        },
+
+        sidebar() {
+            return document.querySelector('ui-sidebar[data-flux-sidebar]');
+        },
+
+        isCollapsed() {
+            return this.sidebar()?.hasAttribute('data-flux-sidebar-collapsed-desktop') ?? false;
+        },
+
+        setCollapsed(collapsed) {
+            if (this.isCollapsed() !== collapsed) {
+                document.dispatchEvent(new CustomEvent('flux-sidebar-toggle'));
+            }
+        },
+
+        clamp(width) {
+            return Math.round(Math.min(this.maxWidth, Math.max(this.minWidth, width)));
+        },
+
+        apply() {
+            document.documentElement.style.setProperty('--wag-sidebar-width', `${this.width}px`);
+        },
+
+        save() {
+            try {
+                window.localStorage.setItem(storageKey, String(this.width));
+            } catch {}
+        },
+
+        start(event) {
+            if (event.button !== 0) {
+                return;
+            }
+
+            event.preventDefault();
+            event.currentTarget.setPointerCapture(event.pointerId);
+
+            const sidebar = this.sidebar();
+
+            this.drag = {
+                x: event.clientX,
+                from: sidebar.getBoundingClientRect().width,
+                width: this.width,
+                direction: getComputedStyle(sidebar).direction === 'rtl' ? -1 : 1,
+                moved: false,
+            };
+        },
+
+        move(event) {
+            const drag = this.drag;
+
+            if (! drag) {
+                return;
+            }
+
+            const distance = (event.clientX - drag.x) * drag.direction;
+
+            if (! drag.moved && Math.abs(distance) < 3) {
+                return;
+            }
+
+            if (! drag.moved) {
+                drag.moved = true;
+                this.dragging = true;
+                document.body.classList.add('wag-sidebar-resizing');
+            }
+
+            const width = drag.from + distance;
+
+            if (width < this.snapWidth) {
+                this.setCollapsed(true);
+
+                return;
+            }
+
+            this.setCollapsed(false);
+            this.width = this.clamp(width);
+            this.apply();
+        },
+
+        end() {
+            if (this.drag?.moved) {
+                if (this.isCollapsed()) {
+                    this.width = this.drag.width;
+                    this.apply();
+                } else {
+                    this.save();
+                }
+            }
+
+            this.drag = null;
+            this.dragging = false;
+            document.body.classList.remove('wag-sidebar-resizing');
+        },
+
+        toggle() {
+            this.setCollapsed(! this.isCollapsed());
+        },
+
+        key(event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                this.toggle();
+
+                return;
+            }
+
+            const step = { ArrowLeft: -this.keyStep, ArrowRight: this.keyStep }[event.key];
+
+            if (! step) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const direction = getComputedStyle(this.sidebar()).direction === 'rtl' ? -1 : 1;
+            const grow = step * direction > 0;
+
+            if (this.isCollapsed()) {
+                if (grow) {
+                    this.setCollapsed(false);
+                }
+
+                return;
+            }
+
+            if (! grow && this.width <= this.minWidth) {
+                this.setCollapsed(true);
+
+                return;
+            }
+
+            this.width = this.clamp(this.width + step * direction);
+            this.apply();
+            this.save();
+        },
+    }));
+});

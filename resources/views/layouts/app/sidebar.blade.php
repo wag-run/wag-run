@@ -2,9 +2,15 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
     <head>
         @include('partials.head')
+        @include('partials.sidebar-width')
     </head>
     <body class="min-h-screen bg-white dark:bg-zinc-800">
-        <flux:sidebar sticky collapsible="mobile" class="wag-noise border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+        <flux:sidebar
+            sticky
+            :collapsible="true"
+            class="wag-noise border-e border-zinc-200 bg-zinc-50 lg:not-data-flux-sidebar-collapsed-desktop:w-[var(--wag-sidebar-width,16rem)] data-flux-sidebar-collapsed-desktop:cursor-auto! dark:border-zinc-700 dark:bg-zinc-900"
+            data-test="sidebar"
+        >
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
                 <flux:sidebar.collapse class="lg:hidden" />
@@ -22,8 +28,17 @@
 
             @if ($switchableWorkspaces->isNotEmpty())
                 <flux:dropdown position="bottom" align="start" class="w-full">
-                    <flux:button variant="subtle" icon:trailing="chevrons-up-down" class="w-full justify-between! truncate" data-test="workspace-switcher">
-                        {{ $activeWorkspace?->name ?? __('navigation.choose_a_workspace') }}
+                    <flux:button
+                        variant="subtle"
+                        class="w-full justify-between! truncate in-data-flux-sidebar-collapsed-desktop:w-10 in-data-flux-sidebar-collapsed-desktop:justify-center! in-data-flux-sidebar-collapsed-desktop:px-0!"
+                        :aria-label="$activeWorkspace?->name ?? __('navigation.choose_a_workspace')"
+                        data-test="workspace-switcher"
+                    >
+                        <span class="truncate in-data-flux-sidebar-collapsed-desktop:hidden">{{ $activeWorkspace?->name ?? __('navigation.choose_a_workspace') }}</span>
+                        @if ($activeWorkspace)
+                            <span class="hidden size-6 items-center justify-center rounded-md bg-zinc-200 text-xs font-semibold text-zinc-800 in-data-flux-sidebar-collapsed-desktop:flex dark:bg-zinc-700 dark:text-white" aria-hidden="true" data-test="workspace-initials">{{ $activeWorkspace->initials() }}</span>
+                        @endif
+                        <flux:icon.chevrons-up-down variant="micro" @class(['shrink-0', 'in-data-flux-sidebar-collapsed-desktop:hidden' => $activeWorkspace]) />
                     </flux:button>
 
                     <flux:menu>
@@ -52,51 +67,50 @@
 
             <flux:sidebar.nav>
                 @if ($activeWorkspace)
-                    <flux:sidebar.group :heading="__('common.workspace')" class="grid">
-                        <flux:sidebar.item icon="home" :href="route('workspaces.show', $activeWorkspace)" :current="request()->routeIs('workspaces.show')" wire:navigate>
-                            {{ __('navigation.overview') }}
+                    <div class="px-3 py-2 text-sm leading-none font-medium text-zinc-400 in-data-flux-sidebar-collapsed-desktop:hidden">{{ __('common.workspace') }}</div>
+                    <flux:sidebar.item icon="home" :href="route('workspaces.show', $activeWorkspace)" :current="request()->routeIs('workspaces.show')" wire:navigate>
+                        {{ __('navigation.overview') }}
+                    </flux:sidebar.item>
+                    @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewWorkflows))
+                        <flux:sidebar.item icon="share" :href="route('workspaces.workflows', $activeWorkspace)" :current="request()->routeIs('workspaces.workflows*')" wire:navigate>
+                            {{ __('common.workflows') }}
                         </flux:sidebar.item>
-                        @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewWorkflows))
-                            <flux:sidebar.item icon="share" :href="route('workspaces.workflows', $activeWorkspace)" :current="request()->routeIs('workspaces.workflows*')" wire:navigate>
-                                {{ __('common.workflows') }}
-                            </flux:sidebar.item>
-                        @endif
-                        @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewExecutions))
-                            <flux:sidebar.item icon="play-circle" :href="route('workspaces.executions', $activeWorkspace)" :current="request()->routeIs('workspaces.executions*')" wire:navigate>
-                                {{ __('common.runs') }}
-                            </flux:sidebar.item>
-                        @endif
-                        @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewDataStore))
-                            <flux:sidebar.item icon="circle-stack" :href="route('workspaces.data-store', $activeWorkspace)" :current="request()->routeIs('workspaces.data-store')" wire:navigate>
-                                {{ __('common.data_store') }}
-                            </flux:sidebar.item>
-                        @endif
-                        @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewSecrets))
-                            <flux:sidebar.item icon="lock-closed" :href="route('workspaces.secrets', $activeWorkspace)" :current="request()->routeIs('workspaces.secrets')" wire:navigate>
-                                {{ __('common.secrets') }}
-                            </flux:sidebar.item>
-                        @endif
-                        @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewCredentials))
-                            <flux:sidebar.item icon="key" :href="route('workspaces.credentials', $activeWorkspace)" :current="request()->routeIs('workspaces.credentials')" wire:navigate>
-                                {{ __('common.credentials') }}
-                            </flux:sidebar.item>
-                        @endif
-                        @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewMembers))
-                            <flux:sidebar.item icon="users" :href="route('workspaces.members', $activeWorkspace)" :current="request()->routeIs('workspaces.members')" wire:navigate>
-                                {{ __('common.members') }}
-                            </flux:sidebar.item>
-                        @endif
-                        @if ($activeRole->can(\App\Enums\WorkspacePermission::ManageSettings))
-                            <flux:sidebar.item icon="cog-6-tooth" :href="route('workspaces.settings', $activeWorkspace)" :current="request()->routeIs('workspaces.settings')" wire:navigate>
-                                {{ __('common.settings') }}
-                            </flux:sidebar.item>
-                        @endif
-                        @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewAuditLog))
-                            <flux:sidebar.item icon="clipboard-document-list" :href="route('workspaces.audit', $activeWorkspace)" :current="request()->routeIs('workspaces.audit')" wire:navigate>
-                                {{ __('common.audit_log') }}
-                            </flux:sidebar.item>
-                        @endif
-                    </flux:sidebar.group>
+                    @endif
+                    @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewExecutions))
+                        <flux:sidebar.item icon="play-circle" :href="route('workspaces.executions', $activeWorkspace)" :current="request()->routeIs('workspaces.executions*')" wire:navigate>
+                            {{ __('common.runs') }}
+                        </flux:sidebar.item>
+                    @endif
+                    @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewDataStore))
+                        <flux:sidebar.item icon="circle-stack" :href="route('workspaces.data-store', $activeWorkspace)" :current="request()->routeIs('workspaces.data-store')" wire:navigate>
+                            {{ __('common.data_store') }}
+                        </flux:sidebar.item>
+                    @endif
+                    @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewSecrets))
+                        <flux:sidebar.item icon="lock-closed" :href="route('workspaces.secrets', $activeWorkspace)" :current="request()->routeIs('workspaces.secrets')" wire:navigate>
+                            {{ __('common.secrets') }}
+                        </flux:sidebar.item>
+                    @endif
+                    @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewCredentials))
+                        <flux:sidebar.item icon="key" :href="route('workspaces.credentials', $activeWorkspace)" :current="request()->routeIs('workspaces.credentials')" wire:navigate>
+                            {{ __('common.credentials') }}
+                        </flux:sidebar.item>
+                    @endif
+                    @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewMembers))
+                        <flux:sidebar.item icon="users" :href="route('workspaces.members', $activeWorkspace)" :current="request()->routeIs('workspaces.members')" wire:navigate>
+                            {{ __('common.members') }}
+                        </flux:sidebar.item>
+                    @endif
+                    @if ($activeRole->can(\App\Enums\WorkspacePermission::ManageSettings))
+                        <flux:sidebar.item icon="cog-6-tooth" :href="route('workspaces.settings', $activeWorkspace)" :current="request()->routeIs('workspaces.settings')" wire:navigate>
+                            {{ __('common.settings') }}
+                        </flux:sidebar.item>
+                    @endif
+                    @if ($activeRole->can(\App\Enums\WorkspacePermission::ViewAuditLog))
+                        <flux:sidebar.item icon="clipboard-document-list" :href="route('workspaces.audit', $activeWorkspace)" :current="request()->routeIs('workspaces.audit')" wire:navigate>
+                            {{ __('common.audit_log') }}
+                        </flux:sidebar.item>
+                    @endif
                 @endif
             </flux:sidebar.nav>
 
@@ -104,6 +118,31 @@
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" :unread="$unreadNotifications" />
         </flux:sidebar>
+
+        <div
+            x-data="wagSidebarResize"
+            role="separator"
+            aria-orientation="vertical"
+            tabindex="0"
+            aria-label="{{ __('navigation.resize_sidebar') }}"
+            :aria-valuenow="width"
+            :aria-valuemin="minWidth"
+            :aria-valuemax="maxWidth"
+            x-on:pointerdown="start"
+            x-on:pointermove="move"
+            x-on:pointerup="end"
+            x-on:pointercancel="end"
+            x-on:dblclick="toggle"
+            x-on:keydown="key"
+            class="wag-sidebar-handle group/resize fixed inset-y-0 z-30 hidden w-3 cursor-col-resize touch-none focus:outline-hidden lg:block"
+            :data-dragging="dragging"
+            data-test="sidebar-resize-handle"
+        >
+            <div class="absolute inset-y-0 start-1/2 w-0.5 -translate-x-1/2 transition-colors group-hover/resize:bg-zinc-400 group-focus-visible/resize:bg-zinc-400 group-data-[dragging=true]/resize:bg-zinc-400 dark:group-hover/resize:bg-zinc-500 dark:group-focus-visible/resize:bg-zinc-500 dark:group-data-[dragging=true]/resize:bg-zinc-500"></div>
+            <flux:tooltip :content="__('navigation.double_click_to_toggle_sidebar')" position="right" class="absolute start-1/2 top-1/2 -translate-1/2" x-bind:disabled="dragging">
+                <div class="h-10 w-2 rounded-full border border-zinc-400 bg-white opacity-0 transition-opacity group-hover/resize:opacity-100 group-focus-visible/resize:opacity-100 group-data-[dragging=true]/resize:opacity-100 dark:border-zinc-500 dark:bg-zinc-800"></div>
+            </flux:tooltip>
+        </div>
 
         <!-- Mobile User Menu -->
         <flux:header class="lg:hidden">

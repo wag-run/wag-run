@@ -102,6 +102,22 @@ select:focus[data-flux-control] {
     background-image: url('../images/noise.svg');
 }
 
+/* The handle on the desktop sidebar's edge. It sits outside the sidebar, whose scrolling would clip its knob, centred on the sidebar's border */
+.wag-sidebar-handle {
+    inset-inline-start: calc(var(--wag-sidebar-width, 16rem) - 0.375rem);
+}
+
+body:has([data-flux-sidebar-collapsed-desktop]) .wag-sidebar-handle {
+    inset-inline-start: calc(3.5rem - 0.375rem);
+}
+
+/* While the sidebar's edge is being dragged: the resize cursor everywhere, and no text selection */
+.wag-sidebar-resizing,
+.wag-sidebar-resizing * {
+    cursor: col-resize !important;
+    user-select: none;
+}
+
 /* Workflow editor canvas nodes */
 .flow-container .flow-node:has(.wag-node) {
     --flow-node-padding: 0;
