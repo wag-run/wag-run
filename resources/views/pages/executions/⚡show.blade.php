@@ -498,10 +498,9 @@ new class extends Component {
                     @if ($settings !== null)
                         <flux:heading size="sm" class="mt-4 mb-1">{{ $label }}</flux:heading>
                         <div class="relative" x-data="{ written: false }" wire:key="step-input-{{ $step->id }}">
-                            <flux:button size="xs" variant="subtle" class="absolute! end-1.5 top-1.5" x-on:click="written = ! written" x-bind:aria-pressed="written.toString()" data-test="step-input-toggle">
-                                <span x-show="! written">{{ __('runs.show.show_placeholders') }}</span>
-                                <span x-show="written" style="display: none">{{ __('runs.show.hide_placeholders') }}</span>
-                            </flux:button>
+                            <div class="absolute end-3 top-2">
+                                <flux:checkbox x-model="written" :label="__('runs.show.show_placeholders')" data-test="step-input-toggle" />
+                            </div>
                             <pre x-show="! written" class="max-h-80 overflow-auto rounded-lg whitespace-pre-wrap break-words bg-zinc-50 p-3 pt-9 text-xs dark:bg-zinc-800" data-test="step-input">{{ $this->json($value) }}</pre>
                             <pre x-show="written" style="display: none" class="max-h-80 overflow-auto rounded-lg whitespace-pre-wrap break-words bg-zinc-50 p-3 pt-9 text-xs dark:bg-zinc-800" data-test="step-settings">{{ $this->json($settings) }}</pre>
                         </div>
