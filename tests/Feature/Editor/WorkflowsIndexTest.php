@@ -139,6 +139,19 @@ class WorkflowsIndexTest extends TestCase
             ->assertSee('Webhook');
     }
 
+    public function test_list_marks_disabled_workflows(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
+        Workflow::factory()->for($workspace)->create(['name' => 'Running fine']);
+        $list = fn () => $this->actingAs($viewer)->get(route('workspaces.workflows', $workspace))->assertOk();
+
+        $list()->assertDontSee('data-test="workflow-disabled"', false);
+
+        Workflow::factory()->for($workspace)->disabled()->create(['name' => 'Switched off']);
+        $list()->assertSee('data-test="workflow-disabled"', false)->assertSee(__('workflows.index.disabled'));
+    }
+
     public function test_admins_delete_a_workflow_by_its_uuid(): void
     {
         $workspace = Workspace::factory()->create();

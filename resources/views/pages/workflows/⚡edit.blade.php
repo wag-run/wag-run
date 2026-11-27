@@ -97,6 +97,8 @@ new class extends Component {
 
     public string $concurrency = 'allow';
 
+    public bool $enabled = true;
+
     public bool $customRetention = false;
 
     public ?int $retentionDays = null;
@@ -170,6 +172,7 @@ new class extends Component {
         $this->name = $this->workflow->name;
         $this->description = (string) $this->workflow->description;
         $this->concurrency = $this->workflow->concurrency->value;
+        $this->enabled = $this->workflow->is_enabled;
         $this->customRetention = $this->workflow->retention_days !== null;
         $this->retentionDays = $this->workflow->retention_days ?? $this->workspace->effectiveRetentionDays();
         $this->customRunLimit = $this->workflow->max_runs_per_minute !== null;
@@ -1128,6 +1131,25 @@ new class extends Component {
         Flux::toast(variant: 'success', text: __('workflows.edit.workflow_settings_saved'));
     }
 
+    /**
+     * Turn the workflow on or off as soon as the switch moves. Off, its
+     * triggers, the API, and other workflows cannot start it; runs from the
+     * editor still can.
+     */
+    public function updatedEnabled(bool $enabled): void
+    {
+        $this->authorize('publish-workflows', $this->workspace);
+
+        if ($this->workflow->is_enabled === $enabled) {
+            return;
+        }
+
+        $this->workflow->forceFill(['is_enabled' => $enabled])->save();
+        Audit::record($enabled ? 'workflow.enabled' : 'workflow.disabled', $this->workflow, $this->workspace);
+
+        Flux::toast(variant: 'success', text: $enabled ? __('workflows.edit.workflow_enabled') : __('workflows.edit.workflow_disabled'));
+    }
+
     public function publish(Workflows $workflows): void
     {
         $this->authorize('publish-workflows', $this->workspace);
@@ -1783,6 +1805,8 @@ new class extends Component {
             @else
                 <flux:heading class="pe-8">{{ __('workflows.edit.workflow_settings') }}</flux:heading>
                 <flux:text class="mb-4 text-xs">{{ __('workflows.edit.select_a_node_to_configure') }}</flux:text>
+                <flux:switch wire:model.live="enabled" class="mb-4" :label="__('workflows.edit.enabled')" :description="__('workflows.edit.enabled_help')"
+                    :disabled="! $this->canPublish" data-test="workflow-enabled" />
                 <form wire:submit="saveSettings" class="space-y-4">
                     <fieldset class="space-y-4" @disabled(! $this->canEdit)>
                         <flux:input wire:model="name" :label="__('common.name')" required />

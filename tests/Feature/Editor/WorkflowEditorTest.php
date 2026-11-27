@@ -551,6 +551,34 @@ class WorkflowEditorTest extends TestCase
         $this->assertSame(200, $workflow->max_runs_per_minute);
     }
 
+    public function test_the_enabled_switch_turns_the_workflow_off_and_on_at_once_for_people_who_can_publish(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor();
+        $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
+
+        $this->editor($workspace, $workflow, $viewer)->assertSet('enabled', true)->set('enabled', false)->assertForbidden();
+        $this->assertTrue($workflow->refresh()->is_enabled);
+
+        $this->editor($workspace, $workflow, $user)->set('enabled', false)->assertHasNoErrors();
+        $this->assertFalse($workflow->refresh()->is_enabled);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'workflow.disabled', 'workspace_id' => $workspace->id]);
+
+        $this->editor($workspace, $workflow, $user)->assertSet('enabled', false)->set('enabled', true);
+        $this->assertTrue($workflow->refresh()->is_enabled);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'workflow.enabled', 'workspace_id' => $workspace->id]);
+    }
+
+    public function test_publishing_leaves_a_disabled_workflow_disabled(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor();
+        $workflow->forceFill(['is_enabled' => false])->save();
+
+        $this->editor($workspace, $workflow, $user)->call('publish')->assertHasNoErrors();
+
+        $this->assertNotNull($workflow->refresh()->published_version_id);
+        $this->assertFalse($workflow->is_enabled);
+    }
+
     public function test_the_palette_leaves_out_sticky_notes_which_come_from_the_context_menu(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor();
