@@ -92,6 +92,14 @@ The answer is `201` with the new run. A workflow without a Manual trigger starts
 
 The request returns as soon as the run starts. To follow it, get the run until its `status` is `complete`, `failed`, `cancelled`, or `skipped`. A run that waits for an approval can stay `waiting` for a long time.
 
+### Loops in a run's steps
+
+A step that ran inside a [For loop](actions.md#for-loop) has an `iteration`, such as `L12.0`: the first iteration of the loop whose step `id` is 12. A step in a loop inside that one has `L12.0/L15.3`. A step outside every loop has `null`.
+
+The loop's own step has only `count` in its `output`. What each iteration produced is in that iteration's steps, so the list holds every output once. To read a loop's results, group the steps by `iteration`.
+
+A run that ends with a loop still has the loop's `results` in the run's own `output`.
+
 ### Listing runs
 
 `GET /workspaces/{workspace}/runs` takes these query parameters:
