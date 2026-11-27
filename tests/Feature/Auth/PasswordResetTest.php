@@ -7,7 +7,9 @@ use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use Laravel\Fortify\Features;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
 class PasswordResetTest extends TestCase
@@ -43,6 +45,22 @@ class PasswordResetTest extends TestCase
 
             return true;
         });
+    }
+
+    #[TestWith(['new-password', 'different', 'The password field confirmation does not match.'])]
+    #[TestWith(['short', 'short', 'The password field must be at least 8 characters.'])]
+    public function test_password_is_not_reset_when_the_new_password_fails_validation(string $password, string $confirmation, string $message): void
+    {
+        $user = User::factory()->create();
+
+        $this->post(route('password.update'), [
+            'token' => Password::createToken($user),
+            'email' => $user->email,
+            'password' => $password,
+            'password_confirmation' => $confirmation,
+        ])->assertSessionHasErrors(['password' => $message]);
+
+        $this->assertTrue(Hash::check('password', $user->refresh()->password));
     }
 
     public function test_password_can_be_reset_with_valid_token(): void
