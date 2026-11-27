@@ -264,8 +264,11 @@ class FlowNodesTest extends TestCase
         $execution = $this->runWorkflow($workflow);
         $this->assertSame(ExecutionStatus::Waiting, $execution->status);
 
-        $this->travel(2)->hours();
-        $this->travel(1)->minute();
+        $this->travel(119)->minutes();
+        $this->sweep();
+        $this->assertSame(ExecutionStatus::Waiting, $execution->refresh()->status, 'not two hours yet');
+
+        $this->travel(2)->minutes();
         $this->sweep();
 
         $this->assertSame(ExecutionStatus::Complete, $execution->refresh()->status);

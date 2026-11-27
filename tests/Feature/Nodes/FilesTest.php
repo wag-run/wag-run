@@ -66,7 +66,7 @@ class FilesTest extends TestCase
 
     public function test_http_call_saves_a_download_as_a_file_of_the_run(): void
     {
-        Http::fake(['cdn.example.com/*' => Http::response(self::PNG, 200, ['Content-Type' => 'image/png', 'Content-Disposition' => 'attachment; filename="logo.png"'])]);
+        Http::fake(['cdn.example.com/*' => Http::response("id,total\n1,20", 200, ['Content-Type' => 'text/csv', 'Content-Disposition' => 'attachment; filename="report.csv"'])]);
 
         $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger', 'fetch' => ['core.http_request', ['method' => 'GET', 'url' => 'https://cdn.example.com/assets/123', 'save_as_file' => true]]],
@@ -76,9 +76,9 @@ class FilesTest extends TestCase
         $output = $this->stepFor($execution, 'fetch')->output;
         $file = $this->fileOf($execution, 'fetch');
         $this->assertNull($output['body']);
-        $this->assertSame(['kind' => 'file', 'id' => $file->id, 'name' => 'logo.png', 'mime' => 'image/png', 'size' => strlen(self::PNG)], $output['file']);
+        $this->assertSame(['kind' => 'file', 'id' => $file->id, 'name' => 'report.csv', 'mime' => 'text/csv', 'size' => 13], $output['file']);
         $this->assertSame($execution->id, $file->execution_id);
-        $this->assertSame(self::PNG, $this->bytes($file));
+        $this->assertSame("id,total\n1,20", $this->bytes($file));
     }
 
     public function test_a_response_that_is_not_text_is_saved_as_a_file_without_asking(): void
@@ -309,11 +309,13 @@ class FilesTest extends TestCase
         $abandoned = WorkflowFile::findOrFail(app(WorkflowFiles::class)->store($workspace, null, 'never used', 'stray.txt')['id']);
         $execution->update(['finished_at' => now()->subDays(8)]);
         $this->travel(2)->days();
+        $justUploaded = WorkflowFile::findOrFail(app(WorkflowFiles::class)->store($workspace, null, 'run not started yet', 'fresh.txt')['id']);
 
         app(ExecutionRetention::class)->purge();
 
         $this->assertModelMissing($file);
         $this->assertModelMissing($abandoned);
+        $this->assertModelExists($justUploaded);
         Storage::disk('workflow_files')->assertMissing($file->path);
         Storage::disk('workflow_files')->assertMissing($abandoned->path);
     }

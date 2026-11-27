@@ -8,6 +8,8 @@ use App\Models\Credential;
 use App\Models\Workflow;
 use App\Models\Workspace;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\JsonSchema\JsonSchemaTypeFactory;
+use Illuminate\JsonSchema\Types\Type;
 use Laravel\Ai\AnonymousAgent;
 use Laravel\Ai\Prompts\AgentPrompt;
 use Laravel\Ai\StructuredAnonymousAgent;
@@ -41,7 +43,10 @@ class LlmCallTest extends TestCase
 
         $this->assertSame(ExecutionStatus::Complete, $execution->status);
         $this->assertSame('A short summary.', $this->stepFor($execution, 'ask')->output['text']);
-        AnonymousAgent::assertPrompted(fn (AgentPrompt $prompt) => $prompt->prompt === 'Summarize order 42');
+        AnonymousAgent::assertPrompted(fn (AgentPrompt $prompt) => $prompt->prompt === 'Summarize order 42'
+            && $prompt->agent->instructions() === 'Be brief.'
+            && $prompt->provider->driver() === 'anthropic'
+            && $prompt->provider->providerCredentials() === ['key' => Credential::sole()->config['api_key']]);
     }
 
     public function test_returns_structured_data_matching_the_schema(): void
@@ -56,6 +61,8 @@ class LlmCallTest extends TestCase
         $execution = $this->runWorkflow($workflow);
 
         $this->assertSame(['sentiment' => 'positive', 'score' => 9], $this->stepFor($execution, 'ask')->output['data']);
+        StructuredAnonymousAgent::assertPrompted(fn (AgentPrompt $prompt) => array_map(fn (Type $type) => $type->toArray(), $prompt->agent->schema(new JsonSchemaTypeFactory))
+            === ['sentiment' => ['type' => 'string'], 'score' => ['type' => 'integer']]);
     }
 
     public function test_structured_fields_become_outputs_for_the_data_picker(): void

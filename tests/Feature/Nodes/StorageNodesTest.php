@@ -71,11 +71,12 @@ class StorageNodesTest extends TestCase
 
     /**
      * @param  array<string, mixed>  $config
+     * @param  array<string, int>|null  $retry
      */
-    private function runUpload(Workspace $workspace, array $config, array $input = []): Execution
+    private function runUpload(Workspace $workspace, array $config, array $input = [], ?array $retry = null): Execution
     {
         return $this->runWorkflow($this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'upload' => ['core.s3_upload', ['credential' => $this->settingId('backups'), 'bucket' => 'backups', ...$config]]],
+            ['start' => 'core.manual_trigger', 'upload' => ['core.s3_upload', ['credential' => $this->settingId('backups'), 'bucket' => 'backups', ...$config], $retry]],
             ['start->upload'],
         ), $workspace), ['values' => $input]);
     }
@@ -129,11 +130,11 @@ class StorageNodesTest extends TestCase
         Credential::factory()->for($workspace)->s3()->create(['id' => $this->settingId('backups'), 'description' => 'backups']);
 
         $empty = $this->runUpload($workspace, ['bucket' => '{{ trigger.values.bucket }}', 'key' => 'config.xml', 'content' => '<a/>']);
-        $malformed = $this->runUpload($workspace, ['bucket' => 'evil.example/x', 'key' => 'config.xml', 'content' => '<a/>']);
+        $malformed = $this->runUpload($workspace, ['bucket' => 'evil.example/x', 'key' => 'config.xml', 'content' => '<a/>'], retry: ['max_retries' => 3]);
 
+        $this->assertSame(1, $malformed->steps()->where('node_id', 'upload')->count());
         $this->assertSame('The bucket is empty.', $empty->error['message']);
         $this->assertSame('"evil.example/x" is not a bucket name. Use 3 to 63 lowercase letters, numbers, dots, and hyphens.', $malformed->error['message']);
-        $this->assertSame(1, $this->stepFor($malformed, 'upload')->attempt);
         $this->assertSame([], $this->sent);
     }
 
@@ -200,10 +201,10 @@ class StorageNodesTest extends TestCase
         $workspace = Workspace::factory()->create();
         $credential = Credential::factory()->for($workspace)->s3()->create(['id' => $this->settingId('backups'), 'description' => 'backups']);
 
-        $execution = $this->runUpload($workspace, ['key' => 'config.xml', 'content' => '<a/>']);
+        $execution = $this->runUpload($workspace, ['key' => 'config.xml', 'content' => '<a/>'], retry: ['max_retries' => 3]);
 
+        $this->assertSame(1, $execution->steps()->where('node_id', 'upload')->count());
         $this->assertSame('The storage service answered 403 AccessDenied: Access Denied', $execution->error['message']);
-        $this->assertSame(1, $this->stepFor($execution, 'upload')->attempt);
         $this->assertStringNotContainsString($credential->config['secret_access_key'], json_encode($execution->steps()->get()->toArray()));
     }
 

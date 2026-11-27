@@ -44,11 +44,12 @@ class HttpRequestTest extends TestCase
 
     /**
      * @param  array<string, mixed>  $config
+     * @param  array<string, int>|null  $retry
      */
-    private function httpWorkflow(array $config, ?Workspace $workspace = null, array $edges = ['start->call'], array $extraNodes = []): Workflow
+    private function httpWorkflow(array $config, ?Workspace $workspace = null, array $edges = ['start->call'], array $extraNodes = [], ?array $retry = null): Workflow
     {
         return $this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'call' => ['core.http_request', $config], ...$extraNodes],
+            ['start' => 'core.manual_trigger', 'call' => ['core.http_request', $config, $retry], ...$extraNodes],
             $edges,
         ), $workspace);
     }
@@ -100,6 +101,7 @@ class HttpRequestTest extends TestCase
             ['url' => 'https://api.example.com/x'],
             edges: ['start->call', 'call:error->handle'],
             extraNodes: ['handle' => ['core.compose', ['template' => '{{ error.message }}']]],
+            retry: ['max_retries' => 2, 'backoff_seconds' => 0],
         );
 
         $execution = $this->runWorkflow($workflow);
