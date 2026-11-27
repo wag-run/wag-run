@@ -71,10 +71,4 @@ done
 
 php artisan optimize --no-interaction
 
-# Webhooks registered with other apps, such as GitHub, follow APP_URL when it
-# changes. A failure is noted on the trigger and doesn't stop the start.
-if ! php artisan workflows:sync-webhooks --no-interaction; then
-    echo "Some webhooks could not be moved to APP_URL. The editor shows which; publishing the workflow tries again." >&2
-fi
-
 exec "$@"
