@@ -37,3 +37,13 @@ docker-compose.yml
 .dockerignore
 docs
 README.md
+
+# Tests, code checks, and agent tooling never run in the image.
+tests
+phpunit.xml
+phpstan.neon
+pint.json
+.ai
+AGENTS.md
+boost.json
+.mcp.json

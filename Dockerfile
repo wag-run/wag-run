@@ -85,7 +85,7 @@ COPY --chmod=0555 docker/entrypoint.sh /usr/local/bin/entrypoint
 COPY --from=vendor /var/www/html ./
 COPY --from=assets /app/public/build ./public/build
 
-RUN rm -rf docker tests \
+RUN rm -rf docker \
     && ln -s ../storage/app/public public/storage \
     && mkdir -p storage/database \
     && chown -R www-data:www-data storage \
