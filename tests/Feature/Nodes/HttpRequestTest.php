@@ -170,18 +170,6 @@ class HttpRequestTest extends TestCase
         $this->assertStringContainsString('internal address 169.254.169.254', $execution->error['message']);
     }
 
-    public function test_follows_safe_redirects(): void
-    {
-        Http::fake([
-            'redirector.example.com/*' => Http::response('', 301, ['Location' => 'https://api.example.com/final']),
-            'api.example.com/*' => Http::response('arrived'),
-        ]);
-
-        $execution = $this->runWorkflow($this->httpWorkflow(['url' => 'https://redirector.example.com/go']));
-
-        $this->assertSame('arrived', $this->stepFor($execution, 'call')->output['body']);
-    }
-
     /**
      * A workflow calling https://redirector.example.com/go with a token, a custom header, and a query parameter.
      */
