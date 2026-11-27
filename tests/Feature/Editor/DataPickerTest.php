@@ -94,7 +94,7 @@ class DataPickerTest extends TestCase
         $after = $this->paths($graph, 'after');
 
         $this->assertSame(['item', 'loop.index', 'loop.count'], $inside['Loop: each']);
-        $this->assertSame(['nodes.each.output.results', 'nodes.each.output.count', 'nodes.each.output.results[0].body.output.value'], $after['each']);
+        $this->assertSame(['nodes.each.output.results', 'nodes.each.output.count', 'nodes.each.output.last', 'nodes.each.output.results[0].body.output.value', 'nodes.each.output.last.body.output.value'], $after['each']);
         $this->assertArrayNotHasKey('body', $after);
         $this->assertArrayNotHasKey('Loop: each', $after);
     }
@@ -110,9 +110,15 @@ class DataPickerTest extends TestCase
         $this->assertSame([
             'nodes.outer.output.results',
             'nodes.outer.output.count',
+            'nodes.outer.output.last',
             'nodes.outer.output.results[0].inner.output.results',
             'nodes.outer.output.results[0].inner.output.count',
+            'nodes.outer.output.results[0].inner.output.last',
+            'nodes.outer.output.last.inner.output.results',
+            'nodes.outer.output.last.inner.output.count',
+            'nodes.outer.output.last.inner.output.last',
             'nodes.outer.output.results[0].tail.output.value',
+            'nodes.outer.output.last.tail.output.value',
         ], $this->paths($graph, 'after')['outer']);
     }
 

@@ -71,13 +71,13 @@ class FlowNodesTest extends TestCase
             ['start' => ['core.webhook_trigger', ['method' => 'POST', 'verification' => 'none']], 'each' => ['core.for_loop', ['items' => '{{ trigger.body.names }}']],
                 'greet' => ['core.compose', ['template' => 'Hi {{ item }}']],
                 'shout' => ['core.compose', ['template' => '{{ upper(nodes.greet.output.value) }}']],
-                'after' => ['core.compose', ['template' => '{{ nodes.each.output.results[1].greet.output.value }} / {{ nodes.each.output.results[1].shout.output.value }} / {{ nodes.each.output.results[0].greet.port }} / {{ nodes.each.output.count }}']]],
+                'after' => ['core.compose', ['template' => '{{ nodes.each.output.results[1].greet.output.value }} / {{ nodes.each.output.results[1].shout.output.value }} / {{ nodes.each.output.results[0].greet.port }} / {{ nodes.each.output.count }} / {{ nodes.each.output.last.shout.output.value }}']]],
             ['start->each', 'each:item->greet', 'greet->shout', 'each:done->after'],
         ));
 
         $execution = $this->runWorkflow($workflow, ['body' => ['names' => ['Ada', 'Grace']]]);
 
-        $this->assertSame('Hi Grace / HI GRACE / main / 2', $this->stepFor($execution, 'after')->output['value']);
+        $this->assertSame('Hi Grace / HI GRACE / main / 2 / HI GRACE', $this->stepFor($execution, 'after')->output['value']);
     }
 
     public function test_for_loop_refuses_a_value_that_is_not_a_list(): void

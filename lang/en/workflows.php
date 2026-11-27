@@ -147,6 +147,7 @@ return [
         'item_count' => 'Item count',
         'item_index' => 'Item index',
         'iteration_n' => 'Iteration :n',
+        'last_iteration_name' => 'Last iteration › :name',
         'key' => 'key',
         'loop_name' => 'Loop: :name',
         'name_has_no_output_named' => ':name has no output named ":port".',

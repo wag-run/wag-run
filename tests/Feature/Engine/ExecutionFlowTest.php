@@ -262,7 +262,7 @@ class ExecutionFlowTest extends TestCase
         $execution = $this->runWorkflow($workflow);
 
         $this->assertSame(['start', 'each', 'after'], $this->nodesRun($execution));
-        $this->assertSame(['results' => [], 'count' => 0], LoopResults::for($execution)->outputOf($this->stepFor($execution, 'each')));
+        $this->assertSame(['results' => [], 'count' => 0, 'last' => null], LoopResults::for($execution)->outputOf($this->stepFor($execution, 'each')));
     }
 
     public function test_waiting_inside_a_loop_holds_the_next_iteration(): void

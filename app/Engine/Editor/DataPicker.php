@@ -20,7 +20,7 @@ use App\Models\Workspace;
  * workflow's variables, and the workspace's data store entries and
  * secrets. Built from each node's declared outputs, so custom nodes appear
  * the same way. A For loop and a Merge also offer the outputs of the nodes
- * they gathered.
+ * they gathered: a loop's first and last iteration, and each branch.
  */
 class DataPicker
 {
@@ -252,8 +252,8 @@ class DataPicker
 
     /**
      * Paths into what a For loop or a Merge gathered, each node in the same
-     * shape as nodes.<id>: every node of the loop's first iteration, and
-     * the last node of each branch.
+     * shape as nodes.<id>: every node of the loop's first and last
+     * iteration, and the last node of each branch.
      *
      * @param  array<string, array<string, true>>  $loopBodies
      * @return list<array{label: string, path: string, type: string}>
@@ -264,17 +264,19 @@ class DataPicker
 
         if (isset($loopBodies[$node->id])) {
             foreach ($this->directBody($node->id, $loopBodies) as $id) {
-                $sources[$id] = ["results[0].{$id}", __('workflows.editor.first_iteration_name', ['name' => $graph->node($id)->name])];
+                $name = $graph->node($id)->name;
+                $sources[] = [$id, "results[0].{$id}", __('workflows.editor.first_iteration_name', ['name' => $name])];
+                $sources[] = [$id, "last.{$id}", __('workflows.editor.last_iteration_name', ['name' => $name])];
             }
         } elseif ($node->type === Merge::type()) {
             foreach ($graph->incoming($node->id) as $edge) {
-                $sources[$edge->source] = ["branches.{$edge->source}", __('nodes.merge.branch_outputs').' › '.$graph->node($edge->source)->name];
+                $sources[] = [$edge->source, "branches.{$edge->source}", __('nodes.merge.branch_outputs').' › '.$graph->node($edge->source)->name];
             }
         }
 
         $items = [];
 
-        foreach ($sources as $id => [$path, $label]) {
+        foreach ($sources as [$id, $path, $label]) {
             $source = $graph->node($id);
 
             if ($this->registry->has($source->type)) {
