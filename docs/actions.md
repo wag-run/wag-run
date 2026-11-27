@@ -105,8 +105,10 @@ Starts another workflow in the same workspace.
 
 Outputs:
 
-- **Wait for it to finish**: `output`, the last node on each path of the other workflow, keyed by node id, in the [same shape as `nodes.<id>`](data-and-placeholders.md#nodes-inside-results). For a workflow that ends in a node `reply`, `{{ nodes.call.output.output.reply.output.value }}` is that node's value. If the other run fails or is cancelled, this step fails.
+- **Wait for it to finish**: `results`, the last node on each path of the other workflow, keyed by node id, in the [same shape as `nodes.<id>`](data-and-placeholders.md#nodes-inside-results). For a workflow that ends in a node `reply`, `{{ nodes.call.output.results.reply.output.value }}` is that node's value. If the other run fails or is cancelled, this step fails.
 - **Start it and move on**: `execution_id` and `status` of the run it started.
+
+See [What a run returns](runs.md#what-a-run-returns) for which nodes of the other workflow that includes, and how the other workflow can return a value it chooses.
 
 The other run shows **Another workflow** as its trigger and links back to this run. Chains of workflows starting workflows stop at the organization's **Maximum chain depth** (10 by default), so workflows that start each other can't loop forever. The same goes for an **HTTP call** to one of this install's own webhook URLs: the run it starts counts as one level deeper in the chain.
 
@@ -117,7 +119,7 @@ Ends the run here.
 | Setting | What it does |
 |---|---|
 | **End as** | **Complete**, **Failed**, or **Cancelled** |
-| **Output** | Optional. Becomes the run's output. |
+| **Output** | Optional. Becomes [what the run returns](runs.md#what-a-run-returns), in place of the last node on each path. |
 
 Other branches still going are stopped too.
 

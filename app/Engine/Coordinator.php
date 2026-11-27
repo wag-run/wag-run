@@ -575,19 +575,22 @@ class Coordinator
     }
 
     /**
-     * The run's result: the completed top-level steps that nothing continued
-     * from, keyed by node id, each in the same shape as nodes.<id>.
+     * The run's result: the completed top-level steps the run had nowhere to
+     * continue from, keyed by node id, each in the same shape as nodes.<id>.
+     * A step continues when a connection leaves an output it took, which
+     * also holds for every branch that meets at a join.
      *
      * @return array<string, array{output: mixed, port: string|null}>
      */
     protected function leafOutputs(Execution $execution): array
     {
-        $steps = $execution->steps()->where('scope_key', '')->orderBy('id')->get(['id', 'node_id', 'scope_key', 'status', 'wait_type', 'output', 'output_ports', 'previous_step_id']);
-        $continued = $steps->pluck('previous_step_id')->filter()->flip();
+        $graph = $this->graphFor($execution);
+        $steps = $execution->steps()->where('scope_key', '')->orderBy('id')->get(['id', 'node_id', 'scope_key', 'status', 'wait_type', 'output', 'output_ports']);
         $results = LoopResults::for($execution);
 
         return $steps
-            ->filter(fn (ExecutionStep $step) => $step->status === StepStatus::Complete && ! $continued->has($step->id))
+            ->filter(fn (ExecutionStep $step) => $step->status === StepStatus::Complete
+                && ! array_any($step->output_ports ?? [], fn (string $port) => $graph->outgoing($step->node_id, $port) !== []))
             ->mapWithKeys(fn (ExecutionStep $step) => [$step->node_id => $results->entry($step)])
             ->all();
     }

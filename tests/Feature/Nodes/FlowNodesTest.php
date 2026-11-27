@@ -220,7 +220,7 @@ class FlowNodesTest extends TestCase
         ), $workspace);
         $parent = $this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger', 'call' => ['core.run_workflow', ['workflow' => $child->id, 'mode' => 'sync', 'input' => ['name' => '{{ trigger.values.who }}']]],
-                'use' => ['core.compose', ['template' => '{{ nodes.call.output.output.reply.output.value }}!']]],
+                'use' => ['core.compose', ['template' => '{{ nodes.call.output.results.reply.output.value }}!']]],
             ['start->call', 'call->use'],
         ), $workspace);
 
@@ -300,7 +300,7 @@ class FlowNodesTest extends TestCase
         ), $workspace);
         $parent = $this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger', 'call' => ['core.run_workflow', ['workflow' => $child->id, 'mode' => 'sync', 'input' => ['email' => '{{ trigger.values.email }}']]],
-                'use' => ['core.compose', ['template' => '{{ nodes.call.output.output.reply.output.value }}']]],
+                'use' => ['core.compose', ['template' => '{{ nodes.call.output.results.reply.output.value }}']]],
             ['start->call', 'call->use'],
         ), $workspace);
 
