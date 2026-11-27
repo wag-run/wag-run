@@ -8,12 +8,12 @@
         <flux:sidebar
             sticky
             collapsible="true"
-            class="wag-noise relative border-e border-zinc-200 bg-zinc-50 lg:not-data-flux-sidebar-collapsed-desktop:w-[var(--wag-sidebar-width,16rem)] dark:border-zinc-700 dark:bg-zinc-900"
+            class="wag-noise border-e border-zinc-200 bg-zinc-50 lg:not-data-flux-sidebar-collapsed-desktop:w-[var(--wag-sidebar-width,16rem)] dark:border-zinc-700 dark:bg-zinc-900"
             data-test="sidebar"
         >
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
-                <flux:sidebar.collapse class="lg:not-in-data-flux-sidebar-collapsed-desktop:hidden" :tooltip="__('navigation.toggle_sidebar')" />
+                <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
             @php
@@ -117,31 +117,33 @@
             <flux:spacer />
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" :unread="$unreadNotifications" />
-
-            <div
-                x-data="wagSidebarResize"
-                role="separator"
-                aria-orientation="vertical"
-                tabindex="0"
-                aria-label="{{ __('navigation.resize_sidebar') }}"
-                :aria-valuenow="width"
-                :aria-valuemin="minWidth"
-                :aria-valuemax="maxWidth"
-                x-on:pointerdown="start"
-                x-on:pointermove="move"
-                x-on:pointerup="end"
-                x-on:pointercancel="end"
-                x-on:dblclick="toggle"
-                x-on:keydown="key"
-                class="group/resize absolute inset-y-0 end-0 z-10 hidden w-2 cursor-col-resize touch-none focus:outline-hidden lg:block"
-                data-test="sidebar-resize-handle"
-            >
-                <div
-                    class="absolute inset-y-0 -end-px w-0.5 transition-colors group-hover/resize:bg-zinc-300 group-focus-visible/resize:bg-zinc-400 dark:group-hover/resize:bg-zinc-600 dark:group-focus-visible/resize:bg-zinc-500"
-                    :class="dragging && 'bg-zinc-400! dark:bg-zinc-500!'"
-                ></div>
-            </div>
         </flux:sidebar>
+
+        <div x-data="wagSidebarResize" class="wag-sidebar-handle fixed inset-y-0 z-10 hidden w-3 lg:block" data-test="sidebar-resize-handle">
+            <flux:tooltip :content="__('navigation.double_click_to_toggle_sidebar')" position="right" class="block h-full" x-bind:disabled="dragging">
+                <div
+                    role="separator"
+                    aria-orientation="vertical"
+                    tabindex="0"
+                    aria-label="{{ __('navigation.resize_sidebar') }}"
+                    :aria-valuenow="width"
+                    :aria-valuemin="minWidth"
+                    :aria-valuemax="maxWidth"
+                    x-on:pointerdown="start"
+                    x-on:pointermove="move"
+                    x-on:pointerup="end"
+                    x-on:pointercancel="end"
+                    x-on:dblclick="toggle"
+                    x-on:keydown="key"
+                    class="group/resize relative h-full w-full cursor-col-resize touch-none focus:outline-hidden"
+                    :data-dragging="dragging"
+                >
+                    <span class="sr-only">{{ __('navigation.resize_sidebar') }}</span>
+                    <div class="absolute inset-y-0 start-1/2 w-0.5 -translate-x-1/2 transition-colors group-hover/resize:bg-zinc-400 group-focus-visible/resize:bg-zinc-400 group-data-[dragging=true]/resize:bg-zinc-400 dark:group-hover/resize:bg-zinc-500 dark:group-focus-visible/resize:bg-zinc-500 dark:group-data-[dragging=true]/resize:bg-zinc-500"></div>
+                    <div class="absolute start-1/2 top-1/2 h-10 w-2 -translate-1/2 rounded-full border border-zinc-400 bg-white opacity-0 transition-opacity group-hover/resize:opacity-100 group-focus-visible/resize:opacity-100 group-data-[dragging=true]/resize:opacity-100 dark:border-zinc-500 dark:bg-zinc-800"></div>
+                </div>
+            </flux:tooltip>
+        </div>
 
         <!-- Mobile User Menu -->
         <flux:header class="lg:hidden">

@@ -23,6 +23,7 @@ class SidebarTest extends TestCase
             ->assertSee('collapsible="true"', false)
             ->assertSee('x-data="wagSidebarResize"', false)
             ->assertSee('aria-label="'.__('navigation.resize_sidebar').'"', false)
+            ->assertSee(__('navigation.double_click_to_toggle_sidebar'))
             ->assertSeeInOrder(['data-test="workspace-initials"', 'AO</span>'], false);
     }
 }

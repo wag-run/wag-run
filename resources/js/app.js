@@ -714,7 +714,8 @@ document.addEventListener('alpine:init', () => {
 });
 
 /**
- * The handle on the desktop sidebar's edge. Dragging it sets the sidebar's
+ * The handle on the desktop sidebar's edge, a sibling of the sidebar so its
+ * knob can straddle the border. Dragging it sets the sidebar's
  * width, which is remembered in this browser. Dragging narrower than
  * snapWidth collapses the sidebar to Flux's icon rail, and dragging out from
  * the rail opens it again. Double-clicking the handle, or pressing Enter on
@@ -754,7 +755,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         sidebar() {
-            return this.$el.closest('[data-flux-sidebar]');
+            return document.querySelector('ui-sidebar[data-flux-sidebar]');
         },
 
         isCollapsed() {
@@ -787,7 +788,7 @@ document.addEventListener('alpine:init', () => {
             }
 
             event.preventDefault();
-            this.$el.setPointerCapture(event.pointerId);
+            event.currentTarget.setPointerCapture(event.pointerId);
 
             const sidebar = this.sidebar();
 
