@@ -8,7 +8,7 @@
         <flux:sidebar
             sticky
             :collapsible="true"
-            class="wag-noise border-e border-zinc-200 bg-zinc-50 lg:not-data-flux-sidebar-collapsed-desktop:w-[var(--wag-sidebar-width,16rem)] dark:border-zinc-700 dark:bg-zinc-900"
+            class="wag-noise border-e border-zinc-200 bg-zinc-50 lg:not-data-flux-sidebar-collapsed-desktop:w-[var(--wag-sidebar-width,16rem)] data-flux-sidebar-collapsed-desktop:cursor-auto! dark:border-zinc-700 dark:bg-zinc-900"
             data-test="sidebar"
         >
             <flux:sidebar.header>

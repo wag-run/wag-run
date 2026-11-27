@@ -723,9 +723,9 @@ document.addEventListener('alpine:init', () => {
  * Collapsing by dragging keeps the width it had before, for when it opens
  * again. Flux remembers whether the sidebar is collapsed.
  *
- * Flux shows an expand cursor across the collapsed rail but only expands it
- * on a click on the rail's own padding, so a click on any empty part of the
- * rail, outside its links and buttons, expands it here too.
+ * The handle is the one place that collapses and expands the sidebar, so
+ * Flux's own single click on the collapsed rail's padding is stopped here,
+ * and the sidebar's markup turns off the expand cursor Flux shows for it.
  *
  * resources/views/partials/sidebar-width.blade.php applies the saved width
  * before the page paints, with the same storage key and limits.
@@ -754,21 +754,17 @@ document.addEventListener('alpine:init', () => {
             this.width = saved ? this.clamp(saved) : defaultWidth;
             this.apply();
 
-            this.railClick = (event) => this.expandFromRail(event);
-            this.sidebar()?.addEventListener('click', this.railClick);
+            this.railClick = (event) => {
+                if (event.target === event.currentTarget) {
+                    event.stopImmediatePropagation();
+                }
+            };
+            this.sidebar()?.addEventListener('click', this.railClick, { capture: true });
         },
 
         destroy() {
-            this.sidebar()?.removeEventListener('click', this.railClick);
+            this.sidebar()?.removeEventListener('click', this.railClick, { capture: true });
             document.body.classList.remove('wag-sidebar-resizing');
-        },
-
-        expandFromRail(event) {
-            if (! this.isCollapsed() || event.target.closest('a, button, input, select, textarea, [role="button"], [tabindex]')) {
-                return;
-            }
-
-            this.setCollapsed(false);
         },
 
         sidebar() {
