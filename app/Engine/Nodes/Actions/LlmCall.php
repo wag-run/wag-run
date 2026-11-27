@@ -163,7 +163,7 @@ class LlmCall extends Node
             $response = $agent->prompt(
                 (string) $context->input('prompt'),
                 attachments: $attachments,
-                provider: [$provider],
+                provider: $provider->name(),
                 model: (string) $context->input('model'),
                 timeout: max(5, min(600, (int) $context->input('timeout', 120))),
             );

@@ -29,7 +29,7 @@ abstract class WorkflowApiTool extends Tool
         $user = $request->user();
 
         try {
-            return Response::json($this->call($request, $api, $user)->response()->getData(true));
+            return Response::json($this->call($request, $api, $user)->response()->getData());
         } catch (ModelNotFoundException $e) {
             return Response::error(__('api.not_found', ['what' => class_basename($e->getModel())]));
         }
