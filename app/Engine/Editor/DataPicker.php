@@ -9,6 +9,7 @@ use App\Engine\Graph\WorkflowGraph;
 use App\Engine\NodeRegistry;
 use App\Engine\Nodes\Actions\ForLoop;
 use App\Engine\Nodes\Actions\Merge;
+use App\Engine\Nodes\Actions\WhileLoop;
 use App\Enums\NodeKind;
 use App\Models\StoreEntry;
 use App\Models\Workspace;
@@ -19,8 +20,10 @@ use App\Models\Workspace;
  * is left out), the current loop item, the error it was reached from, the
  * workflow's variables, and the workspace's data store entries and
  * secrets. Built from each node's declared outputs, so custom nodes appear
- * the same way. A For loop and a Merge also offer the outputs of the nodes
- * they gathered: a loop's first and last iteration, and each branch.
+ * the same way. A loop and a Merge also offer the outputs of the nodes
+ * they gathered: a loop's first and last iteration or pass, and each
+ * branch. Inside a While loop, and in its own condition, the pass before
+ * is offered through loop.previous.
  */
 class DataPicker
 {
@@ -147,15 +150,11 @@ class DataPicker
             }
         }
 
-        foreach ($loopBodies as $loopId => $body) {
-            if (isset($body[$nodeId])) {
-                $ancestorGroups[] = ['distance' => $distances[$loopId] ?? PHP_INT_MAX, 'group' => ['label' => __('workflows.editor.loop_name', ['name' => $graph->node($loopId)->name]), 'items' => [
-                    ['label' => __('workflows.editor.current_item'), 'path' => 'item', 'type' => 'any'],
-                    ['label' => __('workflows.editor.item_index'), 'path' => 'loop.index', 'type' => 'number'],
-                    ['label' => __('workflows.editor.item_count'), 'path' => 'loop.count', 'type' => 'number'],
-                ]]];
-            }
+        foreach ($this->loopGroups($graph, $nodeId, $loopBodies) as $loopId => $group) {
+            $ancestorGroups[] = ['distance' => $distances[$loopId] ?? PHP_INT_MAX, 'group' => $group];
         }
+
+        array_push($ancestorGroups, ...array_map(fn (array $group) => ['distance' => 0, 'group' => $group], $this->ownPassGroups($graph, $nodeId, $loopBodies)));
 
         usort($ancestorGroups, fn (array $a, array $b) => $a['distance'] <=> $b['distance']);
         $groups = array_column($ancestorGroups, 'group');
@@ -251,9 +250,97 @@ class DataPicker
     }
 
     /**
-     * Paths into what a For loop or a Merge gathered, each node in the same
-     * shape as nodes.<id>: every node of the loop's first and last
-     * iteration, and the last node of each branch.
+     * What a node reads about the loops it runs inside. loop describes the
+     * innermost loop only, and item is the current item of the nearest For
+     * loop, so each is offered once, under the loop it belongs to.
+     *
+     * @param  array<string, array<string, true>>  $loopBodies
+     * @return array<string, array{label: mixed, items: list<array{label: mixed, path: string, type: string}>}> by loop node id
+     */
+    protected function loopGroups(WorkflowGraph $graph, string $nodeId, array $loopBodies): array
+    {
+        $around = array_filter($loopBodies, fn (array $body) => isset($body[$nodeId]));
+        uasort($around, fn (array $a, array $b) => count($a) <=> count($b));
+        $innermost = array_key_first($around);
+        $groups = [];
+
+        foreach (array_keys($around) as $loopId) {
+            $loop = $graph->node($loopId);
+            $isWhile = $loop->type === WhileLoop::type();
+
+            if ($isWhile && $loopId !== $innermost) {
+                continue;
+            }
+
+            $groups[$loopId] = ['label' => __('workflows.editor.loop_name', ['name' => $loop->name]), 'items' => match (true) {
+                $isWhile => $this->passItems($graph, $loopId, $loopBodies),
+                $loopId === $innermost => [
+                    ['label' => __('workflows.editor.current_item'), 'path' => 'item', 'type' => 'any'],
+                    ['label' => __('workflows.editor.item_index'), 'path' => 'loop.index', 'type' => 'number'],
+                    ['label' => __('workflows.editor.item_count'), 'path' => 'loop.count', 'type' => 'number'],
+                ],
+                default => [['label' => __('workflows.editor.current_item'), 'path' => 'item', 'type' => 'any']],
+            }];
+
+            if (! $isWhile) {
+                break;
+            }
+        }
+
+        return $groups;
+    }
+
+    /**
+     * What a While loop's own condition reads when it is checked after a
+     * pass: the nodes of that pass, as a step inside it reads them, and the
+     * passes before it.
+     *
+     * @param  array<string, array<string, true>>  $loopBodies
+     * @return list<array{label: mixed, items: list<array{label: mixed, path: string, type: string}>}>
+     */
+    protected function ownPassGroups(WorkflowGraph $graph, string $nodeId, array $loopBodies): array
+    {
+        if (! isset($loopBodies[$nodeId]) || $graph->node($nodeId)->type !== WhileLoop::type()) {
+            return [];
+        }
+
+        $groups = [];
+
+        foreach ($this->directBody($nodeId, $loopBodies) as $id) {
+            $items = $this->outputsOf($graph->node($id), "nodes.{$id}.output");
+
+            if ($items !== []) {
+                $groups[] = ['label' => __('workflows.editor.pass_just_finished_name', ['name' => $graph->node($id)->name]), 'items' => $items];
+            }
+        }
+
+        $groups[] = ['label' => __('workflows.editor.loop_name', ['name' => $graph->node($nodeId)->name]), 'items' => $this->passItems($graph, $nodeId, $loopBodies)];
+
+        return $groups;
+    }
+
+    /**
+     * What a step inside a While loop's pass reads about the loop: the
+     * pass's index, and each node of the pass before.
+     *
+     * @param  array<string, array<string, true>>  $loopBodies
+     * @return list<array{label: mixed, path: string, type: string}>
+     */
+    protected function passItems(WorkflowGraph $graph, string $loopId, array $loopBodies): array
+    {
+        $items = [['label' => __('workflows.editor.pass_index'), 'path' => 'loop.index', 'type' => 'number']];
+
+        foreach ($this->directBody($loopId, $loopBodies) as $id) {
+            array_push($items, ...$this->outputsOf($graph->node($id), "loop.previous.{$id}.output", __('workflows.editor.previous_pass_name', ['name' => $graph->node($id)->name])));
+        }
+
+        return $items;
+    }
+
+    /**
+     * Paths into what a loop or a Merge gathered, each node in the same
+     * shape as nodes.<id>: every node of a loop's first and last iteration
+     * or pass, and the last node of each branch.
      *
      * @param  array<string, array<string, true>>  $loopBodies
      * @return list<array{label: string, path: string, type: string}>
@@ -263,10 +350,12 @@ class DataPicker
         $sources = [];
 
         if (isset($loopBodies[$node->id])) {
+            $isWhile = $node->type === WhileLoop::type();
+
             foreach ($this->directBody($node->id, $loopBodies) as $id) {
                 $name = $graph->node($id)->name;
-                $sources[] = [$id, "results[0].{$id}", __('workflows.editor.first_iteration_name', ['name' => $name])];
-                $sources[] = [$id, "last.{$id}", __('workflows.editor.last_iteration_name', ['name' => $name])];
+                $sources[] = [$id, "results[0].{$id}", __($isWhile ? 'workflows.editor.first_pass_name' : 'workflows.editor.first_iteration_name', ['name' => $name])];
+                $sources[] = [$id, "last.{$id}", __($isWhile ? 'workflows.editor.last_pass_name' : 'workflows.editor.last_iteration_name', ['name' => $name])];
             }
         } elseif ($node->type === Merge::type()) {
             foreach ($graph->incoming($node->id) as $edge) {
@@ -277,14 +366,23 @@ class DataPicker
         $items = [];
 
         foreach ($sources as [$id, $path, $label]) {
-            $source = $graph->node($id);
-
-            if ($this->registry->has($source->type)) {
-                array_push($items, ...$this->flatten($this->registry->make($source->type)->outputs($source->config), "nodes.{$node->id}.output.{$path}.output", $label));
-            }
+            array_push($items, ...$this->outputsOf($graph->node($id), "nodes.{$node->id}.output.{$path}.output", $label));
         }
 
         return $items;
+    }
+
+    /**
+     * A node's declared outputs as paths under $prefix, or none when its
+     * type is not installed.
+     *
+     * @return list<array{label: string, path: string, type: string}>
+     */
+    protected function outputsOf(GraphNode $node, string $prefix, string $labelPrefix = ''): array
+    {
+        return $this->registry->has($node->type)
+            ? $this->flatten($this->registry->make($node->type)->outputs($node->config), $prefix, $labelPrefix)
+            : [];
     }
 
     /**
@@ -324,7 +422,8 @@ class DataPicker
     }
 
     /**
-     * Nodes inside each For loop's body, keyed by the loop's node id.
+     * Nodes inside each loop's body, keyed by the loop's node id: what a
+     * For loop runs for each item, and a While loop on each pass.
      *
      * @return array<string, array<string, true>>
      */
@@ -333,8 +432,14 @@ class DataPicker
         $bodies = [];
 
         foreach ($graph->nodes as $node) {
-            if ($node->type === ForLoop::type()) {
-                $bodies[$node->id] = $graph->reachableFrom($node->id, 'item');
+            $port = match ($node->type) {
+                ForLoop::type() => 'item',
+                WhileLoop::type() => 'pass',
+                default => null,
+            };
+
+            if ($port !== null) {
+                $bodies[$node->id] = $graph->reachableFrom($node->id, $port);
             }
         }
 

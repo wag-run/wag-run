@@ -103,6 +103,14 @@ final readonly class Field
     ) {}
 
     /**
+     * This field with other help text under it.
+     */
+    public function withDescription(?string $description): self
+    {
+        return new self(...[...get_object_vars($this), 'description' => $description]);
+    }
+
+    /**
      * Whether this field applies, given its sibling fields' values (missing
      * ones take their defaults from $siblings).
      *

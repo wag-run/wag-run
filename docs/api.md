@@ -96,7 +96,7 @@ The request returns as soon as the run starts. To follow it, get the run until i
 
 A step that ran inside a [For loop](actions.md#for-loop) has an `iteration`, such as `L12.0`: the first iteration of the loop whose step `id` is 12. A step in a loop inside that one has `L12.0/L15.3`. A step outside every loop has `null`.
 
-The loop's own step has only `count` in its `output`. What each iteration produced is in that iteration's steps, so the list holds every output once. To read a loop's results, group the steps by `iteration`.
+The loop's own step has only `count` in its `output`: a For loop's iterations, or a [While loop](actions.md#while-loop)'s passes. What each iteration produced is in that iteration's steps, so the list holds every output once. To read a loop's results, group the steps by `iteration`.
 
 A run that ends with a loop still has the loop's `results` in the run's own `output`.
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Editor;
 
+use App\Engine\Editor\CanvasMapper;
 use App\Engine\Editor\RunCanvas;
 use App\Engine\Graph\GraphValidator;
 use App\Engine\Graph\WorkflowGraph;
@@ -265,6 +266,34 @@ class WorkflowEditorTest extends TestCase
         $this->assertSame('POST', $node->config['method']);
         $this->assertSame(['X-Order' => '{{ trigger.values.id }}'], $node->config['headers']);
         $this->assertSame(['max_retries' => 3, 'backoff_seconds' => 30], $node->retry);
+    }
+
+    public function test_a_while_loop_is_named_after_its_setting_until_it_is_renamed(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor();
+
+        $editor = $this->editor($workspace, $workflow, $user)
+            ->call('selectNode', 'fetch')
+            ->call('addNode', 'core.while_loop')
+            ->assertSet('selected', 'while_loop')
+            ->assertSet('nodeName', 'While loop')
+            ->assertSet('form.max_passes', 100)
+            ->assertSee('Checked before each pass, so the loop may not run at all if false.')
+            ->set('form.check_after', true)
+            ->assertSet('nodeName', 'Do while loop')
+            ->assertSeeHtml('data-test="inspector-heading"')
+            ->assertSee('Checked after each pass, so the loop runs at least once.');
+
+        $node = $workflow->refresh()->draft()->node('while_loop');
+        $this->assertSame('Do while loop', $node->name);
+        $this->assertSame('Do while loop', app(CanvasMapper::class)->node($node)['data']['typeLabel']);
+        $this->assertSame(['each pass', 'done'], array_column(app(CanvasMapper::class)->node($node)['data']['ports'], 'label'));
+
+        $editor->set('nodeName', 'Pages')->set('form.check_after', false)->assertSet('nodeName', 'Pages');
+
+        $node = $workflow->refresh()->draft()->node('while_loop');
+        $this->assertSame('Pages', $node->name);
+        $this->assertSame('While loop', app(CanvasMapper::class)->node($node)['data']['typeLabel']);
     }
 
     public function test_the_error_path_is_shown_only_when_turned_on_and_turning_it_off_drops_its_connections(): void

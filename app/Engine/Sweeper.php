@@ -39,7 +39,7 @@ class Sweeper
         return [
             'requeued' => $this->requeueStalePending(),
             'worker_lost' => $this->failLostWorkers(),
-            'resumed' => $this->resumeElapsedWaits(),
+            'resumed' => $this->resumeElapsedWaits() + $this->resumeFinishedPasses(),
             'resettled' => $this->resettleWaitingExecutions(),
         ];
     }
@@ -98,6 +98,26 @@ class Sweeper
 
         foreach ($steps as $step) {
             $this->coordinator->dispatchResume($step, ResumeReason::TimerElapsed);
+        }
+
+        return $steps->count();
+    }
+
+    /**
+     * A loop whose finished pass has waited a while to be looked at: the
+     * job that should have done it was lost, so it is queued again.
+     */
+    protected function resumeFinishedPasses(): int
+    {
+        $steps = ExecutionStep::query()
+            ->where('status', StepStatus::Waiting)
+            ->where('wait_type', WaitType::Loop)
+            ->where('resume_at', '<=', now()->subSeconds(self::REQUEUE_AFTER))
+            ->limit(500)
+            ->get();
+
+        foreach ($steps as $step) {
+            $this->coordinator->dispatchResume($step, ResumeReason::PassFinished);
         }
 
         return $steps->count();

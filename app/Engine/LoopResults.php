@@ -19,6 +19,10 @@ use Closure;
  *
  * Every node that completed in an iteration is there, in the same shape as
  * nodes.<id>. A loop inside an iteration carries its own results.
+ *
+ * A loop's row holds how many times its body ran as "count": a For
+ * loop's iterations, and the passes of a loop that repeats, such as a
+ * While loop.
  */
 class LoopResults
 {
@@ -61,13 +65,15 @@ class LoopResults
      */
     public function outputOf(ExecutionStep $step): mixed
     {
-        if (! $this->isFinishedLoop($step)) {
+        $count = $this->iterations($step);
+
+        if ($count === null) {
             return $step->output;
         }
 
         $results = [];
 
-        for ($index = 0; $index < (int) $step->output['count']; $index++) {
+        for ($index = 0; $index < $count; $index++) {
             $results[] = $this->nodesIn(Scope::forIteration($step->scope_key, $step->id, $index));
         }
 
@@ -91,12 +97,19 @@ class LoopResults
         return $nodes;
     }
 
-    protected function isFinishedLoop(ExecutionStep $step): bool
+    /**
+     * How many iterations a finished loop ran, or null when the step is
+     * not one.
+     */
+    protected function iterations(ExecutionStep $step): ?int
     {
-        return $step->status === StepStatus::Complete
-            && $step->wait_type === WaitType::Loop
-            && is_array($step->output)
-            && isset($step->output['count']);
+        if ($step->status !== StepStatus::Complete || $step->wait_type !== WaitType::Loop || ! is_array($step->output)) {
+            return null;
+        }
+
+        $count = $step->output['count'] ?? null;
+
+        return is_numeric($count) ? (int) $count : null;
     }
 
     /**

@@ -23,6 +23,17 @@ abstract class Node
 
     abstract public function label(): string;
 
+    /**
+     * The label for a node with these settings. Most nodes have one label;
+     * a While loop that checks after each pass reads "Do while loop".
+     *
+     * @param  array<string, mixed>  $config
+     */
+    public function labelFor(array $config): string
+    {
+        return $this->label();
+    }
+
     abstract public function kind(): NodeKind;
 
     abstract public function execute(NodeContext $context): NodeResult;
@@ -65,6 +76,17 @@ abstract class Node
     public function inputs(): array
     {
         return [];
+    }
+
+    /**
+     * The help text under one of this node's fields, given its settings so
+     * far. Most nodes show the field's own description.
+     *
+     * @param  array<string, mixed>  $config
+     */
+    public function fieldHelp(Field $field, array $config): ?string
+    {
+        return $field->description;
     }
 
     /**
@@ -155,6 +177,17 @@ abstract class Node
         return false;
     }
 
+    /**
+     * Whether this node runs part of the flow in passes (NodeResult::repeat).
+     * Its own step then always reads loop as its own: before the first pass
+     * loop.index and loop.previous are null, and after a pass they are what
+     * a step inside that pass reads.
+     */
+    public function repeats(): bool
+    {
+        return false;
+    }
+
     public function defaultRetryPolicy(): RetryPolicy
     {
         return new RetryPolicy;
@@ -170,7 +203,8 @@ abstract class Node
 
     /**
      * Continue a waiting step. The default handles timers and child workflows;
-     * nodes that wait for a response override this.
+     * nodes that wait for a response override this, and so do nodes that
+     * repeat part of the flow, which otherwise stop after one pass.
      */
     public function resume(NodeContext $context, Resumption $resumption): NodeResult
     {
@@ -179,6 +213,7 @@ abstract class Node
             ResumeReason::ChildCompleted => NodeResult::complete($resumption->payload['output'] ?? null),
             ResumeReason::ChildFailed => NodeResult::fail($resumption->payload['message'] ?? __('engine.child_workflow_failed')),
             ResumeReason::External => NodeResult::complete($resumption->payload),
+            ResumeReason::PassFinished => NodeResult::complete(['count' => ($context->state()['index'] ?? 0) + 1], $context->state()['done_port'] ?? 'done'),
         };
     }
 

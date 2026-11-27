@@ -40,6 +40,7 @@ class WorkflowServiceProvider extends ServiceProvider
         Actions\Conditional::class,
         Actions\SwitchNode::class,
         Actions\ForLoop::class,
+        Actions\WhileLoop::class,
         Actions\RunWorkflow::class,
         Actions\Wait::class,
         Actions\Compose::class,

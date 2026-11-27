@@ -58,18 +58,26 @@ class StepRunner
             ResumeReason::TimerElapsed => [WaitType::Timer, WaitType::External],
             ResumeReason::External => [WaitType::External],
             ResumeReason::ChildCompleted, ResumeReason::ChildFailed => [WaitType::Child],
+            ResumeReason::PassFinished => [WaitType::Loop],
         };
+
+        // A loop is looked at once per finished pass: the coordinator sets
+        // resume_at when a pass ends, and claiming the step clears it, so a
+        // second job for the same pass finds nothing to claim.
+        $passFinished = $reason === ResumeReason::PassFinished;
 
         $claimed = ExecutionStep::query()
             ->whereKey($stepId)
             ->where('status', StepStatus::Waiting)
             ->whereIn('wait_type', $waitTypes)
             ->when($reason === ResumeReason::TimerElapsed, fn ($query) => $query->where('resume_at', '<=', now()))
+            ->when($passFinished, fn ($query) => $query->whereNotNull('resume_at'))
             ->update([
                 'status' => StepStatus::Running,
                 'claim_token' => $token,
                 'heartbeat_at' => now(),
                 'updated_at' => now(),
+                ...($passFinished ? ['resume_at' => null] : []),
             ]);
 
         if ($claimed === 0) {
@@ -78,13 +86,14 @@ class StepRunner
 
         $resumption = new Resumption($reason, $payload);
 
-        $this->execute($stepId, $token, fn (Node $node, NodeContext $context) => $node->resume($context, $resumption));
+        $this->execute($stepId, $token, fn (Node $node, NodeContext $context) => $node->resume($context, $resumption), insidePass: $passFinished);
     }
 
     /**
      * @param  Closure(Node, NodeContext): NodeResult  $call
+     * @param  bool  $insidePass  for a loop looking at the pass it just finished: read the run's data as a step inside that pass does
      */
-    protected function execute(int $stepId, string $token, Closure $call): void
+    protected function execute(int $stepId, string $token, Closure $call, bool $insidePass = false): void
     {
         $step = ExecutionStep::query()->with(['execution.workspace', 'execution.workflow', 'execution.version'])->findOrFail($stepId);
         $execution = $step->execution;
@@ -97,7 +106,8 @@ class StepRunner
 
         $node = $this->registry->make($step->node_type);
         $graphNode = $this->coordinator->graphFor($execution)->node($step->node_id);
-        $context = new NodeContext($step, $execution, $graphNode, $node, $this->contexts->build($step), $this->templates);
+        $scope = $insidePass ? Scope::forIteration($step->scope_key, $step->id, (int) ($step->state['index'] ?? 0)) : null;
+        $context = new NodeContext($step, $execution, $graphNode, $node, $this->contexts->build($step, $scope, beforeFirstPass: $node->repeats() && ! $insidePass), $this->templates);
 
         try {
             $inputs = $context->inputs();

@@ -20,7 +20,10 @@ use App\Services\DataStore;
  *     execution          id, workflow, trigger type, started_at, and
  *                        trigger: the id, node type, and settings of the
  *                        trigger node that started the run
- *     item, loop         the current For loop item, index and count
+ *     item, loop         inside a For loop: the current item, and loop.index
+ *                        and loop.count. Inside a While loop: loop.index
+ *                        and loop.previous (the pass before, each node as
+ *                        in nodes.<id>)
  *     error              for steps reached through an error output
  */
 class ContextBuilder
@@ -28,27 +31,35 @@ class ContextBuilder
     public function __construct(protected DataStore $store) {}
 
     /**
+     * @param  string|null  $scope  read the run's data from this scope instead of the step's own, as a loop does when it looks at the pass it just finished
+     * @param  bool  $beforeFirstPass  for a loop that repeats, before it has run a pass: loop is its own, with no pass in it yet
      * @return array<string, mixed>
      */
-    public function build(ExecutionStep $step): array
+    public function build(ExecutionStep $step, ?string $scope = null, bool $beforeFirstPass = false): array
     {
         $execution = $step->execution;
+        $scope ??= $step->scope_key;
+
+        $completed = $execution->steps()
+            ->where('status', StepStatus::Complete)
+            ->orderBy('id')
+            ->get(['id', 'node_id', 'scope_key', 'status', 'wait_type', 'output', 'output_ports']);
+
+        $results = new LoopResults($completed);
 
         $data = [
             'trigger' => $execution->input ?? [],
-            'nodes' => $this->visibleOutputs($execution, $step),
+            'nodes' => $this->visibleOutputs($completed, $results, $scope),
             'vars' => new VariableData($execution),
             'store' => new StoreData($execution->workspace, $this->store),
             'secrets' => $execution->workspace->secrets()->get()->pluck('value', 'key')->all(),
             'execution' => $this->aboutRun($execution),
         ];
 
-        if ($frame = Scope::innermost($step->scope_key)) {
-            $loopStep = ExecutionStep::find($frame['loop_step_id']);
-            $items = $loopStep->state['items'] ?? [];
+        $data = [...$data, ...$this->loopData($scope, $results)];
 
-            $data['item'] = $items[$frame['index']] ?? null;
-            $data['loop'] = ['index' => $frame['index'], 'item' => $data['item'], 'count' => count($items)];
+        if ($beforeFirstPass) {
+            $data['loop'] = ['index' => null, 'previous' => null];
         }
 
         if ($step->entry_port === 'error' && $step->previousStep) {
@@ -88,21 +99,47 @@ class ContextBuilder
     }
 
     /**
+     * The item and loop a step in $scope reads. loop describes the
+     * innermost loop around it. item is the current item of the nearest
+     * For loop, so a While loop inside a For loop can still read it.
+     *
+     * @return array{item?: mixed, loop?: array<string, mixed>}
+     */
+    protected function loopData(string $scope, LoopResults $results): array
+    {
+        $data = [];
+
+        for ($at = $scope; $frame = Scope::innermost($at); $at = Scope::parent($at)) {
+            $state = ExecutionStep::find($frame['loop_step_id'])->state ?? [];
+            $index = $frame['index'];
+
+            if (! ($state['repeat'] ?? false)) {
+                $items = $state['items'] ?? [];
+                $data['item'] = $items[$index] ?? null;
+                $data['loop'] ??= ['index' => $index, 'item' => $data['item'], 'count' => count($items)];
+
+                break;
+            }
+
+            $data['loop'] ??= [
+                'index' => $index,
+                'previous' => $index > 0 ? $results->nodesIn(Scope::forIteration(Scope::parent($at), $frame['loop_step_id'], $index - 1)) : null,
+            ];
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param  iterable<ExecutionStep>  $completed
      * @return array<string, array{output: mixed, port: string|null}>
      */
-    protected function visibleOutputs(Execution $execution, ExecutionStep $step): array
+    protected function visibleOutputs(iterable $completed, LoopResults $results, string $scope): array
     {
         $outputs = [];
 
-        $completed = $execution->steps()
-            ->where('status', StepStatus::Complete)
-            ->orderBy('id')
-            ->get(['id', 'node_id', 'scope_key', 'status', 'wait_type', 'output', 'output_ports']);
-
-        $results = new LoopResults($completed);
-
         foreach ($completed as $done) {
-            if (Scope::canSee($step->scope_key, $done->scope_key)) {
+            if (Scope::canSee($scope, $done->scope_key)) {
                 $outputs[$done->node_id] = $results->entry($done);
             }
         }

@@ -2,6 +2,7 @@
 
 namespace App\Engine\Editor;
 
+use App\Engine\Scope;
 use App\Enums\StepStatus;
 use App\Models\Execution;
 use App\Models\ExecutionStep;
@@ -100,28 +101,44 @@ class RunCanvas
 
     /**
      * "Iteration 3", or "Iteration 2 › 3" inside nested loops, for a step's
-     * whole scope.
+     * whole scope. A loop that counts passes, such as a While loop, reads
+     * "Pass 3", so a While loop inside a For loop reads "Iteration 2 › Pass 3".
+     *
+     * @param  list<int>  $passLoops  ids of the steps of loops that count passes
      */
-    public static function scopeLabel(string $scope): ?string
+    public static function scopeLabel(string $scope, array $passLoops = []): ?string
     {
         if ($scope === '') {
             return null;
         }
 
-        $numbers = array_map(fn (string $frame) => (int) substr((string) strrchr($frame, '.'), 1) + 1, explode('/', $scope));
+        $parts = [];
+        $previous = null;
 
-        return __('workflows.editor.iteration_n', ['n' => implode(' › ', $numbers)]);
+        foreach (explode('/', $scope) as $frame) {
+            [$loopStepId, $index] = array_pad(explode('.', substr($frame, 1), 2), 2, '0');
+            $key = in_array((int) $loopStepId, $passLoops, true) ? 'workflows.editor.pass_n' : 'workflows.editor.iteration_n';
+            $parts[] = $key === $previous ? (string) ((int) $index + 1) : __($key, ['n' => (int) $index + 1]);
+            $previous = $key;
+        }
+
+        return implode(' › ', $parts);
     }
 
-    public static function iterationLabel(ExecutionStep $step): ?string
+    /**
+     * "Iteration 3" or "Pass 3": where a step is in the innermost loop
+     * around it.
+     *
+     * @param  list<int>  $passLoops  ids of the steps of loops that count passes
+     */
+    public static function iterationLabel(ExecutionStep $step, array $passLoops = []): ?string
     {
-        if ($step->scope_key === '') {
+        $frame = Scope::innermost($step->scope_key);
+
+        if ($frame === null) {
             return null;
         }
 
-        $segments = explode('/', $step->scope_key);
-        $index = (int) substr((string) strrchr(end($segments), '.'), 1);
-
-        return __('workflows.editor.iteration_n', ['n' => $index + 1]);
+        return __(in_array($frame['loop_step_id'], $passLoops, true) ? 'workflows.editor.pass_n' : 'workflows.editor.iteration_n', ['n' => $frame['index'] + 1]);
     }
 }
