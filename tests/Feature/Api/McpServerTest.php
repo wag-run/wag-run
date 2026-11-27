@@ -93,6 +93,15 @@ class McpServerTest extends TestCase
             ->assertOk()->assertSee('"variables":{"attempts":3}');
     }
 
+    public function test_get_run_gives_a_run_without_variables_an_empty_object_as_the_rest_api_does(): void
+    {
+        $run = $this->runWorkflow($this->publishedWorkflow($this->graph(['start' => 'core.manual_trigger']), $this->workspace));
+
+        WorkflowServer::actingAs($this->member())
+            ->tool(GetRun::class, ['workspace' => $this->workspace->slug, 'run' => $run->id])
+            ->assertOk()->assertSee('"variables":{}');
+    }
+
     public function test_errors_come_back_as_tool_errors(): void
     {
         $server = WorkflowServer::actingAs($this->member(WorkspaceRole::Viewer));

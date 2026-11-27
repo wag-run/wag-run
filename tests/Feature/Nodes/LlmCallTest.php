@@ -76,6 +76,16 @@ class LlmCallTest extends TestCase
         $this->assertSame('array', $outputs[0]->children[1]->type);
     }
 
+    public function test_asks_the_model_the_node_names_and_not_the_providers_default(): void
+    {
+        AnonymousAgent::fake(['ok']);
+        $workflow = $this->llmWorkflow(['model' => 'claude-haiku-5-5', 'prompt' => 'hi']);
+
+        $this->runWorkflow($workflow);
+
+        AnonymousAgent::assertPrompted(fn (AgentPrompt $prompt) => $prompt->model === 'claude-haiku-5-5');
+    }
+
     public function test_requires_an_ai_provider_key_from_the_workspace(): void
     {
         AnonymousAgent::fake();
