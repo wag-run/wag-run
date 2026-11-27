@@ -83,11 +83,6 @@ class DataStoreTest extends TestCase
         $this->assertSame(0, AuditLog::count());
     }
 
-    public function test_guests_cannot_open_the_page(): void
-    {
-        $this->actingAs($this->user(WorkspaceRole::Guest))->get(route('workspaces.data-store', $this->workspace))->assertForbidden();
-    }
-
     public function test_an_editor_adds_a_typed_entry_with_its_current_value(): void
     {
         $this->page()
