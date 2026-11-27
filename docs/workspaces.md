@@ -39,6 +39,8 @@ To change someone's role, pick a new one next to their name. To take away their 
 
 The data store keeps typed values for the whole workspace between runs. Use it for settings people type in, such as a base URL or a threshold, and for data workflows write, such as the time of the last fetch, tickets already handled, or a count of failures in a row.
 
+For a value that only matters during one run, such as a running total, use a [workflow variable](editor.md#variables) instead.
+
 Each value lives in an **entry** that you declare on the **Data store** page. Workflows read an entry with a placeholder and change it with the [Update data store](actions.md#update-data-store) node:
 
 ```text

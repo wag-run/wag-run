@@ -28,7 +28,7 @@ wag.run is a workflow automation app for teams. You build a workflow on a visual
 - **Start workflows many ways.** Run one by hand, call it from another system with a webhook or the API, run it on a schedule, let people start it by filling in a form, or start it on a new GitHub tag, release, or failed Actions run, or a new Investbrain transaction.
 - **Call other systems.** Make HTTP requests, work with GitHub issues, releases, and Actions, add rows to Google Sheets, read and record Investbrain portfolios and transactions and export their backups, send email, post to Slack, Teams, Discord, or Google Chat, send in-app notifications, call an LLM, or start another workflow.
 - **Add logic.** Branch on a condition, switch on a value, loop over or filter a list, wait, merge parallel branches, or end a run early.
-- **Remember things.** Keep typed values in the workspace data store and read them in later runs, to share a setting, skip what you've already handled, pick up where the last run stopped, or count in a row.
+- **Remember things.** Keep typed values in workflow variables for the length of a run, to total or collect as it goes, and in the workspace data store between runs, to share a setting, skip what you've already handled, pick up where the last run stopped, or count in a row.
 - **Bring people in.** Approvals pause a run until enough approvers say yes. Tasks pause it until someone fills in a form.
 - **Change safely.** Edits stay in a draft until you publish. Every publish is a numbered version, and you can test a draft, discard it, or roll back to an older version.
 - **See what happened.** Every run is recorded with each step's input, output, and error, shown on the same canvas you built it on.
@@ -93,6 +93,7 @@ What a placeholder can read:
 |---|---|
 | `trigger` | What the trigger received, such as manual inputs, form values, or a webhook body |
 | `nodes.<id>.output` | The output of an earlier node. The node's settings panel shows the exact name under **Reference its output as**. |
+| `vars.<name>` | One of the workflow's variables, as it is in this run when the step runs |
 | `store.<key>` | An entry of the workspace's data store, as it is when the step runs |
 | `secrets.<key>` | A workspace secret. Its value is masked in run logs. |
 | `execution` | The run's `id`, `workflow` name, `trigger_type`, and `started_at`, and `trigger`, the `id`, `type`, and `config` of the trigger that started it |
@@ -113,6 +114,6 @@ The **Inbox**, in the account menu at the bottom of the sidebar, is where everyt
 
 A workspace keeps shared values its workflows use:
 
-- **Data store**: typed values that last between runs, such as a base URL people set or a counter workflows update. Any workflow can read an entry, and the Update data store node changes one.
+- **Data store**: typed values that last between runs, such as a base URL people set or a counter workflows update. Any workflow can read an entry, and the Update data store node changes one. For a value that only matters during one run, a workflow declares its own **variables** in its settings.
 - **Secrets**: sensitive values, encrypted at rest and masked in run logs.
 - **Credentials**: reusable sign-in details for other systems, such as HTTP Basic, an API token, an AI provider key, an SMTP server, or a chat webhook, which nodes pick from a list.
