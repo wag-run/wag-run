@@ -20,6 +20,23 @@ return [
     'worker_running_this_step_stopped' => 'The worker running this step stopped responding.',
     'workflow_name_has_no_published' => 'Workflow ":name" has no published version.',
     'workflow_name_has_no_trigger' => 'Workflow ":name" has no trigger to start from.',
+    'variables' => [
+        'could_not_start' => 'The variable ":name" could not get its starting value. :message',
+        'not_declared' => 'This workflow has no variable ":name". Add it under Variables in the workflow settings.',
+        'unknown_type' => 'Its type ":type" is not one this install knows.',
+    ],
+    'values' => [
+        'cannot_be_saved' => 'The value can\'t be saved: :error',
+        'given_array' => 'an array',
+        'given_nothing' => 'nothing',
+        'given_object' => 'an object',
+        'given_text' => 'the text ":text"',
+        'not_a_type' => 'Expected :type, but got :given.',
+        'nothing_to_append' => 'There is nothing to append: the value is empty.',
+        'number_too_large' => 'The number is too large.',
+        'too_large' => 'The value is larger than :max.',
+        'operation_does_not_fit' => ':operation doesn\'t work on :type.',
+    ],
     'function_categories' => [
         'text' => 'Text',
         'numbers' => 'Numbers',

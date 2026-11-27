@@ -11,9 +11,29 @@
     <flux:switch wire:model.live="{{ $model }}" :label="$field->label" :description="$field->description" />
 @elseif ($field->type === Field::SELECT)
     <flux:select wire:model.live="{{ $model }}" :label="$field->label" :description="$field->description">
-        @foreach ($field->options as $optionValue => $optionLabel)
+        @foreach ($field->optionsFor($values ?? [], $siblings ?? []) as $optionValue => $optionLabel)
             <flux:select.option :value="$optionValue">{{ $optionLabel }}</flux:select.option>
         @endforeach
+    </flux:select>
+@elseif ($field->type === Field::VARIABLE)
+    <flux:select wire:model.live="{{ $model }}" :label="$field->label" :description="$field->description" data-test="variable-field">
+        <flux:select.option value="">{{ __('common.choose') }}</flux:select.option>
+        @foreach ($variables ?? [] as $variable)
+            <flux:select.option :value="$variable->name">{{ $variable->name }} · {{ $variable->valueType()?->label() ?? $variable->type }}</flux:select.option>
+        @endforeach
+        @if (filled($value) && ! isset(($variables ?? [])[$value]))
+            <flux:select.option :value="$value">{{ __('workflows.editor.missing_variable', ['name' => $value]) }}</flux:select.option>
+        @endif
+    </flux:select>
+@elseif ($field->type === Field::STORE_ENTRY)
+    <flux:select wire:model.live="{{ $model }}" :label="$field->label" :description="$field->description" data-test="store-entry-field">
+        <flux:select.option value="">{{ __('common.choose') }}</flux:select.option>
+        @foreach ($choices['storeEntries'] as $entryKey => $entry)
+            <flux:select.option :value="$entryKey">{{ $entryKey }} · {{ $entry['type']->label() }}{{ $entry['collection'] ? ' · '.__('workspaces.data_store.collection') : '' }}</flux:select.option>
+        @endforeach
+        @if (filled($value) && ! isset($choices['storeEntries'][$value]))
+            <flux:select.option :value="$value">{{ __('workflows.editor.missing_entry', ['key' => $value]) }}</flux:select.option>
+        @endif
     </flux:select>
 @elseif (in_array($field->type, [Field::CREDENTIAL, Field::SECRET, Field::WORKFLOW, Field::USER], true))
     @php

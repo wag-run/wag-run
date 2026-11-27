@@ -4,6 +4,7 @@ namespace App\Engine;
 
 use App\Engine\Definitions\Field;
 use App\Engine\Graph\GraphNode;
+use App\Engine\Templates\DataBag;
 use App\Engine\Templates\TemplateEngine;
 use App\Models\Credential;
 use App\Models\Execution;
@@ -105,9 +106,24 @@ class NodeContext
         return $this->execution->workspace;
     }
 
-    public function variable(string $key): ?string
+    /**
+     * A workflow variable's value in this run as it is now, or null when
+     * the workflow declares none by that name.
+     */
+    public function variable(string $name): mixed
     {
-        return $this->data['vars'][$key] ?? null;
+        return DataBag::unwrap($this->data['vars'][$name] ?? null);
+    }
+
+    /**
+     * A data store entry's value as it is now, one item of a collection,
+     * or, with no item key, a whole collection. Null when there is none.
+     */
+    public function store(string $key, ?string $itemKey = null): mixed
+    {
+        $value = $this->data['store'][$key] ?? null;
+
+        return DataBag::unwrap($itemKey !== null && $value instanceof StoreData ? $value[$itemKey] : $value);
     }
 
     public function secret(string $key): ?string

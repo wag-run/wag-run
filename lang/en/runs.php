@@ -8,7 +8,9 @@ return [
         'duration' => 'Duration',
         'every_run_of_this_workspace' => 'Every run of this workspace\'s workflows, newest first. Logs are removed once they pass the retention period.',
         'no_runs_yet' => 'No runs yet.',
+        'runs_are_removed_after_retention' => 'Its log was most likely removed after the retention period, so a link to it, such as one in a notification, no longer opens it.',
         'started' => 'Started',
+        'that_run_no_longer_exists' => 'That run no longer exists',
         'trigger' => 'Trigger',
         'title' => 'Runs',
     ],
@@ -37,6 +39,8 @@ return [
         'steps' => 'Steps',
         'times_out_time' => 'Times out :time',
         'trigger_input' => 'Trigger input',
+        'empty_value' => '(empty)',
+        'variables' => 'Variables',
         'type_for_name' => ':type for :name',
     ],
     'trigger_types' => [

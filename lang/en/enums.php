@@ -23,6 +23,19 @@ return [
     'step_status' => [
         'pending' => 'Pending',
     ],
+    'value_operation' => [
+        'append' => 'Append',
+        'increment' => 'Increment',
+        'set' => 'Set',
+    ],
+    'value_type' => [
+        'array' => 'Array',
+        'boolean' => 'Boolean',
+        'datetime' => 'Date & time',
+        'number' => 'Number',
+        'object' => 'Object',
+        'string' => 'String',
+    ],
     'workspace_role' => [
         'admin' => 'Admin',
         'builds_publishes_and_runs_workflows' => 'Builds, publishes, and runs workflows.',

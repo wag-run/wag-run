@@ -68,6 +68,23 @@ class NotificationsTest extends TestCase
         $this->assertNotNull($notification->refresh()->read_at);
     }
 
+    public function test_a_notification_to_a_run_that_was_removed_opens_the_run_list_saying_so(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $owner = User::factory()->memberOf($workspace, WorkspaceRole::Editor)->create();
+        $failed = $this->runWorkflow($this->workflowOwnedBy($owner, $workspace, 'failed'));
+        $url = $owner->notifications()->sole()->data['url'];
+
+        $this->actingAs($owner)->get(route('workspaces.executions', $workspace))->assertOk()->assertDontSee(__('runs.index.that_run_no_longer_exists'));
+
+        $failed->delete();
+
+        $this->actingAs($owner)->get($url)->assertRedirect(route('workspaces.executions', $workspace));
+        $this->actingAs($owner)->followingRedirects()->get($url)
+            ->assertOk()
+            ->assertSee(__('runs.index.that_run_no_longer_exists'));
+    }
+
     public function test_people_cannot_open_someone_elses_notification(): void
     {
         $workspace = Workspace::factory()->create();

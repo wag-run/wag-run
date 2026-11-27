@@ -6,17 +6,24 @@ use App\Engine\Editor\ConfigForm;
 use App\Engine\Editor\ConnectionRules;
 use App\Engine\Editor\DataPicker;
 use App\Engine\Editor\ExpressionPreview;
+use App\Engine\Editor\FieldFacts;
 use App\Engine\Editor\NodeRenamer;
 use App\Engine\Graph\GraphNode;
+use App\Engine\Graph\GraphVariable;
+use App\Engine\Graph\StoreReferenceValidator;
+use App\Engine\Graph\VariableValidator;
 use App\Engine\Graph\WorkflowGraph;
 use App\Engine\Node;
 use App\Engine\NodeRegistry;
 use App\Enums\ConcurrencyPolicy;
 use App\Enums\NodeKind;
+use App\Enums\ValueType;
 use App\Models\Organization;
 use App\Models\Workflow;
 use App\Models\WorkflowVersion;
 use App\Models\Workspace;
+use App\Engine\RunVariables;
+use App\Services\DataStore;
 use App\Services\ManualRuns;
 use App\Services\OAuthConnections;
 use App\Services\Workflows;
@@ -26,9 +33,11 @@ use ArtisanFlow\WireFlow\View\Components\WireFlow;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -95,6 +104,17 @@ new class extends Component {
     public bool $customRunLimit = false;
 
     public int|string|null $maxRunsPerMinute = null;
+
+    /**
+     * The name of the workflow variable being edited, or null while adding one.
+     */
+    #[Locked]
+    public ?string $editingVariable = null;
+
+    /**
+     * @var array{name: string, type: string, value: string}
+     */
+    public array $variableForm = ['name' => '', 'type' => 'string', 'value' => ''];
 
     /**
      * @var list<string>
@@ -490,7 +510,7 @@ new class extends Component {
      * Choices for credential, secret, workflow and user fields. Settings are
      * listed by description and stored by UUID.
      *
-     * @return array{credentials: array<string, array{type: string, label: string}>, secrets: array<string, string>, workflows: array<string, string>, users: array<string, string>}
+     * @return array{credentials: array<string, array{type: string, label: string}>, secrets: array<string, string>, storeEntries: array<string, array{type: \App\Enums\ValueType, collection: bool, read_only: bool}>, workflows: array<string, string>, users: array<string, string>}
      */
     #[Computed]
     public function choices(): array
@@ -500,6 +520,7 @@ new class extends Component {
         return [
             'credentials' => $credentials->mapWithKeys(fn ($credential) => [$credential->id => ['type' => $credential->type, 'label' => $credential->description]])->all(),
             'secrets' => $this->workspace->secrets()->orderBy('key')->pluck('key', 'key')->all(),
+            'storeEntries' => FieldFacts::storeEntries($this->workspace),
             'workflows' => $this->workspace->workflows()->whereKeyNot($this->workflow->id)->orderBy('name')->pluck('name', 'id')->all(),
             'users' => Organization::current()?->users()->wherePivotNull('deactivated_at')->orderBy('name')->get(['users.id', 'name', 'email'])
                 ->mapWithKeys(fn ($user) => [$user->id => "{$user->name} ({$user->email})"])->all() ?? [],
@@ -510,6 +531,129 @@ new class extends Component {
     public function versions()
     {
         return $this->workflow->versions()->with('creator')->orderByDesc('number')->get();
+    }
+
+    /**
+     * What the selected node's reference fields point at, for fields that
+     * depend on them.
+     *
+     * @return array<string, string>
+     */
+    public function fieldFacts(): array
+    {
+        return $this->definition ? FieldFacts::for($this->definition, $this->form, $this->choices['storeEntries'], $this->graph->variables) : [];
+    }
+
+    /**
+     * What is wrong with the selected node's use of workflow variables and
+     * the data store, such as an entry that doesn't exist. These block
+     * publishing.
+     *
+     * @return list<string>
+     */
+    public function nodeProblems(): array
+    {
+        if (! $this->selected) {
+            return [];
+        }
+
+        return [
+            ...(app(VariableValidator::class)->problems($this->graph, $this->selected)[$this->selected] ?? []),
+            ...(app(StoreReferenceValidator::class)->problems($this->graph, $this->workspace, $this->selected)[$this->selected] ?? []),
+        ];
+    }
+
+    /**
+     * What is wrong with the workflow's variable declarations, by variable
+     * name ('' for one that belongs to no variable). These block publishing.
+     *
+     * @return array<string, list<string>>
+     */
+    public function variableProblems(): array
+    {
+        return array_merge_recursive(
+            app(VariableValidator::class)->declarationProblems($this->graph),
+            app(StoreReferenceValidator::class)->declarationProblems($this->graph, $this->workspace),
+        );
+    }
+
+    public function addVariable(): void
+    {
+        $this->authorize('edit-workflows', $this->workspace);
+
+        $this->reset('editingVariable', 'variableForm');
+        $this->resetValidation();
+        Flux::modal('variable')->show();
+    }
+
+    public function editVariable(string $name): void
+    {
+        $this->authorize('edit-workflows', $this->workspace);
+
+        $variable = $this->graph->variables[$name] ?? null;
+
+        if (! $variable) {
+            return;
+        }
+
+        $this->resetValidation();
+        $this->editingVariable = $variable->name;
+        $this->variableForm = $variable->toArray();
+        Flux::modal('variable')->show();
+    }
+
+    /**
+     * Declare a variable or change one's type and starting value. It is
+     * saved with the draft, so it joins undo and takes effect when the
+     * workflow is published.
+     */
+    public function saveVariable(): void
+    {
+        $this->authorize('edit-workflows', $this->workspace);
+
+        $adding = $this->editingVariable === null;
+
+        $this->validate([
+            'variableForm.name' => $adding
+                ? ['required', 'string', 'max:'.DataStore::KEY_MAX_LENGTH, 'regex:'.DataStore::KEY_PATTERN, Rule::notIn(array_keys($this->graph->variables))]
+                : [],
+            'variableForm.type' => ['required', Rule::enum(ValueType::class)],
+            'variableForm.value' => ['nullable', 'string', 'max:'.RunVariables::STARTING_VALUE_MAX_LENGTH],
+        ], [
+            'variableForm.name.regex' => __('common.use_letters_numbers_and_underscores'),
+            'variableForm.name.not_in' => __('workflows.edit.variable_name_taken'),
+        ], [
+            'variableForm.name' => __('common.name'),
+            'variableForm.type' => __('common.type'),
+            'variableForm.value' => __('workflows.edit.starting_value'),
+        ]);
+
+        if ($adding && count($this->graph->variables) >= (int) config('workflows.variables.max_count')) {
+            $this->addError('variableForm.name', __('workflows.editor.too_many_variables', ['max' => (int) config('workflows.variables.max_count')]));
+
+            return;
+        }
+
+        $variable = new GraphVariable($adding ? $this->variableForm['name'] : $this->editingVariable, $this->variableForm['type'], (string) $this->variableForm['value']);
+        $problems = app(VariableValidator::class)->startingValueProblems($variable);
+
+        if ($problems !== []) {
+            $this->addError('variableForm.value', $problems[0]);
+
+            return;
+        }
+
+        $this->save($this->graph->withVariable($variable));
+
+        Flux::modal('variable')->close();
+        $this->reset('editingVariable', 'variableForm');
+    }
+
+    public function deleteVariable(string $name): void
+    {
+        $this->authorize('edit-workflows', $this->workspace);
+
+        $this->save($this->graph->withoutVariable($name));
     }
 
     public function selectedNode(): ?GraphNode
@@ -1034,7 +1178,13 @@ new class extends Component {
             'retry.backoff_seconds' => ['nullable', 'integer', 'min:0', 'max:86400'],
         ]);
 
-        $config = ConfigForm::toConfig($this->definition, $this->form);
+        $config = ConfigForm::toConfig($this->definition, $this->form, $this->fieldFacts());
+
+        foreach ($this->definition->inputs() as $field) {
+            if ($field->optionsWhen !== []) {
+                $this->form[$field->name] = $config[$field->name] ?? $field->default;
+            }
+        }
         $retry = (int) $this->retry['max_retries'] > 0
             ? ['max_retries' => (int) $this->retry['max_retries'], 'backoff_seconds' => (int) ($this->retry['backoff_seconds'] ?? 30)]
             : null;
@@ -1096,7 +1246,7 @@ new class extends Component {
         }
 
         app(Workflows::class)->saveDraft($this->workflow, $graph);
-        unset($this->graph, $this->canvas);
+        unset($this->graph, $this->canvas, $this->picker);
         $this->refreshHistoryState();
     }
 
@@ -1538,10 +1688,23 @@ new class extends Component {
                         </div>
                     @endif
 
+                    @php($formValues = [...$form, ...$this->fieldFacts()])
+                    @php($nodeProblems = $this->nodeProblems())
+                    @if ($nodeProblems)
+                        <flux:callout variant="danger" icon="exclamation-triangle" data-test="node-problems">
+                            <flux:callout.text>
+                                <ul class="list-disc ps-4">
+                                    @foreach ($nodeProblems as $problem)
+                                        <li>{{ $problem }}</li>
+                                    @endforeach
+                                </ul>
+                            </flux:callout.text>
+                        </flux:callout>
+                    @endif
                     @foreach ($definition->inputs() as $field)
-                        @continue(! $field->isVisible($form, $definition->inputs()))
+                        @continue(! $field->isVisible($formValues, $definition->inputs()))
                         <div wire:key="field-{{ $selected }}-{{ $field->name }}">
-                            @include('partials.workflow-field', ['field' => $field, 'model' => 'form.'.$field->name, 'value' => $form[$field->name] ?? null, 'values' => $form, 'choices' => $this->choices, 'picker' => $this->picker, 'canConnectAccounts' => $this->canConnectAccounts])
+                            @include('partials.workflow-field', ['field' => $field, 'model' => 'form.'.$field->name, 'value' => $form[$field->name] ?? null, 'values' => $formValues, 'siblings' => $definition->inputs(), 'choices' => $this->choices, 'variables' => $this->graph->variables, 'picker' => $this->picker, 'canConnectAccounts' => $this->canConnectAccounts])
                         </div>
                     @endforeach
 
@@ -1609,6 +1772,55 @@ new class extends Component {
                 </form>
 
                 <flux:separator class="my-4" />
+                <div data-test="workflow-variables">
+                    <div class="flex items-center justify-between gap-2">
+                        <flux:heading size="sm">{{ __('workflows.edit.variables') }}</flux:heading>
+                        @if ($this->canEdit)
+                            <flux:button size="xs" variant="subtle" icon="plus" wire:click="addVariable" data-test="add-variable">{{ __('workflows.edit.add_variable') }}</flux:button>
+                        @endif
+                    </div>
+                    <flux:text class="mt-1 text-xs">{{ __('workflows.edit.variables_help') }}</flux:text>
+
+                    @php($variableProblems = $this->variableProblems())
+                    @if ($variableProblems)
+                        <flux:callout variant="danger" icon="exclamation-triangle" class="mt-3" data-test="variable-problems">
+                            <flux:callout.text>
+                                <ul class="list-disc ps-4">
+                                    @foreach ($variableProblems as $variableName => $problems)
+                                        @foreach ($problems as $problem)
+                                            <li>{{ $variableName === '' ? $problem : __('workflows.editor.variable_name_problem', ['name' => $variableName, 'problem' => $problem]) }}</li>
+                                        @endforeach
+                                    @endforeach
+                                </ul>
+                            </flux:callout.text>
+                        </flux:callout>
+                    @endif
+
+                    @if ($this->graph->variables)
+                        <div class="mt-3 divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-700 dark:border-zinc-700">
+                            @foreach ($this->graph->variables as $variable)
+                                <div class="flex items-center gap-2 px-3 py-2" wire:key="variable-{{ $variable->name }}" data-test="variable-row">
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-baseline gap-2">
+                                            <span class="truncate font-mono text-sm">{{ $variable->name }}</span>
+                                            <span class="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">{{ $variable->valueType()?->label() ?? $variable->type }}</span>
+                                        </div>
+                                        @if ($variable->value !== '')
+                                            <div class="truncate font-mono text-xs text-zinc-500 dark:text-zinc-400" title="{{ \Illuminate\Support\Str::limit($variable->value, 500) }}">{{ \Illuminate\Support\Str::limit($variable->value, 80) }}</div>
+                                        @endif
+                                    </div>
+                                    @if ($this->canEdit)
+                                        <flux:button size="xs" variant="ghost" icon="pencil-square" wire:click="editVariable('{{ $variable->name }}')" :aria-label="__('common.edit')" data-test="edit-variable" />
+                                        <flux:button size="xs" variant="ghost" icon="trash" data-test="delete-variable" :aria-label="__('common.delete')"
+                                            x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('workflows.edit.delete_variable'), 'message' => __('workflows.edit.delete_variable_message', ['name' => $variable->name]), 'confirm' => __('common.delete'), 'danger' => true]) }}).then((ok) => ok && $wire.deleteVariable({{ \Illuminate\Support\Js::from($variable->name) }}))" />
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                <flux:separator class="my-4" />
                 <flux:heading size="sm">{{ __('workflows.edit.trigger_urls') }}</flux:heading>
                 @forelse ($workflow->triggers()->whereIn('type', ['webhook', 'form'])->get() as $trigger)
                     <div class="mt-2" wire:key="trigger-{{ $trigger->id }}">
@@ -1636,6 +1848,26 @@ new class extends Component {
             @endif
         </aside>
     </div>
+
+    <flux:modal name="variable" class="md:w-lg">
+        <form wire:submit="saveVariable" class="space-y-6">
+            <flux:heading size="lg">{{ $editingVariable === null ? __('workflows.edit.add_variable') : __('workflows.edit.edit_variable') }}</flux:heading>
+            <flux:input wire:model="variableForm.name" :label="__('common.name')" class="font-mono" placeholder="attempts" :disabled="$editingVariable !== null"
+                :description="$editingVariable === null ? __('workflows.edit.variable_name_help') : __('workflows.edit.variable_name_fixed')" />
+            <flux:select wire:model="variableForm.type" :label="__('common.type')">
+                @foreach (ValueType::cases() as $case)
+                    <flux:select.option :value="$case->value">{{ $case->label() }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            <flux:textarea wire:model="variableForm.value" :label="__('workflows.edit.starting_value')" class="font-mono" rows="3" :description="__('workflows.edit.starting_value_help')" />
+            <div class="flex justify-end gap-2">
+                <flux:modal.close>
+                    <flux:button variant="ghost">{{ __('common.cancel') }}</flux:button>
+                </flux:modal.close>
+                <flux:button type="submit" variant="primary" data-test="save-variable">{{ __('common.save') }}</flux:button>
+            </div>
+        </form>
+    </flux:modal>
 
     <flux:modal name="run" class="md:w-lg">
         <form wire:submit="run" class="space-y-6">

@@ -42,10 +42,17 @@ class Engine
      */
     public const REQUIRED_INPUT_MISSING = 'required_input_missing';
 
+    /**
+     * The error code on a run that failed before its first step because a
+     * workflow variable's starting value could not be worked out.
+     */
+    public const VARIABLE_COULD_NOT_START = 'variable_could_not_start';
+
     public function __construct(
         protected Coordinator $coordinator,
         protected NodeRegistry $registry,
         protected WorkflowFiles $files,
+        protected RunVariables $variables,
     ) {}
 
     /**
@@ -97,6 +104,7 @@ class Engine
             Workflow::query()->lockForUpdate()->find($workflow->id);
 
             $inProgress = $workflow->executions()->where('is_test', false)->whereIn('status', ExecutionStatus::inProgress())->get();
+            $redactor = Redactor::forWorkspace($workflow->workspace);
 
             $attributes = [
                 'workspace_id' => $workflow->workspace_id,
@@ -104,7 +112,7 @@ class Engine
                 'workflow_version_id' => $version->id,
                 'trigger_type' => $triggerType,
                 'trigger_node_id' => $triggerNodeId,
-                'input' => Redactor::forWorkspace($workflow->workspace)->mask($input),
+                'input' => $redactor->mask($input),
                 'triggered_by' => $user?->id,
                 'parent_step_id' => $parentStep?->id,
                 'chain_depth' => $chainDepth,
@@ -159,6 +167,15 @@ class Engine
 
             $execution = Execution::create([...$attributes, 'status' => ExecutionStatus::Running]);
             $this->files->claim($execution, $input);
+
+            try {
+                $this->variables->start($execution, $graph, $redactor);
+            } catch (RuntimeException $e) {
+                $this->coordinator->finish($execution, ExecutionStatus::Failed, error: ['message' => $e->getMessage(), 'code' => self::VARIABLE_COULD_NOT_START]);
+
+                return $execution;
+            }
+
             $this->coordinator->startAt($execution, $triggerNodeId);
 
             return $execution;

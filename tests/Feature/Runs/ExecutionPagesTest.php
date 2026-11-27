@@ -132,7 +132,7 @@ class ExecutionPagesTest extends TestCase
             ->assertSee('Failed attempt 1');
     }
 
-    public function test_guests_cannot_open_runs_and_runs_of_other_workspaces_are_not_found(): void
+    public function test_guests_cannot_open_runs_and_runs_of_other_workspaces_are_treated_as_removed(): void
     {
         $workspace = Workspace::factory()->create();
         $execution = $this->runWorkflow($this->branchingWorkflow($workspace));
@@ -142,7 +142,7 @@ class ExecutionPagesTest extends TestCase
 
         $this->actingAs($guest)->get(route('workspaces.executions', $workspace))->assertForbidden();
         $this->actingAs($guest)->get(route('workspaces.executions.show', [$workspace, $execution]))->assertForbidden();
-        $this->actingAs($viewer)->get(route('workspaces.executions.show', [$workspace, $foreign]))->assertNotFound();
+        $this->actingAs($viewer)->get(route('workspaces.executions.show', [$workspace, $foreign]))->assertRedirect(route('workspaces.executions', $workspace));
         $this->actingAs($viewer)->get(route('workspaces.executions.show', [$workspace, $execution]))->assertOk();
     }
 
@@ -217,5 +217,34 @@ class ExecutionPagesTest extends TestCase
         $editorEdges = Livewire::actingAs($editor)->test('pages::workflows.edit', ['workspace' => $workspace, 'workflow' => $workflow])->instance()->canvas['edges'];
 
         $this->assertSame([CanvasMapper::EDGE_TYPE], array_values(array_unique([...array_column($runEdges, 'type'), ...array_column($editorEdges, 'type')])));
+    }
+
+    public function test_the_run_page_lists_the_runs_variables_with_their_current_values(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
+        $workflow = $this->publishedWorkflow([
+            ...$this->graph(
+                ['start' => 'start', 'add' => ['core.variable_update', ['variable' => 'attempts', 'operation' => 'increment', 'amount' => 2]], 'wait' => 'pause'],
+                ['start->add', 'add->wait'],
+            ),
+            'variables' => [
+                ['name' => 'attempts', 'type' => 'number', 'value' => '1'],
+                ['name' => 'tags', 'type' => 'array', 'value' => '["new"]'],
+                ['name' => 'due', 'type' => 'datetime', 'value' => ''],
+            ],
+        ], $workspace);
+        $execution = $this->runWorkflow($workflow);
+
+        $page = Livewire::actingAs($viewer)->test('pages::executions.show', ['workspace' => $workspace, 'execution' => $execution])
+            ->assertSeeHtml('data-test="run-variables"')
+            ->assertSeeInOrder(['Variables', 'attempts', 'Number', '3', 'tags', 'Array', 'new', 'due', 'Date & time', '(empty)']);
+
+        $execution->variables()->where('name', 'attempts')->update(['value' => '7']);
+        $this->assertSame('7', $page->call('refreshRun')->instance()->variables()[0]['value']);
+
+        $plain = $this->runWorkflow($this->branchingWorkflow($workspace));
+        Livewire::actingAs($viewer)->test('pages::executions.show', ['workspace' => $workspace, 'execution' => $plain])
+            ->assertDontSeeHtml('data-test="run-variables"');
     }
 }

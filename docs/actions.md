@@ -162,6 +162,80 @@ Makes a file from text, or from base64, such as an encoded image an API sent bac
 
 Output: `file`.
 
+### Update data store
+
+Changes an entry of the workspace's [data store](workspaces.md#data-store), which keeps typed values between runs: the time of the last fetch, tickets already handled, a count of failures in a row. A later run, or another workflow, can read what this one saved.
+
+There's no node to read the store. Read an entry with a placeholder, `{{ store.cursor }}`, or one item of a collection with `{{ store.seen_tickets[trigger.body.id] }}`. A placeholder reads the value as it is when its step runs, so a step sees what earlier steps of the same run wrote.
+
+| Setting | What it does |
+|---|---|
+| **Entry** | The entry to change. Add entries on the workspace's **Data store** page first: this node never creates one. |
+| **Item key** | For a collection, which item to change, such as `{{ trigger.body.id }}`. An item that isn't there yet is added. |
+| **Operation** | **Set**, **Append**, or **Increment**. Only the ones that fit the entry's type are offered. |
+| **Value** | For Set and Append. Text, or a single placeholder to keep its type, so `{{ nodes.fetch.output.body }}` saves an object or an array. |
+| **Amount** | For Increment. 1 by default; a negative number subtracts. |
+
+| Operation | Works on | What it does |
+|---|---|---|
+| **Set** | Every type | Replaces the value. |
+| **Append** | String, Array | Adds text to the end of a String, or one item to the end of an Array. Appending an array adds it as a single item: `[1, 2]` plus `[3, 4]` is `[1, 2, [3, 4]]`. |
+| **Increment** | Number | Adds the amount. |
+
+In a collection, Append and Increment on an item that isn't there yet start from empty text, an empty array, or 0, so a Number collection counts per item key with no setup.
+
+Outputs: `entry`, `item_key`, `operation`, `before` (the value before this step, or empty for a new item), and `after`.
+
+The value has to fit the entry's type. [Exact conversions](workspaces.md#values-and-types) happen for you, such as the text `42` to a Number. Anything else fails the step, and so does:
+
+- An entry that doesn't exist, or one that is **Read-only**. The editor shows both in the node's settings, and they block publishing.
+- A collection with no **Item key**.
+- A value over 64 KB, including one that grew past it by appending, or a new value when the workspace already holds 100,000.
+
+A few things to know:
+
+- Each change is a single step, so two runs, or two parallel branches of one run, can't lose each other's Append or Increment. With **Set**, the last one to finish wins. This was [checked with real workers](#how-parallel-changes-were-checked).
+- A **step that is retried** after a failure runs again from its start. An Increment or Append adds again if its first attempt saved before the failure, so don't rely on an exact count where one extra matters.
+- **Test runs** read and write the real store. Make an entry **Read-only** to keep tests from changing it.
+- Values show in the run's step inputs and outputs, and on the Data store page to everyone in the workspace. Don't save secrets in them.
+
+### Update variable
+
+Changes one of the workflow's [variables](editor.md#variables) for the rest of the run. Variables are typed values that last for one run, declared under **Variables** in the workflow settings.
+
+There's no node to read a variable. Read it with a placeholder, `{{ vars.total }}`, which gives its value as it is when the step runs, so a step sees what earlier steps of the same run wrote.
+
+| Setting | What it does |
+|---|---|
+| **Variable** | The variable to change |
+| **Operation** | **Set**, **Append**, or **Increment**. Only the ones that fit the variable's type are offered. They work as for [Update data store](#update-data-store). |
+| **Value** | For Set and Append. Text, or a single placeholder to keep its type. |
+| **Amount** | For Increment. 1 by default; a negative number subtracts. |
+
+Outputs: `variable`, `operation`, `before`, and `after`.
+
+The value has to fit the variable's type. [Exact conversions](workspaces.md#values-and-types) happen for you. Anything else fails the step, and so does a value over 64 KB.
+
+How variables behave across a run:
+
+- **Parallel branches.** Append and Increment from branches that run at the same time all apply: two branches that each add 1 add 2. With **Set**, the branch that finishes last wins, and which one that is isn't predictable, so don't Set the same variable from two branches.
+- **Loops.** A variable belongs to the run, not to a loop item. One changed inside a [For loop](#for-loop) keeps its value for the next item and after the loop, which makes a variable the way to total or collect across items.
+- **Retries.** A change is saved together with its step, so a step that fails and is retried never applies its change twice.
+- **Other workflows.** A workflow started by [Trigger other workflow](#trigger-other-workflow) has its own variables and doesn't see the caller's. Pass values through its inputs and read its output.
+- **Secrets.** Values show in the run's steps and on the run page, and a secret put in a variable is saved masked, so it can't be read back.
+
+#### How parallel changes were checked
+
+Parallel branches run on separate workers, so two of them can change the same value at the same moment. To check that no change is lost, a workflow with ten parallel branches was run 200 times with 2, 4, and 8 workers, on PostgreSQL and on SQLite. Its branches Increment and Append to variables, and Increment a data store entry and a collection item.
+
+| Database | Workers | Result |
+|---|---|---|
+| PostgreSQL 17 | 2, 4, and 8 | Every run ended with the right values. No step failed or was retried. |
+| SQLite | 2 and 8 | The same. |
+| PostgreSQL 17, with the locking removed on purpose | 8 | 68 of 200 runs lost an Increment and 29 lost an Append, so the test does catch a lost change. |
+
+MySQL and MariaDB weren't part of this check. They use the same row locks, but if you run on one, treat parallel changes to the same value as untested.
+
 ## Integrations
 
 ### HTTP call

@@ -99,9 +99,10 @@ return [
         'title' => 'Users',
     ],
     'workspaces' => [
+        'data_store_entries' => 'Data store entries',
         'delete_workspace' => 'Delete workspace?',
-        'delete_name_its_workflows_execution' => 'Delete :name? Its workflows, execution logs, variables, secrets, and credentials are deleted too. This cannot be undone.',
-        'each_workspace_keeps_its_own' => 'Each workspace keeps its own workflows, variables, secrets, credentials, and members.',
+        'delete_name_its_workflows_execution' => 'Delete :name? Its workflows, execution logs, data store, secrets, and credentials are deleted too. This cannot be undone.',
+        'each_workspace_keeps_its_own' => 'Each workspace keeps its own workflows, data store, secrets, credentials, and members.',
         'new_workspace' => 'New workspace',
         'no_workspaces_yet' => 'No workspaces yet.',
         'rename' => 'Rename',

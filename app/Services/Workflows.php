@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Engine\Graph\GraphValidator;
+use App\Engine\Graph\StoreReferenceValidator;
+use App\Engine\Graph\VariableValidator;
 use App\Engine\Graph\WorkflowGraph;
 use App\Models\User;
 use App\Models\Workflow;
@@ -20,6 +22,8 @@ class Workflows
 {
     public function __construct(
         protected GraphValidator $validator,
+        protected StoreReferenceValidator $storeReferences,
+        protected VariableValidator $variables,
         protected TriggerSync $triggers,
     ) {}
 
@@ -53,7 +57,7 @@ class Workflows
     public function publish(Workflow $workflow, ?User $publisher = null, ?string $note = null): WorkflowVersion
     {
         $graph = $workflow->draft();
-        $errors = $this->validator->validate($graph);
+        $errors = $this->problems($workflow, $graph);
 
         if ($errors !== []) {
             throw ValidationException::withMessages(['graph' => $errors]);
@@ -115,7 +119,7 @@ class Workflows
     public function draftSnapshot(Workflow $workflow, ?User $user = null): WorkflowVersion
     {
         $graph = $workflow->draft();
-        $errors = $this->validator->validate($graph);
+        $errors = $this->problems($workflow, $graph);
 
         if ($errors !== []) {
             throw ValidationException::withMessages(['graph' => $errors]);
@@ -162,5 +166,21 @@ class Workflows
         $this->triggers->sync($workflow);
 
         return $version;
+    }
+
+    /**
+     * What stops the graph from running: problems with its shape and its
+     * nodes' settings, with its workflow variables, and with its use of
+     * the workspace's data store.
+     *
+     * @return list<string>
+     */
+    protected function problems(Workflow $workflow, WorkflowGraph $graph): array
+    {
+        return [
+            ...$this->validator->validate($graph),
+            ...$this->variables->validate($graph),
+            ...$this->storeReferences->validate($graph, $workflow->workspace),
+        ];
     }
 }

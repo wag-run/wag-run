@@ -38,6 +38,10 @@ final class DataBag implements ArrayAccess, Countable, IteratorAggregate
             return array_map(self::unwrap(...), $value->data);
         }
 
+        if ($value instanceof LazyData) {
+            return array_map(self::unwrap(...), $value->all());
+        }
+
         return is_array($value) ? array_map(self::unwrap(...), $value) : $value;
     }
 

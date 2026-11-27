@@ -142,4 +142,24 @@ class ExpressionPreviewTest extends TestCase
 
         $this->assertSame(str_repeat('0', 2000).'…', $preview['value']);
     }
+
+    public function test_variables_read_as_the_latest_run_left_them_and_as_empty_without_runs(): void
+    {
+        $graph = [
+            ...$this->graph(
+                ['start' => 'start', 'add' => ['core.variable_update', ['variable' => 'count', 'operation' => 'increment', 'amount' => 4]], 'second' => ['emit', ['value' => 'x']]],
+                ['start->add', 'add->second'],
+            ),
+            'variables' => [['name' => 'count', 'type' => 'number', 'value' => '1']],
+        ];
+
+        $unrun = $this->preview($this->editorFor($this->publishedWorkflow($graph), 'second'), '{{ vars.count }}');
+        $this->assertSame('empty', $unrun['status']);
+
+        $workflow = $this->publishedWorkflow($graph);
+        $this->runWorkflow($workflow);
+
+        $this->assertSame('Count: 5', $this->preview($this->editorFor($workflow, 'second'), 'Count: {{ vars.count }}')['value']);
+        $this->assertSame('5', $this->preview($this->editorFor($workflow, 'start'), '{{ vars.count }}')['value']);
+    }
 }

@@ -15,7 +15,7 @@ wag.run is a workflow automation app for teams. You build a workflow on a visual
 | [Chat webhooks](chat-webhooks.md) | Getting an incoming webhook from Slack, Mattermost, Microsoft Teams, Discord, and Google Chat for the Chat message action |
 | [Approvals, tasks, and the Inbox](people.md) | Bringing people into a run, and responding to requests |
 | [Runs](runs.md) | Test runs, the run page, statuses, retries, error paths, concurrency, and log retention |
-| [Workspaces](workspaces.md) | Members and roles, variables, secrets, credentials, workspace settings, and the audit log |
+| [Workspaces](workspaces.md) | Members and roles, the data store, secrets, credentials, workspace settings, and the audit log |
 | [API and MCP server](api.md) | Personal access tokens, the REST API, and connecting AI assistants such as Claude |
 | [Organization administration](administration.md) | Users, workspaces, sign-in, sign-in providers, email, and organization defaults |
 | [Self-hosting](self-hosting.md) | Running wag.run with Docker: settings, HTTPS, backups, and upgrades |
@@ -28,6 +28,7 @@ wag.run is a workflow automation app for teams. You build a workflow on a visual
 - **Start workflows many ways.** Run one by hand, call it from another system with a webhook or the API, run it on a schedule, let people start it by filling in a form, or start it on a new GitHub tag, release, or failed Actions run, or a new Investbrain transaction.
 - **Call other systems.** Make HTTP requests, work with GitHub issues, releases, and Actions, add rows to Google Sheets, read and record Investbrain portfolios and transactions and export their backups, send email, post to Slack, Teams, Discord, or Google Chat, send in-app notifications, call an LLM, or start another workflow.
 - **Add logic.** Branch on a condition, switch on a value, loop over or filter a list, wait, merge parallel branches, or end a run early.
+- **Remember things.** Keep typed values in workflow variables for the length of a run, to total or collect as it goes, and in the workspace data store between runs, to share a setting, skip what you've already handled, pick up where the last run stopped, or count in a row.
 - **Bring people in.** Approvals pause a run until enough approvers say yes. Tasks pause it until someone fills in a form.
 - **Change safely.** Edits stay in a draft until you publish. Every publish is a numbered version, and you can test a draft, discard it, or roll back to an older version.
 - **See what happened.** Every run is recorded with each step's input, output, and error, shown on the same canvas you built it on.
@@ -40,13 +41,13 @@ The top level: one per wag.run install. Organization admins manage users, worksp
 
 ### Workspace
 
-Where the work happens. Each workspace has its own workflows, runs, variables, secrets, credentials, and members. People are added to a workspace with one of four roles:
+Where the work happens. Each workspace has its own workflows, runs, data store, secrets, credentials, and members. People are added to a workspace with one of four roles:
 
 | Role | Can |
 |---|---|
 | **Admin** | Everything an Editor can, plus manage members, secrets, credentials, and workspace settings, and read the audit log |
-| **Editor** | Build, publish, run, and test workflows, cancel runs, and manage variables |
-| **Viewer** | See workflows, runs, and members, and the names (not values) of variables, secrets, and credentials |
+| **Editor** | Build, publish, run, and test workflows, cancel runs, and manage the data store |
+| **Viewer** | See workflows, runs, members, and the data store, and the names (not values) of secrets and credentials |
 | **Guest** | See only the approvals and tasks assigned to them |
 
 Organization admins act as Admin in every workspace.
@@ -92,7 +93,8 @@ What a placeholder can read:
 |---|---|
 | `trigger` | What the trigger received, such as manual inputs, form values, or a webhook body |
 | `nodes.<id>.output` | The output of an earlier node. The node's settings panel shows the exact name under **Reference its output as**. |
-| `vars.<key>` | A workspace variable |
+| `vars.<name>` | One of the workflow's variables, as it is in this run when the step runs |
+| `store.<key>` | An entry of the workspace's data store, as it is when the step runs |
 | `secrets.<key>` | A workspace secret. Its value is masked in run logs. |
 | `execution` | The run's `id`, `workflow` name, `trigger_type`, and `started_at`, and `trigger`, the `id`, `type`, and `config` of the trigger that started it |
 | `item`, `loop` | Inside a For loop: the current item, and its `index` and `count` |
@@ -108,10 +110,10 @@ A path to data that doesn't exist, such as the output of a branch that didn't ru
 
 The **Inbox**, in the account menu at the bottom of the sidebar, is where everything for you lands, across all your workspaces: approvals and tasks, failed runs of workflows you own, and messages that workflows send you. A red dot on your avatar means something in it is unread.
 
-### Variables, secrets, and credentials
+### The data store, secrets, and credentials
 
 A workspace keeps shared values its workflows use:
 
-- **Variables**: named values any workflow can read, such as a team email address or a base URL.
+- **Data store**: typed values that last between runs, such as a base URL people set or a counter workflows update. Any workflow can read an entry, and the Update data store node changes one. For a value that only matters during one run, a workflow declares its own **variables** in its settings.
 - **Secrets**: sensitive values, encrypted at rest and masked in run logs.
 - **Credentials**: reusable sign-in details for other systems, such as HTTP Basic, an API token, an AI provider key, an SMTP server, or a chat webhook, which nodes pick from a list.
