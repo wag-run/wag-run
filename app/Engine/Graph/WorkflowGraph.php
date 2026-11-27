@@ -13,8 +13,12 @@ use InvalidArgumentException;
  *       "nodes": [{"id": "n1", "type": "core.manual_trigger", "name": "Start",
  *                  "config": {}, "retry": {"max_retries": 2}, "position": {"x": 0, "y": 0},
  *                  "error_path": true, "wait_for_all": true}],
- *       "edges": [{"id": "e1", "source": "n1", "source_port": "main", "target": "n2"}]
+ *       "edges": [{"id": "e1", "source": "n1", "source_port": "main", "target": "n2"}],
+ *       "variables": [{"name": "attempts", "type": "number", "value": "0"}]
  *     }
+ *
+ * "variables" declares the workflow's variables and is left out when there
+ * are none, so a graph without them reads the same as before they existed.
  */
 final readonly class WorkflowGraph
 {
@@ -23,10 +27,12 @@ final readonly class WorkflowGraph
     /**
      * @param  array<string, GraphNode>  $nodes  keyed by node id
      * @param  list<GraphEdge>  $edges
+     * @param  array<string, GraphVariable>  $variables  keyed by name
      */
     public function __construct(
         public array $nodes = [],
         public array $edges = [],
+        public array $variables = [],
     ) {}
 
     /**
@@ -57,7 +63,15 @@ final readonly class WorkflowGraph
             }
         }
 
-        return new self($nodes, $edges);
+        $variables = [];
+        foreach (is_array($data['variables'] ?? null) ? $data['variables'] : [] as $variable) {
+            if (is_array($variable)) {
+                $graphVariable = GraphVariable::fromArray($variable);
+                $variables[$graphVariable->name] ??= $graphVariable;
+            }
+        }
+
+        return new self($nodes, $edges, $variables);
     }
 
     public static function empty(): self
@@ -66,15 +80,48 @@ final readonly class WorkflowGraph
     }
 
     /**
-     * @return array{version: int, nodes: list<array<string, mixed>>, edges: list<array<string, string>>}
+     * @return array{version: int, nodes: list<array<string, mixed>>, edges: list<array<string, string>>, variables?: list<array{name: string, type: string, value: string}>}
      */
     public function toArray(): array
     {
-        return [
+        $graph = [
             'version' => self::FORMAT_VERSION,
             'nodes' => array_values(array_map(fn (GraphNode $node) => $node->toArray(), $this->nodes)),
             'edges' => array_map(fn (GraphEdge $edge) => $edge->toArray(), $this->edges),
         ];
+
+        if ($this->variables !== []) {
+            $graph['variables'] = array_values(array_map(fn (GraphVariable $variable) => $variable->toArray(), $this->variables));
+        }
+
+        return $graph;
+    }
+
+    /**
+     * The same graph with other nodes or connections, keeping its variables.
+     *
+     * @param  array<string, GraphNode>  $nodes
+     * @param  list<GraphEdge>  $edges
+     */
+    public function with(array $nodes, array $edges): self
+    {
+        return new self($nodes, $edges, $this->variables);
+    }
+
+    /**
+     * Declare a variable, or replace the one with its name.
+     */
+    public function withVariable(GraphVariable $variable): self
+    {
+        return new self($this->nodes, $this->edges, [...$this->variables, $variable->name => $variable]);
+    }
+
+    public function withoutVariable(string $name): self
+    {
+        $variables = $this->variables;
+        unset($variables[$name]);
+
+        return new self($this->nodes, $this->edges, $variables);
     }
 
     public function has(string $nodeId): bool
@@ -155,7 +202,7 @@ final readonly class WorkflowGraph
 
     public function withNode(GraphNode $node): self
     {
-        return new self([...$this->nodes, $node->id => $node], $this->edges);
+        return $this->with([...$this->nodes, $node->id => $node], $this->edges);
     }
 
     /**
@@ -166,7 +213,7 @@ final readonly class WorkflowGraph
         $nodes = $this->nodes;
         unset($nodes[$nodeId]);
 
-        return new self($nodes, array_values(array_filter(
+        return $this->with($nodes, array_values(array_filter(
             $this->edges,
             fn (GraphEdge $edge) => $edge->source !== $nodeId && $edge->target !== $nodeId,
         )));
@@ -174,12 +221,12 @@ final readonly class WorkflowGraph
 
     public function withEdge(GraphEdge $edge): self
     {
-        return new self($this->nodes, [...$this->edges, $edge]);
+        return $this->with($this->nodes, [...$this->edges, $edge]);
     }
 
     public function withoutEdge(string $source, string $port, string $target): self
     {
-        return new self($this->nodes, array_values(array_filter(
+        return $this->with($this->nodes, array_values(array_filter(
             $this->edges,
             fn (GraphEdge $edge) => ! ($edge->source === $source && $edge->sourcePort === $port && $edge->target === $target),
         )));
@@ -192,7 +239,7 @@ final readonly class WorkflowGraph
      */
     public function withoutEdgesFromPortsOtherThan(string $nodeId, array $ports): self
     {
-        return new self($this->nodes, array_values(array_filter(
+        return $this->with($this->nodes, array_values(array_filter(
             $this->edges,
             fn (GraphEdge $edge) => $edge->source !== $nodeId || in_array($edge->sourcePort, $ports, true),
         )));

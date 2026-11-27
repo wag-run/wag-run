@@ -3,6 +3,7 @@
 namespace App\Engine;
 
 use App\Enums\ExecutionStatus;
+use App\Enums\ValueOperation;
 use App\Models\Workflow;
 use Carbon\CarbonInterface;
 
@@ -33,6 +34,9 @@ final readonly class NodeResult
         public string $donePort = 'done',
         public ?Workflow $childWorkflow = null,
         public array $childInput = [],
+        public ?string $variable = null,
+        public ?ValueOperation $operation = null,
+        public mixed $operand = null,
     ) {}
 
     /**
@@ -103,5 +107,18 @@ final readonly class NodeResult
     public static function runChild(Workflow $workflow, array $input = []): self
     {
         return new self(ResultKind::RunChild, childWorkflow: $workflow, childInput: $input);
+    }
+
+    /**
+     * Change one of the run's workflow variables and finish. The engine
+     * applies the change while it holds the run's lock and saves it with
+     * the step, whose output is the variable's name, the operation, and
+     * the value before and after. A value that doesn't fit fails the step.
+     *
+     * @param  string|list<string>  $ports
+     */
+    public static function updateVariable(string $name, ValueOperation $operation, mixed $operand = null, string|array $ports = 'main'): self
+    {
+        return new self(ResultKind::UpdateVariable, ports: (array) $ports, variable: $name, operation: $operation, operand: $operand);
     }
 }

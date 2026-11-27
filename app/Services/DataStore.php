@@ -219,18 +219,6 @@ class DataStore
      */
     protected function encode(ValueType $type, mixed $value): string
     {
-        $json = json_encode($type === ValueType::Object && $value === [] ? (object) [] : $value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION);
-
-        if ($json === false) {
-            throw new RuntimeException(__('nodes.store.not_json', ['error' => json_last_error_msg()]));
-        }
-
-        $max = (int) config('workflows.store.max_value_bytes');
-
-        if (strlen($json) > $max) {
-            throw new RuntimeException(__('nodes.store.value_too_large', ['max' => round($max / 1024).' KB']));
-        }
-
-        return $json;
+        return $type->encode($value, (int) config('workflows.store.max_value_bytes'));
     }
 }

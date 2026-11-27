@@ -91,10 +91,21 @@ return new class extends Migration
             $table->index(['status', 'available_at']);
             $table->index(['status', 'resume_at']);
         });
+
+        Schema::create('execution_variables', function (Blueprint $table) {
+            $table->id();
+            $table->foreignUuid('execution_id')->constrained()->cascadeOnDelete();
+            $table->string('name', 100);
+            $table->longText('value');
+            $table->timestamps();
+
+            $table->unique(['execution_id', 'name']);
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('execution_variables');
         Schema::dropIfExists('execution_steps');
         Schema::dropIfExists('executions');
         Schema::dropIfExists('workflow_versions');

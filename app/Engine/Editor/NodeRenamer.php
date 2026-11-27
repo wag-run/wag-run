@@ -87,7 +87,7 @@ class NodeRenamer
             return new GraphEdge($id, $source, $target, $edge->sourcePort);
         }, $graph->edges);
 
-        return new WorkflowGraph($nodes, $edges);
+        return $graph->with($nodes, $edges);
     }
 
     /**
