@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class FirstUserRegistrationTest extends TestCase
@@ -95,5 +96,33 @@ class FirstUserRegistrationTest extends TestCase
 
         $this->assertSame(OrgRole::Member, $user->orgRole());
         $this->assertTrue($user->accessibleWorkspaces()->isEmpty());
+    }
+
+    /**
+     * @return array<string, array{array<string, string>, string, string}>
+     */
+    public static function invalidRegistrations(): array
+    {
+        return [
+            'an email taken in another case' => [['email' => 'Taken@Example.com'], 'email', 'The email has already been taken.'],
+            'a password that does not match its confirmation' => [['password_confirmation' => 'different'], 'password', 'The password field confirmation does not match.'],
+            'a missing name' => [['name' => ''], 'name', 'The name field is required.'],
+        ];
+    }
+
+    /**
+     * @param  array<string, string>  $input
+     */
+    #[DataProvider('invalidRegistrations')]
+    public function test_rejects_a_registration_that_fails_validation(array $input, string $field, string $message): void
+    {
+        Organization::factory()->create(['registration_open' => true]);
+        User::factory()->create(['email' => 'taken@example.com']);
+
+        $this->post(route('register.store'), [...$this->registration('new@example.com'), ...$input])
+            ->assertSessionHasErrors([$field => $message]);
+
+        $this->assertGuest();
+        $this->assertSame(['taken@example.com'], User::pluck('email')->all());
     }
 }
