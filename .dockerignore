@@ -37,3 +37,7 @@ docker-compose.yml
 .dockerignore
 docs
 README.md
+
+# Tests and their tooling never run in the image.
+tests
+phpunit.xml
