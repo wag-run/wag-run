@@ -156,7 +156,7 @@ class RestApiTest extends TestCase
 
         $this->getJson($this->url('runs'))->assertOk()->assertJsonCount(2, 'data')->assertJsonPath('meta.total', 2);
         $this->getJson($this->url("runs?workflow={$this->workflow->id}"))->assertOk()->assertJsonCount(1, 'data');
-        $this->getJson($this->url('runs?status=complete'))->assertOk()->assertJsonPath('data.0.workflow.id', $other->id);
+        $this->getJson($this->url('runs?status=complete'))->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.workflow.id', $other->id);
         $this->getJson($this->url('runs?status=nope'))->assertUnprocessable();
 
         $this->postJson($this->url("runs/{$waiting->id}/cancel"))->assertOk()->assertJsonPath('data.status', 'cancelled');
@@ -165,22 +165,48 @@ class RestApiTest extends TestCase
 
     public function test_the_token_needs_the_scope_and_the_person_the_role(): void
     {
+        $run = $this->runWorkflow($this->workflow, ['values' => ['order' => 1]]);
+        $start = fn () => $this->postJson($this->url("workflows/{$this->workflow->id}/runs"), ['input' => ['order' => 1]]);
+        $cancel = fn () => $this->postJson($this->url("runs/{$run->id}/cancel"));
+
         $this->actingAsMember(scopes: ['workflows:read']);
         $this->getJson($this->url('runs'))->assertForbidden()->assertJsonPath('message', 'This token doesn\'t have the runs:read scope.');
+        $this->getJson($this->url("runs/{$run->id}"))->assertForbidden();
+
+        $this->actingAsMember(scopes: ['runs:read']);
+        $this->getJson('/api/v1/workspaces')->assertForbidden();
+        $this->getJson($this->url('workflows'))->assertForbidden();
+        $this->getJson($this->url("workflows/{$this->workflow->id}"))->assertForbidden();
+        $start()->assertForbidden();
+        $cancel()->assertForbidden();
 
         $this->actingAsMember(WorkspaceRole::Viewer);
         $this->getJson($this->url('runs'))->assertOk();
-        $this->postJson($this->url("workflows/{$this->workflow->id}/runs"), ['input' => ['order' => 1]])->assertForbidden();
+        $start()->assertForbidden();
+        $cancel()->assertForbidden();
+
+        $this->actingAsMember(WorkspaceRole::Guest);
+        $this->getJson($this->url('workflows'))->assertForbidden();
+        $this->getJson($this->url("workflows/{$this->workflow->id}"))->assertForbidden();
+        $this->getJson($this->url('runs'))->assertForbidden();
+        $this->getJson($this->url("runs/{$run->id}"))->assertForbidden();
+
+        $this->assertSame([ExecutionStatus::Waiting], Execution::all()->pluck('status')->all(), 'nothing was started or cancelled');
     }
 
     public function test_other_workspaces_and_unknown_ids_are_not_found(): void
     {
         $this->actingAsMember();
         $foreign = Workspace::factory()->create();
-        $foreignRun = $this->runWorkflow($this->publishedWorkflow($this->graph(['start' => 'core.manual_trigger']), $foreign));
+        $foreignWorkflow = $this->publishedWorkflow($this->graph(['start' => 'core.manual_trigger', 'wait' => 'pause'], ['start->wait']), $foreign);
+        $foreignRun = $this->runWorkflow($foreignWorkflow);
 
         $this->getJson("/api/v1/workspaces/{$foreign->slug}/runs")->assertNotFound();
         $this->getJson($this->url("runs/{$foreignRun->id}"))->assertNotFound();
+        $this->getJson($this->url("workflows/{$foreignWorkflow->id}"))->assertNotFound();
+        $this->postJson($this->url("workflows/{$foreignWorkflow->id}/runs"))->assertNotFound();
+        $this->postJson($this->url("runs/{$foreignRun->id}/cancel"))->assertNotFound();
+        $this->assertSame([ExecutionStatus::Waiting], Execution::all()->pluck('status')->all(), 'nothing was started or cancelled');
         $this->getJson($this->url('runs/not-a-uuid'))->assertNotFound();
         $this->getJson($this->url('workflows/not-a-uuid'))->assertNotFound();
     }
