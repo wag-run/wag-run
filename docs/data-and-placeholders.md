@@ -11,7 +11,7 @@ Hi {{ trigger.values.name }}, your order of {{ length(trigger.values.items) }} i
 Fields that accept placeholders have an **Insert data** button. It lists everything the node can use, grouped by where it comes from:
 
 - **Trigger:** the trigger's outputs, such as manual inputs, form values, or the webhook body.
-- **Each earlier node**, by name, with its outputs.
+- **Each earlier node**, by name, with its outputs. After a For loop, that includes the outputs of each node in its first iteration, and after a Merge, the outputs of the last node on each branch.
 - **Loop:** inside a For loop, **Current item**, **Item index**, and **Item count**.
 - **Error:** on a node connected to an **on error** output, **Error message** and **Attempt**.
 - **Variables** and **Secrets** of the workspace.
@@ -51,6 +51,17 @@ Use dots to reach inside objects, and square brackets for list positions or keys
 ```
 
 A path to data that doesn't exist, such as a field the response didn't include or a node on a branch that didn't run, reads as empty instead of failing the run. Use `default()` to supply a fallback: `{{ default(trigger.note, "No note") }}`.
+
+### Nodes inside results
+
+Some outputs hold other nodes: a [For loop](actions.md#for-loop)'s `results`, a [Merge](actions.md#merge)'s `branches`, the `output` of [Trigger other workflow](actions.md#trigger-other-workflow), and a run's own output. Each node in them reads the same way as `nodes.<id>`:
+
+| Path | What it holds |
+|---|---|
+| `<id>.output` | What the node produced |
+| `<id>.port` | The output it left by, such as `main`, `true`, or `done` |
+
+So a path that works as `nodes.fetch.output.body` inside a loop becomes `nodes.each.output.results[0].fetch.output.body` after it: the part from `fetch` onwards stays the same.
 
 ## Text, or a value
 

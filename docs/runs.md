@@ -43,7 +43,7 @@ Click **Back to all steps** to return to the list.
 Also on the page:
 
 - **Trigger input**: what the trigger received.
-- **Run output**: what the run produced, such as the output of a **Terminate** node.
+- **Run output**: what the run produced. This is the output of a **Terminate** node if one ended the run. Otherwise it's the last node on each path, keyed by node id, in the [same shape as `nodes.<id>`](data-and-placeholders.md#nodes-inside-results).
 - **Not reached yet** or **Not run**: nodes the run hasn't reached, or didn't take.
 - **Started by run …**: for a run started by another workflow, a link to the run that started it.
 - **Open workflow**: back to the editor.
