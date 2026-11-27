@@ -105,6 +105,27 @@ class RestApiTest extends TestCase
             ->assertJsonPath('data.steps.1.status', 'waiting');
     }
 
+    public function test_a_run_lists_a_loops_iterations_once_as_steps_and_wraps_its_output_like_nodes(): void
+    {
+        $this->actingAsMember();
+        $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
+            ['start' => 'start', 'each' => ['each', ['items' => ['a', 'b']]], 'body' => 'emit'],
+            ['start->each', 'each:item->body'],
+        ), $this->workspace));
+
+        $response = $this->getJson($this->url("runs/{$execution->id}"))->assertOk();
+        $loopStepId = $response->json('data.steps.1.id');
+
+        $response
+            ->assertJsonPath('data.steps.1.node_id', 'each')
+            ->assertJsonPath('data.steps.1.output', ['count' => 2])
+            ->assertJsonPath('data.steps.3.node_id', 'body')
+            ->assertJsonPath('data.steps.3.iteration', "L{$loopStepId}.1")
+            ->assertJsonPath('data.steps.3.output.item', 'b')
+            ->assertJsonPath('data.output.each.port', 'done')
+            ->assertJsonPath('data.output.each.output.results.0.body.output.item', 'a');
+    }
+
     public function test_a_run_shows_the_current_values_of_its_workflow_variables_and_a_list_leaves_them_out(): void
     {
         $this->actingAsMember();

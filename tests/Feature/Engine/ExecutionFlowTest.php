@@ -3,6 +3,7 @@
 namespace Tests\Feature\Engine;
 
 use App\Engine\Engine;
+use App\Engine\LoopResults;
 use App\Enums\ExecutionStatus;
 use App\Enums\StepStatus;
 use App\Services\Workflows;
@@ -36,7 +37,7 @@ class ExecutionFlowTest extends TestCase
         $this->assertSame(['order' => 42], $this->stepFor($execution, 'start')->output);
         $this->assertSame(['start', 'first'], $this->stepFor($execution, 'second')->output['saw']);
         $this->assertSame($this->stepFor($execution, 'first')->id, $this->stepFor($execution, 'second')->previous_step_id);
-        $this->assertSame(['second'], array_keys($execution->output));
+        $this->assertSame(['second' => ['output' => $this->stepFor($execution, 'second')->output, 'port' => 'main']], $execution->output);
         $this->assertNotNull($execution->finished_at);
     }
 
@@ -184,7 +185,9 @@ class ExecutionFlowTest extends TestCase
         $this->assertSame(['a', 'b', 'c'], $bodies->map(fn ($step) => $step->output['item'])->all());
         $loopId = $this->stepFor($execution, 'each')->id;
         $this->assertSame(["L{$loopId}.0", "L{$loopId}.1", "L{$loopId}.2"], $bodies->pluck('scope_key')->all());
-        $this->assertSame(['a', 'b', 'c'], array_map(fn ($result) => $result['body']['item'], $this->stepFor($execution, 'each')->output['results']));
+        $each = $this->stepFor($execution, 'each');
+        $this->assertSame(['count' => 3], $each->output, 'results are read from the step rows, not copied into the loop row');
+        $this->assertSame(['a', 'b', 'c'], array_map(fn ($result) => $result['body']['output']['item'], LoopResults::for($execution)->outputOf($each)['results']));
         $this->assertSame(1, $execution->steps()->where('node_id', 'after')->count());
         $this->assertNotContains('body', $this->stepFor($execution, 'after')->output['saw']);
     }
@@ -202,6 +205,37 @@ class ExecutionFlowTest extends TestCase
         $this->assertSame([1, 2, 3], $execution->steps()->where('node_id', 'body')->orderBy('id')->get()->map(fn ($step) => $step->output['item'])->all());
     }
 
+    public function test_a_loop_inside_an_iteration_carries_its_own_results(): void
+    {
+        $workflow = $this->publishedWorkflow($this->graph(
+            ['start' => 'start', 'outer' => ['each', ['items' => [[1, 2], [3]]]], 'inner' => ['each', ['items_from_item' => true]], 'body' => 'emit'],
+            ['start->outer', 'outer:item->inner', 'inner:item->body'],
+        ));
+
+        $execution = $this->runWorkflow($workflow);
+
+        $outer = LoopResults::for($execution)->outputOf($this->stepFor($execution, 'outer'));
+        $this->assertSame(2, $outer['count']);
+        $this->assertSame([[1, 2], [3]], array_map(
+            fn ($result) => array_map(fn ($inner) => $inner['body']['output']['item'], $result['inner']['output']['results']),
+            $outer['results'],
+        ));
+    }
+
+    public function test_a_run_that_ends_in_a_loop_returns_the_loops_results(): void
+    {
+        $workflow = $this->publishedWorkflow($this->graph(
+            ['start' => 'start', 'each' => ['each', ['items' => ['a', 'b']]], 'body' => 'emit'],
+            ['start->each', 'each:item->body'],
+        ));
+
+        $execution = $this->runWorkflow($workflow);
+
+        $this->assertSame(['each'], array_keys($execution->output));
+        $this->assertSame('done', $execution->output['each']['port']);
+        $this->assertSame(['a', 'b'], array_map(fn ($result) => $result['body']['output']['item'], $execution->output['each']['output']['results']));
+    }
+
     public function test_loop_without_items_continues_straight_to_done(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(
@@ -212,7 +246,7 @@ class ExecutionFlowTest extends TestCase
         $execution = $this->runWorkflow($workflow);
 
         $this->assertSame(['start', 'each', 'after'], $this->nodesRun($execution));
-        $this->assertSame(['results' => []], $this->stepFor($execution, 'each')->output);
+        $this->assertSame(['results' => [], 'count' => 0], LoopResults::for($execution)->outputOf($this->stepFor($execution, 'each')));
     }
 
     public function test_waiting_inside_a_loop_holds_the_next_iteration(): void

@@ -7,7 +7,9 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * One attempt at one node of a run.
+ * One attempt at one node of a run. A finished loop's output is only its
+ * count: what its iterations produced is in the steps whose iteration
+ * names the loop's step, so a run's steps hold every output once.
  *
  * @mixin ExecutionStep
  */

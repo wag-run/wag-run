@@ -3,6 +3,7 @@
 namespace App\Engine\Editor;
 
 use App\Engine\ContextBuilder;
+use App\Engine\LoopResults;
 use App\Engine\Redactor;
 use App\Engine\StoreData;
 use App\Engine\Templates\TemplateEngine;
@@ -111,10 +112,12 @@ class ExpressionPreview
         $completed = $execution->steps()
             ->where('status', StepStatus::Complete)
             ->orderBy('id')
-            ->get(['id', 'node_id', 'output', 'output_ports']);
+            ->get(['id', 'node_id', 'scope_key', 'status', 'wait_type', 'output', 'output_ports']);
+
+        $results = new LoopResults($completed);
 
         foreach ($completed as $done) {
-            $outputs[$done->node_id] ??= ['output' => $done->output, 'port' => $done->output_ports[0] ?? null];
+            $outputs[$done->node_id] ??= $results->entry($done);
         }
 
         return $outputs;

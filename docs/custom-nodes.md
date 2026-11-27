@@ -264,7 +264,7 @@ If the address your node calls comes from a setting, check it with `App\Support\
 | `NodeResult::fail($message, retryable: false, output: $output)` | The attempt fails. Retryable failures are retried by the node's retry setting; after that the flow follows the node's **on error** connection, or the run fails. |
 | `NodeResult::waitUntil($time, $state)` | Parks the step with no worker held, and resumes it at `$time` |
 | `NodeResult::waitForResponse($timeout, $state)` | Parks the step until something answers it, or until the timeout |
-| `NodeResult::iterate($items)` | Runs the part of the flow on the `item` output once per item, then continues from `done` |
+| `NodeResult::iterate($items)` | Runs the part of the flow on the `item` output once per item, then continues from `done`. The step's output is `results`, with every node of each iteration, and `count`, as for a [For loop](actions.md#for-loop). |
 | `NodeResult::runChild($workflow, $input)` | Starts another workflow and waits for it |
 | `NodeResult::updateVariable($name, $operation, $operand)` | Changes one of the workflow's variables and completes the step. The engine applies the change, so parallel branches can't lose each other's, and the step's output is the value before and after. `$operation` is an `App\Enums\ValueOperation`. |
 | `NodeResult::terminate($status, $output)` | Ends the whole run with that status |

@@ -70,7 +70,7 @@ class RunWorkflow extends Node
     {
         return ($config['mode'] ?? 'sync') === 'async'
             ? [new Output('execution_id', __('common.execution_id'), 'string'), new Output('status', __('common.status'), 'string')]
-            : [new Output('output', __('nodes.run_workflow.workflow_output'), 'object', __('nodes.run_workflow.output_of_the_last_node'))];
+            : [new Output('output', __('nodes.run_workflow.workflow_output'), 'object', __('nodes.run_workflow.last_node_on_each_path'))];
     }
 
     public function execute(NodeContext $context): NodeResult

@@ -94,9 +94,39 @@ class DataPickerTest extends TestCase
         $after = $this->paths($graph, 'after');
 
         $this->assertSame(['item', 'loop.index', 'loop.count'], $inside['Loop: each']);
-        $this->assertSame(['nodes.each.output.results'], $after['each']);
+        $this->assertSame(['nodes.each.output.results', 'nodes.each.output.count', 'nodes.each.output.results[0].body.output.value'], $after['each']);
         $this->assertArrayNotHasKey('body', $after);
         $this->assertArrayNotHasKey('Loop: each', $after);
+    }
+
+    public function test_offers_a_loops_own_iteration_nodes_and_leaves_a_nested_loops_to_that_loop(): void
+    {
+        $graph = WorkflowGraph::fromArray($this->graph(
+            ['start' => ['core.webhook_trigger', ['method' => 'POST', 'verification' => 'none']], 'outer' => ['core.for_loop', ['items' => '{{ trigger.body.groups }}']],
+                'inner' => ['core.for_loop', ['items' => '{{ item }}']], 'deep' => 'core.compose', 'tail' => 'core.compose', 'after' => 'core.compose'],
+            ['start->outer', 'outer:item->inner', 'inner:item->deep', 'inner:done->tail', 'outer:done->after'],
+        ));
+
+        $this->assertSame([
+            'nodes.outer.output.results',
+            'nodes.outer.output.count',
+            'nodes.outer.output.results[0].inner.output.results',
+            'nodes.outer.output.results[0].inner.output.count',
+            'nodes.outer.output.results[0].tail.output.value',
+        ], $this->paths($graph, 'after')['outer']);
+    }
+
+    public function test_offers_the_last_node_of_each_branch_a_merge_gathered(): void
+    {
+        $graph = WorkflowGraph::fromArray($this->graph(
+            ['start' => 'core.manual_trigger', 'a' => 'core.compose', 'b' => 'core.compose', 'join' => 'core.merge', 'after' => 'core.compose'],
+            ['start->a', 'start->b', 'a->join', 'b->join', 'join->after'],
+        ));
+
+        $this->assertSame(
+            ['nodes.join.output.branches', 'nodes.join.output.branches.a.output.value', 'nodes.join.output.branches.b.output.value'],
+            $this->paths($graph, 'after')['join'],
+        );
     }
 
     public function test_offers_the_error_to_nodes_reached_through_an_error_output(): void

@@ -54,7 +54,7 @@ class FlowNodesTest extends TestCase
         $workflow = $this->publishedWorkflow($this->graph(
             ['start' => ['core.webhook_trigger', ['method' => 'POST', 'verification' => 'none']], 'each' => ['core.for_loop', ['items' => '{{ trigger.body.orders }}']],
                 'line' => ['core.compose', ['template' => '{{ item.qty * item.price }}']],
-                'total' => ['core.compose', ['template' => "{{ sum(column(column(nodes.each.output.results, 'line'), 'value')) }}"]]],
+                'total' => ['core.compose', ['template' => "{{ sum(column(column(column(nodes.each.output.results, 'line'), 'output'), 'value')) }}"]]],
             ['start->each', 'each:item->line', 'each:done->total'],
         ));
 
@@ -63,6 +63,21 @@ class FlowNodesTest extends TestCase
         $this->assertSame(ExecutionStatus::Complete, $execution->status);
         $this->assertSame([10, 7], $execution->steps()->where('node_id', 'line')->orderBy('id')->get()->map(fn ($step) => $step->output['value'])->all());
         $this->assertSame(17, $this->stepFor($execution, 'total')->output['value']);
+    }
+
+    public function test_for_loop_results_hold_every_node_of_each_iteration_in_the_same_shape_as_nodes(): void
+    {
+        $workflow = $this->publishedWorkflow($this->graph(
+            ['start' => ['core.webhook_trigger', ['method' => 'POST', 'verification' => 'none']], 'each' => ['core.for_loop', ['items' => '{{ trigger.body.names }}']],
+                'greet' => ['core.compose', ['template' => 'Hi {{ item }}']],
+                'shout' => ['core.compose', ['template' => '{{ upper(nodes.greet.output.value) }}']],
+                'after' => ['core.compose', ['template' => '{{ nodes.each.output.results[1].greet.output.value }} / {{ nodes.each.output.results[1].shout.output.value }} / {{ nodes.each.output.results[0].greet.port }} / {{ nodes.each.output.count }}']]],
+            ['start->each', 'each:item->greet', 'greet->shout', 'each:done->after'],
+        ));
+
+        $execution = $this->runWorkflow($workflow, ['body' => ['names' => ['Ada', 'Grace']]]);
+
+        $this->assertSame('Hi Grace / HI GRACE / main / 2', $this->stepFor($execution, 'after')->output['value']);
     }
 
     public function test_for_loop_refuses_a_value_that_is_not_a_list(): void
@@ -89,7 +104,11 @@ class FlowNodesTest extends TestCase
 
         $execution = $this->runWorkflow($workflow);
 
-        $this->assertSame(['a' => ['value' => 'A'], 'b' => ['value' => 'B'], 'c' => ['value' => 'C']], $this->stepFor($execution, 'join')->output['branches']);
+        $this->assertSame([
+            'a' => ['output' => ['value' => 'A'], 'port' => 'main'],
+            'b' => ['output' => ['value' => 'B'], 'port' => 'main'],
+            'c' => ['output' => ['value' => 'C'], 'port' => 'main'],
+        ], $this->stepFor($execution, 'join')->output['branches']);
         $this->assertSame(1, $execution->steps()->where('node_id', 'join')->count());
     }
 
@@ -201,7 +220,7 @@ class FlowNodesTest extends TestCase
         ), $workspace);
         $parent = $this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger', 'call' => ['core.run_workflow', ['workflow' => $child->id, 'mode' => 'sync', 'input' => ['name' => '{{ trigger.values.who }}']]],
-                'use' => ['core.compose', ['template' => '{{ nodes.call.output.output.reply.value }}!']]],
+                'use' => ['core.compose', ['template' => '{{ nodes.call.output.output.reply.output.value }}!']]],
             ['start->call', 'call->use'],
         ), $workspace);
 
@@ -281,7 +300,7 @@ class FlowNodesTest extends TestCase
         ), $workspace);
         $parent = $this->publishedWorkflow($this->graph(
             ['start' => 'core.manual_trigger', 'call' => ['core.run_workflow', ['workflow' => $child->id, 'mode' => 'sync', 'input' => ['email' => '{{ trigger.values.email }}']]],
-                'use' => ['core.compose', ['template' => '{{ nodes.call.output.output.reply.value }}']]],
+                'use' => ['core.compose', ['template' => '{{ nodes.call.output.output.reply.output.value }}']]],
             ['start->call', 'call->use'],
         ), $workspace);
 

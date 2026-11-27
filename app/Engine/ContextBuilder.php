@@ -12,7 +12,8 @@ use App\Services\DataStore;
  * nodes it can see, workspace values, and the current loop item.
  *
  *     trigger            the execution's input
- *     nodes.<id>.output  the latest output of that node visible from this step
+ *     nodes.<id>.output  the latest output of that node visible from this step;
+ *                        a finished loop's includes its results (LoopResults)
  *     vars.<name>        the run's workflow variables, read when used (see VariableData)
  *     store.<key>        the workspace's data store, read when used (see StoreData)
  *     secrets.<key>      workspace secrets (in memory only; masked in logs)
@@ -96,14 +97,13 @@ class ContextBuilder
         $completed = $execution->steps()
             ->where('status', StepStatus::Complete)
             ->orderBy('id')
-            ->get(['id', 'node_id', 'scope_key', 'output', 'output_ports']);
+            ->get(['id', 'node_id', 'scope_key', 'status', 'wait_type', 'output', 'output_ports']);
+
+        $results = new LoopResults($completed);
 
         foreach ($completed as $done) {
             if (Scope::canSee($step->scope_key, $done->scope_key)) {
-                $outputs[$done->node_id] = [
-                    'output' => $done->output,
-                    'port' => $done->output_ports[0] ?? null,
-                ];
+                $outputs[$done->node_id] = $results->entry($done);
             }
         }
 

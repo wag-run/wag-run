@@ -231,8 +231,8 @@ class DemoWorkflowSeeder extends Seeder
             ]),
             $this->node('digest', 'core.send_notification', 'Send digest', 900, 320, [
                 'recipients' => [$admin->id],
-                'title' => '{{ length(nodes.each.output.results) }} new posts',
-                'message' => "{{ join(column(column(nodes.each.output.results, 'line'), 'value'), '\\n') }}",
+                'title' => '{{ nodes.each.output.count }} new posts',
+                'message' => "{{ join(column(column(column(nodes.each.output.results, 'line'), 'output'), 'value'), '\\n') }}",
             ]),
         ], [
             ['start', 'main', 'fetch'],

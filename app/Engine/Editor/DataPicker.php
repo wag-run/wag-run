@@ -3,10 +3,12 @@
 namespace App\Engine\Editor;
 
 use App\Engine\Definitions\Output;
+use App\Engine\Graph\GraphNode;
 use App\Engine\Graph\GraphVariable;
 use App\Engine\Graph\WorkflowGraph;
 use App\Engine\NodeRegistry;
 use App\Engine\Nodes\Actions\ForLoop;
+use App\Engine\Nodes\Actions\Merge;
 use App\Enums\NodeKind;
 use App\Models\StoreEntry;
 use App\Models\Workspace;
@@ -17,7 +19,8 @@ use App\Models\Workspace;
  * is left out), the current loop item, the error it was reached from, the
  * workflow's variables, and the workspace's data store entries and
  * secrets. Built from each node's declared outputs, so custom nodes appear
- * the same way.
+ * the same way. A For loop and a Merge also offer the outputs of the nodes
+ * they gathered.
  */
 class DataPicker
 {
@@ -134,7 +137,10 @@ class DataPicker
                 continue;
             }
 
-            $items = $this->flatten($definition->outputs($node->config), "nodes.{$node->id}.output");
+            $items = [
+                ...$this->flatten($definition->outputs($node->config), "nodes.{$node->id}.output"),
+                ...$this->gathered($graph, $node, $loopBodies),
+            ];
 
             if ($items !== []) {
                 $ancestorGroups[] = ['distance' => $distances[$node->id] ?? PHP_INT_MAX, 'group' => ['label' => $node->name, 'items' => $items]];
@@ -242,6 +248,59 @@ class DataPicker
         }
 
         return $items;
+    }
+
+    /**
+     * Paths into what a For loop or a Merge gathered, each node in the same
+     * shape as nodes.<id>: every node of the loop's first iteration, and
+     * the last node of each branch.
+     *
+     * @param  array<string, array<string, true>>  $loopBodies
+     * @return list<array{label: string, path: string, type: string}>
+     */
+    protected function gathered(WorkflowGraph $graph, GraphNode $node, array $loopBodies): array
+    {
+        $sources = [];
+
+        if (isset($loopBodies[$node->id])) {
+            foreach ($this->directBody($node->id, $loopBodies) as $id) {
+                $sources[$id] = ["results[0].{$id}", __('workflows.editor.first_iteration_name', ['name' => $graph->node($id)->name])];
+            }
+        } elseif ($node->type === Merge::type()) {
+            foreach ($graph->incoming($node->id) as $edge) {
+                $sources[$edge->source] = ["branches.{$edge->source}", __('nodes.merge.branch_outputs').' › '.$graph->node($edge->source)->name];
+            }
+        }
+
+        $items = [];
+
+        foreach ($sources as $id => [$path, $label]) {
+            $source = $graph->node($id);
+
+            if ($this->registry->has($source->type)) {
+                array_push($items, ...$this->flatten($this->registry->make($source->type)->outputs($source->config), "nodes.{$node->id}.output.{$path}.output", $label));
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * The nodes of a loop's body that run in its own iterations, not in
+     * those of a loop nested inside it.
+     *
+     * @param  array<string, array<string, true>>  $loopBodies
+     * @return list<string>
+     */
+    protected function directBody(string $loopId, array $loopBodies): array
+    {
+        $nested = [];
+
+        foreach (array_intersect_key($loopBodies, $loopBodies[$loopId]) as $body) {
+            $nested += $body;
+        }
+
+        return array_keys(array_diff_key($loopBodies[$loopId], $nested));
     }
 
     /**

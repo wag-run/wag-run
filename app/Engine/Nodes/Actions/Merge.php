@@ -10,7 +10,7 @@ use App\Enums\NodeKind;
 
 /**
  * Waits for every parallel branch that can still reach it, then continues
- * once with what each branch produced.
+ * once with the last node of each branch, in the same shape as nodes.<id>.
  */
 class Merge extends Node
 {
@@ -56,7 +56,7 @@ class Merge extends Node
 
     public function outputs(array $config = []): array
     {
-        return [new Output('branches', __('nodes.merge.branch_outputs'), 'object', __('nodes.merge.output_of_the_last_node'))];
+        return [new Output('branches', __('nodes.merge.branch_outputs'), 'object', __('nodes.merge.last_node_on_each_branch'))];
     }
 
     public function execute(NodeContext $context): NodeResult
@@ -65,7 +65,7 @@ class Merge extends Node
         $branches = [];
 
         foreach ($context->state()['arrivals'] ?? [] as $arrival) {
-            $branches[$arrival['node_id']] = $nodes[$arrival['node_id']]['output'] ?? null;
+            $branches[$arrival['node_id']] = $nodes[$arrival['node_id']] ?? null;
         }
 
         return NodeResult::complete(['branches' => $branches]);

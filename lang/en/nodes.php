@@ -115,11 +115,12 @@ return [
         'for_loop' => 'For loop',
         'items' => 'Items',
         'items_must_be_a_list' => 'Items must be an array.',
+        'iterations_run' => 'Iterations run',
         'list_to_loop_over_such' => 'An array to loop over, such as {{ nodes.fetch.output.body.items }}',
         'loop_can_run_at_most' => 'A loop can run at most :max items.',
         'repeats_part_of_the_flow' => 'Repeats part of the flow for each item.',
         'results' => 'Results',
-        'what_each_iteration_produced_keyed' => 'What each iteration produced, keyed by the node that ended it.',
+        'what_every_node_produced_in' => 'What every node produced in each iteration, keyed by node id.',
     ],
     'form_trigger' => [
         'anyone_with_the_link' => 'Anyone with the link',
@@ -414,8 +415,8 @@ return [
     ],
     'merge' => [
         'branch_outputs' => 'Branch outputs',
+        'last_node_on_each_branch' => 'The last node on each branch, keyed by node id.',
         'merge' => 'Merge',
-        'output_of_the_last_node' => 'The output of the last node on each branch, keyed by node id.',
         'waits_for_all_parallel_branches' => 'Waits for all parallel branches to complete before the flow moves forward.',
     ],
     'note' => [
@@ -436,8 +437,8 @@ return [
         'yellow' => 'Yellow',
     ],
     'run_workflow' => [
+        'last_node_on_each_path' => 'The last node on each path, keyed by node id.',
         'mode' => 'Mode',
-        'output_of_the_last_node' => 'The output of the last node on each path, keyed by node id.',
         'start_it_and_move_on' => 'Start it and move on',
         'starts_another_workflow_and_optionally' => 'Starts another workflow, and optionally waits for its outputs.',
         'trigger_other_workflow' => 'Trigger other workflow',
