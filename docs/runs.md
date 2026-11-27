@@ -44,7 +44,7 @@ Also on the page:
 
 - **Trigger input**: what the trigger received.
 - **Variables**: the workflow's [variables](editor.md#variables) with their values in this run, kept up to date while the run is going. Each **Update variable** step also shows the value before and after in its output.
-- **Run output**: what the run produced. This is the output of a **Terminate** node if one ended the run. Otherwise it's the last node on each path, keyed by node id, in the [same shape as `nodes.<id>`](data-and-placeholders.md#nodes-inside-results).
+- **Run output**: [what the run returns](#what-a-run-returns).
 - **Not reached yet** or **Not run**: nodes the run hasn't reached, or didn't take.
 - **Started by run …**: for a run started by another workflow, a link to the run that started it.
 - **Open workflow**: back to the editor.
@@ -56,6 +56,30 @@ Nodes inside a [For loop](actions.md#for-loop) run once per item, and nodes insi
 ### Waiting runs
 
 A waiting run shows what it's waiting for: **Resumes** with a time for a **Wait** node, or **Times out** with a time for an approval or task.
+
+## What a run returns
+
+A run's output is what the workflow returns. A [Trigger other workflow](actions.md#trigger-other-workflow) node that waits for the run receives it, the [API and MCP server](api.md) return it as the run's `output`, and the run page shows it as **Run output**.
+
+Unless you choose otherwise, a run returns the last node on each path, keyed by node id, in the [same shape as `nodes.<id>`](data-and-placeholders.md#nodes-inside-results):
+
+- A workflow with one path returns its last node.
+- A workflow that splits into several paths returns the last node of each.
+- Paths that meet at a **Merge**, or at a node set to **Wait for all incoming branches**, carry on as one path, so the nodes before it aren't returned.
+- A path that ends in a **For loop** returns the loop, with its `results`.
+- Nodes in the middle of a path aren't returned. Their outputs are still on the run page.
+- A path the run didn't take returns nothing.
+
+For example, a workflow with one path that ends in a node `summary` and another that ends in a node `total` returns:
+
+```json
+{
+  "summary": { "output": { "value": "3 new orders" }, "port": "main" },
+  "total": { "output": { "value": 59.97 }, "port": "main" }
+}
+```
+
+Because this follows the shape of the workflow, adding a node to the end of a path changes what the run returns. To return a value you choose, end the run with a [Terminate](actions.md#terminate) node and set its **Output**. That value becomes the run's output, in place of the last node on each path.
 
 ## Statuses
 

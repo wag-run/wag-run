@@ -158,6 +158,22 @@ class ExecutionFlowTest extends TestCase
         $this->assertSame(['start', 'check', 'yes', 'end'], $this->nodesRun($execution));
     }
 
+    public function test_a_runs_output_leaves_out_every_branch_that_met_at_a_join(): void
+    {
+        $merged = $this->graph(
+            ['start' => 'start', 'fork' => 'fork', 'left' => 'emit', 'right' => 'emit', 'merge' => 'join'],
+            ['start->fork', 'fork:a->left', 'fork:b->right', 'left->merge', 'right->merge'],
+        );
+        $waited = $this->graph(
+            ['start' => 'start', 'fork' => 'fork', 'left' => 'emit', 'right' => 'emit', 'end' => 'emit'],
+            ['start->fork', 'fork:a->left', 'fork:b->right', 'left->end', 'right->end'],
+        );
+        $waited['nodes'][4]['wait_for_all'] = true;
+
+        $this->assertSame(['merge'], array_keys($this->runWorkflow($this->publishedWorkflow($merged))->output));
+        $this->assertSame(['end'], array_keys($this->runWorkflow($this->publishedWorkflow($waited))->output));
+    }
+
     public function test_merge_proceeds_when_a_path_into_it_was_never_taken(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(

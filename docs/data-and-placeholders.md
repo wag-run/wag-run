@@ -56,7 +56,7 @@ A path to data that doesn't exist, such as a field the response didn't include o
 
 ### Nodes inside results
 
-Some outputs hold other nodes: a [For loop](actions.md#for-loop)'s `results`, a [While loop](actions.md#while-loop)'s `last` and `results` (and `loop.previous` and `loop.results` inside it), a [Merge](actions.md#merge)'s `branches`, the `output` of [Trigger other workflow](actions.md#trigger-other-workflow), and a run's own output. Each node in them reads the same way as `nodes.<id>`:
+Some outputs hold other nodes: a [For loop](actions.md#for-loop)'s `results`, a [While loop](actions.md#while-loop)'s `last` and `results` (and `loop.previous` and `loop.results` inside it), a [Merge](actions.md#merge)'s `branches`, the `results` of [Trigger other workflow](actions.md#trigger-other-workflow), and a run's own output. Each node in them reads the same way as `nodes.<id>`:
 
 | Path | What it holds |
 |---|---|

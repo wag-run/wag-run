@@ -16,7 +16,7 @@ use App\Models\Workflow;
 
 /**
  * Starts another workflow in the same workspace. Sync mode waits for it and
- * returns its outputs; if it fails, this node fails. Async mode starts it and
+ * returns its output as "results"; if it fails, this node fails. Async mode starts it and
  * moves on; it fails only when the run cannot start, such as when its
  * trigger requires an input this node does not give. The other run gets the
  * input under "values", as from a Manual trigger or a form. A workflow cannot start itself, and chains of runs starting runs
@@ -70,7 +70,7 @@ class RunWorkflow extends Node
     {
         return ($config['mode'] ?? 'sync') === 'async'
             ? [new Output('execution_id', __('common.execution_id'), 'string'), new Output('status', __('common.status'), 'string')]
-            : [new Output('output', __('nodes.run_workflow.workflow_output'), 'object', __('nodes.run_workflow.last_node_on_each_path'))];
+            : [new Output('results', __('nodes.run_workflow.workflow_results'), 'object', __('nodes.run_workflow.last_node_on_each_path'))];
     }
 
     public function execute(NodeContext $context): NodeResult
@@ -112,7 +112,7 @@ class RunWorkflow extends Node
         $result = parent::resume($context, $resumption);
 
         return $result->kind === ResultKind::Complete
-            ? NodeResult::complete(['output' => $result->output, 'execution_id' => $resumption->payload['execution_id'] ?? null])
+            ? NodeResult::complete(['results' => $result->output, 'execution_id' => $resumption->payload['execution_id'] ?? null])
             : $result;
     }
 }
