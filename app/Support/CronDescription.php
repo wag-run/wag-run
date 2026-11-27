@@ -312,12 +312,14 @@ final class CronDescription
     }
 
     /**
-     * Join items as a list in words, such as "1, 15 and 28".
+     * Join items as a list in words, such as "1 and 15" or "1, 15, and 28".
      *
      * @param  list<int|string>  $items
      */
     private static function join(array $items): string
     {
-        return collect($items)->map(fn (int|string $item): string => (string) $item)->join(', ', __('nodes.cron.and'));
+        $and = count($items) > 2 ? __('nodes.cron.and_ending_a_list') : __('nodes.cron.and');
+
+        return collect($items)->map(fn (int|string $item): string => (string) $item)->join(', ', $and);
     }
 }

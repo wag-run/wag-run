@@ -68,6 +68,7 @@ return [
     ],
     'cron' => [
         'and' => ' and ',
+        'and_ending_a_list' => ', and ',
         'at_minute_past_every_n_hours' => 'at :minute minutes past every :count hours',
         'at_minutes_past_every_hour' => 'at :minutes minutes past every hour',
         'at_times' => 'at :times',
