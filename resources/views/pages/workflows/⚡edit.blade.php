@@ -1805,8 +1805,10 @@ new class extends Component {
             @else
                 <flux:heading class="pe-8">{{ __('workflows.edit.workflow_settings') }}</flux:heading>
                 <flux:text class="mb-4 text-xs">{{ __('workflows.edit.select_a_node_to_configure') }}</flux:text>
-                <flux:switch wire:model.live="enabled" class="mb-4" :label="__('workflows.edit.enabled')" :description="__('workflows.edit.enabled_help')"
-                    :disabled="! $this->canPublish" data-test="workflow-enabled" />
+                <div class="mb-4">
+                    <flux:switch wire:model.live="enabled" :label="__('workflows.edit.enabled')" :description="__('workflows.edit.enabled_help')"
+                        :disabled="! $this->canPublish" data-test="workflow-enabled" />
+                </div>
                 <form wire:submit="saveSettings" class="space-y-4">
                     <fieldset class="space-y-4" @disabled(! $this->canEdit)>
                         <flux:input wire:model="name" :label="__('common.name')" required />
