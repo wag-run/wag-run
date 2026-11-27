@@ -30,6 +30,7 @@ A dog standing on a flow line that ends in an arrow. The dog's body and legs for
 | `public/apple-touch-icon.png` | The tile as a 180×180 PNG | Home-screen icons. Regenerate from `logo.svg` when the mark changes |
 | `public/favicon.svg` | The mark alone, flat: `#262626` on light tabs, white on dark tabs, switched by a `prefers-color-scheme` rule inside the SVG | The browser tab |
 | `x-app-logo-wordmark` (`resources/views/components/app-logo-wordmark.blade.php`) | The dog with **wag** in lowercase, on the flow line, in `currentColor`. "wag" is the short form on purpose: the flow line's arrow stands for "run" | App chrome, through `x-app-logo` (sidebar and header brand) |
+| `x-app-logo-mark` (`resources/views/components/app-logo-mark.blade.php`) | The mark alone, from `favicon.svg`, in `currentColor` | The collapsed sidebar, through `x-app-logo`, where the wordmark doesn't fit |
 
 Rules:
 

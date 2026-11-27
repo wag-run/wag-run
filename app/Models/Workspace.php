@@ -79,6 +79,19 @@ class Workspace extends Model
     }
 
     /**
+     * Up to two letters that stand for the workspace, the first and last
+     * words' initials, shown in place of its name in the collapsed sidebar.
+     */
+    public function initials(): string
+    {
+        $initials = Str::initials($this->name, true);
+
+        return Str::length($initials) > 1
+            ? Str::substr($initials, 0, 1).Str::substr($initials, -1)
+            : $initials;
+    }
+
+    /**
      * @return BelongsTo<Organization, $this>
      */
     public function organization(): BelongsTo
