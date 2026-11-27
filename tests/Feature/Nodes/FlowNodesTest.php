@@ -27,7 +27,7 @@ class FlowNodesTest extends TestCase
         $registry = app(NodeRegistry::class);
         $types = array_map(fn (string $class) => $class::type(), WorkflowServiceProvider::BUILT_IN_NODES);
 
-        $this->assertCount(44, array_unique($types));
+        $this->assertCount(45, array_unique($types));
         $this->assertSame(8, count($registry->ofKind(NodeKind::Trigger)));
 
         foreach ($types as $type) {
@@ -91,6 +91,120 @@ class FlowNodesTest extends TestCase
 
         $this->assertSame(ExecutionStatus::Failed, $execution->status);
         $this->assertSame('Items must be an array.', $execution->error['message']);
+    }
+
+    public function test_while_loop_repeats_its_body_while_the_condition_is_true_and_reads_the_previous_pass(): void
+    {
+        $workflow = $this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger',
+                'pages' => ['core.while_loop', ['condition' => '{{ nodes.fetch == null or nodes.fetch.output.value < 3 }}']],
+                'fetch' => ['core.compose', ['template' => '{{ (loop.previous.fetch.output.value ?? 0) + 1 }}']],
+                'seen' => ['core.compose', ['template' => '{{ loop.index }}:{{ length(loop.results) }}']],
+                'after' => ['core.compose', ['template' => '{{ nodes.pages.output.passes }} / {{ nodes.pages.output.last.fetch.output.value }} / {{ nodes.pages.output.results[0].fetch.output.value }} / {{ nodes.pages.output.results[1].seen.output.value }} / {{ nodes.pages.output.last.fetch.port }}']]],
+            ['start->pages', 'pages:pass->fetch', 'fetch->seen', 'pages:done->after'],
+        ));
+
+        $execution = $this->runWorkflow($workflow);
+
+        $this->assertSame(ExecutionStatus::Complete, $execution->status);
+        $this->assertSame([1, 2, 3], $execution->steps()->where('node_id', 'fetch')->orderBy('id')->get()->map(fn ($step) => $step->output['value'])->all());
+        $this->assertSame(['0:0', '1:1', '2:2'], $execution->steps()->where('node_id', 'seen')->orderBy('id')->get()->map(fn ($step) => $step->output['value'])->all());
+        $this->assertSame('3 / 3 / 1 / 1:1 / main', $this->stepFor($execution, 'after')->output['value']);
+        $this->assertSame(['passes' => 3], $this->stepFor($execution, 'pages')->output);
+    }
+
+    public function test_while_loop_skips_its_body_when_the_condition_is_false_before_the_first_pass(): void
+    {
+        $workflow = $this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger', 'pages' => ['core.while_loop', ['condition' => '{{ trigger.values.go }}']],
+                'body' => ['core.compose', ['template' => 'ran']],
+                'after' => ['core.compose', ['template' => '{{ nodes.pages.output.passes }}|{{ nodes.pages.output.last == null }}|{{ length(nodes.pages.output.results) }}']]],
+            ['start->pages', 'pages:pass->body', 'pages:done->after'],
+        ));
+
+        $execution = $this->runWorkflow($workflow, ['values' => ['go' => false]]);
+
+        $this->assertSame(['start', 'pages', 'after'], $this->nodesRun($execution));
+        $this->assertSame('0|true|0', $this->stepFor($execution, 'after')->output['value']);
+    }
+
+    public function test_while_loop_that_checks_after_each_pass_runs_at_least_once(): void
+    {
+        $workflow = $this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger', 'pages' => ['core.while_loop', ['condition' => '{{ trigger.values.go }}', 'check_after' => true]],
+                'body' => ['core.compose', ['template' => 'ran']]],
+            ['start->pages', 'pages:pass->body'],
+        ));
+
+        $execution = $this->runWorkflow($workflow, ['values' => ['go' => false]]);
+
+        $this->assertSame(['start', 'pages', 'body'], $this->nodesRun($execution));
+        $this->assertSame(1, $execution->output['pages']['output']['passes']);
+        $this->assertSame('ran', $execution->output['pages']['output']['last']['body']['output']['value']);
+    }
+
+    public function test_while_loop_fails_when_its_condition_is_still_true_after_the_maximum_passes(): void
+    {
+        $graph = fn (array $edges) => $this->graph(
+            ['start' => 'core.manual_trigger', 'spin' => ['core.while_loop', ['condition' => '{{ true }}', 'max_passes' => 3]],
+                'body' => ['core.compose', ['template' => '{{ loop.index }}']],
+                'caught' => ['core.compose', ['template' => '{{ error.message }}']], 'after' => ['core.compose', ['template' => 'done']]],
+            ['start->spin', 'spin:pass->body', 'spin:done->after', ...$edges],
+        );
+
+        $failed = $this->runWorkflow($this->publishedWorkflow($graph([])));
+
+        $this->assertSame(ExecutionStatus::Failed, $failed->status);
+        $this->assertSame('The condition was still true after 3 passes, the most this loop may run.', $failed->error['message']);
+        $this->assertSame(3, $failed->steps()->where('node_id', 'body')->count());
+        $this->assertSame(StepStatus::Failed, $this->stepFor($failed, 'spin')->status);
+
+        $caught = $this->runWorkflow($this->publishedWorkflow($graph(['spin:error->caught'])));
+
+        $this->assertSame(ExecutionStatus::Complete, $caught->status);
+        $this->assertSame('The condition was still true after 3 passes, the most this loop may run.', $this->stepFor($caught, 'caught')->output['value']);
+        $this->assertSame(0, $caught->steps()->where('node_id', 'after')->count());
+    }
+
+    public function test_while_loop_inside_a_for_loop_reads_the_item_and_its_own_passes(): void
+    {
+        $workflow = $this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger', 'each' => ['core.for_loop', ['items' => '{{ [2, 1] }}']],
+                'poll' => ['core.while_loop', ['condition' => '{{ nodes.tick.output.value < item }}', 'check_after' => true]],
+                'tick' => ['core.compose', ['template' => '{{ loop.index + 1 }}']],
+                'after' => ['core.compose', ['template' => "{{ join(column(column(column(nodes.each.output.results, 'poll'), 'output'), 'passes'), ',') }}"]]],
+            ['start->each', 'each:item->poll', 'poll:pass->tick', 'each:done->after'],
+        ));
+
+        $execution = $this->runWorkflow($workflow);
+
+        $this->assertSame(ExecutionStatus::Complete, $execution->status);
+        $this->assertSame([1, 2, 1], $execution->steps()->where('node_id', 'tick')->orderBy('id')->get()->map(fn ($step) => $step->output['value'])->all());
+        $this->assertSame('2,1', $this->stepFor($execution, 'after')->output['value']);
+    }
+
+    public function test_while_loop_reports_a_condition_that_is_not_one_placeholder_and_a_maximum_out_of_range(): void
+    {
+        $node = app(NodeRegistry::class)->make('core.while_loop');
+
+        $this->assertSame([], $node->configProblems(['condition' => '{{ vars.more }}', 'max_passes' => '250']));
+        $this->assertSame([], $node->configProblems(['condition' => '{{ vars.more }}']));
+        $this->assertSame(['its condition must be one {{ }} placeholder, such as {{ nodes.fetch.output.body.next_cursor }}.'], $node->configProblems(['condition' => 'yes {{ vars.more }}']));
+        $this->assertSame(['its maximum passes must be a whole number from 1 to 10,000.'], $node->configProblems(['condition' => '{{ vars.more }}', 'max_passes' => 10001]));
+        $this->assertSame(['its maximum passes must be a whole number from 1 to 10,000.'], $node->configProblems(['condition' => '{{ vars.more }}', 'max_passes' => 0]));
+    }
+
+    public function test_while_loop_is_called_do_while_loop_when_it_checks_after_each_pass(): void
+    {
+        $node = app(NodeRegistry::class)->make('core.while_loop');
+        $condition = collect($node->inputs())->firstWhere('name', 'condition');
+
+        $this->assertSame('While loop', $node->label());
+        $this->assertSame('While loop', $node->labelFor([]));
+        $this->assertSame('Do while loop', $node->labelFor(['check_after' => true]));
+        $this->assertStringContainsString('Checked before each pass, so the loop may not run at all if false.', $node->fieldHelp($condition, []));
+        $this->assertStringContainsString('Checked after each pass, so the loop runs at least once.', $node->fieldHelp($condition, ['check_after' => '1']));
+        $this->assertSame('each pass', $node->portLabel('pass'));
     }
 
     public function test_every_connection_from_one_output_runs_and_merge_collects_their_outputs(): void
