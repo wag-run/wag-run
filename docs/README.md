@@ -106,7 +106,7 @@ A path to data that doesn't exist, such as the output of a branch that didn't ru
 
 ### People in the loop
 
-**Approval** and **Task** nodes pause a run and create a request for a named person. The request appears in their **Inbox** and, unless it's turned off on the node, arrives by email too. When they respond, the run carries on. If nobody responds before the node's timeout (48 hours by default), the step fails.
+**Approval** and **Task** nodes pause a run and create a request for a named person. The request appears in their **Inbox** and arrives by email too, unless they've turned email off under **Preferences → Notifications**. When they respond, the run carries on. If nobody responds before the node's timeout (48 hours by default), the step fails.
 
 The **Inbox**, in the account menu at the bottom of the sidebar, is where everything for you lands, across all your workspaces: approvals and tasks, failed runs of workflows you own, and messages that workflows send you. A red dot on your avatar means something in it is unread.
 
