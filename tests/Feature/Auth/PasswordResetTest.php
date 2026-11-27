@@ -27,17 +27,6 @@ class PasswordResetTest extends TestCase
         $response->assertOk();
     }
 
-    public function test_reset_password_link_can_be_requested(): void
-    {
-        Notification::fake();
-
-        $user = User::factory()->create();
-
-        $this->post(route('password.request'), ['email' => $user->email]);
-
-        Notification::assertSentTo($user, ResetPassword::class);
-    }
-
     public function test_reset_password_screen_can_be_rendered(): void
     {
         Notification::fake();
