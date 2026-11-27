@@ -105,7 +105,7 @@ class RestApiTest extends TestCase
             ->assertJsonPath('data.steps.1.status', 'waiting');
     }
 
-    public function test_a_run_shows_a_finished_loops_results_and_wraps_its_output_like_nodes(): void
+    public function test_a_run_lists_a_loops_iterations_once_as_steps_and_wraps_its_output_like_nodes(): void
     {
         $this->actingAsMember();
         $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
@@ -113,11 +113,15 @@ class RestApiTest extends TestCase
             ['start->each', 'each:item->body'],
         ), $this->workspace));
 
-        $this->getJson($this->url("runs/{$execution->id}"))->assertOk()
+        $response = $this->getJson($this->url("runs/{$execution->id}"))->assertOk();
+        $loopStepId = $response->json('data.steps.1.id');
+
+        $response
             ->assertJsonPath('data.steps.1.node_id', 'each')
-            ->assertJsonPath('data.steps.1.output.count', 2)
-            ->assertJsonPath('data.steps.1.output.results.1.body.output.item', 'b')
-            ->assertJsonPath('data.steps.1.output.results.1.body.port', 'main')
+            ->assertJsonPath('data.steps.1.output', ['count' => 2])
+            ->assertJsonPath('data.steps.3.node_id', 'body')
+            ->assertJsonPath('data.steps.3.iteration', "L{$loopStepId}.1")
+            ->assertJsonPath('data.steps.3.output.item', 'b')
             ->assertJsonPath('data.output.each.port', 'done')
             ->assertJsonPath('data.output.each.output.results.0.body.output.item', 'a');
     }
