@@ -36,7 +36,7 @@ class AssignmentNotification extends Notification
         $approval = $assignment->type === AssignmentType::Approval;
 
         $message = (new MailMessage)
-            ->mailer(app(Mailers::class)->forOrganization())
+            ->mailer(app(Mailers::class)->forOrganization($this->assignment->workspace->organization))
             ->subject($this->title())
             ->line(__('notifications.assignment.workflow_in_workspace_is_waiting', [
                 'workflow' => $assignment->execution->workflow->name,

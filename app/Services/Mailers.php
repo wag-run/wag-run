@@ -17,12 +17,13 @@ class Mailers
     public const ENCRYPTIONS = ['tls', 'ssl', 'none'];
 
     /**
-     * The mailer the app's own emails, and Send email nodes without their own
-     * SMTP server, go through.
+     * The mailer an organization's emails, and its Send email nodes without
+     * their own SMTP server, go through. Without the organization, or without
+     * its SMTP settings, the server's own mail configuration.
      */
-    public function forOrganization(): string
+    public function forOrganization(?Organization $organization): string
     {
-        $smtp = Organization::current()?->mail;
+        $smtp = $organization?->mail;
 
         return $smtp ? $this->register(self::ORGANIZATION, $smtp) : (string) config('mail.default');
     }

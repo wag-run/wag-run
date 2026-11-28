@@ -4,7 +4,6 @@ namespace Tests\Feature\Admin;
 
 use App\Enums\WorkspaceRole;
 use App\Models\AuditLog;
-use App\Models\Organization;
 use App\Models\Secret;
 use App\Models\User;
 use App\Models\Workspace;
@@ -39,7 +38,7 @@ class ManageWorkspacesTest extends TestCase
         $page->set('name', 'Platform Ops')->call('save')->assertHasNoErrors();
         $workspace = Workspace::firstWhere('name', 'Platform Ops');
         $this->assertSame('platform-ops', $workspace->slug);
-        $this->assertSame(Organization::current()->id, $workspace->organization_id);
+        $this->assertSame($this->organization()->id, $workspace->organization_id);
 
         $page->call('edit', $workspace->id)->set('name', 'Platform')->call('save');
         $this->assertSame('platform', $workspace->fresh()->slug);

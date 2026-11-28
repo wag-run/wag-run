@@ -85,7 +85,7 @@ class UserFactory extends Factory
     {
         return $this->afterCreating(function (User $user) {
             static::joinOrganization($user, OrgRole::Member);
-            $user->organizations()->updateExistingPivot(Organization::current()->id, ['deactivated_at' => now()]);
+            $user->organizations()->updateExistingPivot(Organization::query()->oldest('id')->value('id'), ['deactivated_at' => now()]);
         });
     }
 
@@ -102,7 +102,7 @@ class UserFactory extends Factory
 
     protected static function joinOrganization(User $user, OrgRole $role, ?Organization $organization = null): void
     {
-        $organization ??= Organization::current() ?? Organization::factory()->create();
+        $organization ??= Organization::query()->oldest('id')->first() ?? Organization::factory()->create();
 
         if (! $user->organizations()->whereKey($organization->id)->exists()) {
             $user->organizations()->attach($organization, ['role' => $role->value]);

@@ -86,7 +86,7 @@ class Approval extends Node
     public function execute(NodeContext $context): NodeResult
     {
         $approvers = collect((array) $context->input('approvers'))
-            ->map(fn (mixed $id) => $this->assignments->activeUser($id))
+            ->map(fn (mixed $id) => $this->assignments->activeUser($id, $context->workspace()))
             ->filter()
             ->unique('id')
             ->values();

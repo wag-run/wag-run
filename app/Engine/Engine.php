@@ -125,7 +125,7 @@ class Engine
                 'started_at' => now(),
             ];
 
-            $organization = Organization::current();
+            $organization = $workflow->workspace->organization;
             $maxDepth = $organization->max_chain_depth ?? self::DEFAULT_MAX_CHAIN_DEPTH;
 
             if ($chainDepth > $maxDepth) {

@@ -17,7 +17,7 @@ class WorkspaceFactory extends Factory
     public function definition(): array
     {
         return [
-            'organization_id' => fn () => Organization::current()->id ?? Organization::factory(),
+            'organization_id' => fn () => Organization::query()->oldest('id')->value('id') ?? Organization::factory(),
             'name' => fake()->unique()->words(2, true),
         ];
     }

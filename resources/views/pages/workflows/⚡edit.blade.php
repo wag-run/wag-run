@@ -188,7 +188,7 @@ new class extends Component {
         $this->customRetention = $this->workflow->retention_days !== null;
         $this->retentionDays = $this->workflow->retention_days ?? $this->workspace->effectiveRetentionDays();
         $this->customRunLimit = $this->workflow->max_runs_per_minute !== null;
-        $this->maxRunsPerMinute = $this->workflow->max_runs_per_minute ?? \App\Models\Organization::current()?->max_runs_per_minute ?? \App\Engine\Engine::DEFAULT_MAX_RUNS_PER_MINUTE;
+        $this->maxRunsPerMinute = $this->workflow->max_runs_per_minute ?? $this->workflow->workspace->organization->max_runs_per_minute ?? \App\Engine\Engine::DEFAULT_MAX_RUNS_PER_MINUTE;
 
         if (session()->has('oauth_status') || session()->has('oauth_error')) {
             $this->connectionResult = session()->has('oauth_error')
@@ -556,7 +556,7 @@ new class extends Component {
             'secrets' => $this->workspace->secrets()->orderBy('key')->pluck('key', 'key')->all(),
             'storeEntries' => FieldFacts::storeEntries($this->workspace),
             'workflows' => $this->workspace->workflows()->whereKeyNot($this->workflow->id)->orderBy('name')->pluck('name', 'id')->all(),
-            'users' => Organization::current()?->users()->wherePivotNull('deactivated_at')->orderBy('name')->get(['users.id', 'name', 'email'])
+            'users' => $this->workflow->workspace->organization->users()->wherePivotNull('deactivated_at')->orderBy('name')->get(['users.id', 'name', 'email'])
                 ->mapWithKeys(fn ($user) => [$user->id => "{$user->name} ({$user->email})"])->all() ?? [],
         ];
     }

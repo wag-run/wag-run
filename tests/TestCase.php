@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use App\Models\Organization;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Laravel\Fortify\Features;
 
@@ -12,6 +13,16 @@ abstract class TestCase extends BaseTestCase
         if (! Features::enabled($feature)) {
             $this->markTestSkipped($message ?? "Fortify feature [{$feature}] is not enabled.");
         }
+    }
+
+    /**
+     * The organization the factories put users and workspaces in: the first
+     * one, created if there's none yet. Tests use it where there's no signed-in
+     * user for {@see Organization::current()} to work from.
+     */
+    protected function organization(): Organization
+    {
+        return Organization::query()->oldest('id')->first() ?? Organization::factory()->create();
     }
 
     /**

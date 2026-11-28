@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\OrgRole;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -41,18 +42,22 @@ class AuditLog extends Model
     }
 
     /**
-     * Organization admins see every entry; workspace admins see only entries for
-     * the workspaces they administer.
+     * Organization admins see every entry in the organizations they administer;
+     * workspace admins see only entries for the workspaces they administer.
      *
      * @param  Builder<AuditLog>  $query
      */
     public function scopeVisibleTo(Builder $query, User $user): void
     {
-        if ($user->isOrgAdmin()) {
-            return;
-        }
+        $administeredOrganizationIds = OrganizationMembership::query()
+            ->where('user_id', $user->id)
+            ->where('role', OrgRole::Admin->value)
+            ->whereNull('deactivated_at')
+            ->pluck('organization_id');
 
-        $query->whereIn('workspace_id', $user->administeredWorkspaceIds());
+        $query->where(fn (Builder $query) => $query
+            ->whereIn('organization_id', $administeredOrganizationIds)
+            ->orWhereIn('workspace_id', $user->administeredWorkspaceIds()));
     }
 
     /**

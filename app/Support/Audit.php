@@ -27,8 +27,9 @@ class Audit
         array $metadata = [],
         ?string $label = null,
         ?User $actor = null,
+        ?Organization $organization = null,
     ): AuditLog {
-        $organizationId = $workspace->organization_id ?? Organization::current()?->id;
+        $organizationId = $workspace->organization_id ?? $organization->id ?? Organization::current()?->id;
 
         return AuditLog::create([
             'organization_id' => $organizationId,

@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\Workspace;
 use App\Services\Mailers;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -34,7 +35,7 @@ class WorkflowNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $message = (new MailMessage)
-            ->mailer(app(Mailers::class)->forOrganization())
+            ->mailer(app(Mailers::class)->forOrganization(Workspace::query()->find($this->workspaceId)?->organization))
             ->subject($this->title);
 
         foreach (preg_split('/\R{2,}/', (string) $this->body) ?: [] as $paragraph) {

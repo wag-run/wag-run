@@ -27,7 +27,7 @@ class FirstUserRegistrationTest extends TestCase
         $this->post(route('register.store'), $this->registration('ada@example.com'))->assertSessionHasNoErrors();
 
         $user = User::firstWhere('email', 'ada@example.com');
-        $organization = Organization::current();
+        $organization = $this->organization();
 
         $this->assertNotNull($organization);
         $this->assertSame(OrgRole::Admin, $user->orgRole());

@@ -76,7 +76,7 @@ class Invitations
     {
         $invitation->delete();
 
-        Audit::record('invitation.revoked', null, $invitation->workspace, label: $invitation->email);
+        Audit::record('invitation.revoked', null, $invitation->workspace, label: $invitation->email, organization: $invitation->organization);
     }
 
     public function accept(Invitation $invitation, User $user): void
@@ -101,7 +101,7 @@ class Invitations
 
             $invitation->forceFill(['accepted_at' => now()])->save();
 
-            Audit::record('invitation.accepted', $user, $invitation->workspace);
+            Audit::record('invitation.accepted', $user, $invitation->workspace, organization: $invitation->organization);
         });
     }
 

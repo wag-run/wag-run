@@ -14,7 +14,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Log;
 
 /**
  * The organization layer above workspaces. The first release serves one
@@ -59,39 +58,21 @@ class Organization extends Model
 
     /**
      * The organization the current request or job is about, as
-     * {@see CurrentOrganization} holds it.
-     *
-     * Until every caller sets it, this falls back to the install's first
-     * organization when nothing has, as it always did. That fallback is
-     * temporary: it goes once each caller works out its own organization.
+     * {@see CurrentOrganization} holds it, or null when there isn't one, such as
+     * on the sign-in page. Code that handles a record (a run, a webhook, an
+     * invitation) uses that record's organization instead.
      */
     public static function current(): ?self
     {
-        $current = app(CurrentOrganization::class)->get();
-
-        if ($current) {
-            return $current;
-        }
-
-        $fallback = static::query()->oldest('id')->first();
-
-        if ($fallback) {
-            Log::debug('Organization::current() fell back to the oldest organization', [
-                'caller' => collect(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2))->last(),
-            ]);
-        }
-
-        return $fallback;
+        return app(CurrentOrganization::class)->get();
     }
 
     /**
-     * Whether people may delete their own accounts.
+     * Whether people in the current organization may delete their own accounts.
      */
     public static function allowsAccountDeletion(): bool
     {
-        $settings = static::query()->oldest('id')->value('settings');
-
-        return (bool) (is_array($settings) ? ($settings['allow_account_deletion'] ?? true) : true);
+        return static::current()->allow_account_deletion ?? true;
     }
 
     /**

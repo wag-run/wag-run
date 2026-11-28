@@ -76,7 +76,7 @@ class SendNotification extends Node
     public function execute(NodeContext $context): NodeResult
     {
         $users = collect((array) $context->input('recipients'))
-            ->map(fn (mixed $id) => $this->assignments->activeUser($id))
+            ->map(fn (mixed $id) => $this->assignments->activeUser($id, $context->workspace()))
             ->filter()
             ->unique('id')
             ->values();
