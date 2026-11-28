@@ -142,4 +142,16 @@ class TemplateEngineTest extends TestCase
 
         $this->engine()->evaluate($expression, $this->data());
     }
+
+    #[TestWith(['nodes.count()', 'count'])]
+    #[TestWith(['nodes.fetch.output.getIterator()', 'getIterator'])]
+    #[TestWith(['nodes?.count()', 'count'])]
+    #[TestWith(['length(trigger.values.offsetGet("name"))', 'offsetGet'])]
+    #[TestWith(['true ? 1 : nodes.count()', 'count'])]
+    public function test_refuses_an_expression_that_calls_a_method_even_where_it_would_not_run(string $expression, string $method): void
+    {
+        $this->expectExceptionObject(new TemplateError("Expression error: an expression cannot call a method, and this one calls {$method}(). Use a helper function instead."));
+
+        $this->engine()->evaluate($expression, $this->data());
+    }
 }

@@ -22,7 +22,8 @@ use TypeError;
  * ExpressionLanguage without the built-in constant() and enum() functions,
  * which would let an expression read PHP constants, plus helpers for
  * working with text, lists, numbers and dates. Expressions cannot call
- * methods on PHP objects; run data is wrapped in read-only DataBags.
+ * methods on PHP objects: an expression with a method call in it is
+ * refused when it is parsed. Run data is wrapped in read-only DataBags.
  */
 class SafeExpressionLanguage extends ExpressionLanguage
 {
@@ -37,30 +38,43 @@ class SafeExpressionLanguage extends ExpressionLanguage
     }
 
     /**
-     * Parse as usual, then make every property and item access lenient, so a
+     * Parse as usual, then refuse any method call, wherever it is in the
+     * expression, and make every property and item access lenient, so a
      * path into data that is not there (nodes.skipped.output.id) reads as
      * null instead of failing, the way templates have always behaved.
      *
+     * A method call is refused here, not when it runs, because run data
+     * and what its methods return are PHP objects, and some of their
+     * methods take the name of a function to call.
+     *
      * @param  array<int|string, string>  $names
      * @param  int-mask-of<Parser::IGNORE_*>  $flags
+     *
+     * @throws TemplateError when the expression calls a method
      */
     public function parse(Expression|string $expression, array $names, int $flags = 0): ParsedExpression
     {
         $parsed = parent::parse($expression, $names, $flags);
-        $this->makeLenient($parsed->getNodes());
+        $this->makeSafeAndLenient($parsed->getNodes());
 
         return $parsed;
     }
 
-    protected function makeLenient(Node $node): void
+    protected function makeSafeAndLenient(Node $node): void
     {
-        if ($node instanceof GetAttrNode && $node->attributes['type'] !== GetAttrNode::METHOD_CALL) {
+        if ($node instanceof GetAttrNode) {
+            if ($node->attributes['type'] === GetAttrNode::METHOD_CALL) {
+                throw new TemplateError(__('engine.expression_error_message', [
+                    'message' => __('engine.expressions_cannot_call_methods', ['method' => $node->nodes['attribute']->attributes['value'] ?? '']),
+                ]));
+            }
+
             $node->attributes['is_null_coalesce'] = true;
         }
 
         foreach ($node->nodes as $child) {
             if ($child instanceof Node) {
-                $this->makeLenient($child);
+                $this->makeSafeAndLenient($child);
             }
         }
     }

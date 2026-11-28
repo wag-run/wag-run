@@ -10,6 +10,7 @@ return [
     'ended_by_a_terminate_node' => 'Ended by a Terminate node.',
     'run_limit_reached' => 'Stopped: this workflow already started :max runs in the last minute. Check for a loop, such as an action that fires this workflow\'s own trigger, or raise the limit in the workflow\'s settings.',
     'expression_error_message' => 'Expression error: :message',
+    'expressions_cannot_call_methods' => 'an expression cannot call a method, and this one calls :method(). Use a helper function instead.',
     'function_needs_arguments' => ':function() needs :count argument, but got :given.|:function() needs :count arguments, but got :given.',
     'function_argument_wrong_type' => ':function() needs :expected for :argument, but got :given.',
     'function_cannot_use_value' => ':function() cannot use the value it was given.',
