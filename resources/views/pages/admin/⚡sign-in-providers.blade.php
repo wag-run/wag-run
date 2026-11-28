@@ -390,7 +390,7 @@ new class extends Component {
 
                 <flux:switch wire:model="enabled" :label="__('admin.sign_in_providers.show_on_the_sign_in')" />
                 <flux:switch wire:model="allowRegistration" :label="__('admin.sign_in_providers.create_accounts_for_new_people')"
-                    :description="__('admin.sign_in_providers.also_called_auto_provisioning_or')" />
+                    :description="__('admin.sign_in_providers.also_called_just_in_time_jit')" />
                 <flux:switch wire:model="trustEmail" :label="__('admin.sign_in_providers.trust_email_addresses_from_this')"
                     :description="__('admin.sign_in_providers.link_sign_ins_to_existing')" />
 

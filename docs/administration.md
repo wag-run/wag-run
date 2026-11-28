@@ -46,7 +46,7 @@ To add one:
    | **Client ID** and **Client secret** | From the provider. When editing, leave the secret empty to keep the current one. |
    | **Scopes** | Defaults to `openid email profile` |
    | **Show on the sign-in page** | Whether the button appears |
-   | **Create accounts for new people** | Also called auto-provisioning or just-in-time (JIT) provisioning. When on, someone who signs in with the provider for the first time gets an account, as an organization Member with no workspace access. It needs at least one of the provider's [email domains](#email-domains), and only people on them get an account. Removing the provider's last domain turns it off. When off, only people who already have an account can sign in this way. |
+   | **Create accounts for new people** | Also called just-in-time (JIT) provisioning. When on, someone who signs in with the provider for the first time gets an account, as an organization Member with no workspace access. It needs at least one of the provider's [email domains](#email-domains), and only people on them get an account. Removing the provider's last domain turns it off. When off, only people who already have an account can sign in this way. |
    | **Trust email addresses from this provider** | Link sign-ins to existing accounts by email even when the provider doesn't mark the email as verified. Turn this on only for a provider your organization controls. |
 
 4. Click **Save**, then **Check discovery** to confirm wag.run can reach the provider.
