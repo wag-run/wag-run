@@ -6,16 +6,16 @@ You need an account on a wag.run install and the **Editor** or **Admin** role in
 
 ## 1. Sign in
 
-Open your wag.run address, enter your email, and choose **Continue**. Then sign in with your password, or with a sign-in provider button such as **Sign in with Okta** if your install has one set up. **Not you?** takes you back to change the email.
+Open your wag.run address, enter your email, and choose **Continue**. Then sign in with your password, or with a sign-in provider button such as **Sign in with Okta** if your install has one set up. If you're in more than one organization, you first choose which to sign in to. **Not you?** takes you back to change the email.
 
 - **Invited by email?** Open the invitation link to create your account and join. If you weren't invited to a workspace, you get one of your own when you first sign in, unless your organization has turned that off. Invitations expire, so ask for a new one if yours no longer works.
-- **First person on a new install?** Register an account. The first account becomes the organization admin, gets a workspace named after it, such as "Ada's workspace", and its email address counts as confirmed. To set up an install, see [Self-hosting](self-hosting.md).
+- **First person on a new install?** Register an account, and give your organization a name, or leave it blank to name it after you, such as "Ada's organization". The first account becomes the organization admin, gets a workspace named after it, such as "Ada's workspace", and its email address counts as confirmed. To set up an install, see [Self-hosting](self-hosting.md).
 
 Once you're in, open **Preferences** from the account menu at the bottom of the sidebar to turn on two-factor authentication. If your organization requires it, you're asked to set it up the first time you sign in with a password.
 
 ## 2. Find your way around
 
-The sidebar shows the current workspace at the top. Use it to switch workspaces. Below it:
+The sidebar shows the current workspace at the top. Use it to switch workspaces. If you're in more than one organization, it lists each organization's workspaces under its name, and **Switch to** opens an organization where you have none. Below it:
 
 | Item | What it's for |
 |---|---|

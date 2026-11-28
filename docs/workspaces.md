@@ -2,7 +2,7 @@
 
 A workspace holds a team's workflows and runs, the people who work on them, and the values and sign-in details those workflows share. Each workspace is separate: a workflow can only use the data store, secrets, and credentials of its own workspace, and can only start workflows in its own workspace.
 
-Switch workspaces with the menu at the top of the sidebar. Organization admins create, rename, and delete workspaces. See [Organization administration](administration.md#workspaces).
+Switch workspaces with the menu at the top of the sidebar. If you're in more than one organization, the menu groups workspaces by organization, and opening one moves you into its organization. Organization admins create, rename, and delete workspaces. See [Organization administration](administration.md#workspaces).
 
 ## Overview
 

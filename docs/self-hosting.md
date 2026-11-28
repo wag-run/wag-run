@@ -40,7 +40,7 @@ wag.run ships as a Docker image, `ghcr.io/wag-run/wag-run`, built for both x86 (
 
    On first start, the app generates an encryption key (`APP_KEY`), saves it in its storage volume, and creates the database tables.
 
-4. Open <http://localhost:8080> and **register**. The first account becomes the organization admin, so do this before anyone else can reach the install.
+4. Open <http://localhost:8080> and **register**, naming your organization. The first account becomes the organization admin, so do this before anyone else can reach the install. You can rename the organization later under **Org settings → General**.
 
 5. As the admin, set up [email](administration.md#email) so invitations and approval requests reach people, then create a [workspace](administration.md#workspaces) and [invite your team](administration.md#users).
 
