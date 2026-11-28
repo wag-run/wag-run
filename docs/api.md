@@ -53,7 +53,7 @@ Creating and revoking tokens is recorded in the audit log.
 
 ## REST API
 
-Every path below starts with `/api/v1`. A workspace is named by its slug, the part of its address after `/w/`. Each person can send up to 120 requests a minute, counting all their tokens and the MCP server together.
+Every path below starts with `/api/v1`. A workspace is named by its slug, the part of its address after `/w/`: its name and a short random string, such as `sales-k3x9q2`. Renaming a workspace gives it a new slug. Each person can send up to 120 requests a minute, counting all their tokens and the MCP server together.
 
 | Method and path | What it does | Scope |
 |---|---|---|

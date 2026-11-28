@@ -47,40 +47,24 @@ class Workspace extends Model
     {
         static::creating(function (Workspace $workspace) {
             if (blank($workspace->slug)) {
-                $workspace->slug = static::uniqueSlug($workspace->name);
+                $workspace->slug = static::slugFor($workspace->name);
             }
         });
     }
 
     /**
-     * A random slug no other workspace uses. Slugs are unique across
-     * organizations, because a workspace's URL has only its slug in it.
+     * A slug no other workspace uses: the name, then a short random string,
+     * such as "sales-k3x9q2". The random part keeps common names from
+     * colliding, and slugs are unique across organizations, because a
+     * workspace's URL has only its slug in it.
      */
-    public static function randomSlug(): string
+    public static function slugFor(string $name): string
     {
+        $base = rtrim(Str::limit(Str::slug($name), 40, ''), '-') ?: 'workspace';
+
         do {
-            $slug = Str::lower(Str::random(8));
+            $slug = $base.'-'.Str::lower(Str::random(6));
         } while (static::query()->where('slug', $slug)->exists());
-
-        return $slug;
-    }
-
-    /**
-     * A slug from the workspace's name that no other workspace uses, with -2,
-     * -3 added when it's taken. Unique across organizations, like randomSlug().
-     */
-    public static function uniqueSlug(string $name, ?int $ignoreId = null): string
-    {
-        $base = Str::slug($name) ?: 'workspace';
-        $slug = $base;
-        $suffix = 2;
-
-        while (static::query()
-            ->where('slug', $slug)
-            ->when($ignoreId, fn ($q) => $q->whereKeyNot($ignoreId))
-            ->exists()) {
-            $slug = $base.'-'.$suffix++;
-        }
 
         return $slug;
     }

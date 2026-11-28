@@ -178,10 +178,9 @@ class SeveralOrganizationsTest extends TestCase
         $acmeOps = Workspace::factory()->for($this->acme)->create(['name' => 'Ops']);
         $betaOps = Workspace::factory()->for($this->beta)->create(['name' => 'Ops']);
 
-        $this->assertSame('ops', $acmeOps->slug);
-        $this->assertSame('ops-2', $betaOps->slug);
+        $this->assertNotSame($acmeOps->slug, $betaOps->slug);
 
         $this->expectException(UniqueConstraintViolationException::class);
-        Workspace::factory()->for($this->beta)->create(['slug' => 'ops']);
+        Workspace::factory()->for($this->beta)->create(['slug' => $acmeOps->slug]);
     }
 }

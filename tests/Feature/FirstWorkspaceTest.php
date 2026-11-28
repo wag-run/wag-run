@@ -37,7 +37,7 @@ class FirstWorkspaceTest extends TestCase
 
         $workspace = Workspace::query()->where('organization_id', $this->organization->id)->sole();
         $this->assertSame("Ada's workspace", $workspace->name);
-        $this->assertMatchesRegularExpression('/^[a-z0-9]{8}$/', $workspace->slug);
+        $this->assertMatchesRegularExpression('/^adas-workspace-[a-z0-9]{6}$/', $workspace->slug);
         $this->assertSame(WorkspaceRole::Admin, $user->roleIn($workspace));
         $this->assertSame($workspace->id, $user->refresh()->current_workspace_id);
         $this->assertDatabaseHas('audit_logs', ['action' => 'workspace.created', 'subject_id' => $workspace->id]);

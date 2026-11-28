@@ -32,7 +32,7 @@ class FirstUserRegistrationTest extends TestCase
         $this->assertNotNull($organization);
         $this->assertSame(OrgRole::Admin, $user->orgRole());
         $this->assertSame(["Ada's workspace"], $organization->workspaces()->pluck('name')->all());
-        $this->assertMatchesRegularExpression('/^[a-z0-9]{8}$/', $organization->workspaces()->sole()->slug);
+        $this->assertMatchesRegularExpression('/^adas-workspace-[a-z0-9]{6}$/', $organization->workspaces()->sole()->slug);
         $this->assertSame($organization->workspaces()->first()->id, $user->current_workspace_id);
         $this->assertDatabaseHas('audit_logs', ['action' => 'workspace.created', 'user_id' => $user->id]);
     }
