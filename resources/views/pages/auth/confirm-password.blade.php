@@ -7,14 +7,6 @@
 
         <x-auth-session-status class="text-center" :status="session('status')" />
 
-        <x-passkey-verify
-            options-route="passkey.confirm-options"
-            submit-route="passkey.confirm"
-            :label="__('auth.confirm_password.confirm_with_passkey')"
-            :loading-label="__('auth.confirm_password.confirming')"
-            :separator="__('auth.confirm_password.or_confirm_with_password')"
-        />
-
         <form method="POST" action="{{ route('password.confirm.store') }}" class="flex flex-col gap-6">
             @csrf
 

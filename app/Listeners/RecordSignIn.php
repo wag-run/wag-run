@@ -43,7 +43,6 @@ class RecordSignIn
         return array_filter(match (Request::route()?->getName()) {
             'login.store' => ['method' => 'password'],
             'two-factor.login.store' => ['method' => 'two_factor'],
-            'passkey.login' => ['method' => 'passkey'],
             'register.store' => ['method' => 'registration'],
             'oidc.callback' => ['method' => 'oidc', 'provider' => $provider instanceof OidcProvider ? $provider->name : null],
             default => [],

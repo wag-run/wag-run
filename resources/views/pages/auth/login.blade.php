@@ -5,8 +5,6 @@
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
 
-        <x-passkey-verify />
-
         @php($oidcProviders = \App\Models\Organization::current()?->oidcProviders()->where('enabled', true)->orderBy('name')->get() ?? collect())
         @if ($oidcProviders->isNotEmpty())
             <div class="flex flex-col gap-2">

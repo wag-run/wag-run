@@ -5,9 +5,6 @@ return [
     'password' => 'The provided password is incorrect.',
     'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
     'confirm_password' => [
-        'confirm_with_passkey' => 'Confirm with passkey',
-        'confirming' => 'Confirming...',
-        'or_confirm_with_password' => 'Or confirm with password',
         'this_is_a_secure_area' => 'This is a secure area of the application. Please confirm your password before continuing.',
     ],
     'forgot_password' => [
