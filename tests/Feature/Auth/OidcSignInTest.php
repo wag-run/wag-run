@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\AuditLog;
+use App\Models\OidcDomain;
 use App\Models\OidcIdentity;
 use App\Models\OidcProvider;
 use App\Models\Organization;
@@ -213,5 +214,28 @@ class OidcSignInTest extends TestCase
 
         $this->get(route('login'))->assertDontSee('Sign in with Acme ID');
         $this->get(route('oidc.redirect', $this->provider))->assertNotFound();
+    }
+
+    public function test_a_provider_with_email_domains_accepts_addresses_on_them_in_any_case(): void
+    {
+        OidcDomain::factory()->for($this->provider, 'provider')->create(['domain' => 'example.com']);
+        $user = User::factory()->orgMember()->create(['email' => 'ada@example.com']);
+
+        $this->signInWith(['email' => 'Ada@Example.COM'])->assertRedirect(route('dashboard'));
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_a_provider_with_email_domains_turns_away_other_addresses_even_for_linked_people(): void
+    {
+        OidcDomain::factory()->for($this->provider, 'provider')->create(['domain' => 'acme.com']);
+        $user = User::factory()->orgMember()->create(['email' => 'ada@example.com']);
+        OidcIdentity::create(['oidc_provider_id' => $this->provider->id, 'user_id' => $user->id, 'subject' => 'user-1']);
+
+        $this->signInWith()
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors(['email' => "Acme ID doesn't accept this email address. Ask an admin how you should sign in."]);
+
+        $this->assertGuest();
     }
 }

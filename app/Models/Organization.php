@@ -118,6 +118,14 @@ class Organization extends Model
     }
 
     /**
+     * @return HasMany<OidcDomain, $this>
+     */
+    public function oidcDomains(): HasMany
+    {
+        return $this->hasMany(OidcDomain::class);
+    }
+
+    /**
      * @return HasMany<Invitation, $this>
      */
     public function invitations(): HasMany
