@@ -281,9 +281,7 @@ new class extends Component {
                 @forelse ($this->providers as $provider)
                     <flux:table.row :key="$provider->id">
                         <flux:table.cell>
-                            <flux:tooltip :content="__('admin.sign_in_providers.redirect_uri_url', ['url' => $this->callbackUrl($provider->slug)])">
-                                <span class="font-medium underline decoration-dotted decoration-zinc-400 underline-offset-4 dark:decoration-zinc-500">{{ $provider->name }}</span>
-                            </flux:tooltip>
+                            <span class="font-medium">{{ $provider->name }}</span>
                             @unless ($provider->enabled)
                                 <flux:badge size="sm" class="ms-1">{{ __('admin.sign_in_providers.off') }}</flux:badge>
                             @endunless
