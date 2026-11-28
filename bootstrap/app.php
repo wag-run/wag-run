@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureSignInAllowedHere;
+use App\Http\Middleware\EnsureTwoFactorWhereRequired;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ResolveCurrentOrganization;
 use Illuminate\Foundation\Application;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             ResolveCurrentOrganization::class,
             EnsureUserIsActive::class,
             EnsureSignInAllowedHere::class,
+            EnsureTwoFactorWhereRequired::class,
         ]);
 
         $middleware->api(append: [

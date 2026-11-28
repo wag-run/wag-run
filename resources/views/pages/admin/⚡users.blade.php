@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\Audit;
+use Laravel\Fortify\Actions\DisableTwoFactorAuthentication;
 use App\Enums\OrgRole;
 use App\Models\Organization;
 use App\Models\User;
@@ -84,6 +86,17 @@ new class extends Component {
         $this->authorize('org-admin');
         $directory->reactivate($this->findUser($userId));
         Flux::toast(text: __('admin.users.user_reactivated'));
+    }
+
+    public function resetTwoFactor(string $userId, DisableTwoFactorAuthentication $disable): void
+    {
+        $this->authorize('org-admin');
+
+        $user = $this->findUser($userId);
+        $disable($user);
+        Audit::record('user.two_factor_reset', $user, label: $user->email);
+
+        Flux::toast(text: __('admin.users.two_factor_reset_for_name', ['name' => $user->name]));
     }
 
     public function generateResetLink(string $userId, UserDirectory $directory): void
@@ -172,6 +185,9 @@ new class extends Component {
                                     @endif
                                     @if (\App\Models\Organization::current()->password_sign_in)
                                         <flux:menu.item icon="key" wire:click="generateResetLink('{{ $listedUser->id }}')">{{ __('admin.users.generate_password_reset_link') }}</flux:menu.item>
+                                    @endif
+                                    @if ($listedUser->hasTwoFactorSetUp())
+                                        <flux:menu.item icon="shield-exclamation" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('admin.users.reset_two_factor'), 'message' => __('admin.users.reset_two_factor_for_name', ['name' => $listedUser->name]), 'confirm' => __('admin.users.reset_two_factor')]) }}).then((ok) => ok && $wire.resetTwoFactor('{{ $listedUser->id }}'))">{{ __('admin.users.reset_two_factor') }}</flux:menu.item>
                                     @endif
                                     <flux:menu.separator />
                                     @if ($membership->deactivated_at)

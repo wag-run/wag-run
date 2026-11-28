@@ -20,6 +20,11 @@ return [
         'member' => 'Member',
         'organization_admin' => 'Organization admin',
     ],
+    'two_factor_policy' => [
+        'disabled' => 'Disabled',
+        'optional' => 'Optional',
+        'required' => 'Required',
+    ],
     'step_status' => [
         'pending' => 'Pending',
     ],

@@ -61,6 +61,7 @@ return [
             'deactivated' => 'User deactivated',
             'reactivated' => 'User reactivated',
             'password_reset_link_generated' => 'Password reset link generated',
+            'two_factor_reset' => 'Two-factor authentication reset',
         ],
         'workflow' => [
             'created' => 'Workflow created',

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\TwoFactorPolicy;
 use App\Models\Organization;
 use App\Concerns\PasswordValidationRules;
 use Flux\Flux;
@@ -24,6 +25,8 @@ new class extends Component {
 
     public bool $requiresConfirmation;
 
+    public bool $twoFactorRequired = false;
+
     /**
      * Mount the component.
      */
@@ -31,7 +34,9 @@ new class extends Component {
     {
         abort_unless(Organization::current()->password_sign_in ?? true, 404);
 
-        $this->canManageTwoFactor = Features::canManageTwoFactorAuthentication();
+        $this->canManageTwoFactor = Features::canManageTwoFactorAuthentication()
+            && Organization::current()?->twoFactorPolicy() !== TwoFactorPolicy::Disabled;
+        $this->twoFactorRequired = Organization::current()?->twoFactorPolicy() === TwoFactorPolicy::Required;
 
         if ($this->canManageTwoFactor) {
             if (Fortify::confirmsTwoFactorAuthentication() && is_null(auth()->user()->two_factor_confirmed_at)) {
@@ -82,6 +87,8 @@ new class extends Component {
      */
     public function disable(DisableTwoFactorAuthentication $disableTwoFactorAuthentication): void
     {
+        abort_if(Organization::current()?->twoFactorPolicy() === TwoFactorPolicy::Required, 403);
+
         $disableTwoFactorAuthentication(auth()->user());
 
         $this->twoFactorEnabled = false;
@@ -99,6 +106,10 @@ new class extends Component {
     <flux:heading level="2" class="sr-only">{{ __('settings.security.security_settings') }}</flux:heading>
 
     <x-pages::settings.layout :heading="__('settings.security.update_password')" :subheading="__('settings.security.ensure_your_account_is_using')">
+        @if ($canManageTwoFactor && $twoFactorRequired && ! $twoFactorEnabled)
+            <flux:callout variant="warning" icon="shield-exclamation" class="mb-6" :heading="__('settings.security.name_requires_two_factor_authentication', ['name' => \App\Models\Organization::current()->name])" />
+        @endif
+
         <form method="POST" wire:submit="updatePassword" class="mt-6 space-y-6">
             <flux:input
                 wire:model="current_password"
@@ -146,14 +157,16 @@ new class extends Component {
                                 {{ __('settings.security.you_will_be_prompted_for') }}
                             </flux:text>
 
-                            <div class="flex justify-start">
-                                <flux:button
-                                    variant="danger"
-                                    wire:click="disable"
-                                >
-                                    {{ __('settings.security.disable_2fa') }}
-                                </flux:button>
-                            </div>
+                            @unless ($twoFactorRequired)
+                                <div class="flex justify-start">
+                                    <flux:button
+                                        variant="danger"
+                                        wire:click="disable"
+                                    >
+                                        {{ __('settings.security.disable_2fa') }}
+                                    </flux:button>
+                                </div>
+                            @endunless
 
                             <livewire:pages::settings.two-factor.recovery-codes :$requiresConfirmation />
                         </div>
