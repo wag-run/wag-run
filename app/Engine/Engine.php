@@ -3,8 +3,11 @@
 namespace App\Engine;
 
 use App\Engine\Events\ExecutionFinished;
+use App\Engine\Masking\MaskedValues;
+use App\Engine\Masking\MaskRules;
 use App\Enums\ConcurrencyPolicy;
 use App\Enums\ExecutionStatus;
+use App\Enums\MaskedSlot;
 use App\Enums\NodeKind;
 use App\Enums\ResumeReason;
 use App\Enums\StepStatus;
@@ -53,6 +56,7 @@ class Engine
         protected NodeRegistry $registry,
         protected WorkflowFiles $files,
         protected RunVariables $variables,
+        protected MaskedValues $masked,
     ) {}
 
     /**
@@ -105,6 +109,7 @@ class Engine
 
             $inProgress = $workflow->executions()->where('is_test', false)->whereIn('status', ExecutionStatus::inProgress())->get();
             $redactor = Redactor::forWorkspace($workflow->workspace);
+            [$maskedInput, $realInput] = $redactor->split($input, MaskRules::for($graph->node($triggerNodeId)));
 
             $attributes = [
                 'workspace_id' => $workflow->workspace_id,
@@ -112,7 +117,7 @@ class Engine
                 'workflow_version_id' => $version->id,
                 'trigger_type' => $triggerType,
                 'trigger_node_id' => $triggerNodeId,
-                'input' => $redactor->mask($input),
+                'input' => $maskedInput,
                 'triggered_by' => $user?->id,
                 'parent_step_id' => $parentStep?->id,
                 'chain_depth' => $chainDepth,
@@ -166,6 +171,7 @@ class Engine
             }
 
             $execution = Execution::create([...$attributes, 'status' => ExecutionStatus::Running]);
+            $this->masked->keep($execution->id, null, MaskedSlot::Trigger, $realInput);
             $this->files->claim($execution, $input);
 
             try {
