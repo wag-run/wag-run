@@ -398,6 +398,7 @@ body:has([data-flux-sidebar-collapsed-desktop]) .wag-sidebar-handle {
     .wag-expr-layer {
         position: absolute;
         z-index: 1;
+        max-width: 100%;
         overflow: hidden;
         pointer-events: none;
         border-style: solid;

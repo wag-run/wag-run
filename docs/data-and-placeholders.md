@@ -11,7 +11,7 @@ Hi {{ trigger.values.name }}, your order of {{ length(trigger.values.items) }} i
 Fields that accept placeholders have an **Insert data** button. It lists everything the node can use, grouped by where it comes from:
 
 - **Trigger:** the trigger's outputs, such as manual inputs, form values, or the webhook body.
-- **Each earlier node**, by name, with its outputs. After a For loop, that includes the outputs of each node in its first and last iteration, after a While loop, of each node in its first and last pass, and after a Merge, the outputs of the last node on each branch.
+- **Each earlier node**, by name, with its outputs. After a For loop, that includes the outputs of each node in its last iteration, after a While loop, of each node in its last pass, and after a Merge, the outputs of the last node on each branch.
 - **Loop:** inside a For loop, **Current item**, **Item index**, and **Item count**. Inside a While loop, and in its own condition, **Pass index** and the outputs of each node in the **Previous pass**. A While loop's condition is also offered the nodes of the **Pass just finished**.
 - **Error:** on a node connected to an **on error** output, **Error message** and **Attempt**.
 - **Variables** of the workflow, and **Data store** entries and **Secrets** of the workspace.

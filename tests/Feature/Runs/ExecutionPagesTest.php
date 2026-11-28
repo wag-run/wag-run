@@ -8,6 +8,7 @@ use App\Enums\ExecutionStatus;
 use App\Enums\StepStatus;
 use App\Enums\WorkspaceRole;
 use App\Models\Execution;
+use App\Models\Secret;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Models\Workspace;
@@ -140,6 +141,49 @@ class ExecutionPagesTest extends TestCase
             ->assertSee('"count": 2')
             ->assertSee('"last"')
             ->assertSee('tick 1');
+    }
+
+    public function test_a_steps_input_can_be_read_as_written_where_placeholders_were_filled_in(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
+        $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger', 'poll' => ['core.while_loop', ['condition' => '{{ loop.index < 1 }}', 'check_after' => true]], 'tick' => ['core.compose', ['template' => 'plain text']]],
+            ['start->poll', 'poll:pass->tick'],
+        ), $workspace));
+
+        $this->assertFalse($this->stepFor($execution, 'poll')->input['condition']);
+
+        $page = Livewire::actingAs($viewer)->test('pages::executions.show', ['workspace' => $workspace, 'execution' => $execution])
+            ->call('selectNode', 'poll')
+            ->assertSeeHtml('data-test="step-input-toggle"')
+            ->assertSeeHtml('data-test="step-input"')
+            ->assertSeeHtml('data-test="step-settings"')
+            ->assertSee('"condition": false')
+            ->assertSee('"condition": "{{ loop.index < 1 }}"');
+
+        $page->call('selectNode', 'tick')
+            ->assertSeeHtml('data-test="step-input"')
+            ->assertDontSeeHtml('data-test="step-input-toggle"')
+            ->assertDontSeeHtml('data-test="step-settings"');
+    }
+
+    public function test_a_steps_input_as_written_masks_secrets_typed_into_its_settings(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
+        Secret::factory()->for($workspace)->create(['value' => 'sk_live_supersecret']);
+        $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger', 'leak' => ['core.compose', ['template' => 'key sk_live_supersecret {{ 1 + 1 }}']]],
+            ['start->leak'],
+        ), $workspace));
+
+        Livewire::actingAs($viewer)->test('pages::executions.show', ['workspace' => $workspace, 'execution' => $execution])
+            ->call('selectNode', 'leak')
+            ->assertSeeHtml('data-test="step-settings"')
+            ->assertSee('key ******** {{ 1 + 1 }}')
+            ->assertSee('key ******** 2')
+            ->assertDontSee('sk_live_supersecret');
     }
 
     public function test_each_attempt_of_a_retried_step_can_be_opened(): void
