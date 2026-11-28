@@ -385,18 +385,57 @@ Outputs: `workflow` and `ref`.
 
 ## Google
 
-### Add row to sheet
-
-Adds a row after the last one in a Google Sheets sheet, as a connected Google account. Connect one right from the node with **Connect Google** (see [Connecting an account](workspaces.md#connecting-an-account)).
+These nodes work with a sheet of a Google Sheets spreadsheet, as a connected Google account. Connect one right from the node with **Connect Google** (see [Connecting an account](workspaces.md#connecting-an-account)). Each has these settings:
 
 | Setting | What it does |
 |---|---|
 | **Google account** | The connected Google account to use |
 | **Spreadsheet** | The spreadsheet's URL or ID |
 | **Sheet** | The sheet's name, `Sheet1` by default |
-| **Values** | One value per column, starting from the first. Values are entered as if typed, so numbers and dates are recognised. |
+
+A column is named by its header in the sheet's first row, such as `Email`, or by its letter, such as `C`. A header matches ignoring case.
+
+If Google refuses the request, the step fails with its message. Only server errors and rate limits are retried.
+
+### Read rows from sheet
+
+Reads a sheet's rows as a list, for a [For loop](#for-loop) or a [Filter](#filter). Each row is an object of its values by header, with its row number as `_row`:
+
+```json
+[
+  { "Email": "ada@example.com", "Status": "", "_row": 2 },
+  { "Email": "grace@example.com", "Status": "sent", "_row": 3 }
+]
+```
+
+Empty rows are left out. Numbers and true/false values come as such, and dates as the sheet shows them. A column without a header is named by its letter, and a repeated header gets its letter added, such as `Total (D)`.
+
+| Setting | What it does |
+|---|---|
+| **Cells** | Only these cells, such as `A:D` or `A1:D100`. Leave it empty for the whole sheet. |
+| **First row is headers** | On by default. Turned off, values are named by column letter, and the first row is a row like the others. |
+| **Only rows where column** and **Equals** | Keep only the rows whose value in that column is exactly this, ignoring spaces at the ends, such as an order's ID or a person's email. With **Equals** empty, it keeps the rows where that column is empty, such as rows with no status yet. Leave the column empty to read every row. |
+
+It reads at most 10,000 rows. Narrow a bigger sheet with **Cells** or **Only rows where column**.
+
+Outputs: `rows`, `count`, and `headers`, each column's name.
+
+### Add row to sheet
+
+Adds a row after the last one in the sheet. **Values** holds one value per column, starting from the first. Values are entered as if typed, so numbers and dates are recognised.
 
 Outputs: `range`, the cells it wrote, such as `'Orders'!A5:C5`, and `rows`.
+
+### Update row in sheet
+
+Changes cells in one row of the sheet, such as writing a status back to the row a run came from. **Find the row by** is either:
+
+- **Its row number**: **Row number**, such as `{{ item._row }}` inside a For loop over [Read rows from sheet](#read-rows-from-sheet), or `{{ trigger._row }}` from [New row in sheet](triggers.md#new-row-in-sheet).
+- **A value in a column**: **Where column** and **Equals** find the row, such as the row whose `Order` is `{{ trigger.order_id }}`. Every row that matches is changed, and when none does, nothing is and the step still succeeds with `rows` at 0.
+
+**New values** pairs a column with the value to put in it, such as `Status` and `sent`. Columns left out keep their values. Values are entered as if typed.
+
+Outputs: `rows`, how many rows changed, and `row_numbers`.
 
 ## Investbrain
 
