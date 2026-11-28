@@ -30,8 +30,8 @@ Switch workspaces with the menu at the top of the sidebar. If you're in more tha
 
 Under **Add or invite by email**, enter an email address, choose a role, and click **Add**.
 
-- If the person already has an account, they're added straight away.
-- If not, they're emailed an invitation to create an account and join. Invitations expire after 7 days. Until then, they're listed under **Pending invitations**, where you can **Revoke** them.
+- If the person is already in your organization, they're added straight away.
+- If not, they're emailed an invitation to join, creating an account if they don't have one. Invitations expire after 7 days. Until then, they're listed under **Pending invitations**, where you can **Revoke** them.
 
 To change someone's role, pick a new one next to their name. To take away their access, click **Remove**. Removing someone from a workspace doesn't delete their account.
 

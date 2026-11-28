@@ -16,7 +16,7 @@ The first account registered on a new install becomes an organization admin. Adm
 
 **Org settings → Users** lists everyone with an account. Members get their access from their workspace roles. Organization admins have access to everything.
 
-- **Invite by email**: send someone an invitation to create an account, and choose their **Organization role**. Invitations expire after 7 days and are listed under **Pending invitations** until then, where you can **Revoke** them. To invite someone straight into a workspace, invite them from that workspace's **Members** page instead.
+- **Invite by email**: send someone an invitation to join, creating an account if they don't have one, and choose their **Organization role**. Invitations expire after 7 days and are listed under **Pending invitations** until then, where you can **Revoke** them. To invite someone straight into a workspace, invite them from that workspace's **Members** page instead.
 - **Promote to organization admin** or **Demote to member**: change someone's organization role. The last organization admin can't be demoted.
 - **Deactivate**: sign someone out and stop them signing in, without deleting their account or history. **Reactivate** lets them back in. You can't deactivate yourself or the last organization admin.
 - **Reset two-factor**: clear someone's two-factor setup, for when they've lost their authenticator and their recovery codes. They set it up again from **Preferences → Security**, and if it's required, they're sent there at their next sign-in.
