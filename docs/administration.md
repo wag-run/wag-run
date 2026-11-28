@@ -176,9 +176,11 @@ The providers table's **Domains** column shows each provider's first domain and 
 
 Each domain belongs to one provider, so to move a domain, remove it from its provider and add it to the other. Domains match exactly: `acme.com` doesn't cover `eu.acme.com`, which needs adding too. Deleting a provider deletes its domains.
 
+Domains also shape the sign-in page. People enter their email first, and then see only the providers that accept it: the one whose domains include their email comes first, and providers whose domains don't include it aren't offered. The email goes to the provider as a hint, so its sign-in page can fill it in. What the page offers depends only on the email's domain, never on whether it has an account, so it can't be used to find out who has one.
+
 ## Email
 
-**Org settings → Email** sets the SMTP server wag.run sends through: for invitations, approval and task emails, notification emails, and **Send email** nodes. Workspaces can add their own SMTP server for **Send email** nodes under [Credentials](workspaces.md#credentials).
+**Org settings → Email** sets the SMTP server wag.run sends through: for invitations, password reset links, approval and task emails, notification emails, and **Send email** nodes. Workspaces can add their own SMTP server for **Send email** nodes under [Credentials](workspaces.md#credentials).
 
 1. Turn on **Send through my SMTP server**.
 2. Enter the **Host**, **Port**, **Encryption** (**STARTTLS**, usually port 587, or **SSL/TLS**, usually port 465), **Username**, **Password**, **From address**, and **From name**.

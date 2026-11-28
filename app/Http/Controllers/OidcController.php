@@ -25,7 +25,7 @@ class OidcController extends Controller
         $this->ensureUsable($provider);
 
         try {
-            $authorization = $this->client->authorizationRequest($provider, $this->callbackUrl($provider));
+            $authorization = $this->client->authorizationRequest($provider, $this->callbackUrl($provider), $request->session()->get(SignInEmailController::SESSION_KEY));
         } catch (RuntimeException $exception) {
             return $this->failed($exception->getMessage());
         }

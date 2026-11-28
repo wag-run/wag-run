@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Laravel\Fortify\Features;
 use Tests\TestCase;
 
@@ -15,7 +16,7 @@ class AuthenticationTest extends TestCase
     {
         $response = $this->get(route('login'));
 
-        $response->assertOk()->assertSee('data-test="login-button"', false);
+        $response->assertOk()->assertSee('data-test="continue-button"', false);
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void
@@ -62,6 +63,17 @@ class AuthenticationTest extends TestCase
 
         $response->assertRedirect(route('home'));
 
+        $this->assertGuest();
+    }
+
+    public function test_a_password_is_checked_even_when_the_email_has_no_account(): void
+    {
+        Hash::spy();
+
+        $this->post(route('login.store'), ['email' => 'nobody@example.com', 'password' => 'password'])
+            ->assertSessionHasErrors(['email' => __('auth.failed')]);
+
+        Hash::shouldHaveReceived('check')->once();
         $this->assertGuest();
     }
 }

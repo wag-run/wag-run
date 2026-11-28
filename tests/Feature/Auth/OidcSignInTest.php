@@ -208,12 +208,25 @@ class OidcSignInTest extends TestCase
 
     public function test_disabled_providers_are_not_offered_and_cannot_be_used(): void
     {
+        $this->withSession(['login.email' => 'ada@example.com']);
+
         $this->get(route('login'))->assertSee('Sign in with Acme ID');
 
         $this->provider->update(['enabled' => false]);
 
         $this->get(route('login'))->assertDontSee('Sign in with Acme ID');
         $this->get(route('oidc.redirect', $this->provider))->assertNotFound();
+    }
+
+    public function test_the_email_typed_on_the_sign_in_page_goes_to_the_provider_as_a_login_hint(): void
+    {
+        $location = (string) $this->withSession(['login.email' => 'ada@example.com'])
+            ->get(route('oidc.redirect', $this->provider))
+            ->headers->get('Location');
+
+        parse_str((string) parse_url($location, PHP_URL_QUERY), $query);
+
+        $this->assertSame('ada@example.com', $query['login_hint']);
     }
 
     public function test_a_provider_with_email_domains_accepts_addresses_on_them_in_any_case(): void

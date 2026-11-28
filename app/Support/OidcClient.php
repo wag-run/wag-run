@@ -57,11 +57,12 @@ class OidcClient
 
     /**
      * Where to send the user to sign in, plus the values to keep in the
-     * session until they come back.
+     * session until they come back. The email they typed on the sign-in page,
+     * if any, goes along as a login hint so the provider can fill it in.
      *
      * @return array{url: string, state: string, nonce: string, verifier: string}
      */
-    public function authorizationRequest(OidcProvider $provider, string $redirectUri): array
+    public function authorizationRequest(OidcProvider $provider, string $redirectUri, ?string $loginHint = null): array
     {
         $document = $this->discover($provider);
         $state = Str::random(40);
@@ -77,6 +78,7 @@ class OidcClient
             'nonce' => $nonce,
             'code_challenge' => static::base64UrlEncode(hash('sha256', $verifier, true)),
             'code_challenge_method' => 'S256',
+            'login_hint' => $loginHint,
         ], arg_separator: '&', encoding_type: PHP_QUERY_RFC3986);
 
         $endpoint = (string) $document['authorization_endpoint'];

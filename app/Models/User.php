@@ -6,6 +6,7 @@ use App\Enums\NotificationKind;
 use App\Enums\OrgRole;
 use App\Enums\WorkspacePermission;
 use App\Enums\WorkspaceRole;
+use App\Notifications\ResetPasswordNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -66,6 +67,17 @@ class User extends Authenticatable implements MustVerifyEmail, OAuthenticatable
     public function wantsNotification(NotificationKind $kind, string $channel): bool
     {
         return (bool) ($this->notification_preferences[$kind->value][$channel] ?? true);
+    }
+
+    /**
+     * Send the password reset email, queued and through the organization's
+     * email settings.
+     *
+     * @param  string  $token
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 
     /**
