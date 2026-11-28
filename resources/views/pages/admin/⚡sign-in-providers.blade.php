@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Validation\Rule;
+use App\Enums\TwoFactorPolicy;
 use App\Models\OidcDomain;
 use App\Models\OidcProvider;
 use App\Models\Organization;
@@ -50,9 +52,21 @@ new class extends Component {
 
     public bool $passwordSignIn = true;
 
+    public string $twoFactor = 'optional';
+
     public function mount(): void
     {
         $this->passwordSignIn = Organization::current()->password_sign_in;
+        $this->twoFactor = Organization::current()->twoFactorPolicy()->value;
+    }
+
+    /**
+     * How many people in the organization have two-factor authentication set up.
+     */
+    #[Computed]
+    public function peopleWithTwoFactor(): int
+    {
+        return Organization::current()->users()->whereNotNull('two_factor_confirmed_at')->count();
     }
 
     /**
@@ -71,7 +85,10 @@ new class extends Component {
             return;
         }
 
+        $this->validate(['twoFactor' => ['required', Rule::enum(TwoFactorPolicy::class)]]);
+
         $organization->password_sign_in = $this->passwordSignIn;
+        $organization->two_factor = $this->twoFactor;
 
         if ($organization->isDirty()) {
             $changed = $organization->changedFields();
@@ -114,7 +131,7 @@ new class extends Component {
     public function create(): void
     {
         $this->authorize('org-admin');
-        $this->resetExcept('passwordSignIn');
+        $this->resetExcept('passwordSignIn', 'twoFactor');
         $this->resetValidation();
         Flux::modal('provider-form')->show();
     }
@@ -209,7 +226,7 @@ new class extends Component {
 
         Flux::modal('provider-form')->close();
         Flux::toast(variant: 'success', text: __('admin.sign_in_providers.sign_in_provider_saved'));
-        $this->resetExcept('passwordSignIn');
+        $this->resetExcept('passwordSignIn', 'twoFactor');
     }
 
     public function test(string $id, OidcClient $client): void
@@ -323,6 +340,21 @@ new class extends Component {
             <flux:heading>{{ __('admin.sign_in_providers.sign_in_methods') }}</flux:heading>
             <flux:switch wire:model="passwordSignIn" :label="__('admin.sign_in_providers.password_sign_in')"
                 :description="__('admin.sign_in_providers.people_sign_in_with_their')" data-test="password-sign-in" />
+
+            <flux:field>
+                <flux:label>{{ __('common.two_factor_authentication') }}</flux:label>
+                <flux:description>{{ __('admin.sign_in_providers.for_password_sign_ins_ignored') }}</flux:description>
+                <flux:radio.group wire:model.live="twoFactor" variant="segmented" data-test="two-factor-policy">
+                    @foreach (TwoFactorPolicy::cases() as $policy)
+                        <flux:radio :value="$policy->value">{{ $policy->label() }}</flux:radio>
+                    @endforeach
+                </flux:radio.group>
+                @if ($twoFactor === TwoFactorPolicy::Required->value)
+                    <flux:text class="mt-2">{{ __('admin.sign_in_providers.people_without_it_set_it') }}</flux:text>
+                @elseif ($twoFactor === TwoFactorPolicy::Disabled->value && $this->peopleWithTwoFactor > 0)
+                    <flux:text class="mt-2">{{ trans_choice('admin.sign_in_providers.count_people_have_it_set', $this->peopleWithTwoFactor, ['count' => $this->peopleWithTwoFactor]) }}</flux:text>
+                @endif
+            </flux:field>
             <flux:button type="submit" variant="primary" data-test="save-sign-in-methods">{{ __('common.save_settings') }}</flux:button>
         </form>
 

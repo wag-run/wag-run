@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Concerns\HasSettings;
 use App\Engine\Redactor;
 use App\Enums\OrgRole;
+use App\Enums\TwoFactorPolicy;
 use App\Support\CurrentOrganization;
 use Database\Factories\OrganizationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -28,11 +29,12 @@ use Illuminate\Support\Carbon;
  * @property int $max_runs_per_minute
  * @property bool $allow_account_deletion
  * @property bool $password_sign_in
+ * @property string $two_factor see {@see TwoFactorPolicy}
  * @property list<string> $sensitive_keys extra header and field names whose values runs mask, see {@see Redactor}
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'settings', 'mail', 'default_retention_days', 'max_chain_depth', 'max_runs_per_minute', 'allow_account_deletion', 'sensitive_keys', 'password_sign_in'])]
+#[Fillable(['name', 'settings', 'mail', 'default_retention_days', 'max_chain_depth', 'max_runs_per_minute', 'allow_account_deletion', 'sensitive_keys', 'password_sign_in', 'two_factor'])]
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */
@@ -48,6 +50,7 @@ class Organization extends Model
         'max_runs_per_minute' => ['int', 60],
         'allow_account_deletion' => ['bool', true],
         'password_sign_in' => ['bool', true],
+        'two_factor' => ['string', 'optional'],
         'sensitive_keys' => ['array', []],
     ];
 
@@ -67,6 +70,11 @@ class Organization extends Model
     public static function current(): ?self
     {
         return app(CurrentOrganization::class)->get();
+    }
+
+    public function twoFactorPolicy(): TwoFactorPolicy
+    {
+        return TwoFactorPolicy::tryFrom($this->two_factor) ?? TwoFactorPolicy::Optional;
     }
 
     /**

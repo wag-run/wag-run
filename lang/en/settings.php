@@ -84,6 +84,7 @@ return [
         'disable_2fa' => 'Disable 2FA',
         'enable_2fa' => 'Enable 2FA',
         'ensure_your_account_is_using' => 'Ensure your account is using a long, random password to stay secure',
+        'name_requires_two_factor_authentication' => ':name requires two-factor authentication. Set it up below to go on.',
         'manage_your_two_factor_authentication' => 'Manage your two-factor authentication settings',
         'new_password' => 'New password',
         'password_updated' => 'Password updated.',

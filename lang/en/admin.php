@@ -60,6 +60,9 @@ return [
     ],
     'sign_in_providers' => [
         'delete_sign_in_provider' => 'Delete sign-in provider?',
+        'count_people_have_it_set' => '{1} :count person has it set up. They won\'t be asked for a code, and their setup is kept in case you turn it back on.|[2,*] :count people have it set up. They won\'t be asked for a code, and their setup is kept in case you turn it back on.',
+        'for_password_sign_ins_ignored' => 'For password sign-ins. Ignored while password sign-in is off, and for sign-ins through a provider, which runs its own.',
+        'people_without_it_set_it' => 'People who sign in with a password and haven\'t set it up are sent to set it up before they can go on.',
         'add_and_enable_a_sign' => 'Add and enable a sign-in provider before turning password sign-in off, so people have another way in.',
         'add_an_email_domain_first' => 'Add an email domain to this provider first, from its Domains column. Only people on its domains get an account.',
         'add_domain' => 'Add domain',
@@ -114,6 +117,9 @@ return [
         'title' => 'Sign-in',
     ],
     'users' => [
+        'reset_two_factor' => 'Reset two-factor',
+        'reset_two_factor_for_name' => 'Reset two-factor authentication for :name? They\'ll need to set it up again, and until then they can sign in with just their password unless it\'s required.',
+        'two_factor_reset_for_name' => 'Two-factor authentication reset for :name.',
         'deactivate_user' => 'Deactivate user?',
         'active' => 'Active',
         'deactivate' => 'Deactivate',

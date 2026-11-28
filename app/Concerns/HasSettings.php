@@ -34,6 +34,7 @@ trait HasSettings
             $value === null => null,
             $cast === 'bool' => (bool) $value,
             $cast === 'int' => (int) $value,
+            $cast === 'string' => (string) $value,
             default => (array) $value,
         };
     }

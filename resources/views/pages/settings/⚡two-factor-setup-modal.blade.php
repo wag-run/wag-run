@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Organization;
+use App\Enums\TwoFactorPolicy;
 use Laravel\Fortify\Actions\ConfirmTwoFactorAuthentication;
 use Laravel\Fortify\Actions\EnableTwoFactorAuthentication;
 use Livewire\Attributes\Computed;
@@ -36,6 +38,8 @@ new class extends Component {
     #[On('start-two-factor-setup')]
     public function startTwoFactorSetup(): void
     {
+        abort_if(Organization::current()?->twoFactorPolicy() === TwoFactorPolicy::Disabled, 403);
+
         if (auth()->user()->hasEnabledTwoFactorAuthentication()) {
             $this->dispatch('two-factor-enabled');
 

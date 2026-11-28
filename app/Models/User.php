@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\NotificationKind;
 use App\Enums\OrgRole;
+use App\Enums\TwoFactorPolicy;
 use App\Enums\WorkspacePermission;
 use App\Enums\WorkspaceRole;
 use App\Http\Middleware\ResolveCurrentOrganization;
@@ -157,6 +158,26 @@ class User extends Authenticatable implements MustVerifyEmail, OAuthenticatable
         $membership = $this->membershipIn($organization);
 
         return $membership !== null && $membership->deactivated_at === null;
+    }
+
+    /**
+     * Whether the user has set up and confirmed two-factor authentication.
+     */
+    public function hasTwoFactorSetUp(): bool
+    {
+        return $this->two_factor_secret !== null && $this->two_factor_confirmed_at !== null;
+    }
+
+    /**
+     * Whether every organization the user is active in has two-factor
+     * authentication disabled, so password sign-ins don't ask for a code.
+     */
+    public function twoFactorIsOffEverywhere(): bool
+    {
+        $organizations = $this->organizations()->wherePivotNull('deactivated_at')->get();
+
+        return $organizations->isNotEmpty()
+            && $organizations->every(fn (Organization $organization) => $organization->twoFactorPolicy() === TwoFactorPolicy::Disabled);
     }
 
     /**
