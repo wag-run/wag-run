@@ -4,8 +4,11 @@ namespace Tests\Feature\Integrations;
 
 use App\Enums\StepStatus;
 use App\Models\Credential;
+use App\Models\Execution;
 use App\Models\ExecutionStep;
+use App\Models\Workflow;
 use App\Models\Workspace;
+use App\Services\Workflows;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -190,5 +193,82 @@ class GoogleSheetsTest extends TestCase
         $this->assertSame('The sheet has no column "Shipped on". Use a header from its first row, or a column letter such as C.', $badColumn->error['message']);
         $this->assertSame(1, $badColumn->attempt, 'not retried');
         Http::assertNotSent(fn (Request $request) => str_ends_with($request->url(), ':batchUpdate'));
+    }
+
+    private function publishTrigger(): Workflow
+    {
+        $workflow = Workflow::factory()->for($this->workspace)->create();
+        $workflow->update(['draft_graph' => $this->graph(['on' => ['google.new_sheet_row', ['credential' => $this->settingId('google'), 'spreadsheet' => 'abc', 'sheet' => 'Orders', 'poll_minutes' => 5]]])]);
+        app(Workflows::class)->publish($workflow->refresh());
+
+        return $workflow->refresh();
+    }
+
+    private function poll(): void
+    {
+        $this->artisan('workflows:poll-triggers')->assertSuccessful();
+        $this->travel(5)->minutes();
+    }
+
+    public function test_new_row_records_the_rows_there_then_starts_a_run_per_row_added_below_them(): void
+    {
+        $this->publishTrigger();
+        $rows = [['Email', 'Total'], ['ada@example.com', 10]];
+        Http::fake([self::VALUES => function () use (&$rows) {
+            return Http::response($this->sheet($rows));
+        }]);
+
+        $this->poll();
+        $this->assertSame(0, Execution::count(), 'the first check only records what exists');
+
+        $rows[] = ['grace@example.com', 20];
+        $rows[] = [];
+        $rows[] = ['alan@example.com'];
+        $this->poll();
+
+        $this->assertSame([
+            ['Email' => 'grace@example.com', 'Total' => 20, '_row' => 3],
+            ['Email' => 'alan@example.com', 'Total' => '', '_row' => 5],
+        ], Execution::query()->orderBy('id')->pluck('input')->all());
+
+        $this->poll();
+        $this->assertSame(2, Execution::count(), 'an unchanged sheet starts nothing');
+
+        array_splice($rows, 2);
+        $this->poll();
+        $rows[] = ['joan@example.com', 30];
+        $this->poll();
+
+        $this->assertSame('joan@example.com', Execution::query()->latest('id')->first()->input['Email'], 'a row added where a deleted one was is new');
+        Http::assertSent(fn (Request $request) => $request->header('Authorization') === ['Bearer ya29.token']);
+    }
+
+    public function test_new_row_starts_at_most_a_hundred_runs_a_check_and_the_rest_at_the_next(): void
+    {
+        $this->publishTrigger();
+        $rows = [['Email']];
+        Http::fake([self::VALUES => function () use (&$rows) {
+            return Http::response($this->sheet($rows));
+        }]);
+
+        $this->poll();
+        array_push($rows, ...array_map(fn (int $i) => ["person{$i}@example.com"], range(1, 150)));
+
+        $this->poll();
+        $this->assertSame(100, Execution::count());
+
+        $this->poll();
+        $this->assertSame(150, Execution::count());
+        $this->assertSame(151, Execution::query()->latest('id')->first()->input['_row']);
+    }
+
+    public function test_new_row_notes_a_refusal_on_the_trigger(): void
+    {
+        $workflow = $this->publishTrigger();
+        Http::fake([self::VALUES => Http::response(['error' => ['code' => 404, 'message' => 'Requested entity was not found.']], 404)]);
+
+        $this->poll();
+
+        $this->assertSame('Google answered 404: Requested entity was not found.', $workflow->triggers()->sole()->state['error']);
     }
 }

@@ -613,10 +613,11 @@ class WorkflowEditorTest extends TestCase
         $types = fn (string $folder) => array_column($palette[$folder]['items'], 'type');
 
         $this->assertSame('Triggers', $palette['']['groups'][0]['name']);
-        $this->assertSame(['key' => 'Triggers › Other apps', 'name' => 'Other apps', 'icon' => 'tag', 'count' => 4], $palette['Triggers']['groups'][0]);
+        $this->assertSame(['key' => 'Triggers › Other apps', 'name' => 'Other apps', 'icon' => 'tag', 'count' => 5], $palette['Triggers']['groups'][0]);
         $this->assertSame(['core.manual_trigger', 'core.webhook_trigger', 'core.schedule_trigger', 'core.form_trigger'], $types('Triggers'));
         $this->assertSame([], $types('Triggers › Other apps'));
         $this->assertSame(['github.new_tag', 'github.new_release', 'github.workflow_run_failed'], $types('Triggers › Other apps › GitHub'));
+        $this->assertSame(['google.new_sheet_row'], $types('Triggers › Other apps › Google'));
         $this->assertSame(['investbrain.new_transaction'], $types('Triggers › Other apps › Investbrain'));
         $this->assertSame(['google.read_sheet_rows', 'google.append_sheet_row', 'google.update_sheet_row'], $types('Google'));
         $this->assertContains('investbrain.add_transaction', $types('Investbrain'));

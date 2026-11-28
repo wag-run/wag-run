@@ -64,6 +64,7 @@ class WorkflowServiceProvider extends ServiceProvider
         GitHub\AddComment::class,
         GitHub\CreateRelease::class,
         GitHub\RunActionsWorkflow::class,
+        Google\NewSheetRow::class,
         Google\ReadSheetRows::class,
         Google\AppendSheetRow::class,
         Google\UpdateSheetRow::class,
