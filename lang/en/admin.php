@@ -94,7 +94,7 @@ return [
         'name_answered_with_a_valid' => ':name answered with a valid discovery document.',
         'need_an_invitation' => 'Need an invitation',
         'new_people' => 'New people',
-        'new_people_join_as_organization' => 'New people on the provider\'s email domains join as organization Members with no workspace access. Needs at least one email domain. When off, only people who already have an account can sign in this way.',
+        'also_called_auto_provisioning_or' => 'Also called auto-provisioning or just-in-time (JIT) provisioning. New people on the provider\'s email domains join as organization Members with no workspace access. Needs at least one email domain. When off, only people who already have an account can sign in this way.',
         'no_sign_in_providers_yet' => 'No sign-in providers yet.',
         'off' => 'Off',
         'redirect_uri' => 'Redirect URI',
