@@ -1,11 +1,13 @@
 <?php
 
+use App\Models\OidcDomain;
 use App\Models\OidcProvider;
 use App\Models\Organization;
 use App\Support\Audit;
 use App\Support\OidcClient;
 use Flux\Flux;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -37,10 +39,23 @@ new class extends Component {
 
     public bool $trustEmail = false;
 
+    #[Locked]
+    public ?string $editingDomainId = null;
+
+    public string $domain = '';
+
+    public string $domainProviderId = '';
+
     #[Computed]
     public function providers()
     {
         return Organization::current()->oidcProviders()->withCount('identities')->orderBy('name')->get();
+    }
+
+    #[Computed]
+    public function domains()
+    {
+        return Organization::current()->oidcDomains()->with('provider')->orderBy('domain')->get();
     }
 
     public function create(): void
@@ -153,6 +168,76 @@ new class extends Component {
         Flux::toast(text: __('admin.sign_in_providers.sign_in_provider_deleted'));
     }
 
+    public function addDomain(): void
+    {
+        $this->authorize('org-admin');
+        $this->reset('editingDomainId', 'domain');
+        $this->domainProviderId = (string) $this->providers->first()?->id;
+        $this->resetValidation();
+
+        Flux::modal('domain-form')->show();
+    }
+
+    public function editDomain(string $id): void
+    {
+        $this->authorize('org-admin');
+
+        $domain = $this->findDomain($id);
+        $this->editingDomainId = $domain->id;
+        $this->domain = $domain->domain;
+        $this->domainProviderId = $domain->oidc_provider_id;
+        $this->resetValidation();
+
+        Flux::modal('domain-form')->show();
+    }
+
+    public function saveDomain(): void
+    {
+        $this->authorize('org-admin');
+
+        $organization = Organization::current();
+        $this->domain = OidcDomain::normalize($this->domain);
+
+        $this->validate([
+            'domain' => ['required', 'string', 'max:253', 'regex:/^(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))+$/',
+                Rule::unique('oidc_domains', 'domain')->where('organization_id', $organization->id)->ignore($this->editingDomainId)],
+            'domainProviderId' => ['required', Rule::exists('oidc_providers', 'id')->where('organization_id', $organization->id)],
+        ], [
+            'domain.required' => __('admin.sign_in_providers.enter_a_domain_such_as'),
+            'domain.regex' => __('admin.sign_in_providers.enter_a_domain_such_as'),
+            'domain.unique' => __('admin.sign_in_providers.this_domain_already_belongs_to'),
+            'domainProviderId.required' => __('admin.sign_in_providers.choose_a_provider'),
+            'domainProviderId.exists' => __('admin.sign_in_providers.choose_a_provider'),
+        ]);
+
+        $domain = $this->editingDomainId ? $this->findDomain($this->editingDomainId) : $organization->oidcDomains()->make();
+        $domain->fill(['domain' => $this->domain, 'oidc_provider_id' => $this->domainProviderId]);
+
+        $creating = ! $domain->exists;
+        $changed = array_keys($domain->getDirty());
+        $domain->save();
+
+        Audit::record($creating ? 'oidc_provider.domain_added' : 'oidc_provider.domain_updated', $domain, metadata: array_filter([
+            'provider' => $domain->provider->name,
+            'changed' => $creating ? null : $changed,
+        ]), label: $domain->domain);
+
+        Flux::modal('domain-form')->close();
+        Flux::toast(variant: 'success', text: __('admin.sign_in_providers.email_domain_saved'));
+        $this->reset('editingDomainId', 'domain', 'domainProviderId');
+    }
+
+    public function deleteDomain(string $id): void
+    {
+        $this->authorize('org-admin');
+
+        $domain = $this->findDomain($id);
+        $domain->delete();
+        Audit::record('oidc_provider.domain_deleted', $domain, metadata: ['provider' => $domain->provider->name], label: $domain->domain);
+
+        Flux::toast(text: __('admin.sign_in_providers.email_domain_deleted'));
+    }
+
     public function callbackUrl(?string $slug = null): string
     {
         return route('oidc.callback', $slug ?? $this->editingSlug ?? (Str::slug($this->name) ?: 'provider'));
@@ -161,6 +246,11 @@ new class extends Component {
     protected function findProvider(string $id): OidcProvider
     {
         return Organization::current()->oidcProviders()->findOrFail($id);
+    }
+
+    protected function findDomain(string $id): OidcDomain
+    {
+        return Organization::current()->oidcDomains()->findOrFail($id);
     }
 
     public function render()
@@ -214,6 +304,62 @@ new class extends Component {
                 @endforelse
             </flux:table.rows>
         </flux:table>
+
+        <div class="mt-10 mb-4 flex flex-wrap items-end justify-between gap-4">
+            <div>
+                <flux:heading>{{ __('admin.sign_in_providers.email_domains') }}</flux:heading>
+                <flux:text class="mt-1">{{ __('admin.sign_in_providers.a_provider_with_email_domains') }}</flux:text>
+            </div>
+            @if ($this->providers->isNotEmpty())
+                <flux:button icon="plus" wire:click="addDomain" data-test="add-domain">{{ __('admin.sign_in_providers.add_domain') }}</flux:button>
+            @endif
+        </div>
+
+        <flux:table>
+            <flux:table.columns>
+                <flux:table.column>{{ __('admin.sign_in_providers.domain') }}</flux:table.column>
+                <flux:table.column>{{ __('common.provider') }}</flux:table.column>
+                <flux:table.column></flux:table.column>
+            </flux:table.columns>
+            <flux:table.rows>
+                @forelse ($this->domains as $domain)
+                    <flux:table.row :key="$domain->id">
+                        <flux:table.cell class="font-medium">{{ $domain->domain }}</flux:table.cell>
+                        <flux:table.cell>{{ $domain->provider->name }}</flux:table.cell>
+                        <flux:table.cell align="end">
+                            <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="editDomain('{{ $domain->id }}')" :aria-label="__('common.edit')" />
+                            <flux:button size="sm" variant="ghost" icon="trash" x-on:click="$confirm({{ \Illuminate\Support\Js::from(['title' => __('admin.sign_in_providers.delete_email_domain'), 'message' => __('admin.sign_in_providers.delete_domain_if_it_was', ['domain' => $domain->domain, 'name' => $domain->provider->name]), 'confirm' => __('common.delete')]) }}).then((ok) => ok && $wire.deleteDomain('{{ $domain->id }}'))"
+                                :aria-label="__('common.delete')" />
+                        </flux:table.cell>
+                    </flux:table.row>
+                @empty
+                    <flux:table.row>
+                        <flux:table.cell colspan="3" class="text-center text-zinc-500">
+                            {{ $this->providers->isEmpty() ? __('admin.sign_in_providers.add_a_provider_first_then') : __('admin.sign_in_providers.no_email_domains_yet') }}
+                        </flux:table.cell>
+                    </flux:table.row>
+                @endforelse
+            </flux:table.rows>
+        </flux:table>
+
+        <flux:modal name="domain-form" class="md:w-md">
+            <form wire:submit="saveDomain" class="space-y-6">
+                <flux:heading size="lg">{{ $editingDomainId ? __('admin.sign_in_providers.edit_email_domain') : __('admin.sign_in_providers.add_email_domain') }}</flux:heading>
+
+                <flux:input wire:model="domain" :label="__('admin.sign_in_providers.domain')" placeholder="acme.com" required />
+
+                <flux:select wire:model="domainProviderId" :label="__('common.provider')" :description="__('admin.sign_in_providers.each_domain_belongs_to_one')">
+                    @foreach ($this->providers as $provider)
+                        <flux:select.option :value="$provider->id">{{ $provider->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+
+                <div class="flex justify-end gap-2">
+                    <flux:modal.close><flux:button variant="ghost">{{ __('common.cancel') }}</flux:button></flux:modal.close>
+                    <flux:button type="submit" variant="primary" data-test="save-domain">{{ $editingDomainId ? __('common.save') : __('admin.sign_in_providers.add_domain') }}</flux:button>
+                </div>
+            </form>
+        </flux:modal>
 
         <flux:modal name="provider-form" class="md:w-xl">
             <form wire:submit="save" class="space-y-6">

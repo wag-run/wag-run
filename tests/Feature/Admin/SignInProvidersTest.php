@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\OidcDomain;
 use App\Models\OidcProvider;
 use App\Models\Organization;
 use App\Models\User;
@@ -72,5 +73,87 @@ class SignInProvidersTest extends TestCase
         $member = User::factory()->orgMember()->create();
 
         $this->actingAs($member)->get(route('admin.sign-in-providers'))->assertForbidden();
+    }
+
+    public function test_org_admins_add_an_email_domain_to_a_provider(): void
+    {
+        $admin = User::factory()->orgAdmin()->create();
+        $provider = OidcProvider::factory()->for(Organization::current())->create(['name' => 'Acme ID']);
+
+        Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')
+            ->call('addDomain')
+            ->assertSet('domainProviderId', $provider->id)
+            ->set('domain', ' @Acme.COM ')
+            ->call('saveDomain')
+            ->assertHasNoErrors();
+
+        $this->assertSame(['acme.com'], $provider->domains()->pluck('domain')->all());
+        $this->assertDatabaseHas('audit_logs', ['action' => 'oidc_provider.domain_added', 'subject_label' => 'acme.com']);
+    }
+
+    public function test_a_domain_belongs_to_one_provider_and_must_look_like_a_domain(): void
+    {
+        $admin = User::factory()->orgAdmin()->create();
+        $okta = OidcProvider::factory()->for(Organization::current())->create();
+        $entra = OidcProvider::factory()->for(Organization::current())->create();
+        OidcDomain::factory()->for($okta, 'provider')->create(['domain' => 'acme.com']);
+
+        $component = Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')
+            ->call('addDomain')
+            ->set('domainProviderId', $entra->id)
+            ->set('domain', 'ACME.com')
+            ->call('saveDomain')
+            ->assertHasErrors(['domain' => 'unique']);
+
+        $component->set('domain', 'not a domain')->call('saveDomain')->assertHasErrors(['domain' => 'regex']);
+
+        $this->assertSame(1, OidcDomain::count());
+    }
+
+    public function test_org_admins_move_a_domain_to_another_provider_and_delete_it(): void
+    {
+        $admin = User::factory()->orgAdmin()->create();
+        $okta = OidcProvider::factory()->for(Organization::current())->create();
+        $entra = OidcProvider::factory()->for(Organization::current())->create(['name' => 'Entra ID']);
+        $domain = OidcDomain::factory()->for($okta, 'provider')->create(['domain' => 'acme.com']);
+
+        $component = Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')
+            ->call('editDomain', $domain->id)
+            ->assertSet('domain', 'acme.com')
+            ->set('domainProviderId', $entra->id)
+            ->call('saveDomain')
+            ->assertHasNoErrors();
+
+        $this->assertSame($entra->id, $domain->refresh()->oidc_provider_id);
+
+        $component->call('deleteDomain', $domain->id);
+
+        $this->assertModelMissing($domain);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'oidc_provider.domain_deleted', 'subject_label' => 'acme.com']);
+    }
+
+    public function test_deleting_a_provider_deletes_its_domains(): void
+    {
+        $admin = User::factory()->orgAdmin()->create();
+        $provider = OidcProvider::factory()->for(Organization::current())->create();
+        $domain = OidcDomain::factory()->for($provider, 'provider')->create();
+
+        Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')->call('delete', $provider->id);
+
+        $this->assertModelMissing($domain);
+    }
+
+    public function test_members_cannot_add_email_domains(): void
+    {
+        $member = User::factory()->orgMember()->create();
+        $provider = OidcProvider::factory()->for(Organization::current())->create();
+
+        Livewire::actingAs($member)->test('pages::admin.sign-in-providers')
+            ->set('domain', 'acme.com')
+            ->set('domainProviderId', $provider->id)
+            ->call('saveDomain')
+            ->assertForbidden();
+
+        $this->assertSame(0, OidcDomain::count());
     }
 }
