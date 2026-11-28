@@ -38,7 +38,7 @@ return [
         'title' => 'Masking',
         'subheading' => 'Values that match these names or patterns show as ******** in run logs, the API, and MCP in every workspace, and are removed when the run ends.',
         'built_in' => 'Built-in rules',
-        'built_in_summary' => ':names names and :patterns value patterns, masked in every workspace. They can\'t be removed.',
+        'built_in_summary' => 'Names and value patterns, masked in every workspace. They can\'t be removed.',
         'names' => 'Names',
         'names_help' => 'Masks the value of any key with one of these names, wherever it appears: in headers, bodies, queries, or forms.',
         'names_exception' => 'A name can be a false alarm, like next_page_token. To let one value through, add its path to Never mask on the node\'s Masking tab.',

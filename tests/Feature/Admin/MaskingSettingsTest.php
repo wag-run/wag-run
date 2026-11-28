@@ -16,7 +16,7 @@ class MaskingSettingsTest extends TestCase
     {
         $this->actingAs(User::factory()->orgAdmin()->create())->get(route('admin.masking'))
             ->assertOk()
-            ->assertSeeInOrder(['data-test="built-in-rules"', '19 names and 10 value patterns',
+            ->assertSeeInOrder(['data-test="built-in-rules"', __('admin.masking.built_in_summary'),
                 'data-test="built-in-names"', 'Proxy-Authorization', 'client_secret', '*_token', __('admin.masking.names_exception'),
                 'data-test="built-in-value_patterns"', 'X-Amz-Signature', __('admin.masking.value_patterns_exception'),
                 'data-test="organization-names"'], false);

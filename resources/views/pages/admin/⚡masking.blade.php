@@ -90,7 +90,7 @@ new class extends Component {
                     <flux:icon.lock-closed variant="micro" class="shrink-0 text-zinc-500 dark:text-zinc-400" />
                     <span class="min-w-0 flex-1">
                         <flux:heading size="sm" class="inline">{{ __('admin.masking.built_in') }}</flux:heading>
-                        <flux:text class="text-xs">{{ __('admin.masking.built_in_summary', ['names' => count($builtInNames), 'patterns' => count(Redactor::VALUE_PATTERNS)]) }}</flux:text>
+                        <flux:text class="text-xs">{{ __('admin.masking.built_in_summary') }}</flux:text>
                     </span>
                     <flux:icon.chevron-down variant="micro" class="shrink-0 text-zinc-500 transition-transform group-open:rotate-180 dark:text-zinc-400" />
                 </summary>
