@@ -12,7 +12,9 @@ use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
- * Finds or creates the user an OIDC sign-in belongs to.
+ * Finds or creates the user an OIDC sign-in belongs to. A provider with email
+ * domains turns away any other address first, on every sign-in, including
+ * people linked before the domains were set.
  *
  * 1. A user already linked to the provider's subject signs in.
  * 2. Otherwise a user whose email matches is linked, but only when the
@@ -33,6 +35,10 @@ class OidcSignIn
         $subject = (string) $claims['sub'];
         $email = is_string($claims['email'] ?? null) ? Str::lower(trim($claims['email'])) : null;
         $emailTrusted = $email && (in_array($claims['email_verified'] ?? false, [true, 'true'], true) || $provider->trust_email);
+
+        if (! $provider->acceptsEmail($email)) {
+            throw new RuntimeException(__('oidc.name_doesn_t_accept_this_email', ['name' => $provider->name]));
+        }
 
         $identity = OidcIdentity::query()->with('user')->where('oidc_provider_id', $provider->id)->where('subject', $subject)->first();
 
