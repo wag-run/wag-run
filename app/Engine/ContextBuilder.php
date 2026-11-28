@@ -19,7 +19,8 @@ use Illuminate\Database\Eloquent\Collection;
  *
  *     trigger            the execution's input
  *     nodes.<id>.output  the latest output of that node visible from this step;
- *                        a finished loop's includes its results (LoopResults)
+ *                        a finished loop's includes its results and last,
+ *                        which load when they are read (LoopResults)
  *     vars.<name>        the run's workflow variables, read when used (see VariableData)
  *     store.<key>        the workspace's data store, read when used (see StoreData)
  *     secrets.<key>      workspace secrets (in memory only; masked in logs)
@@ -29,7 +30,7 @@ use Illuminate\Database\Eloquent\Collection;
  *     item, loop         inside a For loop: the current item, and loop.index
  *                        and loop.count. Inside a While loop: loop.index
  *                        and loop.previous (the pass before, each node as
- *                        in nodes.<id>)
+ *                        in nodes.<id>, loaded when it is read)
  *     error              for steps reached through an error output
  *
  * Values masked in the run's rows (see Redactor) are put back from
@@ -159,7 +160,7 @@ class ContextBuilder
 
             $data['loop'] ??= [
                 'index' => $index,
-                'previous' => $index > 0 ? $results->nodesIn(Scope::forIteration(Scope::parent($at), $frame['loop_step_id'], $index - 1)) : null,
+                'previous' => $index > 0 ? new IterationNodes(fn () => $results->nodesIn(Scope::forIteration(Scope::parent($at), $frame['loop_step_id'], $index - 1))) : null,
             ];
         }
 

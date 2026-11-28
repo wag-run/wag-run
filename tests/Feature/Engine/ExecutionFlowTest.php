@@ -2,12 +2,19 @@
 
 namespace Tests\Feature\Engine;
 
+use App\Engine\ContextBuilder;
+use App\Engine\Coordinator;
 use App\Engine\Engine;
 use App\Engine\LoopResults;
+use App\Engine\NodeContext;
+use App\Engine\NodeRegistry;
+use App\Engine\Templates\DataBag;
+use App\Engine\Templates\TemplateEngine;
 use App\Enums\ExecutionStatus;
 use App\Enums\StepStatus;
 use App\Services\Workflows;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\Concerns\RunsWorkflows;
 use Tests\TestCase;
 
@@ -285,11 +292,91 @@ class ExecutionFlowTest extends TestCase
             });
         };
 
-        $this->assertSame(LoopResults::for($execution)->outputOf($outer), $byScope()->outputOf($outer));
+        $this->assertSame(LoopResults::for($execution)->outputOf($outer), DataBag::unwrap($byScope()->outputOf($outer)));
         $this->assertSame([["L{$outer->id}.", null]], $asked, 'the loops inside came with the one load, and the other loop was never read');
 
-        $this->assertSame(LoopResults::for($execution)->nodesIn("L{$outer->id}.1"), $byScope()->nodesIn("L{$outer->id}.1"));
+        $this->assertSame(LoopResults::for($execution)->nodesIn("L{$outer->id}.1"), DataBag::unwrap($byScope()->nodesIn("L{$outer->id}.1")));
         $this->assertSame([["L{$outer->id}.1/", "L{$outer->id}.1"]], $asked, 'one iteration asks for itself and what is nested in it');
+    }
+
+    public function test_results_loaded_by_scope_load_nothing_until_read_and_then_one_iteration_at_a_time(): void
+    {
+        $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
+            [
+                'start' => 'start',
+                'outer' => ['each', ['items' => [['a', 'b'], ['c']]]],
+                'inner' => ['each', ['items_from_item' => true]],
+                'body' => 'emit',
+                'none' => ['each', ['items' => []]],
+            ],
+            ['start->outer', 'outer:item->inner', 'inner:item->body', 'outer:done->none'],
+        )));
+        $outer = $this->stepFor($execution, 'outer');
+        $steps = $execution->steps()->orderBy('id')->get();
+        $asked = [];
+        $results = LoopResults::loadedBy(function (string $prefix, ?string $scope) use ($steps, &$asked) {
+            $asked[] = [$prefix, $scope];
+
+            return $steps->filter(fn ($step) => str_starts_with($step->scope_key, $prefix) || $step->scope_key === $scope);
+        });
+
+        $output = $results->outputOf($outer);
+
+        $this->assertSame([2, 2, []], [$output['count'], count($output['results']), $asked], 'how many iterations ran is known without loading any');
+        $this->assertSame('c', $output['last']['inner']['output']['last']['body']['output']['item']);
+        $this->assertSame([["L{$outer->id}.1/", "L{$outer->id}.1"]], $asked, 'last loads the final iteration, and the loop inside it comes with it');
+        $this->assertSame('b', $output['results'][0]['inner']['output']['results'][1]['body']['output']['item']);
+        $this->assertNull($output['results'][2]);
+        $this->assertSame([["L{$outer->id}.1/", "L{$outer->id}.1"], ["L{$outer->id}.0/", "L{$outer->id}.0"]], $asked, 'one entry loads its own iteration');
+        $this->assertSame(json_encode(LoopResults::for($execution)->outputOf($outer)), json_encode($output), 'saved as it stands, it is the plain results');
+
+        $asked = [];
+
+        $this->assertSame(['results' => [], 'count' => 0, 'last' => null], $results->outputOf($this->stepFor($execution, 'none')));
+        $this->assertSame([], $asked, 'a loop that never ran has nothing to load');
+    }
+
+    public function test_a_step_after_a_loop_loads_the_loops_steps_only_when_it_reads_its_results(): void
+    {
+        $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
+            ['start' => 'start', 'each' => ['each', ['items' => ['a', 'b']]], 'body' => 'emit', 'after' => ['core.compose', ['template' => 'done']]],
+            ['start->each', 'each:item->body', 'each:done->after'],
+        )));
+        $engine = app(TemplateEngine::class);
+        $loads = fn (): int => count(array_filter(DB::getQueryLog(), fn (array $query) => str_contains($query['query'], ' like ')));
+
+        DB::enableQueryLog();
+        $data = app(ContextBuilder::class)->build($this->stepFor($execution, 'after'));
+
+        $this->assertSame([2, 2], [$engine->evaluate('nodes.each.output.count', $data), $engine->evaluate('length(nodes.each.output.results)', $data)]);
+        $this->assertSame(0, $loads(), 'a step that reads no results loads none of the loop');
+        $this->assertSame('b', $engine->evaluate('nodes.each.output.last.body.output.item', $data));
+        $this->assertSame(1, $loads());
+        $this->assertSame(['a', 'b'], $engine->evaluate("column(column(column(nodes.each.output.results, 'body'), 'output'), 'item')", $data));
+        $this->assertSame(2, $loads(), 'the whole list is one more load');
+    }
+
+    public function test_a_node_reads_other_nodes_as_plain_values(): void
+    {
+        $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
+            ['start' => 'start', 'each' => ['each', ['items' => ['a', 'b']]], 'body' => 'emit', 'after' => 'emit'],
+            ['start->each', 'each:item->body', 'each:done->after'],
+        )));
+        $after = $this->stepFor($execution, 'after');
+        $each = ['output' => LoopResults::for($execution)->outputOf($this->stepFor($execution, 'each')), 'port' => 'done'];
+
+        $context = new NodeContext(
+            $after,
+            $execution,
+            app(Coordinator::class)->graphFor($execution)->node('after'),
+            app(NodeRegistry::class)->make($after->node_type),
+            app(ContextBuilder::class)->build($after),
+            app(TemplateEngine::class),
+        );
+
+        $this->assertSame($each, $context->outputOf('each'));
+        $this->assertSame($each, $context->data()['nodes']['each']);
+        $this->assertNull($context->outputOf('body'), 'a node inside the loop is not visible after it');
     }
 
     public function test_a_run_that_ends_in_a_loop_returns_the_loops_results(): void

@@ -26,7 +26,10 @@ use Closure;
  *
  * The steps come from a list, from the whole run (for), or from the
  * scopes that are asked for (loadedBy), which a step of a run in flight
- * uses so that it never reads the rest of the run.
+ * uses so that it never reads the rest of the run. Loaded by scope, a
+ * loop's results and last are values that load when an expression reads
+ * them (IterationList, IterationNodes), so a step that reads neither
+ * loads nothing for the loop.
  */
 class LoopResults
 {
@@ -70,7 +73,8 @@ class LoopResults
 
     /**
      * Loads only the steps a loop's results or one iteration need, when
-     * they are asked for.
+     * they are asked for. outputOf() then gives a loop's results and last
+     * as values that load when they are read.
      *
      * @param  Closure(string $prefix, string|null $scope): iterable<ExecutionStep>  $stepsUnder  the run's completed steps, oldest first, in every scope that starts with $prefix and, when given, in $scope itself
      */
@@ -104,15 +108,50 @@ class LoopResults
             return $step->output;
         }
 
-        $this->load(Scope::iterationsOf($step->scope_key, $step->id));
+        if ($this->stepsUnder !== null && $count > 0) {
+            return [
+                'results' => new IterationList($count, fn (int $index) => $this->iteration($step, $index), fn () => $this->everyIteration($step, $count)),
+                ...$step->output,
+                'last' => new IterationNodes(fn () => $this->iteration($step, $count - 1)),
+            ];
+        }
+
+        $results = $this->everyIteration($step, $count);
+
+        return ['results' => $results, ...$step->output, 'last' => $results === [] ? null : $results[count($results) - 1]];
+    }
+
+    /**
+     * The nodes of every iteration of a loop, in order, read with one
+     * load.
+     *
+     * @return list<array<string, array{output: mixed, port: string|null}>>
+     */
+    protected function everyIteration(ExecutionStep $loop, int $count): array
+    {
+        if ($count === 0) {
+            return [];
+        }
+
+        $this->load(Scope::iterationsOf($loop->scope_key, $loop->id));
 
         $results = [];
 
         for ($index = 0; $index < $count; $index++) {
-            $results[] = $this->nodesIn(Scope::forIteration($step->scope_key, $step->id, $index));
+            $results[] = $this->iteration($loop, $index);
         }
 
-        return ['results' => $results, ...$step->output, 'last' => $results === [] ? null : $results[count($results) - 1]];
+        return $results;
+    }
+
+    /**
+     * The nodes of one iteration of a loop.
+     *
+     * @return array<string, array{output: mixed, port: string|null}>
+     */
+    protected function iteration(ExecutionStep $loop, int $index): array
+    {
+        return $this->nodesIn(Scope::forIteration($loop->scope_key, $loop->id, $index));
     }
 
     /**
