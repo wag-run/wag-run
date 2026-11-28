@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Http\Controllers\SignInEmailController;
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\SignInOptions;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -63,7 +65,16 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureViews(): void
     {
-        Fortify::loginView(fn () => view('pages::auth.login'));
+        Fortify::loginView(function (Request $request) {
+            $email = $request->session()->get(SignInEmailController::SESSION_KEY);
+            $options = app(SignInOptions::class);
+
+            return view('pages::auth.login', [
+                'email' => $email,
+                'providers' => $email ? $options->providersFor($email) : collect(),
+                'claimingProvider' => $email ? $options->providerClaiming($email) : null,
+            ]);
+        });
         Fortify::verifyEmailView(fn () => view('pages::auth.verify-email'));
         Fortify::twoFactorChallengeView(fn () => view('pages::auth.two-factor-challenge'));
         Fortify::confirmPasswordView(fn () => redirect()->route('dashboard'));

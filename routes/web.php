@@ -4,6 +4,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventWebhookController;
 use App\Http\Controllers\OAuthConnectionController;
 use App\Http\Controllers\OidcController;
+use App\Http\Controllers\SignInEmailController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\WorkflowExportController;
 use App\Http\Controllers\WorkflowFileController;
@@ -24,6 +25,11 @@ Route::post('integrations/events/{key}', EventWebhookController::class)
     ->name('integrations.events');
 
 Route::livewire('forms/{key}', 'pages::forms.show')->name('forms.show');
+
+Route::middleware('guest')->group(function () {
+    Route::post('login/email', [SignInEmailController::class, 'store'])->name('login.email');
+    Route::delete('login/email', [SignInEmailController::class, 'destroy'])->name('login.email.destroy');
+});
 
 Route::middleware(['guest', 'throttle:30,1'])->prefix('auth/oidc/{provider}')->name('oidc.')->group(function () {
     Route::get('redirect', [OidcController::class, 'redirect'])->name('redirect');

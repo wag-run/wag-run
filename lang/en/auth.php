@@ -13,9 +13,11 @@ return [
     ],
     'login' => [
         'don_t_have_an_account' => 'Don\'t have an account?',
-        'enter_your_email_and_password' => 'Enter your email and password below to log in',
+        'choose_how_to_sign_in' => 'Choose how to sign in',
+        'enter_your_email_to_continue' => 'Enter your email to continue',
         'forgot_your_password' => 'Forgot your password?',
         'log_in_to_your_account' => 'Log in to your account',
+        'not_you' => 'Not you?',
         'or' => 'or',
         'remember_me' => 'Remember me',
         'sign_in_with_name' => 'Sign in with :name',
