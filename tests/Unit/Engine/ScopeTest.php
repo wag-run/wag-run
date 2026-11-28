@@ -39,4 +39,13 @@ class ScopeTest extends TestCase
             $this->assertSame(Scope::canSee('L1.0/L2.1/L3.4', $other), in_array($other, Scope::visibleFrom('L1.0/L2.1/L3.4'), true), $other);
         }
     }
+
+    public function test_every_iteration_of_a_loop_starts_with_a_prefix_no_other_loop_shares(): void
+    {
+        $this->assertSame('L1.', Scope::iterationsOf('', 1));
+        $this->assertSame('L3.0/L12.', Scope::iterationsOf('L3.0', 12));
+
+        $this->assertStringStartsWith(Scope::iterationsOf('', 1), Scope::forIteration('', 1, 10));
+        $this->assertStringStartsNotWith(Scope::iterationsOf('', 1), Scope::forIteration('', 12, 0), 'loop 12 is not loop 1');
+    }
 }

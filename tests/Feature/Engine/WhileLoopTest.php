@@ -134,7 +134,7 @@ class WhileLoopTest extends TestCase
             ['start' => 'start', 'outer' => ['core.while_loop', ['condition' => '{{ loop.index < 1 }}', 'check_after' => true]],
                 'inner' => ['core.while_loop', ['condition' => '{{ nodes.tick.output.value < 2 }}', 'check_after' => true]],
                 'tick' => ['core.compose', ['template' => '{{ loop.index + 1 }}']],
-                'tail' => ['core.compose', ['template' => '{{ loop.index }}:{{ nodes.inner.output.count }}:{{ loop.previous.inner.output.count ?? "none" }}']]],
+                'tail' => ['core.compose', ['template' => '{{ loop.index }}:{{ nodes.inner.output.count }}:{{ loop.previous.inner.output.count ?? "none" }}:{{ loop.previous.inner.output.last.tick.output.value ?? "none" }}']]],
             ['start->outer', 'outer:pass->inner', 'inner:pass->tick', 'inner:done->tail'],
         )));
 
@@ -142,7 +142,7 @@ class WhileLoopTest extends TestCase
 
         $this->assertSame(ExecutionStatus::Complete, $execution->status);
         $this->assertSame([1, 2, 1, 2], $execution->steps()->where('node_id', 'tick')->orderBy('id')->get()->map(fn ($step) => $step->output['value'])->all());
-        $this->assertSame(['0:2:none', '1:2:2'], $execution->steps()->where('node_id', 'tail')->orderBy('id')->get()->map(fn ($step) => $step->output['value'])->all());
+        $this->assertSame(['0:2:none:none', '1:2:2:2'], $execution->steps()->where('node_id', 'tail')->orderBy('id')->get()->map(fn ($step) => $step->output['value'])->all());
         $this->assertSame(2, $outer['count']);
         $this->assertSame(2, $outer['results'][1]['inner']['output']['last']['tick']['output']['value']);
         $this->assertSame($outer['results'][1], $outer['last']);

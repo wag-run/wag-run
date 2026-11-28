@@ -259,6 +259,39 @@ class ExecutionFlowTest extends TestCase
         $this->assertEqualsCanonicalizing(['start', 'first'], $readers[1]->output['saw'], 'the reader from the first iteration is not visible in the second');
     }
 
+    public function test_results_loaded_by_scope_ask_only_for_the_steps_under_what_is_read(): void
+    {
+        $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
+            [
+                'start' => 'start',
+                'outer' => ['each', ['items' => [['a', 'b'], ['c']]]],
+                'inner' => ['each', ['items_from_item' => true]],
+                'body' => 'emit',
+                'other' => ['each', ['items' => ['x']]],
+                'tail' => 'emit',
+            ],
+            ['start->outer', 'outer:item->inner', 'inner:item->body', 'outer:done->other', 'other:item->tail'],
+        )));
+        $outer = $this->stepFor($execution, 'outer');
+        $steps = $execution->steps()->orderBy('id')->get();
+        $asked = [];
+        $byScope = function () use ($steps, &$asked): LoopResults {
+            $asked = [];
+
+            return LoopResults::loadedBy(function (string $prefix, ?string $scope) use ($steps, &$asked) {
+                $asked[] = [$prefix, $scope];
+
+                return $steps->filter(fn ($step) => str_starts_with($step->scope_key, $prefix) || $step->scope_key === $scope);
+            });
+        };
+
+        $this->assertSame(LoopResults::for($execution)->outputOf($outer), $byScope()->outputOf($outer));
+        $this->assertSame([["L{$outer->id}.", null]], $asked, 'the loops inside came with the one load, and the other loop was never read');
+
+        $this->assertSame(LoopResults::for($execution)->nodesIn("L{$outer->id}.1"), $byScope()->nodesIn("L{$outer->id}.1"));
+        $this->assertSame([["L{$outer->id}.1/", "L{$outer->id}.1"]], $asked, 'one iteration asks for itself and what is nested in it');
+    }
+
     public function test_a_run_that_ends_in_a_loop_returns_the_loops_results(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(
