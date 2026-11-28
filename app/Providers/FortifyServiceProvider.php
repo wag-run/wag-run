@@ -65,6 +65,10 @@ class FortifyServiceProvider extends ServiceProvider
                 throw ValidationException::withMessages([Fortify::username() => __('auth.session.this_account_has_been_deactivated')]);
             }
 
+            if ($user->organizations()->exists() && ! $user->organizations()->wherePivotNull('deactivated_at')->get()->contains(fn (Organization $organization) => $organization->password_sign_in)) {
+                throw ValidationException::withMessages([Fortify::username() => __('auth.login.your_organization_signs_in_with')]);
+            }
+
             return $user;
         });
     }
@@ -86,12 +90,19 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::loginView(function (Request $request) {
             $email = $request->session()->get(SignInEmailController::SESSION_KEY);
-            $options = app(SignInOptions::class);
+            $options = $email ? app(SignInOptions::class)->forEmail($email) : null;
+
+            // The only way in is one provider: go straight there, unless the page has something to say.
+            if ($options && ! $options['passwordAllowed'] && $options['providers']->count() === 1
+                && ! $request->session()->has('errors') && ! $request->session()->has('status')) {
+                return redirect()->route('oidc.redirect', $options['providers']->first());
+            }
 
             return view('pages::auth.login', [
                 'email' => $email,
-                'providers' => $email ? $options->providersFor($email) : collect(),
-                'claimingProvider' => $email ? $options->providerClaiming($email) : null,
+                'providers' => $options['providers'] ?? collect(),
+                'claimingProvider' => $options['claimingProvider'] ?? null,
+                'passwordAllowed' => $options['passwordAllowed'] ?? true,
             ]);
         });
         Fortify::verifyEmailView(fn () => view('pages::auth.verify-email'));

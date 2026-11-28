@@ -89,6 +89,7 @@ new class extends Component {
     public function generateResetLink(string $userId, UserDirectory $directory): void
     {
         $this->authorize('org-admin');
+        abort_unless(Organization::current()->password_sign_in, 404);
 
         $user = $this->findUser($userId);
         $this->resetLink = $directory->passwordResetLink($user);
@@ -169,7 +170,9 @@ new class extends Component {
                                     @else
                                         <flux:menu.item wire:click="promote('{{ $listedUser->id }}')">{{ __('admin.users.promote_to_organization_admin') }}</flux:menu.item>
                                     @endif
-                                    <flux:menu.item icon="key" wire:click="generateResetLink('{{ $listedUser->id }}')">{{ __('admin.users.generate_password_reset_link') }}</flux:menu.item>
+                                    @if (\App\Models\Organization::current()->password_sign_in)
+                                        <flux:menu.item icon="key" wire:click="generateResetLink('{{ $listedUser->id }}')">{{ __('admin.users.generate_password_reset_link') }}</flux:menu.item>
+                                    @endif
                                     <flux:menu.separator />
                                     @if ($membership->deactivated_at)
                                         <flux:menu.item wire:click="reactivate('{{ $listedUser->id }}')">{{ __('admin.users.reactivate') }}</flux:menu.item>

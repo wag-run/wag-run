@@ -50,6 +50,10 @@
 
             <flux:error name="email" />
 
+            @if ($providers->isEmpty() && ! $passwordAllowed)
+                <flux:callout variant="secondary" icon="information-circle" :heading="__('auth.login.there_s_no_way_for')" />
+            @endif
+
             @if ($providers->isNotEmpty())
                 <div class="flex flex-col gap-2">
                     @foreach ($providers as $provider)
@@ -58,9 +62,12 @@
                         </flux:button>
                     @endforeach
                 </div>
-                <flux:separator :text="__('auth.login.or')" />
+                @if ($passwordAllowed)
+                    <flux:separator :text="__('auth.login.or')" />
+                @endif
             @endif
 
+            @if ($passwordAllowed)
             <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-6">
                 @csrf
 
@@ -92,6 +99,7 @@
                     {{ __('common.log_in') }}
                 </flux:button>
             </form>
+            @endif
         @endif
     </div>
 </x-layouts::auth>
