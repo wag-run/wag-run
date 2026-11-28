@@ -46,7 +46,7 @@ To add one:
    | **Client ID** and **Client secret** | From the provider. When editing, leave the secret empty to keep the current one. |
    | **Scopes** | Defaults to `openid email profile` |
    | **Show on the sign-in page** | Whether the button appears |
-   | **Create accounts for new people** | When on, someone who signs in with the provider for the first time gets an account, as an organization Member with no workspace access. When off, only people who already have an account can sign in this way. |
+   | **Create accounts for new people** | When on, someone who signs in with the provider for the first time gets an account, as an organization Member with no workspace access. People without an account only see the provider if their email is on one of its [email domains](#email-domains), so add those too. When off, only people who already have an account can sign in this way. |
    | **Trust email addresses from this provider** | Link sign-ins to existing accounts by email even when the provider doesn't mark the email as verified. Turn this on only for a provider your organization controls. |
 
 4. Click **Save**, then **Check discovery** to confirm wag.run can reach the provider.
@@ -176,7 +176,13 @@ The providers table's **Domains** column shows each provider's first domain and 
 
 Each domain belongs to one provider, so to move a domain, remove it from its provider and add it to the other. Domains match exactly: `acme.com` doesn't cover `eu.acme.com`, which needs adding too. Deleting a provider deletes its domains.
 
-Domains also shape the sign-in page. People enter their email first, and then see only the providers that accept it: the one whose domains include their email comes first, and providers whose domains don't include it aren't offered. The email goes to the provider as a hint, so its sign-in page can fill it in. What the page offers depends only on the email's domain, never on whether it has an account, so it can't be used to find out who has one.
+Domains also shape the sign-in page. People enter their email first, and the page then shows the providers that accept it:
+
+- **Someone with an account** sees their organization's providers that accept their email, with the one whose domains include it first.
+- **Someone without an account, whose email is on a provider's domain,** sees that provider, and providers with no domains, the same as someone with an account on that domain would.
+- **Anyone else** sees only the password field, which fails for an email with no account the same way as a wrong password.
+
+Providers whose domains don't include the email are never offered. The email goes to the provider as a hint, so its sign-in page can fill it in. For an email on a provider's domain, the page is the same whether or not it has an account, so it can't be used to find out who has one.
 
 ## Email
 
