@@ -5,6 +5,7 @@ namespace Tests\Feature\Invitations;
 use App\Enums\OrgRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Invitation;
+use App\Models\Organization;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Invitations;
@@ -114,13 +115,81 @@ class AcceptInvitationTest extends TestCase
         $this->get(route('invitations.show', 'not-a-real-token'))->assertOk()->assertSee('Invitation unavailable');
     }
 
-    public function test_inviting_an_existing_account_is_rejected(): void
+    public function test_inviting_someone_already_in_the_organization_is_rejected(): void
     {
         User::factory()->orgMember()->create(['email' => 'exists@example.com']);
 
         $this->expectException(ValidationException::class);
 
         $this->invite('exists@example.com');
+    }
+
+    /**
+     * Someone who signed up with their own organization, then is invited by
+     * another one.
+     */
+    private function someoneInAnotherOrganization(): User
+    {
+        $own = Organization::factory()->create(['name' => 'Own']);
+        $ownWorkspace = Workspace::factory()->for($own)->create();
+        $user = User::factory()->memberOf($ownWorkspace, WorkspaceRole::Admin)->create(['name' => 'Ada Lovelace', 'email' => 'ada@example.com']);
+        $user->forceFill(['current_organization_id' => $own->id, 'current_workspace_id' => $ownWorkspace->id])->save();
+
+        return $user;
+    }
+
+    public function test_accepting_a_workspace_invitation_takes_someone_into_the_inviting_organization(): void
+    {
+        $inviting = Organization::factory()->create(['name' => 'Inviting']);
+        $workspace = Workspace::factory()->for($inviting)->create();
+        [, $token] = $this->invite('ada@example.com', $workspace);
+        $user = $this->someoneInAnotherOrganization();
+
+        Livewire::actingAs($user)
+            ->test('pages::invitations.show', ['token' => $token])
+            ->call('accept')
+            ->assertHasNoErrors()
+            ->assertRedirectToRoute('dashboard');
+
+        $user->refresh();
+        $this->assertSame($inviting->id, $user->current_organization_id);
+        $this->assertSame($workspace->id, $user->current_workspace_id);
+        $this->assertSame(1, $user->workspaces()->where('organization_id', $inviting->id)->count());
+        $this->actingAs($user)->get(route('dashboard'))->assertRedirect(route('workspaces.show', $workspace));
+    }
+
+    public function test_accepting_an_organization_invitation_gives_a_first_workspace_there(): void
+    {
+        Notification::fake();
+        $inviting = Organization::factory()->create(['name' => 'Inviting']);
+        $inviter = User::factory()->create();
+        $inviter->organizations()->attach($inviting, ['role' => OrgRole::Admin->value]);
+        [, $token] = app(Invitations::class)->invite($inviting, 'ada@example.com', $inviter);
+        $user = $this->someoneInAnotherOrganization();
+
+        Livewire::actingAs($user)
+            ->test('pages::invitations.show', ['token' => $token])
+            ->call('accept')
+            ->assertHasNoErrors();
+
+        $user->refresh();
+        $workspace = $user->workspaces()->where('organization_id', $inviting->id)->sole();
+        $this->assertSame("Ada's workspace", $workspace->name);
+        $this->assertSame($inviting->id, $user->current_organization_id);
+        $this->assertSame($workspace->id, $user->current_workspace_id);
+    }
+
+    public function test_accepting_into_an_organization_with_stricter_sign_in_rules_asks_for_them(): void
+    {
+        $inviting = Organization::factory()->create(['name' => 'Inviting', 'two_factor' => 'required']);
+        $workspace = Workspace::factory()->for($inviting)->create();
+        [, $token] = $this->invite('ada@example.com', $workspace);
+        $user = $this->someoneInAnotherOrganization();
+
+        $this->actingAs($user)->withSession(['auth.signed_in_with' => ['method' => 'password']]);
+        Livewire::actingAs($user)->test('pages::invitations.show', ['token' => $token])->call('accept');
+
+        $this->get(route('dashboard'))->assertRedirect(route('security.edit'));
     }
 
     public function test_tokens_are_stored_hashed(): void
