@@ -180,7 +180,7 @@ Domains also shape the sign-in page. People enter their email first, and then se
 
 ## Email
 
-**Org settings → Email** sets the SMTP server wag.run sends through: for invitations, approval and task emails, notification emails, and **Send email** nodes. Workspaces can add their own SMTP server for **Send email** nodes under [Credentials](workspaces.md#credentials).
+**Org settings → Email** sets the SMTP server wag.run sends through: for invitations, password reset links, approval and task emails, notification emails, and **Send email** nodes. Workspaces can add their own SMTP server for **Send email** nodes under [Credentials](workspaces.md#credentials).
 
 1. Turn on **Send through my SMTP server**.
 2. Enter the **Host**, **Port**, **Encryption** (**STARTTLS**, usually port 587, or **SSL/TLS**, usually port 465), **Username**, **Password**, **From address**, and **From name**.

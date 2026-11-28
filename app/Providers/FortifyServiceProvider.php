@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Http\Controllers\SignInEmailController;
+use App\Http\Responses\PasswordResetLinkRequestedResponse;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\SignInOptions;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Laravel\Fortify\Contracts\FailedPasswordResetLinkRequestResponse;
+use Laravel\Fortify\Contracts\SuccessfulPasswordResetLinkRequestResponse;
 use Laravel\Fortify\Fortify;
 
 class FortifyServiceProvider extends ServiceProvider
@@ -33,6 +36,7 @@ class FortifyServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureActions();
+        $this->configureResponses();
         $this->configureViews();
         $this->configureRateLimiting();
     }
@@ -48,7 +52,12 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::authenticateUsing(function (Request $request): ?User {
             $user = User::query()->where('email', Str::lower((string) $request->input(Fortify::username())))->first();
 
-            if (! $user || ! Hash::check((string) $request->input('password'), $user->password)) {
+            // Check the password even when there's no account, against a throwaway hash, so a wrong
+            // email takes as long as a wrong password and the timing doesn't reveal who has an account.
+            static $throwawayHash = null;
+            $passwordMatches = Hash::check((string) $request->input('password'), $user->password ?? ($throwawayHash ??= Hash::make(Str::random(40))));
+
+            if (! $user || ! $passwordMatches) {
                 return null;
             }
 
@@ -58,6 +67,16 @@ class FortifyServiceProvider extends ServiceProvider
 
             return $user;
         });
+    }
+
+    /**
+     * Answer every password reset link request the same way, so the form can't
+     * be used to find out who has an account.
+     */
+    private function configureResponses(): void
+    {
+        $this->app->singleton(SuccessfulPasswordResetLinkRequestResponse::class, PasswordResetLinkRequestedResponse::class);
+        $this->app->singleton(FailedPasswordResetLinkRequestResponse::class, PasswordResetLinkRequestedResponse::class);
     }
 
     /**

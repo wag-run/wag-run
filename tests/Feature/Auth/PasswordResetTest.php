@@ -3,7 +3,8 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
-use Illuminate\Auth\Notifications\ResetPassword;
+use App\Notifications\ResetPasswordNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -38,7 +39,7 @@ class PasswordResetTest extends TestCase
 
         $this->post(route('password.request'), ['email' => $user->email]);
 
-        Notification::assertSentTo($user, ResetPassword::class, function ($notification) {
+        Notification::assertSentTo($user, ResetPasswordNotification::class, function ($notification) {
             $response = $this->get(route('password.reset', $notification->token));
 
             $response->assertOk()->assertSee('name="token" value="'.$notification->token.'"', false);
@@ -71,7 +72,7 @@ class PasswordResetTest extends TestCase
 
         $this->post(route('password.request'), ['email' => $user->email]);
 
-        Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
+        Notification::assertSentTo($user, ResetPasswordNotification::class, function ($notification) use ($user) {
             $response = $this->post(route('password.update'), [
                 'token' => $notification->token,
                 'email' => $user->email,
@@ -87,5 +88,31 @@ class PasswordResetTest extends TestCase
         });
 
         $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
+    }
+
+    public function test_a_reset_link_request_gets_the_same_answer_with_or_without_an_account(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create();
+        $answer = "If that email has an account, we've sent a reset link.";
+
+        $this->post(route('password.request'), ['email' => 'nobody@example.com'])
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('status', $answer);
+
+        $this->post(route('password.request'), ['email' => $user->email])
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('status', $answer);
+
+        $this->post(route('password.request'), ['email' => $user->email])
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('status', $answer);
+
+        Notification::assertSentToTimes($user, ResetPasswordNotification::class, 1);
+    }
+
+    public function test_the_reset_email_is_queued(): void
+    {
+        $this->assertInstanceOf(ShouldQueue::class, new ResetPasswordNotification('token'));
     }
 }
