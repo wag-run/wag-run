@@ -189,6 +189,29 @@ Fires when a GitHub Actions run fails. Set **Actions workflow** (its name, such 
 
 A workflow that a GitHub trigger starts, and that changes the same repository, can start itself again, for example by creating a tag. Each workflow can start only so many [runs a minute](runs.md#runs-per-minute), but check that its actions can't fire its own trigger.
 
+## Google
+
+### New row in sheet
+
+Fires when a row is added to a sheet of a Google Sheets spreadsheet. It's under **Triggers › Other apps › Google** in the palette, and needs a **Google account**, which you can connect right from the node with **Connect Google** (see [Connecting an account](workspaces.md#connecting-an-account)), the **Spreadsheet**'s URL or ID, and the **Sheet**'s name.
+
+Google Sheets doesn't send webhooks, so wag.run reads the sheet every **Check every (minutes)**, 5 by default, and remembers how many rows it had. Each row below those is new, and starts a run, up to 100 a check: the rest start runs at the next check. The first check after publishing only notes what's already there, so publishing doesn't start runs for old rows. Under **Trigger URLs** in the [workflow settings](editor.md#workflow-settings), the trigger shows when it last checked, and what's wrong if it isn't working.
+
+The run gets the row as [Read rows from sheet](actions.md#read-rows-from-sheet) gives it:
+
+| Placeholder | What it holds |
+|---|---|
+| `trigger.row` | The row's number in the sheet |
+| `trigger.value` | The row's values by the headers in the sheet's first row, such as `trigger.value.Email`, or `trigger.value['First name']` for a header with a space |
+
+Because it counts rows, a few things are worth knowing:
+
+- A row is new as soon as anything is in it, so a row someone is still typing in can start a run with only its first values. Add rows in one go, such as from a form or another app, or have the workflow wait or check the row first.
+- Deleting rows lowers the count, so rows added in their place are new again.
+- Inserting a row between others pushes the last row down, and that last row is taken for new.
+
+A workflow that this trigger starts, and that adds a row to the same sheet with [Add row to sheet](actions.md#add-row-to-sheet), starts itself again.
+
 ## Investbrain
 
 ### New transaction
