@@ -34,6 +34,11 @@ class SignInOptions
      * The organizations an email's account is active in, by name. Someone in
      * more than one picks which to sign in to.
      *
+     * The picker shows these names to anyone who types the email, before any
+     * sign-in. That is an accepted trade-off: few people are in several
+     * organizations, and asking for an emailed code first would slow every
+     * one of their sign-ins. Someone in one organization never sees a name.
+     *
      * @return Collection<int, Organization>
      */
     public function organizationsOf(string $email): Collection
