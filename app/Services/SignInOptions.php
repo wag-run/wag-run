@@ -20,6 +20,13 @@ use Illuminate\Support\Str;
  *
  * An account wins over a domain claimed by another organization. Someone
  * deactivated everywhere gets the default, like an unknown email.
+ *
+ * Emails on a claimed domain always get the same page, account or not. An
+ * account off any claimed domain, at an organization whose options differ
+ * from the default (such as a provider with no domains), sees different
+ * options from an unknown email, which shows that the account exists. That's
+ * an accepted trade-off of showing an organization's own options before
+ * sign-in: hiding it would mean offering such people only the password.
  */
 class SignInOptions
 {
