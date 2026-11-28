@@ -185,10 +185,12 @@ When **Send through my SMTP server** is off, email uses the server's own mail co
 
 **Org settings → Masking** lists what runs mask in their logs, the API, and MCP, in every workspace. See [Secrets in logs](data-and-placeholders.md#secrets-in-logs) for how masking works.
 
-- **Built in** shows the header names, field names, and value patterns masked by default. They can't be removed from this list.
-- **Your organization's names** are header or field names to mask on top of those, such as `X-Tenant-Key`. Type one and click **Add name**, or click × on one to remove it. Each change saves right away. A name uses letters, numbers, dashes, underscores, and dots. Matching ignores case, dashes, and underscores, and a `*` at the start or end stands for any prefix or suffix, as in `*_key`. Names only: patterns aren't supported.
+- **Built-in rules**, collapsed until you open them, are on for every workspace and can't be removed. They come in two kinds:
+    - **Names**, such as **Authorization**, `token`, and `*_secret`. The value of any key with one of these names is masked wherever it appears: in headers, bodies, queries, or forms. A name can be a false alarm, such as `next_page_token`, so a node can let one value through (below).
+    - **Values that look like secrets**, such as a JWT, `Bearer …`, or a `ghp_` key. A value with that shape is masked whatever its key is called, and can't be let through: the value itself is the credential.
+- **Your organization's names** are names to mask on top of the built-in ones, such as `X-Tenant-Key`, and work the same way. Type one and click **Add name**, or click × on one to remove it. Each change saves right away. A name uses letters, numbers, dashes, underscores, and dots. Matching ignores case, dashes, and underscores, and a `*` at the start or end stands for any prefix or suffix, as in `*_key`. Names only: patterns aren't supported.
 
-Neither list can be turned off for a whole workflow. To stop a header or field name from masking one value, add that value's path to **Never mask** on the node's [**Masking**](editor.md#masking) tab. That works for built-in names and your organization's names alike. Value patterns, such as a JWT, are always masked.
+Nothing here can be turned off for a whole workflow. To let one value that a name matched through, add that value's path to **Never mask** on the node's [**Masking**](editor.md#masking) tab. That works for built-in names and your organization's names alike.
 
 ## General settings
 

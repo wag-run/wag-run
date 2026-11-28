@@ -84,25 +84,40 @@ new class extends Component {
 <section class="w-full">
     <x-pages::admin.layout :heading="__('admin.masking.title')" :subheading="__('admin.masking.subheading')">
         <div class="max-w-2xl space-y-8" data-test="masked-values">
-            <div class="space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-test="built-in-names">
-                <div class="space-y-1">
-                    <div class="flex items-center gap-2">
-                        <flux:icon.lock-closed variant="micro" class="text-zinc-500 dark:text-zinc-400" />
-                        <flux:heading size="sm">{{ __('admin.masking.built_in') }}</flux:heading>
-                    </div>
-                    <flux:text class="text-xs">{{ __('admin.masking.built_in_help') }}</flux:text>
-                </div>
-                @foreach (['headers' => Redactor::SENSITIVE_HEADERS, 'field_names' => Redactor::SENSITIVE_FIELDS, 'value_patterns' => Redactor::VALUE_PATTERNS] as $group => $names)
-                    <div class="space-y-2">
-                        <flux:text class="text-xs font-medium">{{ __('admin.masking.'.$group) }}</flux:text>
-                        <div class="flex flex-wrap gap-1.5">
-                            @foreach ($names as $builtIn)
-                                <flux:badge size="sm" class="font-mono">{{ $builtIn }}</flux:badge>
-                            @endforeach
+            @php($builtInNames = [...Redactor::SENSITIVE_HEADERS, ...Redactor::SENSITIVE_FIELDS])
+            <details class="group rounded-lg border border-zinc-200 dark:border-zinc-700" data-test="built-in-rules">
+                <summary class="flex cursor-pointer list-none items-center gap-2 px-4 py-3 [&::-webkit-details-marker]:hidden">
+                    <flux:icon.lock-closed variant="micro" class="shrink-0 text-zinc-500 dark:text-zinc-400" />
+                    <span class="min-w-0 flex-1">
+                        <flux:heading size="sm" class="inline">{{ __('admin.masking.built_in') }}</flux:heading>
+                        <flux:text class="text-xs">{{ __('admin.masking.built_in_summary', ['names' => count($builtInNames), 'patterns' => count(Redactor::VALUE_PATTERNS)]) }}</flux:text>
+                    </span>
+                    <flux:icon.chevron-down variant="micro" class="shrink-0 text-zinc-500 transition-transform group-open:rotate-180 dark:text-zinc-400" />
+                </summary>
+
+                <div class="grid gap-3 border-t border-zinc-200 p-4 md:grid-cols-2 dark:border-zinc-700">
+                    @foreach ([
+                        'names' => ['chips' => $builtInNames, 'icon' => 'lock-open'],
+                        'value_patterns' => ['chips' => Redactor::VALUE_PATTERNS, 'icon' => 'lock-closed'],
+                    ] as $group => $rule)
+                        <div class="flex flex-col gap-3 rounded-md bg-zinc-50 p-3 dark:bg-zinc-900" data-test="built-in-{{ $group }}">
+                            <div>
+                                <flux:heading size="sm">{{ __('admin.masking.'.$group) }}</flux:heading>
+                                <flux:text class="text-xs">{{ __('admin.masking.'.$group.'_help') }}</flux:text>
+                            </div>
+                            <div class="flex flex-wrap gap-1.5">
+                                @foreach ($rule['chips'] as $chip)
+                                    <flux:badge size="sm" class="font-mono">{{ $chip }}</flux:badge>
+                                @endforeach
+                            </div>
+                            <div class="mt-auto flex items-start gap-1.5">
+                                <flux:icon :icon="$rule['icon']" variant="micro" class="mt-0.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
+                                <flux:text class="text-xs">{{ __('admin.masking.'.$group.'_exception') }}</flux:text>
+                            </div>
                         </div>
-                    </div>
-                @endforeach
-            </div>
+                    @endforeach
+                </div>
+            </details>
 
             <div class="space-y-3">
                 <div>
