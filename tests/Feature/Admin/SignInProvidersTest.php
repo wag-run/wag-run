@@ -160,4 +160,59 @@ class SignInProvidersTest extends TestCase
 
         $this->assertSame(0, OidcDomain::count());
     }
+
+    public function test_creating_accounts_for_new_people_needs_an_email_domain(): void
+    {
+        $admin = User::factory()->orgAdmin()->create();
+        $provider = OidcProvider::factory()->for($this->organization())->create();
+
+        $component = Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')
+            ->call('edit', $provider->id)
+            ->set('allowRegistration', true)
+            ->call('save')
+            ->assertHasErrors('allowRegistration');
+
+        $this->assertFalse($provider->refresh()->allow_registration);
+
+        OidcDomain::factory()->for($provider, 'provider')->create(['domain' => 'acme.com']);
+
+        $component->call('edit', $provider->id)->set('allowRegistration', true)->call('save')->assertHasNoErrors();
+
+        $this->assertTrue($provider->refresh()->allow_registration);
+    }
+
+    public function test_a_new_provider_cant_create_accounts_until_it_has_a_domain(): void
+    {
+        $admin = User::factory()->orgAdmin()->create();
+
+        Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')
+            ->call('create')
+            ->set('name', 'Acme ID')
+            ->set('issuer', 'https://id.example.com')
+            ->set('clientId', 'wag-run')
+            ->set('clientSecret', 'shh-secret')
+            ->set('allowRegistration', true)
+            ->call('save')
+            ->assertHasErrors('allowRegistration');
+
+        $this->assertSame(0, OidcProvider::count());
+    }
+
+    public function test_removing_a_providers_last_domain_stops_it_creating_accounts(): void
+    {
+        $admin = User::factory()->orgAdmin()->create();
+        $provider = OidcProvider::factory()->for($this->organization())->allowingRegistration()->create();
+        $first = OidcDomain::factory()->for($provider, 'provider')->create(['domain' => 'acme.com']);
+        $last = OidcDomain::factory()->for($provider, 'provider')->create(['domain' => 'acme.io']);
+
+        $component = Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')
+            ->call('manageDomains', $provider->id)
+            ->call('deleteDomain', $first->id);
+
+        $this->assertTrue($provider->refresh()->allow_registration);
+
+        $component->call('deleteDomain', $last->id);
+
+        $this->assertFalse($provider->refresh()->allow_registration);
+    }
 }

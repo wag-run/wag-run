@@ -126,6 +126,12 @@ new class extends Component {
             $slug .= '-'.Str::lower(Str::random(4));
         }
 
+        if ($this->allowRegistration && (! $this->editingId || ! $this->findProvider($this->editingId)->domains()->exists())) {
+            $this->addError('allowRegistration', __('admin.sign_in_providers.add_an_email_domain_first'));
+
+            return;
+        }
+
         $provider = $this->editingId ? $this->findProvider($this->editingId) : $organization->oidcProviders()->make();
 
         $provider->fill([
@@ -227,6 +233,14 @@ new class extends Component {
         $domain = Organization::current()->oidcDomains()->with('provider')->findOrFail($id);
         $domain->delete();
         Audit::record('oidc_provider.domain_deleted', $domain, metadata: ['provider' => $domain->provider->name], label: $domain->domain);
+
+        $provider = $domain->provider;
+
+        if ($provider->allow_registration && ! $provider->domains()->exists()) {
+            $provider->update(['allow_registration' => false]);
+            Audit::record('oidc_provider.updated', $provider, metadata: ['changed' => ['allow_registration']]);
+            Flux::toast(text: __('admin.sign_in_providers.name_no_longer_creates_accounts', ['name' => $provider->name]));
+        }
     }
 
     public function callbackUrl(?string $slug = null): string
@@ -287,7 +301,7 @@ new class extends Component {
                                 @endif
                             </button>
                         </flux:table.cell>
-                        <flux:table.cell>{{ $provider->allow_registration ? __('admin.sign_in_providers.get_an_account') : __('admin.sign_in_providers.need_an_invitation') }}</flux:table.cell>
+                        <flux:table.cell>{{ $provider->allow_registration && $provider->domains->isNotEmpty() ? __('admin.sign_in_providers.get_an_account') : __('admin.sign_in_providers.need_an_invitation') }}</flux:table.cell>
                         <flux:table.cell>{{ $provider->identities_count }}</flux:table.cell>
                         <flux:table.cell align="end">
                             <flux:button size="sm" variant="ghost" icon="signal" wire:click="test('{{ $provider->id }}')" :tooltip="__('admin.sign_in_providers.check_discovery')" :aria-label="__('admin.sign_in_providers.check_discovery')" />
@@ -304,7 +318,7 @@ new class extends Component {
             </flux:table.rows>
         </flux:table>
 
-        <flux:modal name="provider-domains" class="md:w-lg" @close="$wire.set('domainsProviderId', null)">
+        <flux:modal name="provider-domains" class="md:w-lg">
             @if ($this->domainsProvider)
                 <div class="space-y-6">
                     <div class="flex items-start justify-between gap-4">
@@ -376,7 +390,7 @@ new class extends Component {
 
                 <flux:switch wire:model="enabled" :label="__('admin.sign_in_providers.show_on_the_sign_in')" />
                 <flux:switch wire:model="allowRegistration" :label="__('admin.sign_in_providers.create_accounts_for_new_people')"
-                    :description="__('admin.sign_in_providers.new_people_join_as_organization')" />
+                    :description="__('admin.sign_in_providers.also_called_just_in_time_jit')" />
                 <flux:switch wire:model="trustEmail" :label="__('admin.sign_in_providers.trust_email_addresses_from_this')"
                     :description="__('admin.sign_in_providers.link_sign_ins_to_existing')" />
 
