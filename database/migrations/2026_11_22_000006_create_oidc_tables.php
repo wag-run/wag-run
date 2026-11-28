@@ -42,6 +42,8 @@ return new class extends Migration
             $table->foreignUuid('organization_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('oidc_provider_id')->constrained()->cascadeOnDelete();
             $table->string('domain');
+            $table->string('verification_token', 40);
+            $table->timestamp('verified_at')->nullable();
             $table->timestamps();
 
             $table->unique(['organization_id', 'domain']);

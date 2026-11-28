@@ -282,4 +282,36 @@ class OidcSignInTest extends TestCase
 
         $this->assertGuest();
     }
+
+    public function test_on_the_hosted_version_a_provider_only_speaks_for_emails_on_its_verified_domains(): void
+    {
+        config(['app.self_hosted' => false]);
+        $this->provider->update(['allow_registration' => true, 'trust_email' => true]);
+        $domain = OidcDomain::factory()->for($this->provider, 'provider')->create(['domain' => 'example.com']);
+
+        $this->signInWith()->assertRedirect(route('login'))->assertSessionHasErrors('email');
+        $this->assertSame(0, User::count());
+
+        $domain->update(['verified_at' => now()]);
+
+        $this->signInWith()->assertRedirect(route('dashboard'));
+        $this->assertSame('ada@example.com', User::sole()->email);
+    }
+
+    public function test_on_the_hosted_version_linking_an_existing_account_needs_a_verified_domain(): void
+    {
+        config(['app.self_hosted' => false]);
+        $this->provider->update(['trust_email' => true]);
+        $domain = OidcDomain::factory()->for($this->provider, 'provider')->create(['domain' => 'example.com']);
+        $user = User::factory()->create(['email' => 'ada@example.com']);
+        $user->organizations()->attach($this->provider->organization_id, ['role' => 'member']);
+
+        $this->signInWith()->assertRedirect(route('login'))->assertSessionHasErrors('email');
+        $this->assertGuest();
+
+        $domain->update(['verified_at' => now()]);
+
+        $this->signInWith()->assertRedirect(route('dashboard'));
+        $this->assertAuthenticatedAs($user);
+    }
 }

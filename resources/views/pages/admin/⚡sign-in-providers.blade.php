@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\DnsTxtLookup;
 use Illuminate\Validation\Rule;
 use App\Enums\TwoFactorPolicy;
 use App\Models\OidcDomain;
@@ -47,6 +48,12 @@ new class extends Component {
     public ?string $domainsProviderId = null;
 
     public bool $addingDomain = false;
+
+    /**
+     * The domain whose verification steps the domains dialog shows (hosted only).
+     */
+    #[Locked]
+    public ?string $verifyingDomainId = null;
 
     public string $newDomain = '';
 
@@ -266,7 +273,7 @@ new class extends Component {
         $this->authorize('org-admin');
 
         $this->domainsProviderId = $this->findProvider($id)->id;
-        $this->reset('addingDomain', 'newDomain');
+        $this->reset('addingDomain', 'newDomain', 'verifyingDomainId');
         $this->resetValidation();
 
         Flux::modal('provider-domains')->show();
@@ -289,6 +296,12 @@ new class extends Component {
 
         $existing = $organization->oidcDomains()->with('provider')->where('domain', $this->newDomain)->first();
 
+        if (! $existing && (new OidcDomain(['organization_id' => $organization->id, 'domain' => $this->newDomain]))->isVerifiedElsewhere()) {
+            $this->addError('newDomain', __('admin.sign_in_providers.another_organization_has_verified', ['domain' => $this->newDomain]));
+
+            return;
+        }
+
         if ($existing) {
             $this->addError('newDomain', __('admin.sign_in_providers.domain_already_belongs_to_name', ['domain' => $existing->domain, 'name' => $existing->provider->name]));
 
@@ -299,6 +312,52 @@ new class extends Component {
         Audit::record('oidc_provider.domain_added', $domain, metadata: ['provider' => $provider->name], label: $domain->domain);
 
         $this->reset('addingDomain', 'newDomain');
+    }
+
+    /**
+     * Show or hide a pending domain's verification steps.
+     */
+    public function toggleVerification(string $id): void
+    {
+        $this->authorize('org-admin');
+
+        $domain = Organization::current()->oidcDomains()->findOrFail($id);
+        $this->verifyingDomainId = $this->verifyingDomainId === $domain->id ? null : $domain->id;
+        $this->resetValidation('verify');
+    }
+
+    /**
+     * Look up the domain's TXT record and mark it verified when it holds the
+     * expected value.
+     */
+    public function checkDomain(string $id, DnsTxtLookup $dns): void
+    {
+        $this->authorize('org-admin');
+
+        $domain = Organization::current()->oidcDomains()->with('provider')->findOrFail($id);
+        $this->resetValidation('verify');
+
+        if ($domain->isVerified()) {
+            return;
+        }
+
+        if ($domain->isVerifiedElsewhere()) {
+            $this->addError('verify', __('admin.sign_in_providers.another_organization_has_verified', ['domain' => $domain->domain]));
+
+            return;
+        }
+
+        if (! in_array($domain->txtRecordValue(), $dns->records($domain->txtRecordName()), true)) {
+            $this->addError('verify', __('admin.sign_in_providers.not_found_yet_dns_changes'));
+
+            return;
+        }
+
+        $domain->update(['verified_at' => now()]);
+        Audit::record('oidc_provider.domain_verified', $domain, metadata: ['provider' => $domain->provider->name], label: $domain->domain);
+
+        $this->verifyingDomainId = null;
+        Flux::toast(variant: 'success', text: __('admin.sign_in_providers.domain_verified', ['domain' => $domain->domain]));
     }
 
     public function deleteDomain(string $id): void
@@ -397,8 +456,11 @@ new class extends Component {
                                     @endif
                                 @endif
                             </button>
+                            @if ($provider->domains->contains(fn ($domain) => ! $domain->isVerified()))
+                                <span class="ms-1 inline-block size-2 rounded-full bg-amber-500 align-middle" title="{{ __('admin.sign_in_providers.a_domain_is_waiting_on') }}" aria-label="{{ __('admin.sign_in_providers.a_domain_is_waiting_on') }}" data-test="pending-domains"></span>
+                            @endif
                         </flux:table.cell>
-                        <flux:table.cell>{{ $provider->allow_registration && $provider->domains->isNotEmpty() ? __('admin.sign_in_providers.get_an_account') : __('admin.sign_in_providers.need_an_invitation') }}</flux:table.cell>
+                        <flux:table.cell>{{ $provider->allow_registration && $provider->domains->contains(fn ($domain) => $domain->isVerified()) ? __('admin.sign_in_providers.get_an_account') : __('admin.sign_in_providers.need_an_invitation') }}</flux:table.cell>
                         <flux:table.cell>{{ $provider->identities_count }}</flux:table.cell>
                         <flux:table.cell align="end">
                             <flux:button size="sm" variant="ghost" icon="signal" wire:click="test('{{ $provider->id }}')" :tooltip="__('admin.sign_in_providers.check_discovery')" :aria-label="__('admin.sign_in_providers.check_discovery')" />
@@ -439,26 +501,60 @@ new class extends Component {
                         </form>
                     @endif
 
+                    @unless (config('app.self_hosted'))
+                        <flux:text>{{ __('admin.sign_in_providers.pending_domains_already_turn_away') }}</flux:text>
+                    @endunless
+
                     <flux:table>
                         <flux:table.columns>
                             <flux:table.column>{{ __('admin.sign_in_providers.domain') }}</flux:table.column>
+                            @unless (config('app.self_hosted'))
+                                <flux:table.column>{{ __('common.status') }}</flux:table.column>
+                            @endunless
                             <flux:table.column></flux:table.column>
                         </flux:table.columns>
                         <flux:table.rows>
                             @forelse ($this->domainsProvider->domains as $domain)
                                 <flux:table.row :key="$domain->id">
                                     <flux:table.cell>{{ $domain->domain }}</flux:table.cell>
+                                    @unless (config('app.self_hosted'))
+                                        <flux:table.cell>
+                                            @if ($domain->isVerified())
+                                                <flux:badge size="sm" color="green">{{ __('admin.sign_in_providers.verified') }}</flux:badge>
+                                            @else
+                                                <flux:badge size="sm" color="amber">{{ __('admin.sign_in_providers.pending_verification') }}</flux:badge>
+                                            @endif
+                                        </flux:table.cell>
+                                    @endunless
                                     <flux:table.cell align="end">
+                                        @unless ($domain->isVerified())
+                                            <flux:button size="sm" wire:click="toggleVerification('{{ $domain->id }}')" data-test="verify-{{ $domain->domain }}">
+                                                {{ $verifyingDomainId === $domain->id ? __('admin.sign_in_providers.hide') : __('admin.sign_in_providers.verify') }}
+                                            </flux:button>
+                                        @endunless
                                         <flux:button size="sm" variant="ghost" icon="trash" wire:click="deleteDomain('{{ $domain->id }}')" :aria-label="__('admin.sign_in_providers.remove_domain', ['domain' => $domain->domain])" />
                                     </flux:table.cell>
                                 </flux:table.row>
                             @empty
                                 <flux:table.row>
-                                    <flux:table.cell colspan="2" class="text-center text-zinc-500">{{ __('admin.sign_in_providers.no_domains_name_accepts_any', ['name' => $this->domainsProvider->name]) }}</flux:table.cell>
+                                    <flux:table.cell colspan="3" class="text-center text-zinc-500">{{ __('admin.sign_in_providers.no_domains_name_accepts_any', ['name' => $this->domainsProvider->name]) }}</flux:table.cell>
                                 </flux:table.row>
                             @endforelse
                         </flux:table.rows>
                     </flux:table>
+
+                    @if ($verifying = $this->domainsProvider->domains->firstWhere('id', $verifyingDomainId))
+                        <div class="space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                            <flux:heading>{{ __('admin.sign_in_providers.verify_domain', ['domain' => $verifying->domain]) }}</flux:heading>
+                            <flux:text>{{ __('admin.sign_in_providers.add_this_txt_record_at', ['domain' => $verifying->domain]) }}</flux:text>
+                            <flux:input :label="__('common.name')" :value="$verifying->txtRecordName()" readonly copyable />
+                            <flux:input :label="__('common.value')" :value="$verifying->txtRecordValue()" readonly copyable />
+                            <div class="flex flex-wrap items-center gap-3">
+                                <flux:button size="sm" variant="primary" wire:click="checkDomain('{{ $verifying->id }}')" data-test="check-domain">{{ __('admin.sign_in_providers.check_now') }}</flux:button>
+                                <flux:error name="verify" />
+                            </div>
+                        </div>
+                    @endif
 
                     <div class="flex justify-end">
                         <flux:modal.close><flux:button variant="ghost">{{ __('common.done') }}</flux:button></flux:modal.close>

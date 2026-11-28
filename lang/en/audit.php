@@ -44,6 +44,7 @@ return [
             'deleted' => 'Sign-in provider deleted',
             'domain_added' => 'Email domain added',
             'domain_deleted' => 'Email domain deleted',
+            'domain_verified' => 'Email domain verified',
         ],
         'organization' => [
             'settings_updated' => 'Organization settings updated',
