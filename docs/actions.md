@@ -69,6 +69,12 @@ For a loop `each` whose body has a node `line`:
 
 A node on a path that an iteration didn't take is missing from that iteration's entry. A loop inside the loop appears in each entry with its own `results`.
 
+`results` and `last` are read from the run only when a placeholder uses them, so a later step that uses neither costs nothing extra. A few things follow from that:
+
+- **Testing whether an iteration produced anything.** Use `empty()`, as in `{{ not empty(nodes.each.output.last) }}`. On its own as a condition, `last` counts as true whenever the loop ran, even if its final iteration ran no node.
+- **Testing membership.** `in` and `not in` need a plain list, so build one first, as in `'ok' in column(column(column(nodes.each.output.results, 'line'), 'output'), 'value')`, and don't apply them to `results` itself.
+- **Reading the whole list inside another loop.** A step inside a second loop that reads all of `results` reads it again on every iteration. For a long list, gather what you need into a [workflow variable](editor.md#variables) with an [Update variable](#update-variable) node after the first loop, and read the variable inside the second.
+
 On the run page, use the arrows on a loop's steps to step through the iterations.
 
 ### While loop
