@@ -9,6 +9,8 @@ use App\Enums\StepStatus;
 use App\Models\Execution;
 use App\Models\ExecutionStep;
 use App\Services\DataStore;
+use Closure;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
@@ -51,8 +53,11 @@ class ContextBuilder
 
         $kept = $this->masked->of($execution);
 
-        $visible = $this->completedSteps($execution, $kept, Scope::visibleFrom($scope));
-        $results = new LoopResults(fn () => $this->completedSteps($execution, $kept));
+        $visible = $this->completedSteps($execution, $kept, fn (Builder $steps) => $steps->whereIn('scope_key', Scope::visibleFrom($scope)));
+
+        $results = LoopResults::loadedBy(fn (string $prefix, ?string $exact) => $this->completedSteps($execution, $kept, fn (Builder $steps) => $steps
+            ->where('scope_key', 'like', $prefix.'%')
+            ->when($exact !== null, fn (Builder $steps) => $steps->orWhere('scope_key', $exact))));
 
         $data = [
             'trigger' => $kept->restore($execution->input ?? [], MaskedSlot::Trigger),
@@ -77,17 +82,17 @@ class ContextBuilder
     }
 
     /**
-     * The run's completed steps, oldest first, with the real values put back
-     * into their outputs.
+     * The run's completed steps in some of its scopes, oldest first, with
+     * the real values put back into their outputs.
      *
-     * @param  list<string>|null  $scopes  only the steps in these scopes, or the whole run
+     * @param  Closure(Builder<ExecutionStep>): mixed  $inScopes  narrows the steps to the scopes to read
      * @return Collection<int, ExecutionStep>
      */
-    protected function completedSteps(Execution $execution, RunMaskedValues $kept, ?array $scopes = null): Collection
+    protected function completedSteps(Execution $execution, RunMaskedValues $kept, Closure $inScopes): Collection
     {
         $steps = $execution->steps()
             ->where('status', StepStatus::Complete)
-            ->when($scopes !== null, fn ($query) => $query->whereIn('scope_key', $scopes))
+            ->where($inScopes)
             ->orderBy('id')
             ->get(['id', 'node_id', 'scope_key', 'status', 'wait_type', 'output', 'output_ports']);
 

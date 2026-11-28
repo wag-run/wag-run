@@ -23,6 +23,10 @@ use Closure;
  * A loop's row holds how many times its body ran as "count": a For
  * loop's iterations, and the passes of a loop that repeats, such as a
  * While loop.
+ *
+ * The steps come from a list, from the whole run (for), or from the
+ * scopes that are asked for (loadedBy), which a step of a run in flight
+ * uses so that it never reads the rest of the run.
  */
 class LoopResults
 {
@@ -32,6 +36,21 @@ class LoopResults
      * @var array<string, list<ExecutionStep>>|null
      */
     protected ?array $byScope = null;
+
+    /**
+     * Loads the completed steps under a scope, when steps are loaded by
+     * scope.
+     *
+     * @var (Closure(string, string|null): iterable<ExecutionStep>)|null
+     */
+    protected ?Closure $stepsUnder = null;
+
+    /**
+     * The scope prefixes whose steps are loaded.
+     *
+     * @var list<string>
+     */
+    protected array $loaded = [];
 
     /**
      * @param  iterable<ExecutionStep>|Closure(): iterable<ExecutionStep>  $steps  the run's steps, oldest first; steps that did not complete are ignored
@@ -47,6 +66,20 @@ class LoopResults
             ->where('status', StepStatus::Complete)
             ->orderBy('id')
             ->get(['id', 'node_id', 'scope_key', 'status', 'wait_type', 'output', 'output_ports']));
+    }
+
+    /**
+     * Loads only the steps a loop's results or one iteration need, when
+     * they are asked for.
+     *
+     * @param  Closure(string $prefix, string|null $scope): iterable<ExecutionStep>  $stepsUnder  the run's completed steps, oldest first, in every scope that starts with $prefix and, when given, in $scope itself
+     */
+    public static function loadedBy(Closure $stepsUnder): self
+    {
+        $results = new self([]);
+        $results->stepsUnder = $stepsUnder;
+
+        return $results;
     }
 
     /**
@@ -71,6 +104,8 @@ class LoopResults
             return $step->output;
         }
 
+        $this->load(Scope::iterationsOf($step->scope_key, $step->id));
+
         $results = [];
 
         for ($index = 0; $index < $count; $index++) {
@@ -88,6 +123,8 @@ class LoopResults
      */
     public function nodesIn(string $scope): array
     {
+        $this->load($scope.'/', $scope);
+
         $nodes = [];
 
         foreach ($this->byScope()[$scope] ?? [] as $step) {
@@ -110,6 +147,29 @@ class LoopResults
         $count = $step->output['count'] ?? null;
 
         return is_numeric($count) ? (int) $count : null;
+    }
+
+    /**
+     * Has the steps in every scope that starts with $prefix, and in $scope
+     * itself when given, ready to read. Does nothing unless steps are
+     * loaded by scope, or when an earlier load already brought them.
+     */
+    protected function load(string $prefix, ?string $scope = null): void
+    {
+        if ($this->stepsUnder === null || array_any($this->loaded, fn (string $done) => str_starts_with($prefix, $done))) {
+            return;
+        }
+
+        $this->loaded[] = $prefix;
+        $found = [];
+
+        foreach (($this->stepsUnder)($prefix, $scope) as $step) {
+            if ($step->status === StepStatus::Complete) {
+                $found[$step->scope_key][] = $step;
+            }
+        }
+
+        $this->byScope = [...$this->byScope ?? [], ...$found];
     }
 
     /**

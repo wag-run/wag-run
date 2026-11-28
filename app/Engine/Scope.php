@@ -17,6 +17,16 @@ final class Scope
     }
 
     /**
+     * What the scope of every iteration of a loop starts with: 'L12.' at the
+     * top level, 'L3.0/L12.' inside iteration 0 of loop 3. It ends in the
+     * dot so that loop 1 does not match loop 12.
+     */
+    public static function iterationsOf(string $parent, int $loopStepId): string
+    {
+        return substr(self::forIteration($parent, $loopStepId, 0), 0, -1);
+    }
+
+    /**
      * The innermost loop frame of a scope.
      *
      * @return array{loop_step_id: int, index: int}|null
