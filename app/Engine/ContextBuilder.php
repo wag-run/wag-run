@@ -40,16 +40,17 @@ class ContextBuilder
         $execution = $step->execution;
         $scope ??= $step->scope_key;
 
-        $completed = $execution->steps()
+        $visible = $execution->steps()
             ->where('status', StepStatus::Complete)
+            ->whereIn('scope_key', Scope::visibleFrom($scope))
             ->orderBy('id')
             ->get(['id', 'node_id', 'scope_key', 'status', 'wait_type', 'output', 'output_ports']);
 
-        $results = new LoopResults($completed);
+        $results = LoopResults::for($execution);
 
         $data = [
             'trigger' => $execution->input ?? [],
-            'nodes' => $this->visibleOutputs($completed, $results, $scope),
+            'nodes' => $this->visibleOutputs($visible, $results, $scope),
             'vars' => new VariableData($execution),
             'store' => new StoreData($execution->workspace, $this->store),
             'secrets' => $execution->workspace->secrets()->get()->pluck('value', 'key')->all(),

@@ -238,6 +238,27 @@ class ExecutionFlowTest extends TestCase
         ));
     }
 
+    public function test_a_step_inside_a_loop_sees_an_earlier_loops_results_but_not_its_own_earlier_iterations(): void
+    {
+        $workflow = $this->publishedWorkflow($this->graph(
+            [
+                'start' => 'start',
+                'first' => ['each', ['items' => ['a', 'b']]],
+                'body' => 'emit',
+                'second' => ['each', ['items' => ['x', 'y']]],
+                'reader' => ['emit', ['value' => '{{ nodes.first.output.last.body.output.item }}']],
+            ],
+            ['start->first', 'first:item->body', 'first:done->second', 'second:item->reader'],
+        ));
+
+        $execution = $this->runWorkflow($workflow);
+
+        $this->assertSame(ExecutionStatus::Complete, $execution->status);
+        $readers = $execution->steps()->where('node_id', 'reader')->orderBy('id')->get();
+        $this->assertSame(['b', 'b'], $readers->map(fn ($step) => $step->output['value'])->all());
+        $this->assertEqualsCanonicalizing(['start', 'first'], $readers[1]->output['saw'], 'the reader from the first iteration is not visible in the second');
+    }
+
     public function test_a_run_that_ends_in_a_loop_returns_the_loops_results(): void
     {
         $workflow = $this->publishedWorkflow($this->graph(

@@ -53,6 +53,23 @@ final class Scope
     }
 
     /**
+     * Every scope whose steps a step in $scope can see (see canSee): the top
+     * level, each enclosing iteration, and $scope itself.
+     *
+     * @return list<string>
+     */
+    public static function visibleFrom(string $scope): array
+    {
+        $scopes = [''];
+
+        for ($at = $scope; $at !== ''; $at = self::parent($at)) {
+            $scopes[] = $at;
+        }
+
+        return $scopes;
+    }
+
+    /**
      * Whether $other is $scope itself or nested inside it.
      */
     public static function contains(string $scope, string $other): bool

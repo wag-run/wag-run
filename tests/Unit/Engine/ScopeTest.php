@@ -28,4 +28,15 @@ class ScopeTest extends TestCase
         $this->assertFalse(Scope::canSee('', 'L1.0'), 'loop bodies are invisible from outside');
         $this->assertFalse(Scope::canSee('L1.10', 'L1.1'), 'prefix of a different index');
     }
+
+    public function test_lists_exactly_the_scopes_a_step_can_see(): void
+    {
+        $this->assertSame([''], Scope::visibleFrom(''));
+        $this->assertSame(['', 'L1.10'], Scope::visibleFrom('L1.10'));
+        $this->assertSame(['', 'L1.0/L2.1/L3.4', 'L1.0/L2.1', 'L1.0'], Scope::visibleFrom('L1.0/L2.1/L3.4'));
+
+        foreach (['', 'L1.0', 'L1.1', 'L1.10', 'L1.0/L2.1', 'L1.0/L2.2', 'L1.0/L2.1/L3.4', 'L5.0'] as $other) {
+            $this->assertSame(Scope::canSee('L1.0/L2.1/L3.4', $other), in_array($other, Scope::visibleFrom('L1.0/L2.1/L3.4'), true), $other);
+        }
+    }
 }
