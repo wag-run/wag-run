@@ -85,6 +85,16 @@ class OidcProvider extends Model
     }
 
     /**
+     * Whether the provider gives new people an account. It needs email
+     * domains as well as the switch, because only people on its domains can
+     * reach it from the sign-in page, and its sign-in URL is public.
+     */
+    public function createsAccounts(): bool
+    {
+        return $this->allow_registration && $this->domains()->exists();
+    }
+
+    /**
      * Whether someone with this email address may sign in with the provider:
      * any address when it has no domains, otherwise only those on one of them.
      */

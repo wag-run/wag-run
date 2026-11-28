@@ -126,6 +126,12 @@ new class extends Component {
             $slug .= '-'.Str::lower(Str::random(4));
         }
 
+        if ($this->allowRegistration && (! $this->editingId || ! $this->findProvider($this->editingId)->domains()->exists())) {
+            $this->addError('allowRegistration', __('admin.sign_in_providers.add_an_email_domain_first'));
+
+            return;
+        }
+
         $provider = $this->editingId ? $this->findProvider($this->editingId) : $organization->oidcProviders()->make();
 
         $provider->fill([
@@ -227,6 +233,14 @@ new class extends Component {
         $domain = Organization::current()->oidcDomains()->with('provider')->findOrFail($id);
         $domain->delete();
         Audit::record('oidc_provider.domain_deleted', $domain, metadata: ['provider' => $domain->provider->name], label: $domain->domain);
+
+        $provider = $domain->provider;
+
+        if ($provider->allow_registration && ! $provider->domains()->exists()) {
+            $provider->update(['allow_registration' => false]);
+            Audit::record('oidc_provider.updated', $provider, metadata: ['changed' => ['allow_registration']]);
+            Flux::toast(text: __('admin.sign_in_providers.name_no_longer_creates_accounts', ['name' => $provider->name]));
+        }
     }
 
     public function callbackUrl(?string $slug = null): string
@@ -287,7 +301,7 @@ new class extends Component {
                                 @endif
                             </button>
                         </flux:table.cell>
-                        <flux:table.cell>{{ $provider->allow_registration ? __('admin.sign_in_providers.get_an_account') : __('admin.sign_in_providers.need_an_invitation') }}</flux:table.cell>
+                        <flux:table.cell>{{ $provider->allow_registration && $provider->domains->isNotEmpty() ? __('admin.sign_in_providers.get_an_account') : __('admin.sign_in_providers.need_an_invitation') }}</flux:table.cell>
                         <flux:table.cell>{{ $provider->identities_count }}</flux:table.cell>
                         <flux:table.cell align="end">
                             <flux:button size="sm" variant="ghost" icon="signal" wire:click="test('{{ $provider->id }}')" :tooltip="__('admin.sign_in_providers.check_discovery')" :aria-label="__('admin.sign_in_providers.check_discovery')" />

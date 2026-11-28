@@ -146,12 +146,16 @@ class OidcSignInTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
-    public function test_new_people_get_a_member_account_only_when_the_provider_allows_registration(): void
+    public function test_new_people_get_a_member_account_only_when_the_provider_allows_registration_and_has_domains(): void
     {
+        $this->signInWith()->assertRedirect(route('login'))->assertSessionHasErrors(['email' => 'There is no account for this sign-in. Ask an admin to invite you.']);
+
+        $this->provider->update(['allow_registration' => true]);
+
         $this->signInWith()->assertRedirect(route('login'))->assertSessionHasErrors(['email' => 'There is no account for this sign-in. Ask an admin to invite you.']);
         $this->assertSame(0, User::count());
 
-        $this->provider->update(['allow_registration' => true]);
+        OidcDomain::factory()->for($this->provider, 'provider')->create(['domain' => 'example.com']);
 
         $this->signInWith(['name' => null])->assertRedirect(route('dashboard'));
 
