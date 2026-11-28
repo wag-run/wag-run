@@ -95,7 +95,7 @@ new class extends Component {
                     <flux:icon.chevron-down variant="micro" class="shrink-0 text-zinc-500 transition-transform group-open:rotate-180 dark:text-zinc-400" />
                 </summary>
 
-                <div class="grid gap-3 border-t border-zinc-200 p-4 md:grid-cols-2 dark:border-zinc-700">
+                <div class="space-y-3 border-t border-zinc-200 p-4 dark:border-zinc-700">
                     @foreach ([
                         'names' => ['chips' => $builtInNames, 'icon' => 'lock-open'],
                         'value_patterns' => ['chips' => Redactor::VALUE_PATTERNS, 'icon' => 'lock-closed'],
@@ -110,7 +110,7 @@ new class extends Component {
                                     <flux:badge size="sm" class="font-mono">{{ $chip }}</flux:badge>
                                 @endforeach
                             </div>
-                            <div class="mt-auto flex items-start gap-1.5">
+                            <div class="flex items-start gap-1.5">
                                 <flux:icon :icon="$rule['icon']" variant="micro" class="mt-0.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
                                 <flux:text class="text-xs">{{ __('admin.masking.'.$group.'_exception') }}</flux:text>
                             </div>
