@@ -13,9 +13,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('settings/notifications', 'pages::settings.notifications')->name('notifications.edit');
     Route::livewire('settings/api-tokens', 'pages::settings.api-tokens')->name('api-tokens.edit');
 
-    Route::livewire('settings/security', 'pages::settings.security')
-        ->middleware([
-            'password.confirm',
-        ])
-        ->name('security.edit');
+    Route::livewire('settings/security', 'pages::settings.security')->name('security.edit');
 });

@@ -4,9 +4,6 @@ return [
     'failed' => 'These credentials do not match our records.',
     'password' => 'The provided password is incorrect.',
     'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
-    'confirm_password' => [
-        'this_is_a_secure_area' => 'This is a secure area of the application. Please confirm your password before continuing.',
-    ],
     'forgot_password' => [
         'email_password_reset_link' => 'Email password reset link',
         'enter_your_email_to_receive' => 'Enter your email to receive a password reset link',

@@ -41,7 +41,7 @@ return [
     ],
     'delete_user_modal' => [
         'are_you_sure_you_want' => 'Are you sure you want to delete your account?',
-        'once_your_account_is_deleted' => 'Once your account is deleted, all of its resources and data will be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.',
+        'once_your_account_is_deleted' => 'Once your account is deleted, all of its resources and data will be permanently deleted.',
         'you_are_the_last_organization' => 'You are the last organization admin. Promote another admin before deleting your account.',
     ],
     'layout' => [

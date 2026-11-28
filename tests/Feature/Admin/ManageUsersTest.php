@@ -113,9 +113,9 @@ class ManageUsersTest extends TestCase
 
         Livewire::actingAs($admin)
             ->test('pages::settings.delete-user-modal')
-            ->set('password', 'password')
             ->call('deleteUser')
-            ->assertHasErrors(['user']);
+            ->assertHasErrors(['user'])
+            ->assertSee(__('settings.delete_user_modal.you_are_the_last_organization'));
 
         $this->assertModelExists($admin);
     }
