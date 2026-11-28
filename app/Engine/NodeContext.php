@@ -26,6 +26,11 @@ class NodeContext
     protected ?array $resolved = null;
 
     /**
+     * @var array<string, mixed>|null what data() gave, kept for the step
+     */
+    protected ?array $plainData = null;
+
+    /**
      * @param  array<string, mixed>  $data
      */
     public function __construct(
@@ -76,11 +81,30 @@ class NodeContext
     }
 
     /**
+     * The run's data, with nodes and loop as plain arrays. That loads the
+     * results of every finished loop this step can see, so read one node
+     * with outputOf() where that is all a node needs.
+     *
      * @return array<string, mixed>
      */
     public function data(): array
     {
-        return $this->data;
+        return $this->plainData ??= [
+            ...$this->data,
+            ...array_map(DataBag::unwrap(...), array_intersect_key($this->data, ['nodes' => true, 'loop' => true])),
+        ];
+    }
+
+    /**
+     * What a node this step can see produced, as nodes.<id> reads: its
+     * output and the output it left by, as plain values. Null when the
+     * node has not run where this step can see it.
+     *
+     * @return array{output: mixed, port: string|null}|null
+     */
+    public function outputOf(string $nodeId): ?array
+    {
+        return DataBag::unwrap($this->data['nodes'][$nodeId] ?? null);
     }
 
     /**

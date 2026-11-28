@@ -61,11 +61,10 @@ class Merge extends Node
 
     public function execute(NodeContext $context): NodeResult
     {
-        $nodes = $context->data()['nodes'];
         $branches = [];
 
         foreach ($context->state()['arrivals'] ?? [] as $arrival) {
-            $branches[$arrival['node_id']] = $nodes[$arrival['node_id']] ?? null;
+            $branches[$arrival['node_id']] = $context->outputOf($arrival['node_id']);
         }
 
         return NodeResult::complete(['branches' => $branches]);

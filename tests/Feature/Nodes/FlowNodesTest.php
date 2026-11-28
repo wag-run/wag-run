@@ -226,6 +226,26 @@ class FlowNodesTest extends TestCase
         $this->assertSame(1, $execution->steps()->where('node_id', 'join')->count());
     }
 
+    public function test_merge_keeps_the_full_results_of_a_branch_that_ends_in_a_loop(): void
+    {
+        $workflow = $this->publishedWorkflow($this->graph(
+            ['start' => 'core.manual_trigger',
+                'each' => ['core.for_loop', ['items' => '["x", "y"]']], 'line' => ['core.compose', ['template' => '{{ item }}']],
+                'b' => ['core.compose', ['template' => 'B']],
+                'join' => 'core.merge'],
+            ['start->each', 'each:item->line', 'start->b', 'each:done->join', 'b->join'],
+        ));
+
+        $execution = $this->runWorkflow($workflow);
+        $line = fn (string $value): array => ['line' => ['output' => ['value' => $value], 'port' => 'main']];
+
+        $this->assertSame(ExecutionStatus::Complete, $execution->status);
+        $this->assertSame([
+            'each' => ['output' => ['results' => [$line('x'), $line('y')], 'count' => 2, 'last' => $line('y')], 'port' => 'done'],
+            'b' => ['output' => ['value' => 'B'], 'port' => 'main'],
+        ], $this->stepFor($execution, 'join')->output['branches']);
+    }
+
     /**
      * @return array<string, array{string, bool, string}>
      */

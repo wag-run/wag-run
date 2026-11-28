@@ -235,6 +235,7 @@ Outputs are a description for the editor. Nothing checks that `execute()` return
 | `$context->inputs()` | Every declared input |
 | `$context->config('name')` | The setting exactly as saved, placeholders untouched |
 | `$context->render($template, $extra)` | A template rendered against the run's data, with `$extra` added on top. Filter uses this to check each item. |
+| `$context->outputOf($nodeId)` | What another node this step can see produced, as `nodes.<id>` reads it: its `output` and the `port` it left by. Null when that node hasn't run. A finished loop's output comes with its full `results`. |
 | `$context->credential($id)` | The workspace credential with that ID, or null. Its `config` is the decrypted values. |
 | `$context->secret($key)` | A workspace secret |
 | `$context->variable($name)` | One of the workflow's variables, as it is in this run. Null when the workflow declares none by that name. |
