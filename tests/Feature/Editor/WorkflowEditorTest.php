@@ -715,6 +715,68 @@ class WorkflowEditorTest extends TestCase
         $this->assertSame(['yellow', null], [$colorOf()['color'], $colorOf()['custom']]);
     }
 
+    public function test_node_settings_are_split_into_settings_behavior_and_outputs_tabs(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor();
+
+        $this->editor($workspace, $workflow, $user)
+            ->call('selectNode', 'fetch')
+            ->assertSeeHtmlInOrder([
+                'wire:model.live.debounce.600ms="nodeName"',
+                'data-test="inspector-tab-settings"', 'data-test="inspector-tab-behavior"', 'data-test="inspector-tab-outputs"',
+                'data-test="inspector-panel-settings"', 'name="form.url"',
+                'data-test="inspector-panel-behavior"', 'data-test="retry-toggle"', 'data-test="error-path-checkbox"', 'data-test="wait-for-all-checkbox"',
+                'data-test="inspector-panel-outputs"', 'nodes.fetch.output', 'data-test="node-id-edit"', 'data-test="node-outputs"', '<code>status</code>',
+            ]);
+    }
+
+    public function test_a_trigger_has_no_behavior_tab_and_a_node_without_fields_has_no_settings_tab(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
+            ['start' => 'core.manual_trigger', 'fetch' => ['core.http_request', ['url' => 'x']], 'merge' => 'core.merge'],
+            ['start->fetch', 'fetch->merge'],
+        ));
+        $editor = $this->editor($workspace, $workflow, $user);
+
+        $editor->call('selectNode', 'start')
+            ->assertSet('inspectorTabs', ['settings', 'outputs'])
+            ->assertDontSeeHtml('data-test="inspector-tab-behavior"')
+            ->assertSeeHtmlInOrder(['data-test="inspector-panel-outputs"', 'data-test="trigger-reference"']);
+
+        $editor->call('selectNode', 'merge')
+            ->assertSet('inspectorTabs', ['behavior', 'outputs'])
+            ->assertDontSeeHtml('data-test="inspector-tab-settings"');
+    }
+
+    public function test_node_problems_show_above_the_tabs(): void
+    {
+        [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
+            ['start' => 'core.manual_trigger', 'build' => ['core.compose', ['template' => '{{ vars.missing }}']]],
+            ['start->build'],
+        ));
+
+        $this->editor($workspace, $workflow, $user)
+            ->call('selectNode', 'build')
+            ->assertSeeHtmlInOrder(['data-test="node-problems"', 'data-test="inspector-tabs"']);
+    }
+
+    public function test_viewers_see_every_tab_of_node_settings_read_only(): void
+    {
+        [$workspace, $workflow] = $this->setUpEditor();
+        $viewer = User::factory()->memberOf($workspace, WorkspaceRole::Viewer)->create();
+        $disabled = '<fieldset class="min-w-0 space-y-4" disabled>';
+
+        $this->editor($workspace, $workflow, $viewer)
+            ->call('selectNode', 'fetch')
+            ->assertSeeHtmlInOrder([
+                $disabled, 'wire:model.live.debounce.600ms="nodeName"',
+                'data-test="inspector-panel-settings"', $disabled, 'name="form.url"',
+                'data-test="inspector-panel-behavior"', $disabled, 'data-test="retry-toggle"',
+                'data-test="inspector-panel-outputs"', $disabled, 'data-test="node-outputs"',
+            ])
+            ->assertDontSeeHtml('data-test="node-id-edit"');
+    }
+
     public function test_retries_are_off_until_turned_on_and_turning_them_off_clears_them(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor();
