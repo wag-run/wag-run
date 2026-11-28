@@ -341,7 +341,7 @@ new class extends Component {
             <flux:switch wire:model="passwordSignIn" :label="__('admin.sign_in_providers.password_sign_in')"
                 :description="__('admin.sign_in_providers.people_sign_in_with_their')" data-test="password-sign-in" />
 
-            <flux:field>
+            <flux:field x-show="$wire.passwordSignIn" x-cloak>
                 <flux:label>{{ __('common.two_factor_authentication') }}</flux:label>
                 <flux:description>{{ __('admin.sign_in_providers.for_password_sign_ins_ignored') }}</flux:description>
                 <flux:radio.group wire:model.live="twoFactor" variant="segmented" data-test="two-factor-policy">

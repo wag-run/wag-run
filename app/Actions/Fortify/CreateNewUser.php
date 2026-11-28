@@ -53,8 +53,8 @@ class CreateNewUser implements CreatesNewUsers
             $organization = Organization::create(['name' => config('app.name')]);
             $user->organizations()->attach($organization, ['role' => OrgRole::Admin->value]);
 
-            $workspace = $this->workspaces->create($organization, __('auth.register.default'), $user);
-            $user->forceFill(['current_workspace_id' => $workspace->id, 'email_verified_at' => now()])->save();
+            $this->workspaces->createFirstFor($user, $organization);
+            $user->forceFill(['email_verified_at' => now()])->save();
 
             return $user;
         }));

@@ -23,6 +23,51 @@ class WorkspaceManager
         });
     }
 
+    /**
+     * Give someone their first workspace in an organization, "Ada's workspace",
+     * with a random slug and them as its Admin, and make it their current one.
+     */
+    public function createFirstFor(User $user, Organization $organization): Workspace
+    {
+        return DB::transaction(function () use ($user, $organization) {
+            $workspace = $organization->workspaces()->create([
+                'name' => __('workspaces.first_workspace_name', ['name' => $user->firstName()]),
+                'slug' => Workspace::randomSlug($organization->id),
+            ]);
+            $workspace->members()->attach($user, ['role' => WorkspaceRole::Admin->value]);
+            $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+            $organization->users()->updateExistingPivot($user->id, ['first_workspace_at' => now()]);
+
+            Audit::record('workspace.created', $workspace, $workspace, actor: $user);
+
+            return $workspace;
+        });
+    }
+
+    /**
+     * On someone's first sign-in to each organization they're active in, give
+     * them a workspace when they have none there and the organization allows it.
+     * It happens once: someone who already has a workspace, or whose
+     * organization has it off, is only marked as handled, so they never get
+     * one later, even if they're removed from every workspace.
+     */
+    public function welcome(User $user): void
+    {
+        $memberships = $user->organizations()->wherePivotNull('deactivated_at')->wherePivotNull('first_workspace_at')->get();
+
+        foreach ($memberships as $organization) {
+            $hasWorkspace = $user->workspaces()->where('organization_id', $organization->id)->exists();
+
+            if (! $hasWorkspace && $organization->first_workspaces) {
+                $this->createFirstFor($user, $organization);
+
+                continue;
+            }
+
+            $organization->users()->updateExistingPivot($user->id, ['first_workspace_at' => now()]);
+        }
+    }
+
     public function rename(Workspace $workspace, string $name): void
     {
         $from = $workspace->name;

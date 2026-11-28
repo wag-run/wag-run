@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'first_workspace_name' => ':name\'s workspace',
     'audit' => [
         'all_actions' => 'All actions',
         'changes_to_this_workspace_s' => 'Changes to this workspace\'s workflows, secrets, credentials, and membership, and every secret reveal.',

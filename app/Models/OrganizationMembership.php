@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
  * @property string $user_id
  * @property OrgRole $role
  * @property Carbon|null $deactivated_at
+ * @property Carbon|null $first_workspace_at when the person's first workspace was made, or found already there
  */
 class OrganizationMembership extends Pivot
 {
@@ -24,6 +25,7 @@ class OrganizationMembership extends Pivot
         return [
             'role' => OrgRole::class,
             'deactivated_at' => 'datetime',
+            'first_workspace_at' => 'datetime',
         ];
     }
 }

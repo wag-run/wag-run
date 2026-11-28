@@ -52,6 +52,18 @@ class Workspace extends Model
         });
     }
 
+    /**
+     * A random slug no other workspace in the organization uses.
+     */
+    public static function randomSlug(?string $organizationId): string
+    {
+        do {
+            $slug = Str::lower(Str::random(8));
+        } while (static::query()->where('organization_id', $organizationId)->where('slug', $slug)->exists());
+
+        return $slug;
+    }
+
     public static function uniqueSlug(string $name, ?string $organizationId, ?int $ignoreId = null): string
     {
         $base = Str::slug($name) ?: 'workspace';

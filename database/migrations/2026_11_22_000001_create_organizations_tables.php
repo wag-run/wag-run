@@ -22,6 +22,7 @@ return new class extends Migration
             $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
             $table->string('role', 20)->default('member');
             $table->timestamp('deactivated_at')->nullable();
+            $table->timestamp('first_workspace_at')->nullable();
             $table->timestamps();
 
             $table->unique(['organization_id', 'user_id']);

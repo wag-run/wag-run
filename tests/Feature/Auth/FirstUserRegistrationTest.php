@@ -22,7 +22,7 @@ class FirstUserRegistrationTest extends TestCase
         return ['name' => 'Ada Lovelace', 'email' => $email, 'password' => 'password', 'password_confirmation' => 'password'];
     }
 
-    public function test_first_user_sets_up_the_organization_as_org_admin_with_a_default_workspace(): void
+    public function test_first_user_sets_up_the_organization_as_org_admin_with_their_own_workspace(): void
     {
         $this->post(route('register.store'), $this->registration('ada@example.com'))->assertSessionHasNoErrors();
 
@@ -31,7 +31,8 @@ class FirstUserRegistrationTest extends TestCase
 
         $this->assertNotNull($organization);
         $this->assertSame(OrgRole::Admin, $user->orgRole());
-        $this->assertSame(['Default'], $organization->workspaces()->pluck('name')->all());
+        $this->assertSame(["Ada's workspace"], $organization->workspaces()->pluck('name')->all());
+        $this->assertMatchesRegularExpression('/^[a-z0-9]{8}$/', $organization->workspaces()->sole()->slug);
         $this->assertSame($organization->workspaces()->first()->id, $user->current_workspace_id);
         $this->assertDatabaseHas('audit_logs', ['action' => 'workspace.created', 'user_id' => $user->id]);
     }

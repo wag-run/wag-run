@@ -30,7 +30,6 @@ return [
         'already_have_an_account' => 'Already have an account?',
         'create_account' => 'Create account',
         'create_an_account' => 'Create an account',
-        'default' => 'Default',
         'enter_your_details_below_to' => 'Enter your details below to create your account',
         'full_name' => 'Full name',
         'register' => 'Register',

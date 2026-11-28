@@ -247,6 +247,7 @@ Nothing here can be turned off for a whole workflow. To let one value that a nam
 |---|---|
 | **Organization name** | Your organization's name |
 | **Let people delete their own accounts** | When on, people can delete their own account from their profile settings. When off, the **Delete account** button is hidden and the action is refused. On by default. |
+| **Give new people their own workspace** | When on, someone who signs in for the first time without a workspace gets one named after their first name, such as "Ada's workspace", with them as its Admin. It happens once, at their first sign-in: someone who already has a workspace gets none, and someone later removed from every workspace doesn't get another. On by default. |
 | **Default execution log retention** | How many days run logs are kept, unless a workspace or workflow sets its own. 30 days by default. Turn on **Keep execution logs forever** to never remove them. |
 | **Maximum chain depth** | How many runs deep a chain of workflows starting other workflows can go. A run past it is cancelled, which stops workflows that start each other in a loop. 10 by default. |
 | **Maximum runs per minute** | How many runs one workflow can start in a minute, unless the workflow sets its own limit. Runs past it are cancelled, which slows down loops through other apps, such as a workflow that fires its own trigger. 60 by default. |

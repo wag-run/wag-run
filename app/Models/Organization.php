@@ -30,11 +30,12 @@ use Illuminate\Support\Carbon;
  * @property bool $allow_account_deletion
  * @property bool $password_sign_in
  * @property string $two_factor see {@see TwoFactorPolicy}
+ * @property bool $first_workspaces whether newcomers get a workspace of their own
  * @property list<string> $sensitive_keys extra header and field names whose values runs mask, see {@see Redactor}
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'settings', 'mail', 'default_retention_days', 'max_chain_depth', 'max_runs_per_minute', 'allow_account_deletion', 'sensitive_keys', 'password_sign_in', 'two_factor'])]
+#[Fillable(['name', 'settings', 'mail', 'default_retention_days', 'max_chain_depth', 'max_runs_per_minute', 'allow_account_deletion', 'sensitive_keys', 'password_sign_in', 'two_factor', 'first_workspaces'])]
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */
@@ -51,6 +52,7 @@ class Organization extends Model
         'allow_account_deletion' => ['bool', true],
         'password_sign_in' => ['bool', true],
         'two_factor' => ['string', 'optional'],
+        'first_workspaces' => ['bool', true],
         'sensitive_keys' => ['array', []],
     ];
 
@@ -93,7 +95,7 @@ class Organization extends Model
         return $this->belongsToMany(User::class)
             ->using(OrganizationMembership::class)
             ->as('membership')
-            ->withPivot(['role', 'deactivated_at'])
+            ->withPivot(['role', 'deactivated_at', 'first_workspace_at'])
             ->withTimestamps();
     }
 

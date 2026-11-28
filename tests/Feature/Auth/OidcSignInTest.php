@@ -165,7 +165,7 @@ class OidcSignInTest extends TestCase
         $this->assertSame('From Userinfo', $user->name);
         $this->assertNotNull($user->email_verified_at);
         $this->assertFalse($user->isOrgAdmin());
-        $this->assertTrue($user->accessibleWorkspaces()->isEmpty());
+        $this->assertSame(["From's workspace"], $user->accessibleWorkspaces()->pluck('name')->all());
     }
 
     public function test_deactivated_users_cannot_sign_in(): void
