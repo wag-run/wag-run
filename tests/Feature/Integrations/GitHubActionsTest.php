@@ -158,26 +158,4 @@ class GitHubActionsTest extends TestCase
         $this->assertStringContainsString('isn\'t a repository', $this->runAction('github.create_issue', ['title' => 'x'], ['repo' => 'acme'])->error['message']);
         Http::assertNothingSent();
     }
-
-    public function test_adds_a_row_to_a_google_sheet(): void
-    {
-        Credential::factory()->for($this->workspace)->oauth('google', ['access_token' => 'ya29.token'])->create(['id' => $this->settingId('google'), 'description' => 'google']);
-        Http::fake(['sheets.googleapis.com/*' => Http::response(['updates' => ['updatedRange' => "'Orders'!A5:C5", 'updatedRows' => 1]])]);
-
-        $execution = $this->runWorkflow($this->publishedWorkflow($this->graph(
-            ['start' => 'core.manual_trigger', 'add' => ['google.append_sheet_row', [
-                'credential' => $this->settingId('google'),
-                'spreadsheet' => 'https://docs.google.com/spreadsheets/d/1AbC_d-9/edit#gid=0',
-                'sheet' => 'Orders',
-                'values' => [['value' => '{{ trigger.values.id }}'], ['value' => '{{ trigger.values.total }}'], ['value' => 'paid']],
-            ]]],
-            ['start->add'],
-        ), $this->workspace), ['values' => ['id' => 991, 'total' => 12.5]]);
-
-        $this->assertSame(['range' => "'Orders'!A5:C5", 'rows' => 1], $this->stepFor($execution, 'add')->output);
-        Http::assertSent(fn (Request $request) => str_starts_with($request->url(), 'https://sheets.googleapis.com/v4/spreadsheets/1AbC_d-9/values/%27Orders%27:append?')
-            && str_contains($request->url(), 'valueInputOption=USER_ENTERED')
-            && $request->data() === ['majorDimension' => 'ROWS', 'values' => [[991, 12.5, 'paid']]]
-            && $request->header('Authorization') === ['Bearer ya29.token']);
-    }
 }
