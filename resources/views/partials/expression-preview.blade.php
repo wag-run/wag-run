@@ -12,10 +12,10 @@
         <template x-if="preview">
             <div>
                 <pre x-show="preview.status === 'value'" x-text="preview.value"
-                    class="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words font-mono text-zinc-800 dark:text-zinc-100"></pre>
+                    class="mt-1 max-h-40 overflow-auto whitespace-pre-wrap wrap-anywhere font-mono text-zinc-800 dark:text-zinc-100"></pre>
                 <p x-show="preview.status === 'empty'" class="mt-1 italic text-zinc-400">{{ __('workflows.editor.preview_empty') }}</p>
-                <p x-show="preview.status === 'error'" x-text="preview.value" class="mt-1 break-words text-red-600 dark:text-red-400"></p>
-                <p x-text="preview.source" class="mt-1 text-[10px] text-zinc-400"></p>
+                <p x-show="preview.status === 'error'" x-text="preview.value" class="mt-1 wrap-anywhere text-red-600 dark:text-red-400"></p>
+                <p x-text="preview.source" class="mt-1 wrap-anywhere text-[10px] text-zinc-400"></p>
             </div>
         </template>
     </div>

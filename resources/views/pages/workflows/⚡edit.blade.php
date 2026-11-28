@@ -1679,7 +1679,7 @@ new class extends Component {
         </div>
 
         {{-- Inspector --}}
-        <aside class="w-96 shrink-0 overflow-y-auto border-s border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900" data-test="inspector" x-show="$store.editorLayout.settings">
+        <aside class="w-96 shrink-0 overflow-x-hidden overflow-y-auto border-s border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900" data-test="inspector" x-show="$store.editorLayout.settings">
             @if ($this->selectedNode() && $this->definition?->kind() === NodeKind::Note)
                 @php($definition = $this->definition)
                 <div class="mb-4 flex items-start justify-between gap-2 pe-8" data-test="note-inspector">
@@ -1688,7 +1688,7 @@ new class extends Component {
                         <flux:text class="text-xs">{{ $definition->description() }}</flux:text>
                     </div>
                 </div>
-                <fieldset class="space-y-4" @disabled(! $this->canEdit)>
+                <fieldset class="min-w-0 space-y-4" @disabled(! $this->canEdit)>
                     <flux:textarea wire:model.live.debounce.600ms="form.text" :label="__('nodes.note.text')" :description="__('nodes.note.markdown_works')" rows="8" data-test="note-text" />
                     {{-- A preset, or Custom with a color picker and a hex code --}}
                     <div class="space-y-2" x-data="{ color: $wire.entangle('form.color').live, presets: @js(\App\Engine\Nodes\Note::COLORS), get preset() { return this.presets.includes(this.color) ? this.color : 'custom' } }">
@@ -1725,7 +1725,7 @@ new class extends Component {
                         :heading="$connectionResult['text']" data-test="connection-result" />
                 @endif
 
-                <fieldset class="space-y-4" @disabled(! $this->canEdit)>
+                <fieldset class="min-w-0 space-y-4" @disabled(! $this->canEdit)>
                     <flux:input wire:model.live.debounce.600ms="nodeName" :label="__('common.name')" />
                     @if ($definition->kind() === NodeKind::Trigger)
                         <flux:text class="text-xs" data-test="trigger-reference">{{ __('workflows.edit.reference_its_data_as') }} <code class="rounded bg-zinc-100 px-1 dark:bg-zinc-800">trigger</code></flux:text>
@@ -1739,7 +1739,7 @@ new class extends Component {
                         </form>
                     @else
                         <div class="flex items-center gap-1">
-                            <flux:text class="text-xs">{{ __('workflows.edit.reference_its_output_as') }} <code class="rounded bg-zinc-100 px-1 dark:bg-zinc-800">nodes.{{ $selected }}.output</code></flux:text>
+                            <flux:text class="min-w-0 text-xs">{{ __('workflows.edit.reference_its_output_as') }} <code class="rounded bg-zinc-100 px-1 break-all dark:bg-zinc-800">nodes.{{ $selected }}.output</code></flux:text>
                             @if ($this->canEdit)
                                 <flux:button size="xs" variant="subtle" icon="pencil-square" wire:click="startEditingNodeId" :tooltip="__('workflows.edit.change_id')" :aria-label="__('workflows.edit.change_id')" data-test="node-id-edit" />
                             @endif
@@ -1792,7 +1792,7 @@ new class extends Component {
                 <flux:heading size="sm">{{ __('workflows.edit.outputs') }}</flux:heading>
                 <ul class="mt-2 space-y-1 text-xs">
                     @forelse ($definition->outputs($this->selectedNode()->config) as $output)
-                        <li><code>{{ $output->name }}</code> <span class="text-zinc-500">· {{ $output->type }} · {{ $output->label }}</span></li>
+                        <li class="wrap-anywhere"><code>{{ $output->name }}</code> <span class="text-zinc-500">· {{ $output->type }} · {{ $output->label }}</span></li>
                     @empty
                         <li class="text-zinc-500">{{ __('workflows.edit.this_node_has_no_outputs') }}</li>
                     @endforelse
@@ -1806,7 +1806,7 @@ new class extends Component {
                 <flux:heading class="pe-8">{{ __('workflows.edit.workflow_settings') }}</flux:heading>
                 <flux:text class="mb-4 text-xs">{{ __('workflows.edit.select_a_node_to_configure') }}</flux:text>
                 <form wire:submit="saveSettings" class="space-y-4">
-                    <fieldset class="space-y-4" @disabled(! $this->canEdit)>
+                    <fieldset class="min-w-0 space-y-4" @disabled(! $this->canEdit)>
                         <flux:switch wire:model="enabled" :label="__('workflows.edit.enabled')" :description="__('workflows.edit.enabled_help')"
                             :disabled="! $this->canPublish" data-test="workflow-enabled" />
                         <flux:input wire:model="name" :label="__('common.name')" required />

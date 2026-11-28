@@ -144,8 +144,6 @@ return [
         'every_node_needs_an_id' => 'Every node needs an id.',
         'execution' => 'Execution',
         'file_has_no_workflow_graph' => 'The file has no workflow graph.',
-        'first_iteration_name' => 'First iteration › :name',
-        'first_pass_name' => 'First pass › :name',
         'imported_workflow' => 'Imported workflow',
         'insert_data' => 'Insert data',
         'item_count' => 'Item count',

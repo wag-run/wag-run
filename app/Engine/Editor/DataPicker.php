@@ -21,8 +21,7 @@ use App\Models\Workspace;
  * workflow's variables, and the workspace's data store entries and
  * secrets. Built from each node's declared outputs, so custom nodes appear
  * the same way. A loop and a Merge also offer the outputs of the nodes
- * they gathered: a loop's first and last iteration or pass, and each
- * branch. Inside a While loop, and in its own condition, the pass before
+ * they gathered: a loop's last iteration or pass, and each branch. Inside a While loop, and in its own condition, the pass before
  * is offered through loop.previous.
  */
 class DataPicker
@@ -339,8 +338,9 @@ class DataPicker
 
     /**
      * Paths into what a loop or a Merge gathered, each node in the same
-     * shape as nodes.<id>: every node of a loop's first and last iteration
-     * or pass, and the last node of each branch.
+     * shape as nodes.<id>: every node of a loop's last iteration or pass,
+     * and the last node of each branch. The first is left out: results[0]
+     * still reads it, but the last is the one a later node usually wants.
      *
      * @param  array<string, array<string, true>>  $loopBodies
      * @return list<array{label: string, path: string, type: string}>
@@ -354,7 +354,6 @@ class DataPicker
 
             foreach ($this->directBody($node->id, $loopBodies) as $id) {
                 $name = $graph->node($id)->name;
-                $sources[] = [$id, "results[0].{$id}", __($isWhile ? 'workflows.editor.first_pass_name' : 'workflows.editor.first_iteration_name', ['name' => $name])];
                 $sources[] = [$id, "last.{$id}", __($isWhile ? 'workflows.editor.last_pass_name' : 'workflows.editor.last_iteration_name', ['name' => $name])];
             }
         } elseif ($node->type === Merge::type()) {

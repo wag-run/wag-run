@@ -34,6 +34,7 @@ return [
         'resumes_time' => 'Resumes :time',
         'run_cancelled' => 'Run cancelled.',
         'run_output' => 'Run output',
+        'show_placeholders' => 'Show placeholders',
         'skipped_because_another_run_was' => 'Skipped because another run was in progress.',
         'started_by_run_id' => 'Started by run #:id',
         'steps' => 'Steps',
