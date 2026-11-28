@@ -32,7 +32,7 @@ class WorkspaceManager
         return DB::transaction(function () use ($user, $organization) {
             $workspace = $organization->workspaces()->create([
                 'name' => __('workspaces.first_workspace_name', ['name' => $user->firstName()]),
-                'slug' => Workspace::randomSlug($organization->id),
+                'slug' => Workspace::randomSlug(),
             ]);
             $workspace->members()->attach($user, ['role' => WorkspaceRole::Admin->value]);
             $user->forceFill(['current_workspace_id' => $workspace->id])->save();
@@ -74,7 +74,7 @@ class WorkspaceManager
 
         $workspace->update([
             'name' => $name,
-            'slug' => Workspace::uniqueSlug($name, $workspace->organization_id, $workspace->id),
+            'slug' => Workspace::uniqueSlug($name, $workspace->id),
         ]);
 
         Audit::record('workspace.renamed', $workspace, $workspace, ['from' => $from, 'to' => $name]);

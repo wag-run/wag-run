@@ -47,31 +47,35 @@ class Workspace extends Model
     {
         static::creating(function (Workspace $workspace) {
             if (blank($workspace->slug)) {
-                $workspace->slug = static::uniqueSlug($workspace->name, $workspace->organization_id);
+                $workspace->slug = static::uniqueSlug($workspace->name);
             }
         });
     }
 
     /**
-     * A random slug no other workspace in the organization uses.
+     * A random slug no other workspace uses. Slugs are unique across
+     * organizations, because a workspace's URL has only its slug in it.
      */
-    public static function randomSlug(?string $organizationId): string
+    public static function randomSlug(): string
     {
         do {
             $slug = Str::lower(Str::random(8));
-        } while (static::query()->where('organization_id', $organizationId)->where('slug', $slug)->exists());
+        } while (static::query()->where('slug', $slug)->exists());
 
         return $slug;
     }
 
-    public static function uniqueSlug(string $name, ?string $organizationId, ?int $ignoreId = null): string
+    /**
+     * A slug from the workspace's name that no other workspace uses, with -2,
+     * -3 added when it's taken. Unique across organizations, like randomSlug().
+     */
+    public static function uniqueSlug(string $name, ?int $ignoreId = null): string
     {
         $base = Str::slug($name) ?: 'workspace';
         $slug = $base;
         $suffix = 2;
 
         while (static::query()
-            ->where('organization_id', $organizationId)
             ->where('slug', $slug)
             ->when($ignoreId, fn ($q) => $q->whereKeyNot($ignoreId))
             ->exists()) {

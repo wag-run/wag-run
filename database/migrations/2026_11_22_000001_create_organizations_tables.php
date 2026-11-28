@@ -36,7 +36,7 @@ return new class extends Migration
             $table->json('settings')->nullable();
             $table->timestamps();
 
-            $table->unique(['organization_id', 'slug']);
+            $table->unique('slug');
         });
 
         Schema::create('workspace_user', function (Blueprint $table) {
