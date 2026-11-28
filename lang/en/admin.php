@@ -77,6 +77,7 @@ return [
         'no_sign_in_providers_yet' => 'No sign-in providers yet.',
         'off' => 'Off',
         'redirect_uri' => 'Redirect URI',
+        'redirect_uri_url' => 'Redirect URI: :url',
         'register_this_with_the_provider' => 'Register this with the provider.',
         'scopes' => 'Scopes',
         'show_on_the_sign_in' => 'Show on the sign-in page',
