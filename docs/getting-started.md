@@ -11,7 +11,7 @@ Open your wag.run address, enter your email, and choose **Continue**. Then sign 
 - **Invited by email?** Open the invitation link to create your account and join. Invitations expire, so ask for a new one if yours no longer works.
 - **First person on a new install?** Register an account. The first account becomes the organization admin, and its email address counts as confirmed. To set up an install, see [Self-hosting](self-hosting.md).
 
-Once you're in, open **Preferences** from the account menu at the bottom of the sidebar to turn on two-factor authentication.
+Once you're in, open **Preferences** from the account menu at the bottom of the sidebar to turn on two-factor authentication. If your organization requires it, you're asked to set it up the first time you sign in with a password.
 
 ## 2. Find your way around
 

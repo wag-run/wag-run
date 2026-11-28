@@ -19,6 +19,7 @@ The first account registered on a new install becomes an organization admin. Adm
 - **Invite by email**: send someone an invitation to create an account, and choose their **Organization role**. Invitations expire after 7 days and are listed under **Pending invitations** until then, where you can **Revoke** them. To invite someone straight into a workspace, invite them from that workspace's **Members** page instead.
 - **Promote to organization admin** or **Demote to member**: change someone's organization role. The last organization admin can't be demoted.
 - **Deactivate**: sign someone out and stop them signing in, without deleting their account or history. **Reactivate** lets them back in. You can't deactivate yourself or the last organization admin.
+- **Reset two-factor**: clear someone's two-factor setup, for when they've lost their authenticator and their recovery codes. They set it up again from **Preferences → Security**, and if it's required, they're sent there at their next sign-in.
 - **Generate password-reset link**: create a link that lets someone set a new password, for when email isn't set up or didn't arrive. Give it to them yourself. It works once and expires after 60 minutes.
 
 A deactivated person can't be chosen as an approver, assignee, or notification recipient, and workflows they own no longer notify them of failed runs.
@@ -49,6 +50,18 @@ php artisan sign-in:enable-password-login
 ```
 
 For a Docker install, run it as `docker compose exec app php artisan sign-in:enable-password-login`.
+
+### Two-factor authentication
+
+**Two-factor authentication**, also under **Sign-in methods**, decides whether password sign-ins ask for a code from an authenticator app. Choose one and click **Save settings**:
+
+| Choice | What happens |
+|---|---|
+| **Optional** (the default) | People choose in **Preferences → Security**. Those who set it up are asked for a code each time they sign in with a password. |
+| **Required** | Someone who signs in with a password and hasn't set it up is sent to **Security** to set it up, and can't open anything else until they do. Nobody can turn it off. |
+| **Disabled** | Nobody is asked for a code, and setup is hidden. People who had set it up keep their setup, so they're asked again if you switch back. The page says how many people that is before you save. |
+
+It only applies to password sign-ins. Sign-ins through a provider are never asked for a code, since the provider runs its own, and it's ignored while [password sign-in](#password-sign-in) is off. Someone who belongs to more than one organization is asked for a code unless every one of them has it disabled.
 
 ### Sign-in providers
 
