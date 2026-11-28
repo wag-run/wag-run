@@ -843,7 +843,7 @@ new class extends Component {
         $this->save($this->graph->withNode(new GraphNode($node->id, $node->type, $node->name, $node->config, $node->retry, [
             'x' => round((float) ($position['x'] ?? 0)),
             'y' => round((float) ($position['y'] ?? 0)),
-        ], $node->errorPath, $node->waitForAll)));
+        ], $node->errorPath, $node->waitForAll, $node->masking)));
     }
 
     /**
@@ -1031,7 +1031,7 @@ new class extends Component {
             $graph = $graph->withNode(new GraphNode($id, $node->type, $node->name, $node->config, $node->retry, [
                 'x' => $node->position['x'] + $dx,
                 'y' => $node->position['y'] + $dy,
-            ], $node->errorPath, $node->waitForAll));
+            ], $node->errorPath, $node->waitForAll, $node->masking));
         }
 
         foreach ($clipboard['edges'] ?? [] as $edge) {
@@ -1278,7 +1278,7 @@ new class extends Component {
         $oldPorts = $this->definition->ports($node->config);
         $newPorts = $this->definition->ports($config);
         $outputsChanged = $oldPorts !== $newPorts || $errorPath !== $node->errorPath;
-        $updated = new GraphNode($node->id, $node->type, $this->nodeName, $config, $retry, $node->position, $errorPath, $this->waitForAll && $this->definition->kind() === NodeKind::Action && ! $this->definition->joinsBranches());
+        $updated = new GraphNode($node->id, $node->type, $this->nodeName, $config, $retry, $node->position, $errorPath, $this->waitForAll && $this->definition->kind() === NodeKind::Action && ! $this->definition->joinsBranches(), $node->masking);
 
         $graph = $this->graph->withNode($updated);
         $relabelled = app(CanvasMapper::class)->node($node)['data']['ports'] !== app(CanvasMapper::class)->node($updated)['data']['ports'];
