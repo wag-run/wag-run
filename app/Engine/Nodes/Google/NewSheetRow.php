@@ -22,8 +22,8 @@ use RuntimeException;
  * again. A row inserted between others shifts the last row down, and that
  * one is taken for new.
  *
- * A run's input is the row as an object of its values by the headers in
- * the sheet's first row, with its row number under _row.
+ * A run's input is the row's number and its values by the headers in the
+ * sheet's first row, as Read rows from sheet gives each row.
  */
 class NewSheetRow extends Node implements EventTrigger
 {
@@ -73,7 +73,8 @@ class NewSheetRow extends Node implements EventTrigger
     public function outputs(array $config = []): array
     {
         return [
-            new Output(GoogleSheets::ROW, __('nodes.google_sheets.row_number'), 'number', __('nodes.google_sheets.new_row_output_help')),
+            new Output('row', __('nodes.google_sheets.row_number'), 'number'),
+            new Output('value', __('nodes.google_sheets.row_values'), 'object', __('nodes.google_sheets.row_values_help')),
         ];
     }
 

@@ -124,6 +124,6 @@ class UpdateSheetRow extends GoogleSheetsAction
         $index = GoogleSheets::column($column, $keys)
             ?? throw new RuntimeException(__('nodes.google_sheets.no_such_column', ['column' => $column]));
 
-        return array_column(GoogleSheets::rows($values, $keys, true, keep: fn (array $cells) => GoogleSheets::matches($cells[$index] ?? '', $value)), GoogleSheets::ROW);
+        return array_column(GoogleSheets::rows($values, $keys, true, keep: fn (array $cells) => GoogleSheets::matches($cells[$index] ?? '', $value)), 'row');
     }
 }

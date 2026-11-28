@@ -197,7 +197,12 @@ Fires when a row is added to a sheet of a Google Sheets spreadsheet. It's under 
 
 Google Sheets doesn't send webhooks, so wag.run reads the sheet every **Check every (minutes)**, 5 by default, and remembers how many rows it had. Each row below those is new, and starts a run, up to 100 a check: the rest start runs at the next check. The first check after publishing only notes what's already there, so publishing doesn't start runs for old rows. Under **Trigger URLs** in the [workflow settings](editor.md#workflow-settings), the trigger shows when it last checked, and what's wrong if it isn't working.
 
-The run gets the row as [Read rows from sheet](actions.md#read-rows-from-sheet) gives it: each value under its column's header in the sheet's first row, such as `trigger.Email`, or `trigger['First name']` for a header with a space, and its row number as `trigger._row`.
+The run gets the row as [Read rows from sheet](actions.md#read-rows-from-sheet) gives it:
+
+| Placeholder | What it holds |
+|---|---|
+| `trigger.row` | The row's number in the sheet |
+| `trigger.value` | The row's values by the headers in the sheet's first row, such as `trigger.value.Email`, or `trigger.value['First name']` for a header with a space |
 
 Because it counts rows, a few things are worth knowing:
 

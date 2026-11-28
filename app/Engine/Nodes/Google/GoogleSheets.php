@@ -15,20 +15,17 @@ use RuntimeException;
 
 /**
  * What the Google Sheets nodes share: the connected Google account, where a
- * sheet is, and how its rows read as objects. A row is keyed by the headers
- * in the first row it reads, or by column letter, and carries its row
- * number under ROW so a later node can change that row.
+ * sheet is, and how its rows read. A row is its number in the sheet, so a
+ * later node can change it, and its values, keyed by the headers in the
+ * first row read or by column letter:
+ *
+ *     ['row' => 2, 'value' => ['Email' => 'ada@example.com', 'Status' => '']]
  */
 class GoogleSheets
 {
     public const CREDENTIAL_TYPE = 'google';
 
     public const API = 'https://sheets.googleapis.com/v4/spreadsheets';
-
-    /**
-     * The key a row's number in the sheet is under.
-     */
-    public const ROW = '_row';
 
     /**
      * The Google account, spreadsheet, and sheet fields every Sheets node starts with.
@@ -152,7 +149,7 @@ class GoogleSheets
             $letter = self::columnLetter($firstColumn + $index);
             $header = $headers ? $values[0][$index] ?? '' : '';
             $name = is_scalar($header) ? trim((string) $header) : '';
-            $key = $name === '' || $name === self::ROW ? $letter : $name;
+            $key = $name === '' ? $letter : $name;
             $keys[] = in_array($key, $keys, true) ? "{$key} ({$letter})" : $key;
         }
 
@@ -160,13 +157,12 @@ class GoogleSheets
     }
 
     /**
-     * The rows as objects, leaving out the header row, empty rows, and rows
-     * $keep turns down.
+     * The rows, leaving out the header row, empty rows, and rows $keep turns down.
      *
      * @param  list<list<mixed>>  $values
      * @param  list<string>  $keys
      * @param  (callable(list<mixed>): bool)|null  $keep
-     * @return list<array<string, mixed>>
+     * @return list<array{row: int, value: array<string, mixed>}>
      */
     public static function rows(array $values, array $keys, bool $headers, int $firstRow = 1, ?callable $keep = null): array
     {
@@ -188,11 +184,11 @@ class GoogleSheets
     }
 
     /**
-     * One row as an object, or null when it's empty.
+     * One row: its number and its values by key, or null when it's empty.
      *
      * @param  list<string>  $keys
      * @param  list<mixed>  $cells
-     * @return array<string, mixed>|null
+     * @return array{row: int, value: array<string, mixed>}|null
      */
     public static function row(array $keys, array $cells, int $number): ?array
     {
@@ -200,15 +196,13 @@ class GoogleSheets
             return null;
         }
 
-        $row = [];
+        $value = [];
 
         foreach ($keys as $index => $key) {
-            $row[$key] = $cells[$index] ?? '';
+            $value[$key] = $cells[$index] ?? '';
         }
 
-        $row[self::ROW] = $number;
-
-        return $row;
+        return ['row' => $number, 'value' => $value];
     }
 
     /**

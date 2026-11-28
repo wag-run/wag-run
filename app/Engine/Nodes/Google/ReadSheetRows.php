@@ -11,9 +11,9 @@ use Illuminate\Http\Client\PendingRequest;
 
 /**
  * Reads a Google Sheets sheet as a list of rows, ready for a For loop or a
- * Filter. Each row is an object of its values by header, with its row
- * number under _row for Update row. It can keep only the rows where one
- * column holds a value, which finds a row by its ID or email.
+ * Filter. Each row is its number, for Update row, and its values by
+ * header. It can keep only the rows where one column holds a value, which
+ * finds a row by its ID or email.
  */
 class ReadSheetRows extends GoogleSheetsAction
 {

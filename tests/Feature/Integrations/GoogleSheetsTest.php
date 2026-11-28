@@ -73,7 +73,7 @@ class GoogleSheetsTest extends TestCase
             && $request->header('Authorization') === ['Bearer ya29.token']);
     }
 
-    public function test_reads_rows_as_objects_by_header_with_their_row_numbers_leaving_out_empty_rows(): void
+    public function test_reads_rows_as_their_numbers_and_values_by_header_leaving_out_empty_rows(): void
     {
         Http::fake([self::VALUES => Http::response($this->sheet([
             ['Name', 'Email', '', 'Name'],
@@ -86,8 +86,8 @@ class GoogleSheetsTest extends TestCase
 
         $this->assertSame([
             'rows' => [
-                ['Name' => 'Ada', 'Email' => 'ada@example.com', 'C' => 3, 'Name (D)' => 'x', '_row' => 2],
-                ['Name' => 'Grace', 'Email' => 'grace@example.com', 'C' => '', 'Name (D)' => '', '_row' => 4],
+                ['row' => 2, 'value' => ['Name' => 'Ada', 'Email' => 'ada@example.com', 'C' => 3, 'Name (D)' => 'x']],
+                ['row' => 4, 'value' => ['Name' => 'Grace', 'Email' => 'grace@example.com', 'C' => '', 'Name (D)' => '']],
             ],
             'count' => 2,
             'headers' => ['Name', 'Email', 'C', 'Name (D)'],
@@ -110,8 +110,8 @@ class GoogleSheetsTest extends TestCase
         $pending = $this->runAction('google.read_sheet_rows', ['match_column' => 'status', 'match_value' => '']);
         $sent = $this->runAction('google.read_sheet_rows', ['match_column' => 'B', 'match_value' => '{{ trigger.values.status }}'], ['status' => 'sent']);
 
-        $this->assertSame([3, 4], array_column($pending->output['rows'], '_row'), 'a header matches ignoring case, and an empty value finds empty cells');
-        $this->assertSame([2], array_column($sent->output['rows'], '_row'), 'a column letter works too');
+        $this->assertSame([3, 4], array_column($pending->output['rows'], 'row'), 'a header matches ignoring case, and an empty value finds empty cells');
+        $this->assertSame([2], array_column($sent->output['rows'], 'row'), 'a column letter works too');
     }
 
     public function test_reads_cells_without_headers_keyed_by_column_letter_from_where_the_range_starts(): void
@@ -120,7 +120,7 @@ class GoogleSheetsTest extends TestCase
 
         $step = $this->runAction('google.read_sheet_rows', ['cells' => 'B5:C', 'headers' => false]);
 
-        $this->assertSame([['B' => 'Ada', 'C' => 36, '_row' => 5], ['B' => 'Grace', 'C' => 85, '_row' => 6]], $step->output['rows']);
+        $this->assertSame([['row' => 5, 'value' => ['B' => 'Ada', 'C' => 36]], ['row' => 6, 'value' => ['B' => 'Grace', 'C' => 85]]], $step->output['rows']);
         Http::assertSent(fn (Request $request) => str_contains($request->url(), '/values/%27Orders%27%21B5%3AC?'));
     }
 
@@ -227,8 +227,8 @@ class GoogleSheetsTest extends TestCase
         $this->poll();
 
         $this->assertSame([
-            ['Email' => 'grace@example.com', 'Total' => 20, '_row' => 3],
-            ['Email' => 'alan@example.com', 'Total' => '', '_row' => 5],
+            ['row' => 3, 'value' => ['Email' => 'grace@example.com', 'Total' => 20]],
+            ['row' => 5, 'value' => ['Email' => 'alan@example.com', 'Total' => '']],
         ], Execution::query()->orderBy('id')->pluck('input')->all());
 
         $this->poll();
@@ -239,7 +239,7 @@ class GoogleSheetsTest extends TestCase
         $rows[] = ['joan@example.com', 30];
         $this->poll();
 
-        $this->assertSame('joan@example.com', Execution::query()->latest('id')->first()->input['Email'], 'a row added where a deleted one was is new');
+        $this->assertSame('joan@example.com', Execution::query()->latest('id')->first()->input['value']['Email'], 'a row added where a deleted one was is new');
         Http::assertSent(fn (Request $request) => $request->header('Authorization') === ['Bearer ya29.token']);
     }
 
@@ -259,7 +259,7 @@ class GoogleSheetsTest extends TestCase
 
         $this->poll();
         $this->assertSame(150, Execution::count());
-        $this->assertSame(151, Execution::query()->latest('id')->first()->input['_row']);
+        $this->assertSame(151, Execution::query()->latest('id')->first()->input['row']);
     }
 
     public function test_new_row_notes_a_refusal_on_the_trigger(): void
