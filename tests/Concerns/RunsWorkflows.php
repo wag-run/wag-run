@@ -18,7 +18,7 @@ trait RunsWorkflows
         $registry = $this->app->make(NodeRegistry::class);
 
         foreach ([Nodes\Start::class, Nodes\Emit::class, Nodes\Route::class, Nodes\Fork::class, Nodes\Join::class, Nodes\Flaky::class,
-            Nodes\Pause::class, Nodes\Ask::class, Nodes\Each::class, Nodes\Again::class, Nodes\Stop::class, Nodes\CallWorkflow::class] as $class) {
+            Nodes\Pause::class, Nodes\Ask::class, Nodes\Each::class, Nodes\Again::class, Nodes\Stop::class, Nodes\CallWorkflow::class, Nodes\Capture::class] as $class) {
             $registry->register($class);
         }
     }

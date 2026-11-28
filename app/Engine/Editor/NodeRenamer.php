@@ -70,6 +70,7 @@ class NodeRenamer
                 $node->position,
                 $node->errorPath,
                 $node->waitForAll,
+                $node->masking,
             );
         }
 

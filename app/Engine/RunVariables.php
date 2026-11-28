@@ -4,7 +4,9 @@ namespace App\Engine;
 
 use App\Engine\Graph\GraphVariable;
 use App\Engine\Graph\WorkflowGraph;
+use App\Engine\Masking\MaskedValues;
 use App\Engine\Templates\TemplateEngine;
+use App\Enums\MaskedSlot;
 use App\Enums\ValueOperation;
 use App\Enums\ValueType;
 use App\Models\Execution;
@@ -18,8 +20,10 @@ use RuntimeException;
  * lock, so changes from parallel branches can't be lost and a change is
  * saved together with the step that made it.
  *
- * Values are masked before they are saved, like step outputs, so a
- * variable can't carry a secret.
+ * Values are masked before they are saved, like step outputs. The real
+ * values are kept aside while the run is in flight (MaskedValues), so a
+ * token saved to a variable can still be read by a later step of the same
+ * run, and are gone once it ends.
  */
 class RunVariables
 {
@@ -35,6 +39,7 @@ class RunVariables
     public function __construct(
         protected TemplateEngine $templates,
         protected ContextBuilder $contexts,
+        protected MaskedValues $masked,
     ) {}
 
     /**
@@ -52,13 +57,16 @@ class RunVariables
 
         $data = $this->contexts->atStart($execution);
         $rows = [];
+        $realValues = [];
 
         foreach ($graph->variables as $variable) {
             try {
+                $worked = $this->workOut($variable, $data, $redactor);
+                array_push($realValues, ...$worked['real']);
                 $rows[] = [
                     'execution_id' => $execution->id,
                     'name' => $variable->name,
-                    'value' => $this->workOut($variable, $data, $redactor)['json'],
+                    'value' => $worked['json'],
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -68,6 +76,7 @@ class RunVariables
         }
 
         ExecutionVariable::query()->insert($rows);
+        $this->masked->keep($execution->id, null, MaskedSlot::Variable, $realValues);
     }
 
     /**
@@ -86,7 +95,7 @@ class RunVariables
 
     /**
      * @param  array<string, mixed>  $data
-     * @return array{value: mixed, json: string}
+     * @return array{value: mixed, json: string, real: list<array{path: list<string|int>, value: mixed}>}
      *
      * @throws RuntimeException
      */
@@ -94,13 +103,29 @@ class RunVariables
     {
         $type = $variable->valueType() ?? throw new RuntimeException(__('engine.variables.unknown_type', ['type' => $variable->type]));
         $rendered = $this->templates->render($variable->value, $data);
-        $value = $redactor->mask($rendered === null || ($rendered === '' && $type !== ValueType::String) ? $type->emptyValue() : $type->convert($rendered));
+        [$value, $real] = $this->masking($variable->name, $rendered === null || ($rendered === '' && $type !== ValueType::String) ? $type->emptyValue() : $type->convert($rendered), $redactor);
 
-        return ['value' => $value, 'json' => $this->encode($type, $value)];
+        return ['value' => $value, 'json' => $this->encode($type, $value), 'real' => $real];
+    }
+
+    /**
+     * A variable's value masked, and the real values the masks replaced,
+     * with paths that start with the variable's name, as forms and names
+     * are matched under it (a variable called api_token is masked whole).
+     *
+     * @return array{0: mixed, 1: list<array{path: list<string|int>, value: mixed}>}
+     */
+    protected function masking(string $name, mixed $value, Redactor $redactor): array
+    {
+        [$masked, $real] = $redactor->split([$name => $value]);
+
+        return [$masked[$name], $real];
     }
 
     /**
      * Change a variable. Call it only while holding the run's row lock.
+     * The change starts from the variable's real value, and before and
+     * after come back masked, as the step's output shows them.
      *
      * @return array{before: mixed, after: mixed}
      *
@@ -116,7 +141,8 @@ class RunVariables
 
         $variable = $execution->variables()->where('name', $name)->lockForUpdate()->first();
         $before = $variable?->decoded();
-        $after = $redactor->mask($operation->apply($type, $before, $operand));
+        $realBefore = $this->masked->of($execution)->restore([$name => $before], MaskedSlot::Variable)[$name];
+        [$after, $real] = $this->masking($name, $operation->apply($type, $realBefore, $operand), $redactor);
         $json = $this->encode($type, $after);
 
         if ($variable) {
@@ -125,16 +151,21 @@ class RunVariables
             $execution->variables()->create(['name' => $name, 'value' => $json]);
         }
 
+        $this->masked->keepVariable($execution->id, $name, $real);
+
         return ['before' => $before, 'after' => $after];
     }
 
     /**
+     * @param  bool  $unmasked  with the real values behind masks, for a step of a run in flight; never for showing a run
      * @return array<string, mixed> the run's current values by variable name
      */
-    public function all(Execution $execution): array
+    public function all(Execution $execution, bool $unmasked = false): array
     {
-        return $execution->variables()->orderBy('id')->pluck('value', 'name')
+        $values = $execution->variables()->orderBy('id')->pluck('value', 'name')
             ->map(fn (string $json) => json_decode($json, true))->all();
+
+        return $unmasked ? $this->masked->of($execution)->restore($values, MaskedSlot::Variable) : $values;
     }
 
     /**

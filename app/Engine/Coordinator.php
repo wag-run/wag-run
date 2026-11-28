@@ -4,7 +4,10 @@ namespace App\Engine;
 
 use App\Engine\Events\ExecutionFinished;
 use App\Engine\Graph\WorkflowGraph;
+use App\Engine\Masking\MaskedValues;
+use App\Engine\Masking\MaskRules;
 use App\Enums\ExecutionStatus;
+use App\Enums\MaskedSlot;
 use App\Enums\ResumeReason;
 use App\Enums\StepStatus;
 use App\Enums\ValueOperation;
@@ -22,6 +25,10 @@ use RuntimeException;
  * Owns every status change of steps and executions. Each change runs in a
  * transaction holding the execution's row lock, so parallel branches finishing
  * at once cannot race. Jobs are dispatched only after the transaction commits.
+ *
+ * Everything written to a step or the run is masked first (Redactor). What
+ * a later step may still read (an output, a waiting step's state) keeps its
+ * real values aside in MaskedValues until the run ends.
  */
 class Coordinator
 {
@@ -32,7 +39,7 @@ class Coordinator
      */
     protected array $graphs = [];
 
-    public function __construct(protected NodeRegistry $registry, protected RunVariables $variables) {}
+    public function __construct(protected NodeRegistry $registry, protected RunVariables $variables, protected MaskedValues $masked) {}
 
     /**
      * Apply what a node returned for a step this worker claimed. The result is
@@ -48,7 +55,7 @@ class Coordinator
             }
 
             $fresh->setRelation('execution', $execution);
-            $redactor = Redactor::forWorkspace($execution->workspace);
+            $redactor = Redactor::forExecution($execution);
 
             match ($result->kind) {
                 ResultKind::Complete => $this->complete($fresh, $result->output, $result->ports, $redactor),
@@ -80,7 +87,7 @@ class Coordinator
 
             $fresh->setRelation('execution', $execution);
 
-            $this->fail($fresh, __('engine.worker_running_this_step_stopped'), true, null, Redactor::forWorkspace($execution->workspace));
+            $this->fail($fresh, __('engine.worker_running_this_step_stopped'), true, null, Redactor::forExecution($execution));
             $this->settle($execution);
         });
     }
@@ -121,6 +128,8 @@ class Coordinator
             'cancelled_by' => $cancelledBy?->id,
             'finished_at' => now(),
         ])->save();
+
+        $this->masked->forget($execution);
 
         DB::afterCommit(fn () => event(new ExecutionFinished($execution)));
 
@@ -209,13 +218,17 @@ class Coordinator
      */
     protected function complete(ExecutionStep $step, mixed $output, array $ports, Redactor $redactor): void
     {
+        [$output, $realValues] = $redactor->split($output, $this->rulesFor($step));
+
         $step->forceFill([
             'status' => StepStatus::Complete,
-            'output' => $redactor->mask($output),
+            'output' => $output,
             'output_ports' => $ports,
             'finished_at' => now(),
             'claim_token' => null,
         ])->save();
+
+        $this->masked->keep($step->execution_id, $step->id, MaskedSlot::Output, $realValues);
 
         foreach ($ports as $port) {
             $this->follow($step, $port);
@@ -252,14 +265,14 @@ class Coordinator
 
         $step->forceFill([
             'status' => StepStatus::Failed,
-            'output' => $redactor->mask($output),
+            'output' => $redactor->mask($output, $this->rulesFor($step)),
             'error' => ['message' => $redactor->mask($message), 'attempt' => $step->attempt],
             'finished_at' => now(),
             'claim_token' => null,
         ])->save();
 
         if ($retryable && $policy->allowsAnotherAttempt($step->attempt)) {
-            $this->createStep(
+            $retry = $this->createStep(
                 $execution,
                 $step->node_id,
                 $step->scope_key,
@@ -270,6 +283,8 @@ class Coordinator
                 availableAt: now()->addSeconds($policy->delayAfter($step->attempt)),
                 state: $step->state,
             );
+
+            $this->masked->copyState($step, $retry);
 
             return;
         }
@@ -292,20 +307,26 @@ class Coordinator
      */
     protected function park(ExecutionStep $step, WaitType $type, ?CarbonInterface $until, array $state, Redactor $redactor): void
     {
+        [$state, $realValues] = $redactor->split($state);
+
         $step->forceFill([
             'status' => StepStatus::Waiting,
             'wait_type' => $type,
             'resume_at' => $until,
-            'state' => $redactor->mask($state) ?: null,
+            'state' => $state ?: null,
             'claim_token' => null,
         ])->save();
+
+        $this->masked->keep($step->execution_id, $step->id, MaskedSlot::State, $realValues);
     }
 
     protected function terminate(ExecutionStep $step, NodeResult $result, Redactor $redactor): void
     {
+        $output = $redactor->mask($result->output, $this->rulesFor($step));
+
         $step->forceFill([
             'status' => StepStatus::Complete,
-            'output' => $redactor->mask($result->output),
+            'output' => $output,
             'output_ports' => [],
             'finished_at' => now(),
             'claim_token' => null,
@@ -316,11 +337,21 @@ class Coordinator
         $this->finish(
             $step->execution,
             $status,
-            output: $redactor->mask($result->output),
+            output: $output,
             error: $status === ExecutionStatus::Failed
                 ? ['message' => __('engine.ended_by_a_terminate_node'), 'node_id' => $step->node_id, 'step_id' => $step->id]
                 : null,
         );
+    }
+
+    /**
+     * The node's own "Always mask" and "Never mask" paths, for its output.
+     */
+    protected function rulesFor(ExecutionStep $step): MaskRules
+    {
+        $graph = $this->graphFor($step->execution);
+
+        return $graph->has($step->node_id) ? MaskRules::for($graph->node($step->node_id)) : MaskRules::none();
     }
 
     protected function iterate(ExecutionStep $step, NodeResult $result, Redactor $redactor): void

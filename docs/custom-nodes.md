@@ -149,7 +149,8 @@ What to notice:
 - **`templated: true`** lets people use `{{ }}` placeholders in the field. `$context->input('subject')` gives you the value with placeholders already filled in. A field that is one placeholder keeps the value's type, so it may be a number or a list, not text.
 - **The output is an array keyed by your `Output` names.** A later node reads it as `{{ nodes.<id>.output.url }}`, and the data picker lists `id` and `url` because you declared them.
 - **Failures are returned, not thrown.** `retryable: false` is for problems a retry won't fix, such as a missing credential or a 4xx answer. Everything else follows the retry setting on the node. An exception you don't catch fails the step as retryable, with the exception's message.
-- **The step's input is recorded.** Every declared input is saved on the step row for the run page, with secrets and credential values masked.
+- **The step's input is recorded.** Every declared input is saved on the step row for the run page.
+- **Masking is automatic.** Your node's input, output, error, and the state it saves while it waits are masked like any built-in node's (see [Secrets in logs](data-and-placeholders.md#secrets-in-logs)): known secrets, values under secret-sounding names, and values that look like secrets. Later steps, and your node's own `resume()`, still get the real values while the run is going. Give an output field that holds a secret a name that says so, such as `token` or `api_key`, and it's masked by name.
 
 ### Registering it
 

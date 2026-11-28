@@ -27,7 +27,10 @@ final class VariableData implements ArrayAccess, Countable, IteratorAggregate, L
      */
     private ?array $values = null;
 
-    public function __construct(private readonly ?Execution $execution) {}
+    /**
+     * @param  bool  $unmasked  with the real values behind masks, for a step of a run in flight; never for showing a run
+     */
+    public function __construct(private readonly ?Execution $execution, private readonly bool $unmasked = false) {}
 
     public function __get(string $name): mixed
     {
@@ -65,6 +68,6 @@ final class VariableData implements ArrayAccess, Countable, IteratorAggregate, L
 
     public function all(): array
     {
-        return $this->values ??= $this->execution ? app(RunVariables::class)->all($this->execution) : [];
+        return $this->values ??= $this->execution ? app(RunVariables::class)->all($this->execution, $this->unmasked) : [];
     }
 }

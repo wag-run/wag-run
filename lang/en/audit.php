@@ -67,6 +67,8 @@ return [
             'draft_discarded' => 'Workflow draft discarded',
             'rolled_back' => 'Workflow rolled back',
             'settings_updated' => 'Workflow settings updated',
+            'masking_added' => 'Masking override added',
+            'masking_removed' => 'Masking override removed',
             'enabled' => 'Workflow enabled',
             'disabled' => 'Workflow disabled',
             'deleted' => 'Workflow deleted',
