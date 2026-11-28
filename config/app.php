@@ -56,6 +56,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Self-Hosted
+    |--------------------------------------------------------------------------
+    |
+    | Whether this is a self-hosted install, serving one organization. The
+    | hosted version of wag.run sets this to false, which turns on the parts
+    | only it needs. Self-hosted installs leave it at its default.
+    |
+    */
+
+    'self_hosted' => (bool) env('SELF_HOSTED', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

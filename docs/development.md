@@ -46,6 +46,10 @@ composer run dev
 
 This runs `php artisan dev`, which starts the local web server and the other processes the app needs while you work. Open the URL it prints and register. The first account becomes the organization admin.
 
+### Working on the hosted version
+
+wag.run also runs as a hosted service. The parts only it needs are behind the `SELF_HOSTED` setting, which is `true` by default. To work on them, add `SELF_HOSTED=false` to your `.env`.
+
 ## Tests and checks
 
 ```bash
