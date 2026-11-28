@@ -272,14 +272,28 @@ class User extends Authenticatable implements MustVerifyEmail, OAuthenticatable
      */
     public function accessibleWorkspaces(): Collection
     {
-        if ($this->isOrgAdmin()) {
-            return Workspace::query()
-                ->where('organization_id', $this->organizationMembership()?->organization_id)
-                ->orderBy('name')
-                ->get();
+        return $this->accessibleWorkspacesIn(Organization::current());
+    }
+
+    /**
+     * The workspaces the user can open in an organization: all of them for its
+     * active admins, otherwise the ones they're a member of there.
+     *
+     * @return Collection<int, Workspace>
+     */
+    public function accessibleWorkspacesIn(?Organization $organization): Collection
+    {
+        if (! $organization) {
+            return new Collection;
         }
 
-        return $this->workspaces()->orderBy('name')->get();
+        $membership = $this->membershipIn($organization);
+
+        if ($membership?->role === OrgRole::Admin && $membership->deactivated_at === null) {
+            return $organization->workspaces()->orderBy('name')->get();
+        }
+
+        return $this->workspaces()->where('organization_id', $organization->id)->orderBy('name')->get();
     }
 
     /**

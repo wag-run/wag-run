@@ -5,6 +5,7 @@ return [
     'documentation' => 'Documentation',
     'double_click_to_toggle_sidebar' => 'Double-click to toggle sidebar',
     'manage_workspaces' => 'Manage workspaces',
+    'no_workspaces_yet' => 'No workspaces yet',
     'org_settings' => 'Org settings',
     'organization' => 'Organization',
     'overview' => 'Overview',
@@ -13,5 +14,6 @@ return [
     'repository' => 'Repository',
     'resize_sidebar' => 'Resize sidebar',
     'search' => 'Search',
+    'switch_to_name' => 'Switch to :name',
     'account_menu_unread' => 'Account menu, :count unread item in your inbox|Account menu, :count unread items in your inbox',
 ];

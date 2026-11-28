@@ -5,6 +5,7 @@ use App\Http\Controllers\EventWebhookController;
 use App\Http\Controllers\OAuthConnectionController;
 use App\Http\Controllers\OidcController;
 use App\Http\Controllers\SignInEmailController;
+use App\Http\Controllers\SwitchOrganizationController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\WorkflowExportController;
 use App\Http\Controllers\WorkflowFileController;
@@ -29,6 +30,7 @@ Route::livewire('forms/{key}', 'pages::forms.show')->name('forms.show');
 Route::middleware('guest')->group(function () {
     Route::post('login/email', [SignInEmailController::class, 'store'])->name('login.email');
     Route::delete('login/email', [SignInEmailController::class, 'destroy'])->name('login.email.destroy');
+    Route::post('login/organization', [SignInEmailController::class, 'chooseOrganization'])->name('login.organization');
 });
 
 Route::middleware(['guest', 'throttle:30,1'])->prefix('auth/oidc/{provider}')->name('oidc.')->group(function () {
@@ -38,6 +40,7 @@ Route::middleware(['guest', 'throttle:30,1'])->prefix('auth/oidc/{provider}')->n
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::post('organizations/{organization}/switch', SwitchOrganizationController::class)->name('organizations.switch');
     Route::get('integrations/oauth/{type}/callback', [OAuthConnectionController::class, 'callback'])
         ->middleware('throttle:30,1')->name('integrations.oauth.callback');
     Route::livewire('inbox', 'pages::inbox.index')->name('inbox');

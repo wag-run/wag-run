@@ -30,6 +30,19 @@ use Illuminate\Support\Str;
  */
 class SignInOptions
 {
+    /**
+     * The organizations an email's account is active in, by name. Someone in
+     * more than one picks which to sign in to.
+     *
+     * @return Collection<int, Organization>
+     */
+    public function organizationsOf(string $email): Collection
+    {
+        $user = User::query()->where('email', Str::lower(trim($email)))->first();
+
+        return $user ? $user->organizations()->wherePivotNull('deactivated_at')->orderBy('name')->get() : new Collection;
+    }
+
     public function organizationFor(string $email): ?Organization
     {
         $user = User::query()->where('email', Str::lower(trim($email)))->first();
@@ -45,6 +58,15 @@ class SignInOptions
             }
         }
 
+        return $this->domainOwner($email)?->organization;
+    }
+
+    /**
+     * The enabled provider that has verified the email's domain, in whichever
+     * organization. That organization speaks for people at the domain.
+     */
+    public function domainOwner(string $email): ?OidcProvider
+    {
         $domain = OidcDomain::ofEmail($email);
 
         return $domain === null ? null : OidcDomain::query()
@@ -52,7 +74,7 @@ class SignInOptions
             ->where('domain', $domain)
             ->whereHas('provider', fn ($query) => $query->where('enabled', true))
             ->oldest()
-            ->first()?->provider->organization;
+            ->first()?->provider;
     }
 
     /**
@@ -61,15 +83,31 @@ class SignInOptions
      * password is accepted. An email with no organization gets the default:
      * a password and no providers.
      *
-     * @return array{organization: ?Organization, providers: Collection<int, OidcProvider>, claimingProvider: ?OidcProvider, passwordAllowed: bool}
+     * An email whose account is in several organizations and hasn't picked
+     * one gets them as `organizations`, and nothing else, so the page can ask.
+     *
+     * @return array{organizations: Collection<int, Organization>, organization: ?Organization, providers: Collection<int, OidcProvider>, claimingProvider: ?OidcProvider, passwordAllowed: bool}
      */
-    public function forEmail(string $email): array
+    public function forEmail(string $email, ?string $chosenOrganizationId = null): array
     {
-        $organization = $this->organizationFor($email);
+        $organizations = $this->organizationsOf($email);
+
+        if ($organizations->count() > 1 && ! $organizations->contains('id', $chosenOrganizationId)) {
+            return [
+                'organizations' => $organizations,
+                'organization' => null,
+                'providers' => new Collection,
+                'claimingProvider' => null,
+                'passwordAllowed' => true,
+            ];
+        }
+
+        $organization = $organizations->firstWhere('id', $chosenOrganizationId) ?? $this->organizationFor($email);
         $providers = $this->providersFor($email, $organization);
         $domain = OidcDomain::ofEmail($email);
 
         return [
+            'organizations' => new Collection,
             'organization' => $organization,
             'providers' => $providers,
             'claimingProvider' => $providers->first(fn (OidcProvider $provider) => $this->claims($provider, $domain)),

@@ -25,14 +25,14 @@
                 </flux:button>
             </form>
 
-            @unless (\App\Models\Organization::query()->exists())
+            @if (! config('app.self_hosted') || ! \App\Models\Organization::query()->exists())
                 <div class="space-x-1 text-sm text-center rtl:space-x-reverse text-zinc-600 dark:text-zinc-400">
                     <span>{{ __('auth.login.don_t_have_an_account') }}</span>
                     <flux:link :href="route('register')" wire:navigate>{{ __('auth.login.sign_up') }}</flux:link>
                 </div>
-            @endunless
+            @endif
         @else
-            <x-auth-header :title="__('auth.login.log_in_to_your_account')" :description="__('auth.login.choose_how_to_sign_in')" />
+            <x-auth-header :title="__('auth.login.log_in_to_your_account')" :description="$organizations->isNotEmpty() ? __('auth.login.choose_an_organization') : __('auth.login.choose_how_to_sign_in')" />
 
             <!-- Session Status -->
             <x-auth-session-status class="text-center" :status="session('status')" />
@@ -50,6 +50,17 @@
 
             <flux:error name="email" />
 
+            @if ($organizations->isNotEmpty())
+                <div class="flex flex-col gap-2" data-test="organization-picker">
+                    @foreach ($organizations as $organization)
+                        <form method="POST" action="{{ route('login.organization') }}">
+                            @csrf
+                            <input type="hidden" name="organization" value="{{ $organization->id }}" />
+                            <flux:button type="submit" class="w-full" icon="building-office" data-test="choose-{{ $organization->id }}">{{ $organization->name }}</flux:button>
+                        </form>
+                    @endforeach
+                </div>
+            @else
             @if ($providers->isEmpty() && ! $passwordAllowed)
                 <flux:callout variant="secondary" icon="information-circle" :heading="__('auth.login.there_s_no_way_for')" />
             @endif
@@ -99,6 +110,7 @@
                     {{ __('common.log_in') }}
                 </flux:button>
             </form>
+            @endif
             @endif
         @endif
     </div>

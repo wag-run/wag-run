@@ -19,14 +19,17 @@
             @php
                 $sidebarUser = auth()->user();
                 $routeWorkspace = request()->route('workspace');
+                $currentOrganization = \App\Models\Organization::current();
                 $activeWorkspace = $routeWorkspace instanceof \App\Models\Workspace ? $routeWorkspace : $sidebarUser->currentWorkspace;
+                $activeWorkspace = $activeWorkspace?->organization_id === $currentOrganization?->id ? $activeWorkspace : null;
                 $activeRole = $activeWorkspace ? $sidebarUser->roleIn($activeWorkspace) : null;
                 $activeWorkspace = $activeRole ? $activeWorkspace : null;
                 $switchableWorkspaces = $sidebarUser->accessibleWorkspaces();
                 $isOrgAdmin = $sidebarUser->isOrgAdmin();
+                $sidebarOrganizations = $sidebarUser->organizations()->wherePivotNull('deactivated_at')->orderBy('name')->get();
             @endphp
 
-            @if ($switchableWorkspaces->isNotEmpty())
+            @if ($switchableWorkspaces->isNotEmpty() || $sidebarOrganizations->count() > 1)
                 <flux:dropdown position="bottom" align="start" class="w-full">
                     <flux:button
                         variant="subtle"
@@ -42,17 +45,49 @@
                     </flux:button>
 
                     <flux:menu>
-                        <flux:menu.heading>{{ __('common.workspaces') }}</flux:menu.heading>
-                        @foreach ($switchableWorkspaces as $switchable)
-                            <flux:menu.item
-                                wire:key="switch-{{ $switchable->id }}"
-                                :href="route('workspaces.show', $switchable)"
-                                :icon="$activeWorkspace?->is($switchable) ? 'check' : null"
-                                wire:navigate
-                            >
-                                {{ $switchable->name }}
-                            </flux:menu.item>
-                        @endforeach
+                        @if ($sidebarOrganizations->count() > 1)
+                            {{-- Someone in several organizations sees each one's workspaces under its name. --}}
+                            @foreach ($sidebarOrganizations as $sidebarOrganization)
+                                @if (! $loop->first)
+                                    <flux:menu.separator />
+                                @endif
+                                <flux:menu.heading data-test="switcher-organization-{{ $sidebarOrganization->id }}">{{ $sidebarOrganization->name }}</flux:menu.heading>
+                                @php($organizationWorkspaces = $currentOrganization?->is($sidebarOrganization) ? $switchableWorkspaces : $sidebarUser->accessibleWorkspacesIn($sidebarOrganization))
+                                @forelse ($organizationWorkspaces as $switchable)
+                                    <flux:menu.item
+                                        wire:key="switch-{{ $switchable->id }}"
+                                        :href="route('workspaces.show', $switchable)"
+                                        :icon="$activeWorkspace?->is($switchable) ? 'check' : null"
+                                        wire:navigate
+                                    >
+                                        {{ $switchable->name }}
+                                    </flux:menu.item>
+                                @empty
+                                    @if ($currentOrganization?->is($sidebarOrganization))
+                                        <flux:menu.item disabled icon="check">{{ __('navigation.no_workspaces_yet') }}</flux:menu.item>
+                                    @else
+                                        <form method="POST" action="{{ route('organizations.switch', $sidebarOrganization) }}">
+                                            @csrf
+                                            <flux:menu.item type="submit" icon="arrow-right" data-test="switch-organization-{{ $sidebarOrganization->id }}">
+                                                {{ __('navigation.switch_to_name', ['name' => $sidebarOrganization->name]) }}
+                                            </flux:menu.item>
+                                        </form>
+                                    @endif
+                                @endforelse
+                            @endforeach
+                        @else
+                            <flux:menu.heading>{{ __('common.workspaces') }}</flux:menu.heading>
+                            @foreach ($switchableWorkspaces as $switchable)
+                                <flux:menu.item
+                                    wire:key="switch-{{ $switchable->id }}"
+                                    :href="route('workspaces.show', $switchable)"
+                                    :icon="$activeWorkspace?->is($switchable) ? 'check' : null"
+                                    wire:navigate
+                                >
+                                    {{ $switchable->name }}
+                                </flux:menu.item>
+                            @endforeach
+                        @endif
                         @if ($isOrgAdmin)
                             <flux:menu.separator />
                             <flux:menu.item :href="route('admin.workspaces')" icon="squares-plus" wire:navigate>

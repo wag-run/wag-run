@@ -93,7 +93,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::loginView(function (Request $request) {
             $email = $request->session()->get(SignInEmailController::SESSION_KEY);
-            $options = $email ? app(SignInOptions::class)->forEmail($email) : null;
+            $options = $email ? app(SignInOptions::class)->forEmail($email, $request->session()->get(SignInEmailController::ORGANIZATION_KEY)) : null;
 
             // The only way in is one provider: go straight there, unless the page has something to say.
             if ($options && ! $options['passwordAllowed'] && $options['providers']->count() === 1
@@ -103,6 +103,7 @@ class FortifyServiceProvider extends ServiceProvider
 
             return view('pages::auth.login', [
                 'email' => $email,
+                'organizations' => $options['organizations'] ?? collect(),
                 'providers' => $options['providers'] ?? collect(),
                 'claimingProvider' => $options['claimingProvider'] ?? null,
                 'passwordAllowed' => $options['passwordAllowed'] ?? true,
@@ -111,7 +112,7 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::verifyEmailView(fn () => view('pages::auth.verify-email'));
         Fortify::twoFactorChallengeView(fn () => view('pages::auth.two-factor-challenge'));
         Fortify::confirmPasswordView(fn () => redirect()->route('dashboard'));
-        Fortify::registerView(fn () => Organization::query()->exists()
+        Fortify::registerView(fn () => config('app.self_hosted') && Organization::query()->exists()
             ? redirect()->route('login')
             : view('pages::auth.register'));
         Fortify::resetPasswordView(fn () => view('pages::auth.reset-password'));
