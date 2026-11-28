@@ -178,7 +178,7 @@ Secret values show as `********` in run logs: on the run page, in the [API](api.
 
 - **It's a known secret**: a workspace [secret](workspaces.md#secrets), or a credential's secret field.
 - **It sits under a name that sounds secret**, at any depth: headers such as **Authorization**, **Cookie**, **Set-Cookie**, and **X-Api-Key**, and fields such as `token`, `password`, `secret`, `api_key`, and `client_secret`, or ending in `_token`, `_secret`, or `_password`. Matching ignores case, dashes, and underscores, so `api-key`, `API_KEY`, and `apiKey` all match. The full list is under [**Org settings → Masking**](administration.md#masking), where you can add your own names.
-- **It looks like a secret**: a JWT, `Bearer …` or `Basic …` credentials, a key with a known prefix such as `ghp_`, `sk-`, `xoxb-`, or `AKIA`, or a password or token in a URL, such as `user:pass@host` or `?access_token=`.
+- **It looks like a secret**: a JWT, `Bearer …` or `Basic …` credentials, a PEM private key block, a key with a known prefix (GitHub `ghp_`, GitLab `glpat-`, OpenAI and Anthropic `sk-`, Stripe `sk_live_`, `rk_live_`, and `whsec_`, Slack `xoxb-`, `xoxp-`, and `xapp-`, AWS `AKIA`, Google `AIza`, SendGrid `SG.`, npm `npm_`, and others), a Slack or Discord webhook URL, or a password or token in a URL or connection string, such as `user:pass@host`, `?access_token=`, or `AccountKey=`.
 - **The node says so**, on its [**Masking**](editor.md#masking) tab.
 
 Once a run has masked a value, it masks it wherever else it shows up in that run: a token a login step received is masked in a later step's URL, in a message, or in an error.

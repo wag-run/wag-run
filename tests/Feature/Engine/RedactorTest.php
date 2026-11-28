@@ -42,6 +42,28 @@ class RedactorTest extends TestCase
             'an sk- key' => ['sk-proj-abcdefghijklmnop1234', self::M],
             'a Slack token' => ['xoxb-1234567890-abcdefghij', self::M],
             'an AWS key id' => ['AKIAIOSFODNN7EXAMPLE', self::M],
+            'a GitLab token' => ['glpat'.'-'.str_repeat('x1Y2', 5), self::M],
+            'a Stripe secret key' => ['key=sk'.'_live_'.str_repeat('a1B2', 6), 'key='.self::M],
+            'a Stripe restricted key' => ['rk'.'_live_'.str_repeat('a1B2', 6), self::M],
+            'a Stripe test key' => ['sk'.'_test_'.str_repeat('a1B2', 6), self::M],
+            'a Stripe webhook secret' => ['whsec'.'_'.str_repeat('a1B2', 8), self::M],
+            'a Slack user token' => ['xoxp'.'-1234567890-abcdefghij', self::M],
+            'a Slack app token' => ['xapp'.'-1-A0123456789-abcdef', self::M],
+            'a Slack webhook URL' => ['https://hooks.slack.com/services/'.'T0000/B0000/'.str_repeat('x', 24), 'https://hooks.slack.com/services/'.self::M],
+            'a Discord webhook URL' => ['https://discord.com/api/webhooks/'.'123456789/'.str_repeat('x_Y-', 8), 'https://discord.com/api/webhooks/'.self::M],
+            'a temporary AWS key id' => ['ASIA'.'IOSFODNN7EXAMPLE', self::M],
+            'an Azure account key' => ['DefaultEndpointsProtocol=https;AccountName=ada;AccountKey='.str_repeat('aB1+', 8).'==;', 'DefaultEndpointsProtocol=https;AccountName=ada;AccountKey='.self::M.';'],
+            'a Google API key' => ['AIza'.str_repeat('x1Y2-', 7), self::M],
+            'a Google access token' => ['ya29'.'.'.str_repeat('x1Y2', 8), self::M],
+            'a Google client secret' => ['GOCSPX'.'-'.str_repeat('x1Y2', 7), self::M],
+            'a SendGrid key' => ['SG'.'.'.str_repeat('x1Y2', 5).'.'.str_repeat('x1Y2', 10), self::M],
+            'an npm token' => ['npm'.'_'.str_repeat('x1Y2', 9), self::M],
+            'a PyPI token' => ['pypi'.'-AgEIcHlwaS5vcmc'.str_repeat('x1Y2', 15), self::M],
+            'a Hugging Face token' => ['hf'.'_'.str_repeat('x1Y2', 9), self::M],
+            'a Shopify token' => ['shpat'.'_'.str_repeat('a1b2', 8), self::M],
+            'a DigitalOcean token' => ['dop'.'_v1_'.str_repeat('a1b2', 16), self::M],
+            'a PEM private key' => ["key:\n-----BEGIN RSA PRIVATE KEY-----\nMIIEow".str_repeat('AIza', 12)."\n-----END RSA PRIVATE KEY-----\ndone", "key:\n".self::M."\ndone"],
+            'a cut-off PEM private key' => ["-----BEGIN PRIVATE KEY-----\nMIIEvQ", self::M],
             'credentials in a URL' => ['https://ada:hunter2@db.example.com/x', 'https://ada:'.self::M.'@db.example.com/x'],
             'an access token in a query' => ['https://api.example.com/x?access_token=abc123&page=2', 'https://api.example.com/x?access_token='.self::M.'&page=2'],
             'an AWS signature' => ['https://s3.example.com/f?X-Amz-Signature=deadbeef&X-Amz-Expires=60', 'https://s3.example.com/f?X-Amz-Signature='.self::M.'&X-Amz-Expires=60'],
@@ -60,7 +82,12 @@ class RedactorTest extends TestCase
 
     public function test_ordinary_text_is_left_alone(): void
     {
-        $text = ['note' => 'Basic plan, bearer of good news, sk-1, https://example.com/?page=2', 'count' => 12, 'token_count' => 40];
+        $text = [
+            'note' => 'Basic plan, bearer of good news, sk-1, https://example.com/?page=2', 'count' => 12, 'token_count' => 40,
+            'lookalikes' => 'sk_live_short, npm_config_cache, SG.1, hf_hub, AIza, ya29.1, https://hooks.slack.com/services/',
+            'public_key' => "-----BEGIN PUBLIC KEY-----\nMIIBIjAN\n-----END PUBLIC KEY-----",
+            'certificate' => "-----BEGIN CERTIFICATE-----\nMIIDdzCC\n-----END CERTIFICATE-----",
+        ];
 
         $this->assertSame($text, (new Redactor)->mask($text));
     }
