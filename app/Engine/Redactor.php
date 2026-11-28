@@ -56,7 +56,14 @@ class Redactor
      * What values that look like secrets are recognised by, as shown on the
      * organization's settings.
      */
-    public const VALUE_PATTERNS = ['JWT', 'Bearer ...', 'Basic ...', 'ghp_...', 'sk-...', 'xoxb-...', 'AKIA...', 'user:pass@host', '?access_token=', 'X-Amz-Signature'];
+    public const VALUE_PATTERNS = [
+        'JWT', 'Bearer ...', 'Basic ...', '-----BEGIN PRIVATE KEY-----',
+        'ghp_...', 'github_pat_...', 'glpat-...', 'sk-...', 'sk_live_...', 'rk_live_...', 'whsec_...',
+        'xoxb-...', 'xoxp-...', 'xapp-...', 'hooks.slack.com/services/...', 'discord.com/api/webhooks/...',
+        'AKIA...', 'ASIA...', 'AccountKey=...', 'AIza...', 'ya29....', 'GOCSPX-...',
+        'SG....', 'npm_...', 'pypi-...', 'hf_...', 'shpat_...', 'dop_v1_...',
+        'user:pass@host', '?access_token=', 'X-Amz-Signature',
+    ];
 
     /**
      * Query parameters whose values are masked wherever a URL appears,
@@ -65,15 +72,33 @@ class Redactor
     protected const SENSITIVE_QUERY_PARAMETERS = ['accesstoken', 'xamzsignature', 'xamzcredential', 'xamzsecuritytoken'];
 
     /**
-     * Values that look like secrets. Group 1 is kept, group 2 is masked.
+     * Values that look like secrets. Group 1 is kept, group 2 is masked. A
+     * PEM private key comes first and is masked whole, so nothing inside
+     * its body is matched on its own.
      */
     protected const PATTERNS = [
+        '/()(-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY-----[^"]*?(?:-----END (?:[A-Z0-9]+ )*PRIVATE KEY-----|(?=")|$))/',
         '/()(\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]*)/',
         '/(\bBearer\s+)([A-Za-z0-9\-._~+\/]{8,}=*)/',
         '/()(\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}))/',
+        '/()(\bgl(?:pat|dt|rt|ptt)-[A-Za-z0-9_-]{20,}(?:\.[A-Za-z0-9_-]+)*)/',
         '/()(\bsk-[A-Za-z0-9_-]{16,})/',
-        '/()(\bxox[abp]-[A-Za-z0-9-]{10,})/',
-        '/()(\bAKIA[0-9A-Z]{16}\b)/',
+        '/()(\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,})/',
+        '/()(\bwhsec_[A-Za-z0-9+\/=]{16,})/',
+        '/()(\b(?:xox[abeoprs]|xapp)-[A-Za-z0-9-]{10,})/',
+        '/(\bhttps:\/\/hooks\.slack\.com\/(?:services|workflows|triggers)\/)([A-Za-z0-9_\/-]{16,})/',
+        '/(\bhttps:\/\/(?:ptb\.|canary\.)?discord(?:app)?\.com\/api\/webhooks\/)(\d+\/[A-Za-z0-9_-]{20,})/',
+        '/()(\b(?:AKIA|ASIA)[0-9A-Z]{16}\b)/',
+        '/(\b(?:AccountKey|SharedAccessKey)=)([A-Za-z0-9+\/]{20,}={0,2})/',
+        '/()(\bAIza[0-9A-Za-z_-]{35})/',
+        '/()(\bya29\.[0-9A-Za-z_-]{20,})/',
+        '/()(\bGOCSPX-[0-9A-Za-z_-]{20,})/',
+        '/()(\bSG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,})/',
+        '/()(\bnpm_[A-Za-z0-9]{36}\b)/',
+        '/()(\bpypi-AgEIcHlwaS5vcmc[A-Za-z0-9_-]{50,})/',
+        '/()(\bhf_[A-Za-z0-9]{30,}\b)/',
+        '/()(\bshp(?:at|ca|pa|ss)_[a-fA-F0-9]{32}\b)/',
+        '/()(\bdo[por]_v1_[a-f0-9]{64}\b)/',
         '/(\b[a-z][a-z0-9+.-]*:\/\/[^\/\s:@"\']+:)([^\/\s@"\']+)(?=@)/i',
     ];
 
