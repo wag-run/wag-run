@@ -61,11 +61,11 @@
             </div>
         </form>
 
-        @if (\App\Models\Organization::current()?->registration_open ?? true)
+        @unless (\App\Models\Organization::current())
             <div class="space-x-1 text-sm text-center rtl:space-x-reverse text-zinc-600 dark:text-zinc-400">
                 <span>{{ __('auth.login.don_t_have_an_account') }}</span>
                 <flux:link :href="route('register')" wire:navigate>{{ __('auth.login.sign_up') }}</flux:link>
             </div>
-        @endif
+        @endunless
     </div>
 </x-layouts::auth>

@@ -23,14 +23,12 @@ return [
     ],
     'register' => [
         'already_have_an_account' => 'Already have an account?',
-        'ask_an_admin_of_this' => 'Ask an admin of this organization to invite you. The invitation email has a link to create your account.',
         'create_account' => 'Create account',
         'create_an_account' => 'Create an account',
         'default' => 'Default',
         'enter_your_details_below_to' => 'Enter your details below to create your account',
         'full_name' => 'Full name',
         'register' => 'Register',
-        'registration_is_by_invitation_only' => 'Registration is by invitation only',
         'registration_is_by_invitation_only_2' => 'Registration is by invitation only. Ask an admin to invite you.',
     ],
     'reset_password' => [
