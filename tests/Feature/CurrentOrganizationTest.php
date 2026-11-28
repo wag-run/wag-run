@@ -89,8 +89,15 @@ class CurrentOrganizationTest extends TestCase
         $this->assertSame($this->second->id, $user->refresh()->current_organization_id);
     }
 
-    public function test_requests_without_a_user_still_fall_back_to_the_oldest_organization_for_now(): void
+    public function test_requests_without_a_user_have_no_organization(): void
     {
-        $this->get('/__current-organization')->assertSee('First');
+        $this->get('/__current-organization')->assertSee('none');
+    }
+
+    public function test_code_without_the_middleware_works_from_the_signed_in_user(): void
+    {
+        $this->actingAs($this->member($this->second));
+
+        $this->assertSame($this->second->id, Organization::current()?->id);
     }
 }

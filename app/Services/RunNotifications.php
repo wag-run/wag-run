@@ -26,7 +26,7 @@ class RunNotifications
 
         $owner = $execution->workflow->owner;
 
-        if (! $owner || $owner->isDeactivated() || ! $owner->hasWorkspacePermission($execution->workspace, WorkspacePermission::ViewExecutions)) {
+        if (! $owner || ! $owner->isActiveIn($execution->workspace->organization_id) || ! $owner->hasWorkspacePermission($execution->workspace, WorkspacePermission::ViewExecutions)) {
             return;
         }
 

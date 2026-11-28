@@ -138,7 +138,7 @@ class Redactor
      */
     public static function forWorkspace(Workspace $workspace): self
     {
-        return new self(self::known(self::workspaceValues($workspace)), self::organizationNames());
+        return new self(self::known(self::workspaceValues($workspace)), self::organizationNames($workspace));
     }
 
     /**
@@ -156,7 +156,7 @@ class Redactor
             }
         }
 
-        return new self(self::known($values), self::organizationNames());
+        return new self(self::known($values), self::organizationNames($execution->workspace));
     }
 
     /**
@@ -546,9 +546,9 @@ class Redactor
     /**
      * @return list<string>
      */
-    protected static function organizationNames(): array
+    protected static function organizationNames(Workspace $workspace): array
     {
-        return array_values(array_filter(Organization::current()->sensitive_keys ?? [], 'is_string'));
+        return array_values(array_filter($workspace->organization->sensitive_keys ?? [], 'is_string'));
     }
 
     /**

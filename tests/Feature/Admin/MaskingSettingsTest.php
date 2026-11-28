@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -32,7 +31,7 @@ class MaskingSettingsTest extends TestCase
             ->set('newSensitiveKey', '*_license')->call('addSensitiveKey')
             ->assertSet('newSensitiveKey', '');
 
-        $this->assertSame(['X-Tenant-Key', '*_license'], Organization::current()->sensitive_keys);
+        $this->assertSame(['X-Tenant-Key', '*_license'], $this->organization()->sensitive_keys);
         $this->assertDatabaseHas('audit_logs', ['action' => 'organization.settings_updated']);
 
         $page->set('newSensitiveKey', 'x_tenant_key')->call('addSensitiveKey')->assertHasErrors('newSensitiveKey')
@@ -40,7 +39,7 @@ class MaskingSettingsTest extends TestCase
             ->call('removeSensitiveKey', 0)
             ->assertSet('sensitiveKeys', ['*_license']);
 
-        $this->assertSame(['*_license'], Organization::current()->sensitive_keys);
+        $this->assertSame(['*_license'], $this->organization()->sensitive_keys);
     }
 
     public function test_members_cannot_change_the_names(): void
@@ -51,6 +50,6 @@ class MaskingSettingsTest extends TestCase
         Livewire::actingAs($member)->test('pages::admin.masking')
             ->set('newSensitiveKey', 'X-Tenant-Key')->call('addSensitiveKey')->assertForbidden();
 
-        $this->assertSame([], Organization::current()->sensitive_keys);
+        $this->assertSame([], $this->organization()->sensitive_keys);
     }
 }

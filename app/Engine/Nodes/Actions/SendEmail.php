@@ -151,7 +151,7 @@ class SendEmail extends Node
         $key = $context->input('credential');
 
         if (blank($key)) {
-            return $this->mailers->forOrganization();
+            return $this->mailers->forOrganization($context->workspace()->organization);
         }
 
         $credential = $context->credential((string) $key);

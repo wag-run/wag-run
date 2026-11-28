@@ -151,7 +151,7 @@ class Task extends Node
 
     public function execute(NodeContext $context): NodeResult
     {
-        $assignee = $this->assignments->activeUser($context->input('assignee'));
+        $assignee = $this->assignments->activeUser($context->input('assignee'), $context->workspace());
 
         if (! $assignee) {
             return NodeResult::fail(__('nodes.task.assignee_does_not_have_an'), retryable: false);

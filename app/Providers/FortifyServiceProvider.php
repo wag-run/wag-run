@@ -61,7 +61,7 @@ class FortifyServiceProvider extends ServiceProvider
                 return null;
             }
 
-            if ($user->isDeactivated()) {
+            if ($user->organizations()->exists() && ! $user->hasActiveMembership()) {
                 throw ValidationException::withMessages([Fortify::username() => __('auth.session.this_account_has_been_deactivated')]);
             }
 

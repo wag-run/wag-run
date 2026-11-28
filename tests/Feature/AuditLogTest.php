@@ -22,7 +22,7 @@ class AuditLogTest extends TestCase
         $theirs = Workspace::factory()->create();
         Audit::record('data_store.entry_created', workspace: $mine, label: 'visible_entry');
         Audit::record('data_store.entry_created', workspace: $theirs, label: 'other_workspace_entry');
-        Audit::record('user.promoted', label: 'org_entry');
+        Audit::record('user.promoted', label: 'org_entry', organization: $this->organization());
         $admin = User::factory()->memberOf($mine, WorkspaceRole::Admin)->create();
 
         $this->assertSame(['visible_entry'], AuditLog::visibleTo($admin)->pluck('subject_label')->all());
@@ -40,7 +40,7 @@ class AuditLogTest extends TestCase
         $deleted = Workspace::factory()->create();
         Audit::record('data_store.entry_created', workspace: Workspace::factory()->create(), label: 'workspace_entry');
         Audit::record('data_store.entry_created', workspace: $deleted, label: 'retired_entry');
-        Audit::record('user.promoted', label: 'org_entry');
+        Audit::record('user.promoted', label: 'org_entry', organization: $this->organization());
         $deleted->delete();
         $orgAdmin = User::factory()->orgAdmin()->create();
 
@@ -58,7 +58,7 @@ class AuditLogTest extends TestCase
     {
         $workspace = Workspace::factory()->create();
         Audit::record('data_store.entry_created', workspace: $workspace, label: 'workspace_entry');
-        Audit::record('user.promoted', label: 'org_entry');
+        Audit::record('user.promoted', label: 'org_entry', organization: $this->organization());
 
         $this->actingAs(User::factory()->orgAdmin()->create())
             ->get(route('workspaces.audit', $workspace))
@@ -70,7 +70,7 @@ class AuditLogTest extends TestCase
     public function test_forbids_workspace_admins_from_the_organization_scope(): void
     {
         $workspace = Workspace::factory()->create();
-        Audit::record('user.promoted', label: 'org_entry');
+        Audit::record('user.promoted', label: 'org_entry', organization: $this->organization());
         $admin = User::factory()->memberOf($workspace, WorkspaceRole::Admin)->create();
 
         $this->actingAs($admin)

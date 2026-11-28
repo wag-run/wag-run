@@ -24,7 +24,7 @@ class RecordSignIn
 
         if (! $event->user instanceof User
             || ($guard instanceof SessionGuard && $guard->viaRemember())
-            || ! Organization::current()) {
+            || ! Organization::query()->exists()) {
             return;
         }
 

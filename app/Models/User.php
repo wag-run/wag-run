@@ -125,20 +125,47 @@ class User extends Authenticatable implements MustVerifyEmail, OAuthenticatable
     }
 
     /**
-     * The user's membership of the organization this install serves.
+     * The user's membership of the current organization, see {@see Organization::current()}.
      */
     public function organizationMembership(): ?OrganizationMembership
     {
-        $organization = Organization::current();
+        return $this->membershipIn(Organization::current());
+    }
 
-        if (! $organization) {
+    /**
+     * The user's membership of an organization, given or by ID.
+     */
+    public function membershipIn(Organization|string|null $organization): ?OrganizationMembership
+    {
+        $organizationId = $organization instanceof Organization ? $organization->id : $organization;
+
+        if (! $organizationId) {
             return null;
         }
 
         return OrganizationMembership::query()
-            ->where('organization_id', $organization->id)
+            ->where('organization_id', $organizationId)
             ->where('user_id', $this->id)
             ->first();
+    }
+
+    /**
+     * Whether the user belongs to an organization and isn't deactivated there.
+     */
+    public function isActiveIn(Organization|string $organization): bool
+    {
+        $membership = $this->membershipIn($organization);
+
+        return $membership !== null && $membership->deactivated_at === null;
+    }
+
+    /**
+     * Whether the user is active in at least one organization. Someone
+     * deactivated everywhere can't sign in.
+     */
+    public function hasActiveMembership(): bool
+    {
+        return $this->organizations()->wherePivotNull('deactivated_at')->exists();
     }
 
     /**
@@ -175,7 +202,9 @@ class User extends Authenticatable implements MustVerifyEmail, OAuthenticatable
      */
     public function roleIn(Workspace $workspace): ?WorkspaceRole
     {
-        if ($this->isOrgAdmin() && $this->organizationMembership()?->organization_id === $workspace->organization_id) {
+        $membership = $this->membershipIn($workspace->organization_id);
+
+        if ($membership?->role === OrgRole::Admin && $membership->deactivated_at === null) {
             return WorkspaceRole::Admin;
         }
 

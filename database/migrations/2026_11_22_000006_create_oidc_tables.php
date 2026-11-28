@@ -22,7 +22,7 @@ return new class extends Migration
             $table->boolean('trust_email')->default(false);
             $table->timestamps();
 
-            $table->unique(['organization_id', 'slug']);
+            $table->unique('slug');
         });
 
         Schema::create('oidc_identities', function (Blueprint $table) {

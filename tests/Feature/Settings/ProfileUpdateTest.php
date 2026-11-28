@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Settings;
 
-use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -115,7 +114,7 @@ class ProfileUpdateTest extends TestCase
 
         Livewire::test('pages::settings.profile')->assertSeeHtml('data-test="delete-user-button"');
 
-        Organization::current()->update(['allow_account_deletion' => false]);
+        $this->organization()->update(['allow_account_deletion' => false]);
 
         Livewire::test('pages::settings.profile')->assertDontSeeHtml('data-test="delete-user-button"');
     }
@@ -123,7 +122,7 @@ class ProfileUpdateTest extends TestCase
     public function test_account_deletion_is_refused_when_the_organization_disables_it(): void
     {
         $user = User::factory()->orgMember()->create();
-        Organization::current()->update(['allow_account_deletion' => false]);
+        $this->organization()->update(['allow_account_deletion' => false]);
 
         $this->actingAs($user);
 

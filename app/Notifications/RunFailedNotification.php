@@ -34,7 +34,7 @@ class RunFailedNotification extends Notification
         $data = $this->toArray($notifiable);
 
         return (new MailMessage)
-            ->mailer(app(Mailers::class)->forOrganization())
+            ->mailer(app(Mailers::class)->forOrganization($this->execution->workspace->organization))
             ->subject($data['title'])
             ->line($data['body'])
             ->action(__('notifications.run_failed.view_the_run'), $data['url']);

@@ -35,14 +35,14 @@ class Assignments
     ) {}
 
     /**
-     * The user an approval or task node is configured to assign, if they have
-     * an active account in the organization.
+     * The user an approval or task node is configured to assign, if they're
+     * active in the workspace's organization.
      */
-    public function activeUser(mixed $id): ?User
+    public function activeUser(mixed $id, Workspace $workspace): ?User
     {
         $user = is_string($id) && Str::isUuid($id) ? User::query()->find($id) : null;
 
-        return $user && $user->organizationMembership() && ! $user->isDeactivated() ? $user : null;
+        return $user && $user->isActiveIn($workspace->organization_id) ? $user : null;
     }
 
     /**

@@ -44,7 +44,7 @@ class OidcSignIn
 
         $user = $identity->user ?? DB::transaction(fn () => $this->linkOrCreate($provider, $subject, $email, $emailTrusted, $claims));
 
-        if (! $user->organizationMembership() || $user->isDeactivated()) {
+        if (! $user->isActiveIn($provider->organization_id)) {
             throw new RuntimeException(__('oidc.this_account_has_been_deactivated'));
         }
 
@@ -68,7 +68,7 @@ class OidcSignIn
                 throw new RuntimeException(__('oidc.name_has_not_verified_this', ['name' => $provider->name]));
             }
 
-            Audit::record('auth.oidc_linked', $existing, metadata: ['provider' => $provider->name], label: $existing->email, actor: $existing);
+            Audit::record('auth.oidc_linked', $existing, metadata: ['provider' => $provider->name], label: $existing->email, actor: $existing, organization: $provider->organization);
 
             return $existing;
         }
@@ -93,7 +93,7 @@ class OidcSignIn
 
         $user->organizations()->attach($provider->organization_id, ['role' => OrgRole::Member->value]);
 
-        Audit::record('auth.oidc_registered', $user, metadata: ['provider' => $provider->name], label: $user->email, actor: $user);
+        Audit::record('auth.oidc_registered', $user, metadata: ['provider' => $provider->name], label: $user->email, actor: $user, organization: $provider->organization);
 
         return $user;
     }

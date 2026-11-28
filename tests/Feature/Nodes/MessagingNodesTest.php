@@ -6,7 +6,6 @@ use App\Enums\ExecutionStatus;
 use App\Mail\WorkflowEmail;
 use App\Models\Credential;
 use App\Models\Execution;
-use App\Models\Organization;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Notifications\WorkflowNotification;
@@ -44,7 +43,7 @@ class MessagingNodesTest extends TestCase
     {
         Mail::fake();
         User::factory()->orgAdmin()->create();
-        Organization::current()->update(['mail' => ['host' => 'smtp.acme.test', 'port' => 465, 'encryption' => 'ssl', 'from_address' => 'robot@acme.test', 'from_name' => 'Acme']]);
+        $this->organization()->update(['mail' => ['host' => 'smtp.acme.test', 'port' => 465, 'encryption' => 'ssl', 'from_address' => 'robot@acme.test', 'from_name' => 'Acme']]);
 
         $execution = $this->runWorkflow($this->publishedWorkflow($this->emailGraph(['bcc' => 'audit@example.com', 'reply_to' => 'help@acme.test'])), ['values' => ['email' => 'ada@example.com', 'id' => 7, 'name' => 'Ada']]);
 

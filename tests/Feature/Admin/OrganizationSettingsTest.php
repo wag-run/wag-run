@@ -22,7 +22,7 @@ class OrganizationSettingsTest extends TestCase
             ->call('save')
             ->assertHasNoErrors();
 
-        $this->assertNull(Organization::current()->default_retention_days);
+        $this->assertNull($this->organization()->default_retention_days);
         $this->assertDatabaseHas('audit_logs', ['action' => 'organization.settings_updated']);
     }
 
@@ -48,7 +48,7 @@ class OrganizationSettingsTest extends TestCase
             ->call('save')
             ->assertHasErrors(['defaultRetentionDays' => 'required']);
 
-        $this->assertSame(30, Organization::current()->default_retention_days);
+        $this->assertSame(30, $this->organization()->default_retention_days);
     }
 
     public function test_org_admin_sets_the_maximum_chain_depth(): void
@@ -65,7 +65,7 @@ class OrganizationSettingsTest extends TestCase
             ->call('save')
             ->assertHasNoErrors();
 
-        $this->assertSame(4, Organization::current()->max_chain_depth);
+        $this->assertSame(4, $this->organization()->max_chain_depth);
     }
 
     public function test_org_admin_sets_the_default_run_limit(): void
@@ -82,7 +82,7 @@ class OrganizationSettingsTest extends TestCase
             ->call('save')
             ->assertHasNoErrors();
 
-        $this->assertSame(120, Organization::current()->max_runs_per_minute);
+        $this->assertSame(120, $this->organization()->max_runs_per_minute);
     }
 
     public function test_org_admin_turns_off_account_deletion(): void
@@ -96,7 +96,7 @@ class OrganizationSettingsTest extends TestCase
             ->call('save')
             ->assertHasNoErrors();
 
-        $this->assertFalse(Organization::current()->allow_account_deletion);
+        $this->assertFalse($this->organization()->allow_account_deletion);
     }
 
     public function test_settings_live_in_the_json_column_and_fall_back_to_their_defaults(): void

@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $organization = Organization::current() ?? Organization::factory()->create(['name' => config('app.name')]);
+        $organization = Organization::query()->oldest('id')->first() ?? Organization::factory()->create(['name' => config('app.name')]);
 
         $workspace = $organization->workspaces()->firstOrCreate(['slug' => 'default'], ['name' => 'Default']);
 

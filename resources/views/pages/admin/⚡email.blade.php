@@ -103,7 +103,7 @@ new class extends Component {
         $user = Auth::user();
 
         try {
-            Mail::mailer($mailers->forOrganization())->to($user->email)->send(new WorkflowEmail(
+            Mail::mailer($mailers->forOrganization(Organization::current()))->to($user->email)->send(new WorkflowEmail(
                 __('admin.email.test_email_from_app', ['app' => config('app.name')]),
                 __('admin.email.if_you_can_read_this'),
             ));
