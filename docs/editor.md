@@ -22,7 +22,7 @@ Drag from a node's output on its right edge to another node's input on its left 
 
 - **Several outputs.** Some nodes have more than one output, such as **true** and **false** on **Conditional logic**. Only the connections from the output the node takes are followed.
 - **Parallel branches.** Connect one output to several nodes to run them at the same time. Use **Merge** to wait for all of them before carrying on.
-- **Branches that meet.** A node with several incoming connections runs once for each one that arrives, as soon as it arrives. To run it once, after all of them, turn on **Wait for all incoming branches** in its settings, or put a **Merge** in front of it.
+- **Branches that meet.** A node with several incoming connections runs once for each one that arrives, as soon as it arrives. To run it once, after all of them, turn on **Wait for all incoming branches** on the **Behavior** tab of its settings, or put a **Merge** in front of it.
 - **No cycles.** A connection can't lead back to an earlier node. To repeat steps, use a **For loop** or a **While loop**.
 - **Triggers have no inputs.** Nothing can connect into a trigger.
 - **Unconnected nodes don't run.** A run starts at a trigger and follows the connections from it. A node no trigger leads to is drawn faded with a dashed border and marked **No input**, even if it connects into a node that does run. Its outgoing connections are drawn dashed too. Leave a node like that to set it aside, or connect something that runs into it to bring it back.
@@ -31,15 +31,14 @@ To remove a connection, right-click it and choose **Delete connection**.
 
 ## Configuring a node
 
-Select a node to see its settings in the settings panel:
+Select a node to see its settings in the settings panel. Its **Name**, what the node is called on the canvas and on the run page, is at the top. Anything that would stop the workflow from publishing, such as a placeholder that reads a variable the workflow doesn't declare, is listed under it. The rest is split into tabs. The panel keeps the tab you chose as you click from node to node, and a tab a node doesn't need isn't shown.
 
-- **Name**: what the node is called on the canvas and on the run page.
-- **Reference its output as**: how later nodes refer to this node's output in placeholders, such as `nodes.http_request.output`. The ID in it is set when you add the node and doesn't change when you change the **Name**. To change it, click the pencil beside it, type a new ID, and click **Save** (or press Enter; Esc cancels). An ID starts with a letter or underscore and uses only letters, numbers, and underscores, and no two nodes can share one. Saving moves the node's connections and updates every placeholder in the draft that read the old ID, such as `nodes.fetch.output` or `nodes['fetch']`. **Undo** puts the old ID back. Triggers keep the ID they were added with, because their webhook URL, form link, schedule, or subscription is tied to it; their settings show **Reference its data as** `trigger` instead.
-- **The node's own settings.** Fields marked as accepting placeholders have an **Insert data** button for picking values from earlier nodes. See [Data and placeholders](data-and-placeholders.md).
-- **Retries** and **Backoff (s)**: how many times to try again if the node fails, and how long to wait before the first retry. Each retry waits twice as long as the one before.
-- **Show "on error" path**: adds an **on error** output. If the node still fails after its retries, the nodes connected to that output run instead of the run failing.
-- **Wait for all incoming branches**: for a node with several incoming connections. It runs once, after every branch leading into it has finished, instead of once for each connection. A branch the run doesn't take, such as the unused side of a condition, isn't waited for.
-- **Outputs**: what the node produces, which later nodes can use.
+- **Settings**: the node's own fields. Fields marked as accepting placeholders have an **Insert data** button for picking values from earlier nodes. See [Data and placeholders](data-and-placeholders.md).
+- **Behavior**: what an action does when it fails or when several branches lead into it. Triggers don't have this tab.
+  - **Retry on failure**, with **Retries** and **Backoff (s)**: how many times to try again if the node fails, and how long to wait before the first retry. Each retry waits twice as long as the one before.
+  - **Show "on error" path**: adds an **on error** output. If the node still fails after its retries, the nodes connected to that output run instead of the run failing.
+  - **Wait for all incoming branches**: for a node with several incoming connections. It runs once, after every branch leading into it has finished, instead of once for each connection. A branch the run doesn't take, such as the unused side of a condition, isn't waited for.
+- **Outputs**: what the node produces, which later nodes can use, and **Reference its output as**: how later nodes refer to this node's output in placeholders, such as `nodes.http_request.output`. The ID in it is set when you add the node and doesn't change when you change the **Name**. To change it, click the pencil beside it, type a new ID, and click **Save** (or press Enter; Esc cancels). An ID starts with a letter or underscore and uses only letters, numbers, and underscores, and no two nodes can share one. Saving moves the node's connections and updates every placeholder in the draft that read the old ID, such as `nodes.fetch.output` or `nodes['fetch']`. **Undo** puts the old ID back. Triggers keep the ID they were added with, because their webhook URL, form link, schedule, or subscription is tied to it; their **Outputs** tab shows **Reference its data as** `trigger` instead.
 
 Changes save to the draft as you type.
 

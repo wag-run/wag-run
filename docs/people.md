@@ -63,7 +63,7 @@ Outputs:
 
 If the timeout passes with no decision, the request expires and the step **fails**. Without anything to catch it, the run fails too.
 
-To handle a timeout yourself, turn on **Show "on error" path** in the node's settings and connect the **on error** output, for example to a **Send notification** that tells an admin the request was missed. The demo **Refund approval** workflow does this.
+To handle a timeout yourself, turn on **Show "on error" path** on the **Behavior** tab of the node's settings and connect the **on error** output, for example to a **Send notification** that tells an admin the request was missed. The demo **Refund approval** workflow does this.
 
 ## The Inbox
 

@@ -92,7 +92,7 @@ What a placeholder can read:
 | Name | What it holds |
 |---|---|
 | `trigger` | What the trigger received, such as manual inputs, form values, or a webhook body |
-| `nodes.<id>.output` | The output of an earlier node. The node's settings panel shows the exact name under **Reference its output as**. |
+| `nodes.<id>.output` | The output of an earlier node. The **Outputs** tab of the node's settings shows the exact name under **Reference its output as**. |
 | `vars.<name>` | One of the workflow's variables, as it is in this run when the step runs |
 | `store.<key>` | An entry of the workspace's data store, as it is when the step runs |
 | `secrets.<key>` | A workspace secret. Its value is masked in run logs. |
