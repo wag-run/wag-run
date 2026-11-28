@@ -18,7 +18,7 @@ Built with Laravel 13, Livewire 4, Flux, and [WireFlow](https://github.com/getar
 - **Error handling**: per-node retries with backoff, and an optional "on error" path to catch a node that still fails.
 - **Runs**: a live view of each run on the canvas with every step's input, output, and error. Retention is configurable for the whole install, per workspace, and per workflow.
 - **Workspaces and roles**: Admin, Editor, Viewer, and Guest roles per workspace, plus admins for the whole install. A data store of typed values, encrypted secrets, and reusable credentials (HTTP basic, API token, AI provider, SMTP, and GitHub, Google, or any OAuth 2.0 provider connected through OAuth) belong to a workspace.
-- **Sign-in**: email and password, passkeys, two-factor authentication, and OpenID Connect providers.
+- **Sign-in**: email and password, two-factor authentication, and OpenID Connect providers.
 - **API and MCP server**: start and inspect runs from scripts with personal access tokens, or connect an AI assistant such as Claude to the MCP server through OAuth.
 - **Audit log** of changes to workflows, secrets, members, and settings.
 

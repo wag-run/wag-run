@@ -99,7 +99,6 @@ class ProfileUpdateTest extends TestCase
         $this->actingAs($user);
 
         $response = Livewire::test('pages::settings.delete-user-modal')
-            ->set('password', 'password')
             ->call('deleteUser');
 
         $response
@@ -108,21 +107,6 @@ class ProfileUpdateTest extends TestCase
 
         $this->assertNull($user->fresh());
         $this->assertFalse(auth()->check());
-    }
-
-    public function test_correct_password_must_be_provided_to_delete_account(): void
-    {
-        $user = User::factory()->create();
-
-        $this->actingAs($user);
-
-        $response = Livewire::test('pages::settings.delete-user-modal')
-            ->set('password', 'wrong-password')
-            ->call('deleteUser');
-
-        $response->assertHasErrors(['password']);
-
-        $this->assertNotNull($user->fresh());
     }
 
     public function test_delete_account_form_is_hidden_when_the_organization_disables_deletion(): void
@@ -144,7 +128,6 @@ class ProfileUpdateTest extends TestCase
         $this->actingAs($user);
 
         Livewire::test('pages::settings.delete-user-modal')
-            ->set('password', 'password')
             ->call('deleteUser')
             ->assertForbidden();
 

@@ -1,6 +1,5 @@
 <?php
 
-use App\Concerns\PasswordValidationRules;
 use App\Livewire\Actions\Logout;
 use App\Models\Organization;
 use App\Services\UserDirectory;
@@ -8,20 +7,12 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 new class extends Component {
-    use PasswordValidationRules;
-
-    public string $password = '';
-
     /**
      * Delete the currently authenticated user.
      */
     public function deleteUser(Logout $logout, UserDirectory $directory): void
     {
         abort_unless(Organization::allowsAccountDeletion(), 403);
-
-        $this->validate([
-            'password' => $this->currentPasswordRules(),
-        ]);
 
         $directory->ensureNotLastAdmin(Auth::user(), __('settings.delete_user_modal.you_are_the_last_organization'));
 
@@ -41,7 +32,7 @@ new class extends Component {
             </flux:subheading>
         </div>
 
-        <flux:input wire:model="password" :label="__('common.password')" type="password" viewable />
+        <flux:error name="user" />
 
         <div class="flex justify-end space-x-2 rtl:space-x-reverse">
             <flux:modal.close>

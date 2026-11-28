@@ -5,7 +5,6 @@ namespace Tests\Feature\Invitations;
 use App\Enums\OrgRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Invitation;
-use App\Models\Organization;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Invitations;
@@ -53,11 +52,9 @@ class AcceptInvitationTest extends TestCase
         $this->assertNotNull(Invitation::findByToken($token)->accepted_at);
     }
 
-    public function test_invitation_registration_works_while_open_registration_is_off(): void
+    public function test_an_invitation_creates_an_account_once_the_install_is_set_up(): void
     {
         [, $token] = $this->invite('closed@example.com');
-
-        $this->assertFalse(Organization::current()->registration_open);
 
         Livewire::test('pages::invitations.show', ['token' => $token])
             ->set('name', 'Closed Reg')

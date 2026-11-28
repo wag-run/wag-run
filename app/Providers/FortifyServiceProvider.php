@@ -6,7 +6,6 @@ use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Models\Organization;
 use App\Models\User;
-use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -15,7 +14,6 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Fortify;
-use Livewire\Livewire;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -35,17 +33,6 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureActions();
         $this->configureViews();
         $this->configureRateLimiting();
-        $this->configurePasswordConfirmation();
-    }
-
-    /**
-     * Require a recent password confirmation for Livewire requests from pages that require one.
-     */
-    private function configurePasswordConfirmation(): void
-    {
-        Livewire::addPersistentMiddleware([
-            RequirePassword::class,
-        ]);
     }
 
     /**
@@ -79,10 +66,10 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::loginView(fn () => view('pages::auth.login'));
         Fortify::verifyEmailView(fn () => view('pages::auth.verify-email'));
         Fortify::twoFactorChallengeView(fn () => view('pages::auth.two-factor-challenge'));
-        Fortify::confirmPasswordView(fn () => view('pages::auth.confirm-password'));
-        Fortify::registerView(fn () => view('pages::auth.register', [
-            'registrationOpen' => Organization::current()->registration_open ?? true,
-        ]));
+        Fortify::confirmPasswordView(fn () => redirect()->route('dashboard'));
+        Fortify::registerView(fn () => Organization::current()
+            ? redirect()->route('login')
+            : view('pages::auth.register'));
         Fortify::resetPasswordView(fn () => view('pages::auth.reset-password'));
         Fortify::requestPasswordResetLinkView(fn () => view('pages::auth.forgot-password'));
     }
@@ -100,14 +87,6 @@ class FortifyServiceProvider extends ServiceProvider
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
 
             return Limit::perMinute(5)->by($throttleKey);
-        });
-
-        RateLimiter::for('passkeys', function (Request $request) {
-            $credentialId = $request->input('credential.id');
-
-            return Limit::perMinute(10)->by(
-                ($credentialId ?: $request->session()->getId()).'|'.$request->ip(),
-            );
         });
     }
 }

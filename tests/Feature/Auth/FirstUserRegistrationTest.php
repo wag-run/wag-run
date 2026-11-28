@@ -5,7 +5,6 @@ namespace Tests\Feature\Auth;
 use App\Enums\OrgRole;
 use App\Models\Organization;
 use App\Models\User;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -50,52 +49,27 @@ class FirstUserRegistrationTest extends TestCase
         $this->get(route('workspaces.show', $user->accessibleWorkspaces()->sole()))->assertOk();
     }
 
-    public function test_someone_who_registers_later_must_confirm_their_email(): void
+    public function test_once_the_install_is_set_up_registration_is_refused_before_anything_is_checked(): void
     {
-        Notification::fake();
-        Organization::factory()->create(['registration_open' => true]);
+        Organization::factory()->create();
+        User::factory()->create(['email' => 'taken@example.com']);
 
-        $this->post(route('register.store'), $this->registration('member@example.com'));
-
-        $user = User::firstWhere('email', 'member@example.com');
-
-        $this->assertFalse($user->hasVerifiedEmail());
-        Notification::assertSentTo($user, VerifyEmail::class);
-        $this->get(route('dashboard'))->assertRedirect(route('verification.notice'));
-    }
-
-    public function test_rejects_later_registrations_while_registration_is_by_invitation_only(): void
-    {
-        Organization::factory()->create(['registration_open' => false]);
-
-        $this->post(route('register.store'), $this->registration('late@example.com'))
+        $this->post(route('register.store'), $this->registration('taken@example.com'))
             ->assertSessionHasErrors(['email' => 'Registration is by invitation only. Ask an admin to invite you.']);
 
         $this->assertGuest();
-        $this->assertDatabaseMissing('users', ['email' => 'late@example.com']);
+        $this->assertSame(1, User::count());
     }
 
-    public function test_registration_page_explains_invitation_only_when_closed(): void
+    public function test_the_sign_up_page_sends_people_to_sign_in_once_the_install_is_set_up(): void
     {
-        Organization::factory()->create(['registration_open' => false]);
+        $this->get(route('register'))->assertOk();
+        $this->get(route('login'))->assertSee(route('register'));
 
-        $this->get(route('register'))
-            ->assertOk()
-            ->assertSee('Registration is by invitation only')
-            ->assertDontSee('data-test="register-user-button"', false);
-    }
+        Organization::factory()->create();
 
-    public function test_open_registration_creates_an_org_member_without_workspace_access(): void
-    {
-        $organization = Organization::factory()->create(['registration_open' => true]);
-        $organization->workspaces()->create(['name' => 'Ops']);
-
-        $this->post(route('register.store'), $this->registration('member@example.com'))->assertSessionHasNoErrors();
-
-        $user = User::firstWhere('email', 'member@example.com');
-
-        $this->assertSame(OrgRole::Member, $user->orgRole());
-        $this->assertTrue($user->accessibleWorkspaces()->isEmpty());
+        $this->get(route('register'))->assertRedirect(route('login'));
+        $this->get(route('login'))->assertDontSee(route('register'));
     }
 
     /**
@@ -116,7 +90,6 @@ class FirstUserRegistrationTest extends TestCase
     #[DataProvider('invalidRegistrations')]
     public function test_rejects_a_registration_that_fails_validation(array $input, string $field, string $message): void
     {
-        Organization::factory()->create(['registration_open' => true]);
         User::factory()->create(['email' => 'taken@example.com']);
 
         $this->post(route('register.store'), [...$this->registration('new@example.com'), ...$input])

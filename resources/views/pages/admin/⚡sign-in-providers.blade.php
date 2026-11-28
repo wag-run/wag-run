@@ -11,8 +11,6 @@ use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 new class extends Component {
-    public bool $registrationOpen = false;
-
     #[Locked]
     public ?string $editingId = null;
 
@@ -39,31 +37,6 @@ new class extends Component {
 
     public bool $trustEmail = false;
 
-    public function mount(): void
-    {
-        $this->registrationOpen = Organization::current()->registration_open;
-    }
-
-    /**
-     * Save the registration switch as soon as it changes.
-     */
-    public function updatedRegistrationOpen(): void
-    {
-        $this->authorize('org-admin');
-
-        $organization = Organization::current();
-        $organization->registration_open = $this->registrationOpen;
-
-        if ($organization->isDirty()) {
-            $organization->save();
-            Audit::record('organization.settings_updated', $organization, metadata: ['changed' => ['registration_open']]);
-        }
-
-        Flux::toast(variant: 'success', text: $this->registrationOpen
-            ? __('admin.sign_in_providers.anyone_can_now_register')
-            : __('admin.sign_in_providers.people_now_join_only_by_invitation'));
-    }
-
     #[Computed]
     public function providers()
     {
@@ -73,7 +46,7 @@ new class extends Component {
     public function create(): void
     {
         $this->authorize('org-admin');
-        $this->resetExcept('registrationOpen');
+        $this->reset();
         $this->resetValidation();
         Flux::modal('provider-form')->show();
     }
@@ -152,7 +125,7 @@ new class extends Component {
 
         Flux::modal('provider-form')->close();
         Flux::toast(variant: 'success', text: __('admin.sign_in_providers.sign_in_provider_saved'));
-        $this->resetExcept('registrationOpen');
+        $this->reset();
     }
 
     public function test(string $id, OidcClient $client): void
@@ -197,13 +170,7 @@ new class extends Component {
 }; ?>
 
 <section class="w-full">
-    <x-pages::admin.layout :heading="__('admin.sign_in_providers.title')" :subheading="__('admin.sign_in_providers.who_can_create_an_account')">
-        <div class="mb-10 max-w-2xl space-y-3">
-            <flux:heading>{{ __('admin.sign_in_providers.registration') }}</flux:heading>
-            <flux:switch wire:model.live="registrationOpen" :label="__('admin.sign_in_providers.allow_anyone_to_register')"
-                :description="__('admin.sign_in_providers.when_off_people_join_only')" data-test="registration-open" />
-        </div>
-
+    <x-pages::admin.layout :heading="__('admin.sign_in_providers.title')" :subheading="__('admin.sign_in_providers.how_people_sign_in')">
         <div class="mb-4 flex flex-wrap items-end justify-between gap-4">
             <div>
                 <flux:heading>{{ __('common.sign_in_providers') }}</flux:heading>

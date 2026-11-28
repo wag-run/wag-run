@@ -21,10 +21,6 @@ class SecurityTest extends TestCase
 
         Features::twoFactorAuthentication([
             'confirm' => true,
-            'confirmPassword' => true,
-        ]);
-        Features::passkeys([
-            'confirmPassword' => true,
         ]);
     }
 
@@ -33,25 +29,21 @@ class SecurityTest extends TestCase
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)
-            ->withSession(['auth.password_confirmed_at' => time()])
             ->get(route('security.edit'));
 
         $response->assertOk();
 
-        $response->assertSee('Passkeys');
-        $response->assertSee('No passkeys yet');
         $response->assertSee('Two-factor authentication');
         $response->assertSee('Enable 2FA');
     }
 
-    public function test_security_settings_page_requires_password_confirmation_when_enabled(): void
+    public function test_security_settings_page_opens_without_password_confirmation(): void
     {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)
-            ->get(route('security.edit'));
-
-        $response->assertRedirect(route('password.confirm'));
+        $this->actingAs($user)
+            ->get(route('security.edit'))
+            ->assertOk();
     }
 
     public function test_security_settings_page_renders_without_two_factor_when_feature_is_disabled(): void
@@ -61,12 +53,9 @@ class SecurityTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->withSession(['auth.password_confirmed_at' => time()])
             ->get(route('security.edit'))
             ->assertOk()
             ->assertSee('Update password')
-            ->assertDontSee('Manage your passkeys for passwordless sign-in')
-            ->assertDontSee('Add a passkey to sign in without a password')
             ->assertDontSee('Two-factor authentication');
     }
 
