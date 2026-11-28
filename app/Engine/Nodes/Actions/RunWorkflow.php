@@ -18,7 +18,7 @@ use App\Models\Workflow;
  * Starts another workflow in the same workspace. Sync mode waits for it and
  * returns its output as "results"; if it fails, this node fails. Async mode starts it and
  * moves on; it fails only when the run cannot start, such as when its
- * trigger requires an input this node does not give. The other run gets the
+ * trigger requires an input this node does not give, or it is disabled. The other run gets the
  * input under "values", as from a Manual trigger or a form. A workflow cannot start itself, and chains of runs starting runs
  * stop at the organization's maximum chain depth.
  */
@@ -90,6 +90,10 @@ class RunWorkflow extends Node
 
         if (! $workflow->published_version_id) {
             return NodeResult::fail(__('nodes.run_workflow.workflow_name_has_not_been', ['name' => $workflow->name]), retryable: false);
+        }
+
+        if (! $workflow->is_enabled) {
+            return NodeResult::fail(__('nodes.run_workflow.workflow_name_is_disabled', ['name' => $workflow->name]), retryable: false);
         }
 
         $input = ['values' => is_array($context->input('input')) ? $context->input('input') : []];

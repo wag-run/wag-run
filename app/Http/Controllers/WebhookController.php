@@ -17,7 +17,8 @@ use RuntimeException;
 use Symfony\Component\Mime\MimeTypes;
 
 /**
- * Receives requests for webhook triggers and starts the workflow.
+ * Receives requests for webhook triggers and starts the workflow. A
+ * disabled workflow refuses verified requests with a 409, starting no run.
  */
 class WebhookController extends Controller
 {
@@ -40,6 +41,10 @@ class WebhookController extends Controller
 
         if (! $this->verified($request, $config, $trigger)) {
             return response()->json(['message' => __('webhooks.request_could_not_be_verified')], 403);
+        }
+
+        if (! $trigger->workflow->is_enabled) {
+            return response()->json(['message' => __('webhooks.workflow_is_disabled')], 409);
         }
 
         try {

@@ -11,7 +11,9 @@ use Illuminate\Http\Request;
 
 /**
  * Receives the webhooks event triggers registered with other apps, and
- * starts a run for each event the trigger cares about.
+ * starts a run for each event the trigger cares about. While the workflow is
+ * disabled, deliveries are accepted and dropped, so the other app keeps the
+ * webhook instead of turning it off after failed deliveries.
  */
 class EventWebhookController extends Controller
 {
@@ -36,6 +38,10 @@ class EventWebhookController extends Controller
 
         if ($events === null) {
             return response()->json(['message' => __('webhooks.request_could_not_be_verified')], 403);
+        }
+
+        if (! $trigger->workflow->is_enabled) {
+            return response()->json(['execution_ids' => []], 202);
         }
 
         $runs = array_map(

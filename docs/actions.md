@@ -166,7 +166,7 @@ Starts another workflow in the same workspace.
 
 | Setting | What it does |
 |---|---|
-| **Workflow** | The workflow to start. It must be published, and can't be this workflow. |
+| **Workflow** | The workflow to start. It must be published and [enabled](editor.md#workflow-settings), and can't be this workflow. |
 | **Mode** | **Wait for it to finish**, or **Start it and move on** |
 | **Input** | Keys and values passed to the other workflow, which it reads as `trigger.values.<key>`, the same as a manual trigger's inputs or a form's answers. If the other workflow's first trigger is a Manual or Form trigger with **Required** inputs, give each one, or the other run and this step fail. |
 
@@ -464,7 +464,7 @@ Outputs: `workspaces`, each with its `slug`, `name`, and `url`, and `count`.
 
 Lists the workflows in **Workspace**, given by its slug, such as `{{ item.slug }}` inside a [For loop](#for-loop) over workspaces. Turn on **Include definitions** to get each workflow's `definition` too: its draft, in the format workflows [export and import](editor.md#export-and-import) in.
 
-Outputs: `workflows`, each with its `id`, `name`, `description`, `published_version`, `inputs`, and `url`; `count`; and `workspace`, the slug you gave, so steps inside a loop over the workflows can still tell which workspace they came from.
+Outputs: `workflows`, each with its `id`, `name`, `description`, `enabled`, `published_version`, `inputs`, and `url`; `count`; and `workspace`, the slug you gave, so steps inside a loop over the workflows can still tell which workspace they came from.
 
 ### Get workflow
 

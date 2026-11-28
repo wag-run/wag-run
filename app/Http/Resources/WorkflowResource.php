@@ -35,6 +35,7 @@ class WorkflowResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'description' => $this->description,
+            'enabled' => $this->is_enabled,
             'published_version' => $this->publishedVersion?->number,
             'inputs' => array_map(fn (array $field) => [
                 'name' => $field['name'],

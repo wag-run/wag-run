@@ -139,6 +139,9 @@ new class extends Component {
                         @else
                             <flux:badge size="sm">{{ __('common.draft') }}</flux:badge>
                         @endif
+                        @unless ($workflow->is_enabled)
+                            <flux:badge size="sm" icon="pause-circle" data-test="workflow-disabled">{{ __('workflows.index.disabled') }}</flux:badge>
+                        @endunless
                     </flux:table.cell>
                     <flux:table.cell class="text-sm text-zinc-500">
                         {{ $this->triggerLabels($workflow) ?: '—' }}

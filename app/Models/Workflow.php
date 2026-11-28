@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $owner_id
  * @property string $name
  * @property string|null $description
+ * @property bool $is_enabled false stops triggers, the API, and other workflows from starting it
  * @property ConcurrencyPolicy $concurrency
  * @property int|null $retention_days
  * @property int|null $max_runs_per_minute overrides the organization's default when set
@@ -40,9 +41,17 @@ class Workflow extends Model
     /** @use HasFactory<WorkflowFactory> */
     use HasFactory, HasUuids;
 
+    /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'is_enabled' => true,
+    ];
+
     protected function casts(): array
     {
         return [
+            'is_enabled' => 'boolean',
             'concurrency' => ConcurrencyPolicy::class,
             'retention_days' => 'integer',
             'max_runs_per_minute' => 'integer',

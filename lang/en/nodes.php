@@ -448,6 +448,7 @@ return [
         'values_passed_to_the_workflow' => 'Values passed to the workflow, which it reads as trigger.values.<key>.',
         'wait_for_it_to_finish' => 'Wait for it to finish',
         'workflow_name_has_not_been' => 'Workflow ":name" has not been published.',
+        'workflow_name_is_disabled' => 'Workflow ":name" is disabled.',
         'workflow_results' => 'Workflow results',
         'a_workflow_cannot_trigger_itself' => 'A workflow cannot trigger itself.',
         'workflow_to_trigger_does_not' => 'The workflow to trigger does not exist in this workspace.',

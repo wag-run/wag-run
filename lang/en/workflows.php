@@ -2,6 +2,7 @@
 
 return [
     'publish_the_workflow_before_running' => 'Publish the workflow before running it.',
+    'workflow_is_disabled' => 'This workflow is disabled. Enable it in its settings to start runs.',
     'rollback_to_version_number' => 'Rollback to version :number',
     'that_version_belongs_to_another' => 'That version belongs to another workflow.',
     'edit' => [
@@ -33,6 +34,8 @@ return [
         'each_publish_is_a_version' => 'Each publish is a version. Runs stay on the version they started with. Rolling back publishes an old version again as a new one.',
         'each_retry_waits_twice_as' => 'Each retry waits twice as long as the one before.',
         'empty_note' => 'Empty note. Select it to write.',
+        'enabled' => 'Enabled',
+        'enabled_help' => 'When off, triggers, the API, and other workflows cannot start it. You can still run it from here.',
         'export' => 'Export',
         'fix_these_before_publishing' => 'Fix these before publishing',
         'fix_these_before_testing' => 'Fix these before testing the draft',
@@ -215,6 +218,7 @@ return [
     ],
     'index' => [
         'delete_workflow' => 'Delete workflow?',
+        'disabled' => 'Disabled',
         'build_workflows_from_triggers_and' => 'Build workflows from triggers and actions. Edits stay in a draft until you publish.',
         'choose_a_workflow_json_file' => 'Choose a .workflow.json file exported from this app. It is imported as a new draft; secrets and credentials it references must exist in this workspace.',
         'create_and_open' => 'Create and open',

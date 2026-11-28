@@ -67,6 +67,8 @@ return [
             'draft_discarded' => 'Workflow draft discarded',
             'rolled_back' => 'Workflow rolled back',
             'settings_updated' => 'Workflow settings updated',
+            'enabled' => 'Workflow enabled',
+            'disabled' => 'Workflow disabled',
             'deleted' => 'Workflow deleted',
         ],
         'workspace' => [
