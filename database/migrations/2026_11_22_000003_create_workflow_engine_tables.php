@@ -14,6 +14,7 @@ return new class extends Migration
             $table->foreignUuid('owner_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('name');
             $table->text('description')->nullable();
+            $table->boolean('is_enabled')->default(true);
             $table->string('concurrency', 20)->default('allow');
             $table->unsignedInteger('retention_days')->nullable();
             $table->unsignedSmallInteger('max_runs_per_minute')->nullable();
