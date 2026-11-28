@@ -597,6 +597,33 @@ new class extends Component {
     }
 
     /**
+     * The inspector's tabs for the selected node, in order. A tab that would
+     * be empty is left out: Settings when none of the node's fields shows,
+     * and Behavior on a trigger, which takes no retries, error path, or
+     * waiting for branches (only actions do).
+     *
+     * @return list<'settings'|'behavior'|'outputs'>
+     */
+    #[Computed]
+    public function inspectorTabs(): array
+    {
+        $definition = $this->definition;
+
+        if (! $definition) {
+            return [];
+        }
+
+        $values = [...$this->form, ...$this->fieldFacts()];
+        $hasFields = collect($definition->inputs())->contains(fn (Field $field) => $field->isVisible($values, $definition->inputs()));
+
+        return array_values(array_filter([
+            $hasFields ? 'settings' : null,
+            $definition->kind() === NodeKind::Action ? 'behavior' : null,
+            'outputs',
+        ]));
+    }
+
+    /**
      * What is wrong with the workflow's variable declarations, by variable
      * name ('' for one that belongs to no variable). These block publishing.
      *
@@ -1679,7 +1706,7 @@ new class extends Component {
         </div>
 
         {{-- Inspector --}}
-        <aside class="w-96 shrink-0 overflow-x-hidden overflow-y-auto border-s border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900" data-test="inspector" x-show="$store.editorLayout.settings">
+        <aside class="w-96 shrink-0 overflow-x-hidden overflow-y-auto border-s border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900" data-test="inspector" x-show="$store.editorLayout.settings" x-data="{ inspectorTab: 'settings' }">
             @if ($this->selectedNode() && $this->definition?->kind() === NodeKind::Note)
                 @php($definition = $this->definition)
                 <div class="mb-4 flex items-start justify-between gap-2 pe-8" data-test="note-inspector">
@@ -1745,58 +1772,85 @@ new class extends Component {
                             @endif
                         </div>
                     @endif
-
-                    @php($formValues = [...$form, ...$this->fieldFacts()])
-                    @php($nodeProblems = $this->nodeProblems())
-                    @if ($nodeProblems)
-                        <flux:callout variant="danger" icon="exclamation-triangle" data-test="node-problems">
-                            <flux:callout.text>
-                                <ul class="list-disc ps-4">
-                                    @foreach ($nodeProblems as $problem)
-                                        <li>{{ $problem }}</li>
-                                    @endforeach
-                                </ul>
-                            </flux:callout.text>
-                        </flux:callout>
-                    @endif
-                    @foreach ($definition->inputs() as $field)
-                        @continue(! $field->isVisible($formValues, $definition->inputs()))
-                        <div wire:key="field-{{ $selected }}-{{ $field->name }}">
-                            @include('partials.workflow-field', ['field' => $field->withDescription($definition->fieldHelp($field, $formValues)), 'model' => 'form.'.$field->name, 'value' => $form[$field->name] ?? null, 'values' => $formValues, 'siblings' => $definition->inputs(), 'choices' => $this->choices, 'variables' => $this->graph->variables, 'picker' => $this->picker, 'canConnectAccounts' => $this->canConnectAccounts])
-                        </div>
-                    @endforeach
-
-                    @if ($definition->kind() === NodeKind::Action)
-                        <flux:separator />
-                        <flux:checkbox wire:model.live="retryEnabled" :label="__('workflows.edit.retry_on_failure')" data-test="retry-toggle" />
-                        @if ($retryEnabled)
-                            <div class="grid grid-cols-2 gap-3" data-test="retry-settings">
-                                <flux:input type="number" min="1" max="25" wire:model.live.debounce.600ms="retry.max_retries" :label="__('workflows.edit.retries')" />
-                                <flux:input type="number" min="0" wire:model.live.debounce.600ms="retry.backoff_seconds" :label="__('workflows.edit.backoff_s')" />
-                            </div>
-                            <flux:text class="text-xs">{{ __('workflows.edit.each_retry_waits_twice_as') }}</flux:text>
-                        @endif
-                    @endif
-
-                    @if ($definition->hasErrorPort())
-                        <flux:checkbox wire:model.live="errorPath" :label="__('workflows.edit.show_on_error_path')" :description="__('workflows.edit.show_on_error_path_help')" data-test="error-path-checkbox" />
-                    @endif
-
-                    {{-- Any action can wait for its branches, except one that already does, as Merge does --}}
-                    @if ($definition->kind() === NodeKind::Action && ! $definition->joinsBranches())
-                        <flux:checkbox wire:model.live="waitForAll" :label="__('workflows.edit.wait_for_all_incoming_branches')" :description="__('workflows.edit.wait_for_all_incoming_branches_help')" data-test="wait-for-all-checkbox" />
-                    @endif
                 </fieldset>
 
-                <flux:separator class="my-4" />
-                <flux:heading size="sm">{{ __('workflows.edit.outputs') }}</flux:heading>
-                <ul class="mt-2 space-y-1 text-xs">
-                    @forelse ($definition->outputs($this->selectedNode()->config) as $output)
-                        <li class="wrap-anywhere"><code>{{ $output->name }}</code> <span class="text-zinc-500">· {{ $output->type }} · {{ $output->label }}</span></li>
-                    @empty
-                        <li class="text-zinc-500">{{ __('workflows.edit.this_node_has_no_outputs') }}</li>
-                    @endforelse
-                </ul>
+                @php($formValues = [...$form, ...$this->fieldFacts()])
+                @php($nodeProblems = $this->nodeProblems())
+                @if ($nodeProblems)
+                    <flux:callout class="mt-4" variant="danger" icon="exclamation-triangle" data-test="node-problems">
+                        <flux:callout.text>
+                            <ul class="list-disc ps-4">
+                                @foreach ($nodeProblems as $problem)
+                                    <li>{{ $problem }}</li>
+                                @endforeach
+                            </ul>
+                        </flux:callout.text>
+                    </flux:callout>
+                @endif
+
+                {{-- The chosen tab is kept on the panel, so it stays chosen from node to node; a node without it opens on its first tab --}}
+                @php($tabs = $this->inspectorTabs)
+                @php($tabLabels = ['settings' => __('common.settings'), 'behavior' => __('workflows.edit.behavior'), 'outputs' => __('workflows.edit.outputs')])
+                <div class="mt-4" wire:key="inspector-tabs-{{ $selected }}-{{ implode('-', $tabs) }}"
+                    x-data="{ tabs: @js($tabs), get tab() { return this.tabs.includes(inspectorTab) ? inspectorTab : this.tabs[0] } }">
+                    <div class="mb-4 border-b border-zinc-200 dark:border-zinc-700">
+                        <flux:navbar scrollable class="-mb-px [scrollbar-width:none]" role="tablist" :aria-label="__('workflows.edit.node_settings')" data-test="inspector-tabs">
+                            @foreach ($tabs as $tab)
+                                <flux:navbar.item role="tab" id="inspector-tab-{{ $tab }}" aria-controls="inspector-panel-{{ $tab }}" x-on:click="inspectorTab = '{{ $tab }}'"
+                                    x-bind:data-current="tab === '{{ $tab }}'" x-bind:aria-selected="tab === '{{ $tab }}' ? 'true' : 'false'" data-test="inspector-tab-{{ $tab }}">{{ $tabLabels[$tab] }}</flux:navbar.item>
+                            @endforeach
+                        </flux:navbar>
+                    </div>
+
+                    @if (in_array('settings', $tabs))
+                        <div id="inspector-panel-settings" role="tabpanel" aria-labelledby="inspector-tab-settings" x-show="tab === 'settings'" data-test="inspector-panel-settings">
+                            <fieldset class="min-w-0 space-y-4" @disabled(! $this->canEdit)>
+                                @foreach ($definition->inputs() as $field)
+                                    @continue(! $field->isVisible($formValues, $definition->inputs()))
+                                    <div wire:key="field-{{ $selected }}-{{ $field->name }}">
+                                        @include('partials.workflow-field', ['field' => $field->withDescription($definition->fieldHelp($field, $formValues)), 'model' => 'form.'.$field->name, 'value' => $form[$field->name] ?? null, 'values' => $formValues, 'siblings' => $definition->inputs(), 'choices' => $this->choices, 'variables' => $this->graph->variables, 'picker' => $this->picker, 'canConnectAccounts' => $this->canConnectAccounts])
+                                    </div>
+                                @endforeach
+                            </fieldset>
+                        </div>
+                    @endif
+
+                    @if (in_array('behavior', $tabs))
+                        <div id="inspector-panel-behavior" role="tabpanel" aria-labelledby="inspector-tab-behavior" x-show="tab === 'behavior'" data-test="inspector-panel-behavior">
+                            <fieldset class="min-w-0 space-y-4" @disabled(! $this->canEdit)>
+                                @if ($definition->kind() === NodeKind::Action)
+                                    <flux:checkbox wire:model.live="retryEnabled" :label="__('workflows.edit.retry_on_failure')" data-test="retry-toggle" />
+                                    @if ($retryEnabled)
+                                        <div class="grid grid-cols-2 gap-3" data-test="retry-settings">
+                                            <flux:input type="number" min="1" max="25" wire:model.live.debounce.600ms="retry.max_retries" :label="__('workflows.edit.retries')" />
+                                            <flux:input type="number" min="0" wire:model.live.debounce.600ms="retry.backoff_seconds" :label="__('workflows.edit.backoff_s')" />
+                                        </div>
+                                        <flux:text class="text-xs">{{ __('workflows.edit.each_retry_waits_twice_as') }}</flux:text>
+                                    @endif
+                                @endif
+
+                                @if ($definition->hasErrorPort())
+                                    <flux:checkbox wire:model.live="errorPath" :label="__('workflows.edit.show_on_error_path')" :description="__('workflows.edit.show_on_error_path_help')" data-test="error-path-checkbox" />
+                                @endif
+
+                                {{-- Any action can wait for its branches, except one that already does, as Merge does --}}
+                                @if ($definition->kind() === NodeKind::Action && ! $definition->joinsBranches())
+                                    <flux:checkbox wire:model.live="waitForAll" :label="__('workflows.edit.wait_for_all_incoming_branches')" :description="__('workflows.edit.wait_for_all_incoming_branches_help')" data-test="wait-for-all-checkbox" />
+                                @endif
+                            </fieldset>
+                        </div>
+                    @endif
+
+                    <div id="inspector-panel-outputs" role="tabpanel" aria-labelledby="inspector-tab-outputs" x-show="tab === 'outputs'" data-test="inspector-panel-outputs">
+                        <ul class="space-y-1 text-xs" data-test="node-outputs">
+                            @forelse ($definition->outputs($this->selectedNode()->config) as $output)
+                                <li class="wrap-anywhere"><code>{{ $output->name }}</code> <span class="text-zinc-500">· {{ $output->type }} · {{ $output->label }}</span></li>
+                            @empty
+                                <li class="text-zinc-500">{{ __('workflows.edit.this_node_has_no_outputs') }}</li>
+                            @endforelse
+                        </ul>
+                    </div>
+                </div>
             @elseif ($this->selectedNode())
                 <flux:callout variant="danger" icon="exclamation-triangle" class="mt-8">{{ __('workflows.edit.this_node_s_type_is') }}</flux:callout>
                 @if ($this->canEdit)

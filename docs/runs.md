@@ -100,7 +100,7 @@ To stop a run that is running or waiting, click **Cancel run** on its page. You 
 
 ## Retries and error paths
 
-Any step can fail: a service doesn't answer, an expression has a typo, an approval times out. Each action node has two ways to deal with failure, in its settings.
+Any step can fail: a service doesn't answer, an expression has a typo, an approval times out. Each action node has two ways to deal with failure, on the **Behavior** tab of its settings.
 
 ### Retries
 
