@@ -67,12 +67,15 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->foreignId('current_workspace_id')->nullable()->after('remember_token')
                 ->constrained('workspaces')->nullOnDelete();
+            $table->foreignUuid('current_organization_id')->nullable()->after('current_workspace_id')
+                ->constrained('organizations')->nullOnDelete();
         });
     }
 
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('current_organization_id');
             $table->dropConstrainedForeignId('current_workspace_id');
         });
         Schema::dropIfExists('invitations');

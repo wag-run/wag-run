@@ -65,7 +65,7 @@ class CreateNewUser implements CreatesNewUsers
      */
     protected function ensureNoOrganizationYet(): void
     {
-        if (Organization::current()) {
+        if (Organization::query()->exists()) {
             throw ValidationException::withMessages([
                 'email' => __('auth.register.registration_is_by_invitation_only_2'),
             ]);
