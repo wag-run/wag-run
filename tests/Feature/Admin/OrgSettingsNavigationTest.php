@@ -42,7 +42,7 @@ class OrgSettingsNavigationTest extends TestCase
 
         $response->assertSee('data-test="org-settings-tabs"', false);
 
-        foreach (['admin.workspaces', 'admin.users', 'admin.sign-in-providers', 'admin.email', 'admin.settings', 'admin.audit'] as $tab) {
+        foreach (['admin.workspaces', 'admin.users', 'admin.sign-in-providers', 'admin.email', 'admin.masking', 'admin.settings', 'admin.audit'] as $tab) {
             $response->assertSee('href="'.route($tab).'"', false);
         }
     }
@@ -57,6 +57,7 @@ class OrgSettingsNavigationTest extends TestCase
             'users' => ['admin.users'],
             'sign-in' => ['admin.sign-in-providers'],
             'email' => ['admin.email'],
+            'masking' => ['admin.masking'],
             'general' => ['admin.settings'],
         ];
     }

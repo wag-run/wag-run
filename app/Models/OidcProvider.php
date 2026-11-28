@@ -6,6 +6,7 @@ use Database\Factories\OidcProviderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\RouteKey;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -31,6 +32,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Organization $organization
+ * @property-read Collection<int, OidcDomain> $domains
  */
 #[Fillable(['name', 'slug', 'issuer', 'client_id', 'client_secret', 'scopes', 'enabled', 'allow_registration', 'trust_email'])]
 #[Hidden(['client_secret'])]
@@ -72,5 +74,28 @@ class OidcProvider extends Model
     public function identities(): HasMany
     {
         return $this->hasMany(OidcIdentity::class);
+    }
+
+    /**
+     * @return HasMany<OidcDomain, $this>
+     */
+    public function domains(): HasMany
+    {
+        return $this->hasMany(OidcDomain::class);
+    }
+
+    /**
+     * Whether someone with this email address may sign in with the provider:
+     * any address when it has no domains, otherwise only those on one of them.
+     */
+    public function acceptsEmail(?string $email): bool
+    {
+        if (! $this->domains()->exists()) {
+            return true;
+        }
+
+        $domain = OidcDomain::ofEmail($email);
+
+        return $domain !== null && $this->domains()->where('domain', $domain)->exists();
     }
 }

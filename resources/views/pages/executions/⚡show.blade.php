@@ -495,14 +495,19 @@ new class extends Component {
                 @foreach (['error' => __('common.error'), 'input' => __('common.input'), 'output' => __('common.output')] as $part => $label)
                     @php($value = $this->part($step, $part))
                     @php($settings = $part === 'input' ? $this->settingsOf($step) : null)
-                    @if ($settings !== null)
-                        <flux:heading size="sm" class="mt-4 mb-1">{{ $label }}</flux:heading>
-                        <div class="rounded-lg bg-zinc-50 dark:bg-zinc-800" x-data="{ written: false }" wire:key="step-input-{{ $step->id }}">
-                            <div class="flex justify-end px-3 pt-3">
-                                <flux:checkbox x-model="written" :label="__('runs.show.show_placeholders')" data-test="step-input-toggle" />
+                    @if ($part === 'input' && $value !== null && $value !== [])
+                        <div x-data="{ written: false }" wire:key="step-input-{{ $step->id }}">
+                            <div class="mt-4 mb-1 flex items-center justify-between gap-3">
+                                <flux:heading size="sm">{{ $label }}</flux:heading>
+                                <flux:field variant="inline">
+                                    <flux:checkbox x-model="written" :disabled="$settings === null" data-test="step-input-toggle" />
+                                    <flux:label class="text-xs font-normal text-zinc-500 dark:text-zinc-400">{{ __('runs.show.show_placeholders') }}</flux:label>
+                                </flux:field>
                             </div>
-                            <pre x-show="! written" class="max-h-80 overflow-auto whitespace-pre-wrap break-words p-3 pt-2 text-xs" data-test="step-input">{{ $this->json($value) }}</pre>
-                            <pre x-show="written" style="display: none" class="max-h-80 overflow-auto whitespace-pre-wrap break-words p-3 pt-2 text-xs" data-test="step-settings">{{ $this->json($settings) }}</pre>
+                            <pre x-show="! written" class="max-h-80 overflow-auto rounded-lg whitespace-pre-wrap break-words bg-zinc-50 p-3 text-xs dark:bg-zinc-800" data-test="step-input">{{ $this->json($value) }}</pre>
+                            @if ($settings !== null)
+                                <pre x-show="written" style="display: none" class="max-h-80 overflow-auto rounded-lg whitespace-pre-wrap break-words bg-zinc-50 p-3 text-xs dark:bg-zinc-800" data-test="step-settings">{{ $this->json($settings) }}</pre>
+                            @endif
                         </div>
                         @include('partials.run-files', ['value' => $value, 'key' => $part])
                     @elseif ($value !== null && $value !== [])

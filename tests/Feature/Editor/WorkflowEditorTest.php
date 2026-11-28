@@ -732,22 +732,26 @@ class WorkflowEditorTest extends TestCase
             ]);
     }
 
-    public function test_a_trigger_has_no_behavior_tab_and_a_node_without_fields_has_no_settings_tab(): void
+    public function test_a_trigger_has_no_behavior_tab_and_a_node_without_fields_or_outputs_has_no_settings_or_masking_tab(): void
     {
         [$workspace, $workflow, $user] = $this->setUpEditor($this->graph(
-            ['start' => 'core.manual_trigger', 'fetch' => ['core.http_request', ['url' => 'x']], 'merge' => 'core.merge'],
-            ['start->fetch', 'fetch->merge'],
+            ['start' => 'core.manual_trigger', 'fetch' => ['core.http_request', ['url' => 'x']], 'merge' => 'core.merge', 'stop' => 'core.terminate'],
+            ['start->fetch', 'fetch->merge', 'merge->stop'],
         ));
         $editor = $this->editor($workspace, $workflow, $user);
 
         $editor->call('selectNode', 'start')
-            ->assertSet('inspectorTabs', ['settings', 'outputs'])
+            ->assertSet('inspectorTabs', ['settings', 'outputs', 'masking'])
             ->assertDontSeeHtml('data-test="inspector-tab-behavior"')
             ->assertSeeHtmlInOrder(['data-test="trigger-reference"', 'data-test="inspector-tabs"']);
 
         $editor->call('selectNode', 'merge')
-            ->assertSet('inspectorTabs', ['behavior', 'outputs'])
+            ->assertSet('inspectorTabs', ['behavior', 'outputs', 'masking'])
             ->assertDontSeeHtml('data-test="inspector-tab-settings"');
+
+        $editor->call('selectNode', 'stop')
+            ->assertSet('inspectorTabs', ['settings', 'behavior', 'outputs'])
+            ->assertDontSeeHtml('data-test="inspector-tab-masking"');
     }
 
     public function test_node_problems_show_above_the_tabs(): void

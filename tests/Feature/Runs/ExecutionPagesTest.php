@@ -162,9 +162,12 @@ class ExecutionPagesTest extends TestCase
             ->assertSee('"condition": false')
             ->assertSee('"condition": "{{ loop.index < 1 }}"');
 
+        $page->call('selectNode', 'poll')
+            ->assertDontSeeHtml('disabled="disabled" data-test="step-input-toggle"');
+
         $page->call('selectNode', 'tick')
             ->assertSeeHtml('data-test="step-input"')
-            ->assertDontSeeHtml('data-test="step-input-toggle"')
+            ->assertSeeHtml('disabled="disabled" data-test="step-input-toggle"')
             ->assertDontSeeHtml('data-test="step-settings"');
     }
 

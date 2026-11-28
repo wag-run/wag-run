@@ -36,10 +36,21 @@ return new class extends Migration
 
             $table->unique(['oidc_provider_id', 'subject']);
         });
+
+        Schema::create('oidc_domains', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('organization_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('oidc_provider_id')->constrained()->cascadeOnDelete();
+            $table->string('domain');
+            $table->timestamps();
+
+            $table->unique(['organization_id', 'domain']);
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('oidc_domains');
         Schema::dropIfExists('oidc_identities');
         Schema::dropIfExists('oidc_providers');
     }

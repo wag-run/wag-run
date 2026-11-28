@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\OidcDomain;
 use App\Models\OidcProvider;
 use App\Models\Organization;
 use App\Support\Audit;
@@ -37,10 +38,32 @@ new class extends Component {
 
     public bool $trustEmail = false;
 
+    /**
+     * The provider whose email domains the domains dialog shows.
+     */
+    #[Locked]
+    public ?string $domainsProviderId = null;
+
+    public bool $addingDomain = false;
+
+    public string $newDomain = '';
+
     #[Computed]
     public function providers()
     {
-        return Organization::current()->oidcProviders()->withCount('identities')->orderBy('name')->get();
+        return Organization::current()->oidcProviders()
+            ->withCount('identities')
+            ->with(['domains' => fn ($query) => $query->orderBy('domain')])
+            ->orderBy('name')
+            ->get();
+    }
+
+    #[Computed]
+    public function domainsProvider(): ?OidcProvider
+    {
+        return $this->domainsProviderId
+            ? Organization::current()->oidcProviders()->with(['domains' => fn ($query) => $query->orderBy('domain')])->find($this->domainsProviderId)
+            : null;
     }
 
     public function create(): void
@@ -153,6 +176,55 @@ new class extends Component {
         Flux::toast(text: __('admin.sign_in_providers.sign_in_provider_deleted'));
     }
 
+    public function manageDomains(string $id): void
+    {
+        $this->authorize('org-admin');
+
+        $this->domainsProviderId = $this->findProvider($id)->id;
+        $this->reset('addingDomain', 'newDomain');
+        $this->resetValidation();
+
+        Flux::modal('provider-domains')->show();
+    }
+
+    public function addDomain(): void
+    {
+        $this->authorize('org-admin');
+
+        $organization = Organization::current();
+        $provider = $this->findProvider((string) $this->domainsProviderId);
+        $this->newDomain = OidcDomain::normalize($this->newDomain);
+
+        $this->validate([
+            'newDomain' => ['required', 'string', 'max:253', 'regex:/^(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))+$/'],
+        ], [
+            'newDomain.required' => __('admin.sign_in_providers.enter_a_domain_such_as'),
+            'newDomain.regex' => __('admin.sign_in_providers.enter_a_domain_such_as'),
+        ]);
+
+        $existing = $organization->oidcDomains()->with('provider')->where('domain', $this->newDomain)->first();
+
+        if ($existing) {
+            $this->addError('newDomain', __('admin.sign_in_providers.domain_already_belongs_to_name', ['domain' => $existing->domain, 'name' => $existing->provider->name]));
+
+            return;
+        }
+
+        $domain = $provider->domains()->create(['organization_id' => $organization->id, 'domain' => $this->newDomain]);
+        Audit::record('oidc_provider.domain_added', $domain, metadata: ['provider' => $provider->name], label: $domain->domain);
+
+        $this->reset('addingDomain', 'newDomain');
+    }
+
+    public function deleteDomain(string $id): void
+    {
+        $this->authorize('org-admin');
+
+        $domain = Organization::current()->oidcDomains()->with('provider')->findOrFail($id);
+        $domain->delete();
+        Audit::record('oidc_provider.domain_deleted', $domain, metadata: ['provider' => $domain->provider->name], label: $domain->domain);
+    }
+
     public function callbackUrl(?string $slug = null): string
     {
         return route('oidc.callback', $slug ?? $this->editingSlug ?? (Str::slug($this->name) ?: 'provider'));
@@ -183,6 +255,7 @@ new class extends Component {
             <flux:table.columns>
                 <flux:table.column>{{ __('common.provider') }}</flux:table.column>
                 <flux:table.column>{{ __('admin.sign_in_providers.issuer') }}</flux:table.column>
+                <flux:table.column>{{ __('admin.sign_in_providers.domains') }}</flux:table.column>
                 <flux:table.column>{{ __('admin.sign_in_providers.new_people') }}</flux:table.column>
                 <flux:table.column>{{ __('admin.sign_in_providers.linked_users') }}</flux:table.column>
                 <flux:table.column></flux:table.column>
@@ -195,9 +268,21 @@ new class extends Component {
                             @unless ($provider->enabled)
                                 <flux:badge size="sm" class="ms-1">{{ __('admin.sign_in_providers.off') }}</flux:badge>
                             @endunless
-                            <div class="font-mono text-xs text-zinc-500">{{ $this->callbackUrl($provider->slug) }}</div>
                         </flux:table.cell>
                         <flux:table.cell class="font-mono text-xs">{{ $provider->issuer }}</flux:table.cell>
+                        <flux:table.cell>
+                            <button type="button" wire:click="manageDomains('{{ $provider->id }}')" data-test="domains-{{ $provider->slug }}"
+                                class="cursor-pointer underline decoration-dotted decoration-zinc-400 underline-offset-4 dark:decoration-zinc-500 {{ $provider->domains->isEmpty() ? 'text-zinc-500 dark:text-zinc-400' : '' }}">
+                                @if ($provider->domains->isEmpty())
+                                    {{ __('admin.sign_in_providers.any') }}
+                                @else
+                                    {{ $provider->domains->first()->domain }}
+                                    @if ($provider->domains->count() > 1)
+                                        <span class="text-zinc-500 dark:text-zinc-400">{{ __('admin.sign_in_providers.plus_count', ['count' => $provider->domains->count() - 1]) }}</span>
+                                    @endif
+                                @endif
+                            </button>
+                        </flux:table.cell>
                         <flux:table.cell>{{ $provider->allow_registration ? __('admin.sign_in_providers.get_an_account') : __('admin.sign_in_providers.need_an_invitation') }}</flux:table.cell>
                         <flux:table.cell>{{ $provider->identities_count }}</flux:table.cell>
                         <flux:table.cell align="end">
@@ -209,11 +294,63 @@ new class extends Component {
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="5" class="text-center text-zinc-500">{{ __('admin.sign_in_providers.no_sign_in_providers_yet') }}</flux:table.cell>
+                        <flux:table.cell colspan="6" class="text-center text-zinc-500">{{ __('admin.sign_in_providers.no_sign_in_providers_yet') }}</flux:table.cell>
                     </flux:table.row>
                 @endforelse
             </flux:table.rows>
         </flux:table>
+
+        <flux:modal name="provider-domains" class="md:w-lg" @close="$wire.set('domainsProviderId', null)">
+            @if ($this->domainsProvider)
+                <div class="space-y-6">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <flux:heading size="lg">{{ __('admin.sign_in_providers.name_email_domains', ['name' => $this->domainsProvider->name]) }}</flux:heading>
+                            <flux:text class="mt-1">{{ __('admin.sign_in_providers.name_accepts_only_email_addresses', ['name' => $this->domainsProvider->name]) }}</flux:text>
+                        </div>
+                        @unless ($addingDomain)
+                            <flux:button size="sm" icon="plus" wire:click="$set('addingDomain', true)" data-test="add-domain">{{ __('admin.sign_in_providers.add_domain') }}</flux:button>
+                        @endunless
+                    </div>
+
+                    @if ($addingDomain)
+                        <form wire:submit="addDomain" class="flex items-start gap-2" x-init="$nextTick(() => $el.querySelector('input')?.focus())">
+                            <div class="flex-1">
+                                <flux:input wire:model="newDomain" placeholder="acme.com" :aria-label="__('admin.sign_in_providers.domain')" />
+                                <flux:error name="newDomain" />
+                            </div>
+                            <flux:button wire:click="$set('addingDomain', false)" variant="ghost">{{ __('common.cancel') }}</flux:button>
+                            <flux:button type="submit" variant="primary" data-test="save-domain">{{ __('admin.sign_in_providers.add_domain') }}</flux:button>
+                        </form>
+                    @endif
+
+                    <flux:table>
+                        <flux:table.columns>
+                            <flux:table.column>{{ __('admin.sign_in_providers.domain') }}</flux:table.column>
+                            <flux:table.column></flux:table.column>
+                        </flux:table.columns>
+                        <flux:table.rows>
+                            @forelse ($this->domainsProvider->domains as $domain)
+                                <flux:table.row :key="$domain->id">
+                                    <flux:table.cell>{{ $domain->domain }}</flux:table.cell>
+                                    <flux:table.cell align="end">
+                                        <flux:button size="sm" variant="ghost" icon="trash" wire:click="deleteDomain('{{ $domain->id }}')" :aria-label="__('admin.sign_in_providers.remove_domain', ['domain' => $domain->domain])" />
+                                    </flux:table.cell>
+                                </flux:table.row>
+                            @empty
+                                <flux:table.row>
+                                    <flux:table.cell colspan="2" class="text-center text-zinc-500">{{ __('admin.sign_in_providers.no_domains_name_accepts_any', ['name' => $this->domainsProvider->name]) }}</flux:table.cell>
+                                </flux:table.row>
+                            @endforelse
+                        </flux:table.rows>
+                    </flux:table>
+
+                    <div class="flex justify-end">
+                        <flux:modal.close><flux:button variant="ghost">{{ __('common.done') }}</flux:button></flux:modal.close>
+                    </div>
+                </div>
+            @endif
+        </flux:modal>
 
         <flux:modal name="provider-form" class="md:w-xl">
             <form wire:submit="save" class="space-y-6">

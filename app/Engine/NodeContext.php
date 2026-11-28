@@ -98,7 +98,7 @@ class NodeContext
      */
     public function triggerInput(): array
     {
-        return $this->execution->input ?? [];
+        return $this->data['trigger'] ?? $this->execution->input ?? [];
     }
 
     public function workspace(): Workspace

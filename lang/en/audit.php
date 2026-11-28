@@ -42,6 +42,8 @@ return [
             'created' => 'Sign-in provider added',
             'updated' => 'Sign-in provider updated',
             'deleted' => 'Sign-in provider deleted',
+            'domain_added' => 'Email domain added',
+            'domain_deleted' => 'Email domain deleted',
         ],
         'organization' => [
             'settings_updated' => 'Organization settings updated',
@@ -67,6 +69,8 @@ return [
             'draft_discarded' => 'Workflow draft discarded',
             'rolled_back' => 'Workflow rolled back',
             'settings_updated' => 'Workflow settings updated',
+            'masking_added' => 'Masking override added',
+            'masking_removed' => 'Masking override removed',
             'enabled' => 'Workflow enabled',
             'disabled' => 'Workflow disabled',
             'deleted' => 'Workflow deleted',

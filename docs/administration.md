@@ -2,7 +2,7 @@
 
 Organization admins look after the whole wag.run install: who has an account, which workspaces exist, how people sign in, and how email is sent. They also act as **Admin** in every workspace.
 
-The first account registered on a new install becomes an organization admin. Admins can make others admins too. Their pages are under **Org settings** in the account menu at the bottom of the sidebar, which only admins see. Each page is a tab: **Workspaces**, **Users**, **Sign-in**, **Email**, and **General**. The **Audit log** link beside the tabs opens the organization's audit log.
+The first account registered on a new install becomes an organization admin. Admins can make others admins too. Their pages are under **Org settings** in the account menu at the bottom of the sidebar, which only admins see. Each page is a tab: **Workspaces**, **Users**, **Sign-in**, **Email**, **Masking**, and **General**. The **Audit log** link beside the tabs opens the organization's audit log.
 
 ## Workspaces
 
@@ -142,7 +142,7 @@ A few things to know:
 3. Under **APIs & Services → Credentials**, choose **Create credentials → OAuth client ID**, of type **Web application**. Add the redirect URI as an **Authorized redirect URI**. A provider named **Google** uses `https://wag.example.com/auth/oidc/google/callback`. Copy the client ID and secret.
 4. In wag.run, use `https://accounts.google.com` as the **Issuer URL**.
 
-wag.run doesn't check which Workspace domain an account belongs to, so the **Internal** audience is what keeps other Google accounts out. With **External**, anyone with a Google account could sign in, and get an account if **Create accounts for new people** is on.
+The **Internal** audience keeps other Google accounts out. Add your Workspace domains to the provider's [email domains](#email-domains) too, so wag.run turns them away as well. With **External** and no email domains, anyone with a Google account could sign in, and get an account if **Create accounts for new people** is on.
 
 This is a separate OAuth client from the one in [Connecting GitHub and Google](self-hosting.md#google), which lets workflows use Google APIs.
 
@@ -166,6 +166,15 @@ The issuer must use `https`. Plain `http` works only for `localhost`.
 | **… did not accept the sign-in** | The client secret is wrong, or the provider expects a different client authentication method. |
 | **… has not verified this email address** | The provider doesn't mark the email as verified. Verify it in the provider, or turn on **Trust email addresses from this provider** if you control who can set email addresses there. |
 | **There is no account for this sign-in** | **Create accounts for new people** is off. Invite the person first, or turn it on. |
+| **… doesn't accept this email address** | The provider has [email domains](#email-domains), and the person's email isn't on one of them. Add the domain, or have them sign in another way. |
+
+### Email domains
+
+Email domains limit which email addresses a provider accepts. A provider with domains accepts only email addresses on them, checked every time someone signs in with it, including people who signed in before the domains were added. A provider with no domains accepts any email address.
+
+The providers table's **Domains** column shows each provider's first domain and how many more it has, or **Any**. Click it to open the provider's domains, then click **Add domain** and enter one, such as `acme.com`, or remove one with its delete button. Changes save straight away.
+
+Each domain belongs to one provider, so to move a domain, remove it from its provider and add it to the other. Domains match exactly: `acme.com` doesn't cover `eu.acme.com`, which needs adding too. Deleting a provider deletes its domains.
 
 ## Email
 
@@ -176,6 +185,17 @@ The issuer must use `https`. Plain `http` works only for `localhost`.
 3. Click **Save settings**, then **Send test email**. The test goes to your own address, using the saved settings.
 
 When **Send through my SMTP server** is off, email uses the server's own mail configuration. On a fresh install, that writes email to the log instead of sending it. For a Docker install, you can also set email in `.env`; see [Self-hosting](self-hosting.md#settings).
+
+## Masking
+
+**Org settings → Masking** lists what runs mask in their logs, the API, and MCP, in every workspace. See [Secrets in logs](data-and-placeholders.md#secrets-in-logs) for how masking works.
+
+- **Built-in rules**, collapsed until you open them, are on for every workspace and can't be removed. They come in two kinds:
+    - **Names**, such as **Authorization**, `token`, and `*_secret`. The value of any key with one of these names is masked wherever it appears: in headers, bodies, queries, or forms. A name can be a false alarm, such as `next_page_token`, so a node can let one value through (below).
+    - **Values that look like secrets**, such as a JWT, `Bearer …`, or a `ghp_` key. A value with that shape is masked whatever its key is called, and can't be let through: the value itself is the credential.
+- **Your organization's names** are names to mask on top of the built-in ones, such as `X-Tenant-Key`, and work the same way. Type one and click **Add name**, or click × on one to remove it. Each change saves right away. A name uses letters, numbers, dashes, underscores, and dots. Matching ignores case, dashes, and underscores, and a `*` at the start or end stands for any prefix or suffix, as in `*_key`. Names only: patterns aren't supported.
+
+Nothing here can be turned off for a whole workflow. To let one value that a name matched through, add that value's path to **Never mask** on the node's [**Masking**](editor.md#masking) tab. That works for built-in names and your organization's names alike.
 
 ## General settings
 

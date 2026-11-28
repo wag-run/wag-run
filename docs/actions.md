@@ -289,7 +289,7 @@ How variables behave across a run:
 - **Loops.** A variable belongs to the run, not to a loop item or pass. One changed inside a [For loop](#for-loop) or a [While loop](#while-loop) keeps its value for the next item and after the loop, which makes a variable the way to total or collect across items.
 - **Retries.** A change is saved together with its step, so a step that fails and is retried never applies its change twice.
 - **Other workflows.** A workflow started by [Trigger other workflow](#trigger-other-workflow) has its own variables and doesn't see the caller's. Pass values through its inputs and read its output.
-- **Secrets.** Values show in the run's steps and on the run page, and a secret put in a variable is saved masked, so it can't be read back.
+- **Secrets.** A secret, or a token a step received, is masked in the variable as it shows in the run's steps and on the run page. Later steps in the same run still read the real value, so a token saved to a variable can be used until the run ends. See [Secrets in logs](data-and-placeholders.md#secrets-in-logs).
 
 #### How parallel changes were checked
 

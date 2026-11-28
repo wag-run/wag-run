@@ -2,7 +2,9 @@
 
 namespace App\Engine;
 
+use App\Engine\Masking\MaskedValues;
 use App\Engine\Templates\TemplateEngine;
+use App\Enums\MaskedSlot;
 use App\Enums\ResumeReason;
 use App\Enums\StepStatus;
 use App\Enums\WaitType;
@@ -22,6 +24,7 @@ class StepRunner
         protected NodeRegistry $registry,
         protected ContextBuilder $contexts,
         protected TemplateEngine $templates,
+        protected MaskedValues $masked,
     ) {}
 
     public function run(int $stepId): void
@@ -107,7 +110,7 @@ class StepRunner
         $node = $this->registry->make($step->node_type);
         $graphNode = $this->coordinator->graphFor($execution)->node($step->node_id);
         $scope = $insidePass ? Scope::forIteration($step->scope_key, $step->id, (int) ($step->state['index'] ?? 0)) : null;
-        $context = new NodeContext($step, $execution, $graphNode, $node, $this->contexts->build($step, $scope, beforeFirstPass: $node->repeats() && ! $insidePass), $this->templates);
+        $context = new NodeContext($this->withRealState($step), $execution, $graphNode, $node, $this->contexts->build($step, $scope, beforeFirstPass: $node->repeats() && ! $insidePass), $this->templates);
 
         try {
             $inputs = $context->inputs();
@@ -118,7 +121,7 @@ class StepRunner
         }
 
         $step->newQuery()->whereKey($step->id)->update([
-            'input' => json_encode(Redactor::forWorkspace($execution->workspace)->mask($inputs)),
+            'input' => json_encode(Redactor::forExecution($execution)->mask($inputs)),
         ]);
 
         try {
@@ -129,5 +132,22 @@ class StepRunner
         }
 
         $this->coordinator->apply($step, $token, $result);
+    }
+
+    /**
+     * The step as its node sees it: a copy whose saved state has its real
+     * values back, so a step resuming after a wait reads what it saved.
+     * The copy is never saved.
+     */
+    protected function withRealState(ExecutionStep $step): ExecutionStep
+    {
+        if ($step->state === null) {
+            return $step;
+        }
+
+        $copy = clone $step;
+        $copy->state = $this->masked->of($step->execution_id)->restore($step->state, MaskedSlot::State, $step->id);
+
+        return $copy;
     }
 }

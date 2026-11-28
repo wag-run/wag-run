@@ -32,7 +32,7 @@ Open a run to see it drawn on the workflow's canvas. While the run is going, the
 
 Alongside the canvas, **Steps** lists every step in the order it ran. Click a step, on the list or on the canvas, to see:
 
-- Its **Input**: the settings it ran with, with placeholders filled in. Where a setting had placeholders, tick **Show placeholders** to read it as it was typed, such as a While loop's condition. A step that ran more than once in place, such as a While loop checking its condition after each pass, shows what its latest check filled in.
+- Its **Input**: the settings it ran with, with placeholders filled in. Where a setting had placeholders, tick **Show placeholders** to read it as it was typed, such as a While loop's condition. The box is greyed out when none of the step's settings had placeholders. A step that ran more than once in place, such as a While loop checking its condition after each pass, shows what its latest check filled in.
 - Its **Output**, or its **Error**.
 - Its **Attempts**, if it was retried.
 - For an approval or task, who it was sent to and when it's due.
