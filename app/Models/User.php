@@ -6,6 +6,7 @@ use App\Enums\NotificationKind;
 use App\Enums\OrgRole;
 use App\Enums\WorkspacePermission;
 use App\Enums\WorkspaceRole;
+use App\Http\Middleware\ResolveCurrentOrganization;
 use App\Notifications\ResetPasswordNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -35,6 +36,7 @@ use Laravel\Passport\HasApiTokens;
  * @property Carbon|null $two_factor_confirmed_at
  * @property string|null $remember_token
  * @property int|null $current_workspace_id
+ * @property string|null $current_organization_id
  * @property array<string, array{database?: bool, mail?: bool}>|null $notification_preferences
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -110,6 +112,16 @@ class User extends Authenticatable implements MustVerifyEmail, OAuthenticatable
     public function currentWorkspace(): BelongsTo
     {
         return $this->belongsTo(Workspace::class, 'current_workspace_id');
+    }
+
+    /**
+     * The organization the user last worked in, see {@see ResolveCurrentOrganization}.
+     *
+     * @return BelongsTo<Organization, $this>
+     */
+    public function currentOrganization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class, 'current_organization_id');
     }
 
     /**

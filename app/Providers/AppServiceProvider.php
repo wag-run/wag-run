@@ -21,6 +21,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Services\WorkflowApi;
 use App\Services\WorkflowFiles;
+use App\Support\CurrentOrganization;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\DevCommands;
 use Illuminate\Support\Facades\Date;
@@ -38,6 +39,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(WorkflowFiles::class);
+        $this->app->scoped(CurrentOrganization::class);
 
         $this->app->singleton(CredentialTypeRegistry::class, function () {
             $registry = new CredentialTypeRegistry;

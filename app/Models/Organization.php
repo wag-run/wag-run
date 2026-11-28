@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Concerns\HasSettings;
 use App\Engine\Redactor;
 use App\Enums\OrgRole;
+use App\Support\CurrentOrganization;
 use Database\Factories\OrganizationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 
 /**
  * The organization layer above workspaces. The first release serves one
@@ -56,11 +58,30 @@ class Organization extends Model
     }
 
     /**
-     * The organization this install serves.
+     * The organization the current request or job is about, as
+     * {@see CurrentOrganization} holds it.
+     *
+     * Until every caller sets it, this falls back to the install's first
+     * organization when nothing has, as it always did. That fallback is
+     * temporary: it goes once each caller works out its own organization.
      */
     public static function current(): ?self
     {
-        return static::query()->oldest('id')->first();
+        $current = app(CurrentOrganization::class)->get();
+
+        if ($current) {
+            return $current;
+        }
+
+        $fallback = static::query()->oldest('id')->first();
+
+        if ($fallback) {
+            Log::debug('Organization::current() fell back to the oldest organization', [
+                'caller' => collect(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2))->last(),
+            ]);
+        }
+
+        return $fallback;
     }
 
     /**
