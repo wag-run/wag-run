@@ -11,7 +11,6 @@ Both act as you. They can only do what your role allows in each workspace: a Vie
 
 The MCP server is on unless the install's administrator turned it off with `MCP_SERVER_ENABLED=false` (see [Self-hosting](self-hosting.md#settings)). When it's off, **Preferences → API tokens** doesn't show its URL.
 
-
 1. Open **Preferences → API tokens** and copy the **MCP server URL**. It's your install's address followed by `/mcp`, such as `https://wag.example.com/mcp`.
 2. In the assistant, add it as a custom connector or remote MCP server.
 3. The assistant opens a wag.run page asking you to sign in and approve it. Choose **Authorize**.
@@ -54,7 +53,7 @@ Creating and revoking tokens is recorded in the audit log.
 
 ## REST API
 
-Every path below starts with `/api/v1`. A workspace is named by its slug, the part of its address after `/w/`. Each token can send up to 120 requests a minute.
+Every path below starts with `/api/v1`. A workspace is named by its slug, the part of its address after `/w/`. Each person can send up to 120 requests a minute, counting all their tokens and the MCP server together.
 
 | Method and path | What it does | Scope |
 |---|---|---|
