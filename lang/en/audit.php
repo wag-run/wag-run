@@ -43,7 +43,6 @@ return [
             'updated' => 'Sign-in provider updated',
             'deleted' => 'Sign-in provider deleted',
             'domain_added' => 'Email domain added',
-            'domain_updated' => 'Email domain updated',
             'domain_deleted' => 'Email domain deleted',
         ],
         'organization' => [

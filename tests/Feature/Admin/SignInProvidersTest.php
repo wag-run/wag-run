@@ -75,17 +75,21 @@ class SignInProvidersTest extends TestCase
         $this->actingAs($member)->get(route('admin.sign-in-providers'))->assertForbidden();
     }
 
-    public function test_org_admins_add_an_email_domain_to_a_provider(): void
+    public function test_org_admins_add_an_email_domain_from_the_providers_domains_dialog(): void
     {
         $admin = User::factory()->orgAdmin()->create();
         $provider = OidcProvider::factory()->for(Organization::current())->create(['name' => 'Acme ID']);
 
         Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')
+            ->assertSeeHtml('data-test="domains-'.$provider->slug.'"')
+            ->call('manageDomains', $provider->id)
+            ->assertSee('No domains yet, so Acme ID accepts any email address.')
+            ->set('addingDomain', true)
+            ->set('newDomain', ' @Acme.COM ')
             ->call('addDomain')
-            ->assertSet('domainProviderId', $provider->id)
-            ->set('domain', ' @Acme.COM ')
-            ->call('saveDomain')
-            ->assertHasNoErrors();
+            ->assertHasNoErrors()
+            ->assertSet('addingDomain', false)
+            ->assertSee('acme.com');
 
         $this->assertSame(['acme.com'], $provider->domains()->pluck('domain')->all());
         $this->assertDatabaseHas('audit_logs', ['action' => 'oidc_provider.domain_added', 'subject_label' => 'acme.com']);
@@ -94,39 +98,42 @@ class SignInProvidersTest extends TestCase
     public function test_a_domain_belongs_to_one_provider_and_must_look_like_a_domain(): void
     {
         $admin = User::factory()->orgAdmin()->create();
-        $okta = OidcProvider::factory()->for(Organization::current())->create();
+        $okta = OidcProvider::factory()->for(Organization::current())->create(['name' => 'Okta']);
         $entra = OidcProvider::factory()->for(Organization::current())->create();
         OidcDomain::factory()->for($okta, 'provider')->create(['domain' => 'acme.com']);
 
         $component = Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')
+            ->call('manageDomains', $entra->id)
+            ->set('newDomain', 'ACME.com')
             ->call('addDomain')
-            ->set('domainProviderId', $entra->id)
-            ->set('domain', 'ACME.com')
-            ->call('saveDomain')
-            ->assertHasErrors(['domain' => 'unique']);
+            ->assertHasErrors(['newDomain' => 'acme.com already belongs to Okta.']);
 
-        $component->set('domain', 'not a domain')->call('saveDomain')->assertHasErrors(['domain' => 'regex']);
+        $component->set('newDomain', 'not a domain')->call('addDomain')->assertHasErrors(['newDomain' => 'regex']);
 
         $this->assertSame(1, OidcDomain::count());
     }
 
-    public function test_org_admins_move_a_domain_to_another_provider_and_delete_it(): void
+    public function test_the_providers_table_shows_the_first_domain_and_how_many_more(): void
     {
         $admin = User::factory()->orgAdmin()->create();
-        $okta = OidcProvider::factory()->for(Organization::current())->create();
-        $entra = OidcProvider::factory()->for(Organization::current())->create(['name' => 'Entra ID']);
-        $domain = OidcDomain::factory()->for($okta, 'provider')->create(['domain' => 'acme.com']);
+        $provider = OidcProvider::factory()->for(Organization::current())->create();
+        OidcDomain::factory()->for($provider, 'provider')->create(['domain' => 'beta.example']);
+        OidcDomain::factory()->for($provider, 'provider')->create(['domain' => 'alpha.example']);
 
-        $component = Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')
-            ->call('editDomain', $domain->id)
-            ->assertSet('domain', 'acme.com')
-            ->set('domainProviderId', $entra->id)
-            ->call('saveDomain')
-            ->assertHasNoErrors();
+        Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')
+            ->assertSeeInOrder(['alpha.example', '+1'])
+            ->assertDontSee('beta.example');
+    }
 
-        $this->assertSame($entra->id, $domain->refresh()->oidc_provider_id);
+    public function test_org_admins_remove_a_domain(): void
+    {
+        $admin = User::factory()->orgAdmin()->create();
+        $provider = OidcProvider::factory()->for(Organization::current())->create();
+        $domain = OidcDomain::factory()->for($provider, 'provider')->create(['domain' => 'acme.com']);
 
-        $component->call('deleteDomain', $domain->id);
+        Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')
+            ->call('manageDomains', $provider->id)
+            ->call('deleteDomain', $domain->id);
 
         $this->assertModelMissing($domain);
         $this->assertDatabaseHas('audit_logs', ['action' => 'oidc_provider.domain_deleted', 'subject_label' => 'acme.com']);
@@ -149,9 +156,7 @@ class SignInProvidersTest extends TestCase
         $provider = OidcProvider::factory()->for(Organization::current())->create();
 
         Livewire::actingAs($member)->test('pages::admin.sign-in-providers')
-            ->set('domain', 'acme.com')
-            ->set('domainProviderId', $provider->id)
-            ->call('saveDomain')
+            ->call('manageDomains', $provider->id)
             ->assertForbidden();
 
         $this->assertSame(0, OidcDomain::count());

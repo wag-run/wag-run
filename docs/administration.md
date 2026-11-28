@@ -142,7 +142,7 @@ A few things to know:
 3. Under **APIs & Services → Credentials**, choose **Create credentials → OAuth client ID**, of type **Web application**. Add the redirect URI as an **Authorized redirect URI**. A provider named **Google** uses `https://wag.example.com/auth/oidc/google/callback`. Copy the client ID and secret.
 4. In wag.run, use `https://accounts.google.com` as the **Issuer URL**.
 
-The **Internal** audience keeps other Google accounts out. Add your Workspace domains under [Email domains](#email-domains) too, so wag.run turns them away as well. With **External** and no email domains, anyone with a Google account could sign in, and get an account if **Create accounts for new people** is on.
+The **Internal** audience keeps other Google accounts out. Add your Workspace domains to the provider's [email domains](#email-domains) too, so wag.run turns them away as well. With **External** and no email domains, anyone with a Google account could sign in, and get an account if **Create accounts for new people** is on.
 
 This is a separate OAuth client from the one in [Connecting GitHub and Google](self-hosting.md#google), which lets workflows use Google APIs.
 
@@ -170,9 +170,11 @@ The issuer must use `https`. Plain `http` works only for `localhost`.
 
 ### Email domains
 
-**Email domains**, under the sign-in providers, limit which email addresses each provider accepts. A provider with domains accepts only email addresses on them, checked every time someone signs in with it, including people who signed in before the domains were added. A provider with no domains accepts any email address.
+Email domains limit which email addresses a provider accepts. A provider with domains accepts only email addresses on them, checked every time someone signs in with it, including people who signed in before the domains were added. A provider with no domains accepts any email address.
 
-Click **Add domain**, enter the domain, such as `acme.com`, and choose its provider. Each domain belongs to one provider, so to move one, edit it and choose another. Domains match exactly: `acme.com` doesn't cover `eu.acme.com`, which needs its own row. Deleting a provider deletes its domains.
+The providers table's **Domains** column shows each provider's first domain and how many more it has, or **Any**. Click it to open the provider's domains, then click **Add domain** and enter one, such as `acme.com`, or remove one with its delete button. Changes save straight away.
+
+Each domain belongs to one provider, so to move a domain, remove it from its provider and add it to the other. Domains match exactly: `acme.com` doesn't cover `eu.acme.com`, which needs adding too. Deleting a provider deletes its domains.
 
 ## Email
 
