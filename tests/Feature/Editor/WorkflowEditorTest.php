@@ -722,11 +722,11 @@ class WorkflowEditorTest extends TestCase
         $this->editor($workspace, $workflow, $user)
             ->call('selectNode', 'fetch')
             ->assertSeeHtmlInOrder([
-                'wire:model.live.debounce.600ms="nodeName"',
+                'wire:model.live.debounce.600ms="nodeName"', 'nodes.fetch.output', 'data-test="node-id-edit"',
                 'data-test="inspector-tab-settings"', 'data-test="inspector-tab-behavior"', 'data-test="inspector-tab-outputs"',
                 'data-test="inspector-panel-settings"', 'name="form.url"',
                 'data-test="inspector-panel-behavior"', 'data-test="retry-toggle"', 'data-test="error-path-checkbox"', 'data-test="wait-for-all-checkbox"',
-                'data-test="inspector-panel-outputs"', 'nodes.fetch.output', 'data-test="node-id-edit"', 'data-test="node-outputs"', '<code>status</code>',
+                'data-test="inspector-panel-outputs"', 'data-test="node-outputs"', '<code>status</code>',
             ]);
     }
 
@@ -741,7 +741,7 @@ class WorkflowEditorTest extends TestCase
         $editor->call('selectNode', 'start')
             ->assertSet('inspectorTabs', ['settings', 'outputs'])
             ->assertDontSeeHtml('data-test="inspector-tab-behavior"')
-            ->assertSeeHtmlInOrder(['data-test="inspector-panel-outputs"', 'data-test="trigger-reference"']);
+            ->assertSeeHtmlInOrder(['data-test="trigger-reference"', 'data-test="inspector-tabs"']);
 
         $editor->call('selectNode', 'merge')
             ->assertSet('inspectorTabs', ['behavior', 'outputs'])
@@ -772,7 +772,7 @@ class WorkflowEditorTest extends TestCase
                 $disabled, 'wire:model.live.debounce.600ms="nodeName"',
                 'data-test="inspector-panel-settings"', $disabled, 'name="form.url"',
                 'data-test="inspector-panel-behavior"', $disabled, 'data-test="retry-toggle"',
-                'data-test="inspector-panel-outputs"', $disabled, 'data-test="node-outputs"',
+                'data-test="inspector-panel-outputs"', 'data-test="node-outputs"',
             ])
             ->assertDontSeeHtml('data-test="node-id-edit"');
     }

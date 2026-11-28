@@ -34,7 +34,7 @@ While such a field has focus, a **Preview** below it shows what the field would 
 | Name | What it holds |
 |---|---|
 | `trigger` | What the trigger received. See [Triggers](triggers.md) for each trigger's data. |
-| `nodes.<id>.output` | The output of an earlier node. The id is shown on the **Outputs** tab of the node's settings, under **Reference its output as**, where you can [change it](editor.md#configuring-a-node). |
+| `nodes.<id>.output` | The output of an earlier node. The id is shown in the node's settings, under **Reference its output as**, where you can [change it](editor.md#configuring-a-node). |
 | `vars.<name>` | One of the workflow's [variables](editor.md#variables), as it is in this run when the step runs. One that isn't declared reads as empty. |
 | `store.<key>` | An entry of the workspace's [data store](workspaces.md#data-store), as it is when the step runs. `store.<key>[<item key>]` is one item of a collection, and `store.<key>` alone is the whole collection as an object. An entry or item that doesn't exist reads as empty. |
 | `secrets.<key>` | A workspace [secret](workspaces.md#secrets) |

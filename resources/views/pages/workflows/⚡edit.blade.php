@@ -1754,6 +1754,24 @@ new class extends Component {
 
                 <fieldset class="min-w-0 space-y-4" @disabled(! $this->canEdit)>
                     <flux:input wire:model.live.debounce.600ms="nodeName" :label="__('common.name')" />
+                    @if ($definition->kind() === NodeKind::Trigger)
+                        <flux:text class="text-xs" data-test="trigger-reference">{{ __('workflows.edit.reference_its_data_as') }} <code class="rounded bg-zinc-100 px-1 dark:bg-zinc-800">trigger</code></flux:text>
+                    @elseif ($editingNodeId)
+                        <form wire:submit="saveNodeId" class="space-y-2" data-test="node-id-form">
+                            <flux:input class="font-mono" wire:model="newNodeId" wire:keydown.escape="cancelEditingNodeId" :label="__('workflows.edit.node_id')" maxlength="64" autofocus data-test="node-id-input" />
+                            <div class="flex justify-end gap-2">
+                                <flux:button size="sm" variant="ghost" wire:click="cancelEditingNodeId">{{ __('common.cancel') }}</flux:button>
+                                <flux:button size="sm" variant="primary" type="submit" data-test="node-id-save">{{ __('common.save') }}</flux:button>
+                            </div>
+                        </form>
+                    @else
+                        <div class="flex items-center gap-1">
+                            <flux:text class="min-w-0 text-xs">{{ __('workflows.edit.reference_its_output_as') }} <code class="rounded bg-zinc-100 px-1 break-all dark:bg-zinc-800">nodes.{{ $selected }}.output</code></flux:text>
+                            @if ($this->canEdit)
+                                <flux:button size="xs" variant="subtle" icon="pencil-square" wire:click="startEditingNodeId" :tooltip="__('workflows.edit.change_id')" :aria-label="__('workflows.edit.change_id')" data-test="node-id-edit" />
+                            @endif
+                        </div>
+                    @endif
                 </fieldset>
 
                 @php($formValues = [...$form, ...$this->fieldFacts()])
@@ -1824,34 +1842,13 @@ new class extends Component {
                     @endif
 
                     <div id="inspector-panel-outputs" role="tabpanel" aria-labelledby="inspector-tab-outputs" x-show="tab === 'outputs'" data-test="inspector-panel-outputs">
-                        <fieldset class="min-w-0 space-y-4" @disabled(! $this->canEdit)>
-                            @if ($definition->kind() === NodeKind::Trigger)
-                                <flux:text class="text-xs" data-test="trigger-reference">{{ __('workflows.edit.reference_its_data_as') }} <code class="rounded bg-zinc-100 px-1 dark:bg-zinc-800">trigger</code></flux:text>
-                            @elseif ($editingNodeId)
-                                <form wire:submit="saveNodeId" class="space-y-2" data-test="node-id-form">
-                                    <flux:input class="font-mono" wire:model="newNodeId" wire:keydown.escape="cancelEditingNodeId" :label="__('workflows.edit.node_id')" maxlength="64" autofocus data-test="node-id-input" />
-                                    <div class="flex justify-end gap-2">
-                                        <flux:button size="sm" variant="ghost" wire:click="cancelEditingNodeId">{{ __('common.cancel') }}</flux:button>
-                                        <flux:button size="sm" variant="primary" type="submit" data-test="node-id-save">{{ __('common.save') }}</flux:button>
-                                    </div>
-                                </form>
-                            @else
-                                <div class="flex items-center gap-1">
-                                    <flux:text class="min-w-0 text-xs">{{ __('workflows.edit.reference_its_output_as') }} <code class="rounded bg-zinc-100 px-1 break-all dark:bg-zinc-800">nodes.{{ $selected }}.output</code></flux:text>
-                                    @if ($this->canEdit)
-                                        <flux:button size="xs" variant="subtle" icon="pencil-square" wire:click="startEditingNodeId" :tooltip="__('workflows.edit.change_id')" :aria-label="__('workflows.edit.change_id')" data-test="node-id-edit" />
-                                    @endif
-                                </div>
-                            @endif
-
-                            <ul class="space-y-1 text-xs" data-test="node-outputs">
-                                @forelse ($definition->outputs($this->selectedNode()->config) as $output)
-                                    <li class="wrap-anywhere"><code>{{ $output->name }}</code> <span class="text-zinc-500">· {{ $output->type }} · {{ $output->label }}</span></li>
-                                @empty
-                                    <li class="text-zinc-500">{{ __('workflows.edit.this_node_has_no_outputs') }}</li>
-                                @endforelse
-                            </ul>
-                        </fieldset>
+                        <ul class="space-y-1 text-xs" data-test="node-outputs">
+                            @forelse ($definition->outputs($this->selectedNode()->config) as $output)
+                                <li class="wrap-anywhere"><code>{{ $output->name }}</code> <span class="text-zinc-500">· {{ $output->type }} · {{ $output->label }}</span></li>
+                            @empty
+                                <li class="text-zinc-500">{{ __('workflows.edit.this_node_has_no_outputs') }}</li>
+                            @endforelse
+                        </ul>
                     </div>
                 </div>
             @elseif ($this->selectedNode())
