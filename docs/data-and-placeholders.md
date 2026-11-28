@@ -93,6 +93,8 @@ Conditions, such as those of **Conditional logic** and **Filter**, must be a sin
 {{ trigger.values.amount > 100 and 'vip' in trigger.values.tags }}
 ```
 
+An expression can't call a method on a value, as in `nodes.fetch.output.items.count()`. Use a [helper function](#helper-functions) instead, such as `length(nodes.fetch.output.items)`.
+
 If an expression can't be worked out, for example because of a typo, the step fails with an "Expression error" message that says what went wrong.
 
 ## Helper functions
