@@ -25,14 +25,13 @@ class WorkspaceManager
 
     /**
      * Give someone their first workspace in an organization, "Ada's workspace",
-     * with a random slug and them as its Admin, and make it their current one.
+     * with them as its Admin, and make it their current one.
      */
     public function createFirstFor(User $user, Organization $organization): Workspace
     {
         return DB::transaction(function () use ($user, $organization) {
             $workspace = $organization->workspaces()->create([
                 'name' => __('workspaces.first_workspace_name', ['name' => $user->firstName()]),
-                'slug' => Workspace::randomSlug($organization->id),
             ]);
             $workspace->members()->attach($user, ['role' => WorkspaceRole::Admin->value]);
             $user->forceFill(['current_workspace_id' => $workspace->id])->save();
@@ -74,7 +73,7 @@ class WorkspaceManager
 
         $workspace->update([
             'name' => $name,
-            'slug' => Workspace::uniqueSlug($name, $workspace->organization_id, $workspace->id),
+            'slug' => Workspace::slugFor($name),
         ]);
 
         Audit::record('workspace.renamed', $workspace, $workspace, ['from' => $from, 'to' => $name]);

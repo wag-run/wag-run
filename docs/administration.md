@@ -9,7 +9,7 @@ The first account registered on a new install becomes an organization admin. Adm
 **Org settings → Workspaces** lists every workspace with how many members, data store entries, secrets, and credentials it has.
 
 - **New workspace** creates one. Add people to it from its **Members** page. See [Members and roles](workspaces.md#members-and-roles).
-- **Rename** changes its name.
+- **Rename** changes its name, and its address with it, so links and API calls that use the old address stop working.
 - **Delete** removes it with all its workflows, run logs, data store, secrets, and credentials. This can't be undone.
 
 ## Users

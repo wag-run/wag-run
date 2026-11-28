@@ -32,9 +32,28 @@ class FirstUserRegistrationTest extends TestCase
         $this->assertNotNull($organization);
         $this->assertSame(OrgRole::Admin, $user->orgRole());
         $this->assertSame(["Ada's workspace"], $organization->workspaces()->pluck('name')->all());
-        $this->assertMatchesRegularExpression('/^[a-z0-9]{8}$/', $organization->workspaces()->sole()->slug);
+        $this->assertMatchesRegularExpression('/^adas-workspace-[a-z0-9]{6}$/', $organization->workspaces()->sole()->slug);
         $this->assertSame($organization->workspaces()->first()->id, $user->current_workspace_id);
         $this->assertDatabaseHas('audit_logs', ['action' => 'workspace.created', 'user_id' => $user->id]);
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function organizationNames(): array
+    {
+        return [
+            'a name given' => ['Analytical Engines', 'Analytical Engines'],
+            'a blank name' => ['  ', "Ada's organization"],
+        ];
+    }
+
+    #[DataProvider('organizationNames')]
+    public function test_the_organization_takes_the_name_given_or_is_named_after_them(string $given, string $expected): void
+    {
+        $this->post(route('register.store'), [...$this->registration('ada@example.com'), 'organization' => $given])->assertSessionHasNoErrors();
+
+        $this->assertSame($expected, $this->organization()->name);
     }
 
     public function test_first_user_opens_the_app_without_confirming_their_email(): void

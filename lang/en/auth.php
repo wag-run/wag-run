@@ -13,6 +13,7 @@ return [
     ],
     'login' => [
         'don_t_have_an_account' => 'Don\'t have an account?',
+        'choose_an_organization' => 'Choose an organization',
         'choose_how_to_sign_in' => 'Choose how to sign in',
         'enter_your_email_to_continue' => 'Enter your email to continue',
         'forgot_your_password' => 'Forgot your password?',
@@ -30,10 +31,15 @@ return [
         'already_have_an_account' => 'Already have an account?',
         'create_account' => 'Create account',
         'create_an_account' => 'Create an account',
+        'domain_signs_in_with' => 'People at :domain sign in with :provider. Continue below.',
         'enter_your_details_below_to' => 'Enter your details below to create your account',
         'full_name' => 'Full name',
+        'name_s_organization' => ':name\'s organization',
+        'organization_name' => 'Organization name',
+        'organization_name_placeholder' => 'Leave blank to name it after you',
         'register' => 'Register',
         'registration_is_by_invitation_only_2' => 'Registration is by invitation only. Ask an admin to invite you.',
+        'you_can_rename_it_later' => 'You can rename it later.',
     ],
     'reset_password' => [
         'please_enter_your_new_password' => 'Please enter your new password below',

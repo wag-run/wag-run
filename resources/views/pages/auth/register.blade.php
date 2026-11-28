@@ -30,6 +30,18 @@
                 placeholder="email@example.com"
             />
 
+            <!-- Organization -->
+            <flux:input
+                name="organization"
+                :label="__('auth.register.organization_name')"
+                :value="old('organization')"
+                type="text"
+                maxlength="100"
+                autocomplete="organization"
+                :placeholder="__('auth.register.organization_name_placeholder')"
+                :description:trailing="__('auth.register.you_can_rename_it_later')"
+            />
+
             <!-- Password -->
             <flux:input
                 name="password"

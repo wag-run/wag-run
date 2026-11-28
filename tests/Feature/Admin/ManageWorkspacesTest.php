@@ -37,11 +37,11 @@ class ManageWorkspacesTest extends TestCase
 
         $page->set('name', 'Platform Ops')->call('save')->assertHasNoErrors();
         $workspace = Workspace::firstWhere('name', 'Platform Ops');
-        $this->assertSame('platform-ops', $workspace->slug);
+        $this->assertMatchesRegularExpression('/^platform-ops-[a-z0-9]{6}$/', $workspace->slug);
         $this->assertSame($this->organization()->id, $workspace->organization_id);
 
         $page->call('edit', $workspace->id)->set('name', 'Platform')->call('save');
-        $this->assertSame('platform', $workspace->fresh()->slug);
+        $this->assertMatchesRegularExpression('/^platform-[a-z0-9]{6}$/', $workspace->fresh()->slug);
 
         Secret::factory()->for($workspace)->create();
         $page->call('delete', $workspace->id);
@@ -68,7 +68,18 @@ class ManageWorkspacesTest extends TestCase
         $first = Workspace::factory()->create(['name' => 'Sales']);
         $second = Workspace::factory()->create(['name' => 'Sales']);
 
-        $this->assertSame('sales', $first->slug);
-        $this->assertSame('sales-2', $second->slug);
+        $this->assertMatchesRegularExpression('/^sales-[a-z0-9]{6}$/', $first->slug);
+        $this->assertMatchesRegularExpression('/^sales-[a-z0-9]{6}$/', $second->slug);
+        $this->assertNotSame($first->slug, $second->slug);
+    }
+
+    public function test_a_long_or_symbol_only_name_still_gets_a_short_slug(): void
+    {
+        $long = Workspace::factory()->create(['name' => str_repeat('Analytical engine ', 10)]);
+        $symbols = Workspace::factory()->create(['name' => '!!!']);
+
+        $this->assertLessThanOrEqual(47, strlen($long->slug));
+        $this->assertMatchesRegularExpression('/^analytical-engine-.*[a-z0-9]-[a-z0-9]{6}$/', $long->slug);
+        $this->assertMatchesRegularExpression('/^workspace-[a-z0-9]{6}$/', $symbols->slug);
     }
 }
