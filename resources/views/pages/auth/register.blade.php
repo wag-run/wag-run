@@ -5,11 +5,6 @@
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
 
-        @unless ($registrationOpen ?? true)
-            <flux:callout icon="envelope" variant="secondary" :heading="__('auth.register.registration_is_by_invitation_only')">
-                {{ __('auth.register.ask_an_admin_of_this') }}
-            </flux:callout>
-        @else
         <form method="POST" action="{{ route('register.store') }}" class="flex flex-col gap-6">
             @csrf
             <!-- Name -->
@@ -65,7 +60,6 @@
                 </flux:button>
             </div>
         </form>
-        @endunless
 
         <div class="space-x-1 rtl:space-x-reverse text-center text-sm text-zinc-600 dark:text-zinc-400">
             <span>{{ __('auth.register.already_have_an_account') }}</span>

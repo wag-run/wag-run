@@ -23,7 +23,6 @@ use Illuminate\Support\Carbon;
  * @property array<string, mixed>|null $settings the organization-wide settings, see {@see Organization::SETTINGS}
  * @property array{host?: string, port?: int, encryption?: string, username?: string|null, password?: string|null, from_address?: string, from_name?: string|null}|null $mail
  * @property int|null $default_retention_days
- * @property bool $registration_open
  * @property int $max_chain_depth
  * @property int $max_runs_per_minute
  * @property bool $allow_account_deletion
@@ -31,7 +30,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'settings', 'mail', 'default_retention_days', 'registration_open', 'max_chain_depth', 'max_runs_per_minute', 'allow_account_deletion', 'sensitive_keys'])]
+#[Fillable(['name', 'settings', 'mail', 'default_retention_days', 'max_chain_depth', 'max_runs_per_minute', 'allow_account_deletion', 'sensitive_keys'])]
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */
@@ -43,7 +42,6 @@ class Organization extends Model
      */
     public const SETTINGS = [
         'default_retention_days' => ['int', 30],
-        'registration_open' => ['bool', false],
         'max_chain_depth' => ['int', 10],
         'max_runs_per_minute' => ['int', 60],
         'allow_account_deletion' => ['bool', true],

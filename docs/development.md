@@ -44,7 +44,11 @@ The `.ai/skills` folder is for overrides only. Boost treats anything in it as a 
 composer run dev
 ```
 
-This runs `php artisan dev`, which starts the local web server and the other processes the app needs while you work. Open the URL it prints and register. The first account becomes the organization admin.
+This runs `php artisan dev`, which starts the local web server and the other processes the app needs while you work. Open the address on the `server` line, <http://127.0.0.1:8000> by default, and register. The `vite` lines print other addresses, which serve only the front-end assets. The first account becomes the organization admin.
+
+### Working on the hosted version
+
+wag.run also runs as a hosted service. The parts only it needs are behind the `SELF_HOSTED` setting, which is `true` by default. To work on them, add `SELF_HOSTED=false` to your `.env`.
 
 ## Tests and checks
 

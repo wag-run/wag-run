@@ -25,13 +25,9 @@ A deactivated person can't be chosen as an approver, assignee, or notification r
 
 ## Sign-in
 
-**Org settings → Sign-in** controls who can create an account and how people sign in.
+**Org settings → Sign-in** controls how people sign in.
 
-### Registration
-
-Turn on **Allow anyone to register** to let anyone who can reach the sign-in page create an account. When it's off, people join only by invitation. New accounts join as organization Members with no workspace access either way, until someone adds them to a workspace. People who register themselves have to confirm their email address before they can use the app, so set up [email](#email) first. Invited people and people who sign in through a provider are confirmed already. The switch saves as soon as you flip it.
-
-Turn it off once your first account exists, unless you want an open install.
+Only the install's first account registers itself. After that, people join by [invitation](#users), or through a sign-in provider that creates accounts for new people.
 
 ### Sign-in providers
 

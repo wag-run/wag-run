@@ -4,12 +4,6 @@ return [
     'failed' => 'These credentials do not match our records.',
     'password' => 'The provided password is incorrect.',
     'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
-    'confirm_password' => [
-        'confirm_with_passkey' => 'Confirm with passkey',
-        'confirming' => 'Confirming...',
-        'or_confirm_with_password' => 'Or confirm with password',
-        'this_is_a_secure_area' => 'This is a secure area of the application. Please confirm your password before continuing.',
-    ],
     'forgot_password' => [
         'email_password_reset_link' => 'Email password reset link',
         'enter_your_email_to_receive' => 'Enter your email to receive a password reset link',
@@ -29,14 +23,12 @@ return [
     ],
     'register' => [
         'already_have_an_account' => 'Already have an account?',
-        'ask_an_admin_of_this' => 'Ask an admin of this organization to invite you. The invitation email has a link to create your account.',
         'create_account' => 'Create account',
         'create_an_account' => 'Create an account',
         'default' => 'Default',
         'enter_your_details_below_to' => 'Enter your details below to create your account',
         'full_name' => 'Full name',
         'register' => 'Register',
-        'registration_is_by_invitation_only' => 'Registration is by invitation only',
         'registration_is_by_invitation_only_2' => 'Registration is by invitation only. Ask an admin to invite you.',
     ],
     'reset_password' => [

@@ -21,9 +21,11 @@ class CreateNewUser implements CreatesNewUsers
     public function __construct(protected WorkspaceManager $workspaces) {}
 
     /**
-     * Validate and create a newly registered user. The first user to register
-     * sets up the install's organization and becomes its organization admin; later
-     * users can register only while open registration is on.
+     * Create the install's first account, which sets up its organization and
+     * becomes its organization admin. Once the organization exists, people join
+     * only by invitation or through a sign-in provider, so this refuses before
+     * validating anything, which would otherwise reveal whether an email has
+     * an account.
      *
      * The first user's email address counts as confirmed: they are setting the
      * install up, usually before it can send email.
@@ -32,31 +34,21 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
+        $this->ensureNoOrganizationYet();
+
         Validator::make($input, [
             ...$this->profileRules(),
             'password' => $this->passwordRules(),
         ])->validate();
 
         return Cache::lock('register-user', 10)->block(5, fn () => DB::transaction(function () use ($input) {
-            $organization = Organization::current();
-
-            if ($organization && ! $organization->registration_open) {
-                throw ValidationException::withMessages([
-                    'email' => __('auth.register.registration_is_by_invitation_only_2'),
-                ]);
-            }
+            $this->ensureNoOrganizationYet();
 
             $user = User::create([
                 'name' => $input['name'],
                 'email' => $input['email'],
                 'password' => $input['password'],
             ]);
-
-            if ($organization) {
-                $user->organizations()->attach($organization, ['role' => OrgRole::Member->value]);
-
-                return $user;
-            }
 
             $organization = Organization::create(['name' => config('app.name')]);
             $user->organizations()->attach($organization, ['role' => OrgRole::Admin->value]);
@@ -66,5 +58,17 @@ class CreateNewUser implements CreatesNewUsers
 
             return $user;
         }));
+    }
+
+    /**
+     * @throws ValidationException once the install has an organization
+     */
+    protected function ensureNoOrganizationYet(): void
+    {
+        if (Organization::current()) {
+            throw ValidationException::withMessages([
+                'email' => __('auth.register.registration_is_by_invitation_only_2'),
+            ]);
+        }
     }
 }

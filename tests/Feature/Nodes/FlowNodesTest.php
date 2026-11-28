@@ -27,8 +27,8 @@ class FlowNodesTest extends TestCase
         $registry = app(NodeRegistry::class);
         $types = array_map(fn (string $class) => $class::type(), WorkflowServiceProvider::BUILT_IN_NODES);
 
-        $this->assertCount(45, array_unique($types));
-        $this->assertSame(8, count($registry->ofKind(NodeKind::Trigger)));
+        $this->assertCount(48, array_unique($types));
+        $this->assertSame(9, count($registry->ofKind(NodeKind::Trigger)));
 
         foreach ($types as $type) {
             $description = $registry->make($type)->describe();

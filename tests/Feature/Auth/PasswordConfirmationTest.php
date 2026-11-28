@@ -10,12 +10,12 @@ class PasswordConfirmationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_confirm_password_screen_can_be_rendered(): void
+    public function test_the_confirm_password_screen_sends_people_to_the_dashboard(): void
     {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->get(route('password.confirm'));
-
-        $response->assertOk()->assertSee('data-test="confirm-password-button"', false);
+        $this->actingAs($user)
+            ->get(route('password.confirm'))
+            ->assertRedirect(route('dashboard'));
     }
 }
