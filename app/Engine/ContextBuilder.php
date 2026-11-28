@@ -9,6 +9,7 @@ use App\Enums\StepStatus;
 use App\Models\Execution;
 use App\Models\ExecutionStep;
 use App\Services\DataStore;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Builds the data a step can read: the trigger input, outputs of earlier
@@ -48,24 +49,14 @@ class ContextBuilder
         $execution = $step->execution;
         $scope ??= $step->scope_key;
 
-        $completed = $execution->steps()
-            ->where('status', StepStatus::Complete)
-            ->orderBy('id')
-            ->get(['id', 'node_id', 'scope_key', 'status', 'wait_type', 'output', 'output_ports']);
-
         $kept = $this->masked->of($execution);
 
-        foreach ($completed as $done) {
-            if ($done->output !== null) {
-                $done->output = $kept->restore($done->output, MaskedSlot::Output, $done->id);
-            }
-        }
-
-        $results = new LoopResults($completed);
+        $visible = $this->completedSteps($execution, $kept, Scope::visibleFrom($scope));
+        $results = new LoopResults(fn () => $this->completedSteps($execution, $kept));
 
         $data = [
             'trigger' => $kept->restore($execution->input ?? [], MaskedSlot::Trigger),
-            'nodes' => $this->visibleOutputs($completed, $results, $scope),
+            'nodes' => $this->visibleOutputs($visible, $results, $scope),
             'vars' => new VariableData($execution, unmasked: true),
             'store' => new StoreData($execution->workspace, $this->store),
             'secrets' => $execution->workspace->secrets()->get()->pluck('value', 'key')->all(),
@@ -83,6 +74,30 @@ class ContextBuilder
         }
 
         return $data;
+    }
+
+    /**
+     * The run's completed steps, oldest first, with the real values put back
+     * into their outputs.
+     *
+     * @param  list<string>|null  $scopes  only the steps in these scopes, or the whole run
+     * @return Collection<int, ExecutionStep>
+     */
+    protected function completedSteps(Execution $execution, RunMaskedValues $kept, ?array $scopes = null): Collection
+    {
+        $steps = $execution->steps()
+            ->where('status', StepStatus::Complete)
+            ->when($scopes !== null, fn ($query) => $query->whereIn('scope_key', $scopes))
+            ->orderBy('id')
+            ->get(['id', 'node_id', 'scope_key', 'status', 'wait_type', 'output', 'output_ports']);
+
+        foreach ($steps as $done) {
+            if ($done->output !== null) {
+                $done->output = $kept->restore($done->output, MaskedSlot::Output, $done->id);
+            }
+        }
+
+        return $steps;
     }
 
     /**
