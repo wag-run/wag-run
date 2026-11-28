@@ -318,7 +318,7 @@ new class extends Component {
             </flux:table.rows>
         </flux:table>
 
-        <flux:modal name="provider-domains" class="md:w-lg" @close="$wire.set('domainsProviderId', null)">
+        <flux:modal name="provider-domains" class="md:w-lg">
             @if ($this->domainsProvider)
                 <div class="space-y-6">
                     <div class="flex items-start justify-between gap-4">
