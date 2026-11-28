@@ -174,4 +174,22 @@ Both read the file into the run's data, so they only work on files up to 1 MB.
 
 ## Secrets in logs
 
-Secret values never appear in run logs. Wherever a secret's value would show in a step's input or output, the run page shows it masked. Even so, avoid sending secrets anywhere they could be read back, such as into an email body.
+Secret values show as `********` in run logs: on the run page, in the [API](api.md), and through MCP. A value is masked when:
+
+- **It's a known secret**: a workspace [secret](workspaces.md#secrets), or a credential's secret field.
+- **It sits under a name that sounds secret**, at any depth: headers such as **Authorization**, **Cookie**, **Set-Cookie**, and **X-Api-Key**, and fields such as `token`, `password`, `secret`, `api_key`, and `client_secret`, or ending in `_token`, `_secret`, or `_password`. Matching ignores case, dashes, and underscores, so `api-key`, `API_KEY`, and `apiKey` all match. The full list is under [**Org settings → General**](administration.md#masked-values), where you can add your own names.
+- **It looks like a secret**: a JWT, `Bearer …` or `Basic …` credentials, a key with a known prefix such as `ghp_`, `sk-`, `xoxb-`, or `AKIA`, or a password or token in a URL, such as `user:pass@host` or `?access_token=`.
+- **The node says so**, on its [**Masking**](editor.md#masking) tab.
+
+Once a run has masked a value, it masks it wherever else it shows up in that run: a token a login step received is masked in a later step's URL, in a message, or in an error.
+
+Masking doesn't stop the workflow from using the values. While the run is going, later steps read the real ones: `{{ nodes.login.output.body.token }}` sends the real token in the next request, a token in a webhook body still reads as `{{ trigger.body.token }}`, and both keep working after a wait or an approval. The real values are kept encrypted only while the run is in progress, and are removed as soon as it completes, fails, is cancelled, or is skipped. Nobody can reveal them: finished runs and the editor's data preview show masks.
+
+Masking doesn't catch everything:
+
+- **Bodies that aren't JSON.** In XML, HTML, or plain text, only values that look like secrets and secrets the run already knows are masked, not values by name.
+- **Saved files.** [Files](files.md) a run saves aren't scanned.
+- **Changed values.** A token that has been changed, such as Base64-encoded or cut into parts, no longer matches the one the run knows.
+- **Another workflow's output.** A workflow started with [Trigger other workflow](actions.md#trigger-other-workflow) that the run waits for hands back its output masked, so the run can't use a secret from it.
+
+Even so, avoid sending secrets anywhere they could be read back, such as into an email body.

@@ -41,8 +41,20 @@ Below them, the panel lists anything that would stop the workflow from publishin
   - **Show "on error" path**: adds an **on error** output. If the node still fails after its retries, the nodes connected to that output run instead of the run failing.
   - **Wait for all incoming branches**: for a node with several incoming connections. It runs once, after every branch leading into it has finished, instead of once for each connection. A branch the run doesn't take, such as the unused side of a condition, isn't waited for.
 - **Outputs**: what the node produces, which later nodes can use.
+- **Masking**: what the node's output masks in run logs. Nodes without outputs don't have this tab. See [Masking](#masking).
 
 Changes save to the draft as you type.
+
+### Masking
+
+Values a node receives or sends that are secret, such as tokens, cookies, and keys, are masked in run logs, the API, and MCP, while later steps in the run can still use them. See [Secrets in logs](data-and-placeholders.md#secrets-in-logs) for what's masked and why. The **Masking** tab adjusts it for one node, and its label counts the values masked the last time the node ran, as in **Masking · 2**:
+
+- **Masked in the last run** lists each place in the node's output that was masked, with the reason: a built-in header or name, a name your organization added, **Always mask**, or a value that looks like a secret. Places in a list show as `[*]`. For a trigger, the places are in the run's trigger data, as in `body.token`.
+- **Don't mask** beside a name match adds its place to **Never mask**. The row stays until the node runs again.
+- **Always mask** takes places to mask whatever they hold, such as `body.data[*].license_key`. Join keys with dots, write `[*]` for every item of a list, and put a key with a dot in it in quotes, as in `body["a.b"]`.
+- **Never mask** takes places that look secret by name but aren't, such as `body.next_page_token`. It applies to this one place on this node only. A value that looks like a secret, or that the run already knows as one, is masked anyway.
+
+The paths are saved with the node, so they show in version history and in exports. Adding or removing one is recorded in the workspace's [audit log](workspaces.md#audit-log).
 
 ## Selecting, copying, and deleting
 

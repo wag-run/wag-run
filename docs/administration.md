@@ -193,6 +193,15 @@ When **Send through my SMTP server** is off, email uses the server's own mail co
 | **Maximum chain depth** | How many runs deep a chain of workflows starting other workflows can go. A run past it is cancelled, which stops workflows that start each other in a loop. 10 by default. |
 | **Maximum runs per minute** | How many runs one workflow can start in a minute, unless the workflow sets its own limit. Runs past it are cancelled, which slows down loops through other apps, such as a workflow that fires its own trigger. 60 by default. |
 
+### Masked values
+
+**Masked values** lists what runs mask in their logs, the API, and MCP, in every workspace (see [Secrets in logs](data-and-placeholders.md#secrets-in-logs)).
+
+- **Built in** shows the header names, field names, and value patterns that are always masked. They can't be removed.
+- **Your organization's names** are header or field names to mask on top of those, such as `X-Tenant-Key`. Type one and click **Add name**, click × on one to remove it, then **Save settings**. A name uses letters, numbers, dashes, underscores, and dots. Matching ignores case, dashes, and underscores, and a `*` at the start or end stands for any prefix or suffix, as in `*_key`. Names only: patterns aren't supported.
+
+A name that masks too much for one API can be turned off for that node on its [**Masking**](editor.md#masking) tab, without changing this list.
+
 ## Audit log
 
 **Workspace → Audit log** is also where organization admins read the whole organization's log. Open it from the **Audit log** link in **Org settings**, or pick **Org-wide** in the dropdown at the top of a workspace's audit log, to see every audited change across the organization, newest first: workflows, data store entries, secrets, and credentials in every workspace, secret reveals, workspace and membership changes, invitations, sign-ins, user changes, sign-in provider changes, and organization and email settings. Filter it by action. See [Audit log](workspaces.md#audit-log).
