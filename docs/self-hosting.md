@@ -72,6 +72,8 @@ docker compose up -d
 | `WORKFLOW_FILES_MAX_MB` | `50` | The largest file, in MB, that a run can receive, download, or have uploaded to it. The image accepts requests up to 55 MB, so you can lower this but not raise it. |
 | `APP_MEMORY_LIMIT`, `DB_MEMORY_LIMIT` | `1g` | Memory limit for each container |
 
+The app also reads `SELF_HOSTED`, which isn't in the table because there's nothing to set. It's `true` on every self-hosted install, and only the hosted version of wag.run turns it off.
+
 Until email is set up, outgoing mail isn't sent, and at the default `LOG_LEVEL` it isn't logged either. To read a message before email works, such as an invitation link, set `LOG_LEVEL=debug`, apply it with `docker compose up -d`, and find the message in `docker compose logs app`. Set it back to `info` afterwards, because debug logs include the full text of every email.
 
 ## Connecting GitHub and Google
