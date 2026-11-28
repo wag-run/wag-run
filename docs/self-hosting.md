@@ -312,13 +312,45 @@ Skip `docker compose pull` while you run it, or set `WAG_VERSION` back to a rele
 
 ## Running without Docker
 
-wag.run is a standard Laravel application, so you can run it on your own PHP 8.4 server. Besides the web server, it needs:
+wag.run is a standard Laravel application, so you can run it on your own PHP 8.4 server with Composer, Node.js and npm, and a PostgreSQL database. From a checkout of a release, install it with:
+
+```bash
+composer install --no-dev --optimize-autoloader
+```
+
+```bash
+cp .env.example .env
+```
+
+In `.env`, set `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL`, and the database settings: `DB_CONNECTION=pgsql`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD`. Then generate the encryption key and the keys that sign API tokens, create the database tables, and build the front-end assets:
+
+```bash
+php artisan key:generate --force
+```
+
+```bash
+php artisan passport:keys
+```
+
+```bash
+php artisan migrate --force
+```
+
+```bash
+npm ci && npm run build
+```
+
+Without `passport:keys`, the app runs, but creating an API token fails and AI assistants can't connect. Back up `storage/oauth-private.key` and `storage/oauth-public.key` with the rest of `storage/`, and keep `APP_KEY` as carefully as on a Docker install (see [The encryption key](#the-encryption-key)).
+
+Besides the web server, which serves the `public` folder, it needs:
 
 - **A queue worker** for the `workflows` and `default` queues, which runs workflow steps. Restart it after every upgrade.
 
   ```bash
-  php artisan queue:work --queue=workflows,default
+  php artisan queue:work --queue=workflows,default --tries=1 --timeout=0
   ```
+
+  Keep `--tries=1 --timeout=0`, as the Docker image does. wag.run retries steps and times them out itself, using each node's own settings. Without `--timeout=0`, the worker stops any step that takes longer than 60 seconds, such as a slow HTTP or LLM call, and then exits.
 
 - **The scheduler**, run every minute. It starts scheduled workflows, wakes up waiting steps, times out approvals and tasks, and removes run logs past their retention period.
 
