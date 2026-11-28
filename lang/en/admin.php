@@ -30,6 +30,8 @@ return [
         'how_many_runs_one_workflow' => 'How many runs one workflow can start in a minute, unless the workflow sets its own limit. Runs past it are cancelled, which slows down a workflow that keeps firing its own trigger through another app.',
         'accounts' => 'Accounts',
         'let_people_delete_their_accounts' => 'Let people delete their own accounts',
+        'give_new_people_their_own' => 'Give new people their own workspace',
+        'someone_who_signs_in_for' => 'Someone who signs in for the first time without a workspace gets one named after them, such as "Ada\'s workspace", with them as its Admin.',
         'when_off_the_delete_account' => 'When off, the Delete account button is hidden from profile settings, and only an admin can remove an account.',
         'title' => 'General',
         'workflow_chains' => 'Workflow chains',

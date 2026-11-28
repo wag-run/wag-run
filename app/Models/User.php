@@ -91,7 +91,7 @@ class User extends Authenticatable implements MustVerifyEmail, OAuthenticatable
         return $this->belongsToMany(Organization::class)
             ->using(OrganizationMembership::class)
             ->as('membership')
-            ->withPivot(['role', 'deactivated_at'])
+            ->withPivot(['role', 'deactivated_at', 'first_workspace_at'])
             ->withTimestamps();
     }
 
@@ -158,6 +158,23 @@ class User extends Authenticatable implements MustVerifyEmail, OAuthenticatable
         $membership = $this->membershipIn($organization);
 
         return $membership !== null && $membership->deactivated_at === null;
+    }
+
+    /**
+     * The first word of the user's name. A name with no spaces but a dot, as a
+     * provider's email-based fallback gives ("ada.lovelace"), uses the part
+     * before the dot, capitalized.
+     */
+    public function firstName(): string
+    {
+        $name = trim($this->name);
+        $first = Str::before($name, ' ');
+
+        if (! str_contains($name, ' ') && str_contains($name, '.')) {
+            $first = Str::ucfirst(Str::before($name, '.'));
+        }
+
+        return $first !== '' ? $first : Str::before($this->email, '@');
     }
 
     /**
