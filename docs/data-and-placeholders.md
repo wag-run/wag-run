@@ -177,7 +177,7 @@ Both read the file into the run's data, so they only work on files up to 1 MB.
 Secret values show as `********` in run logs: on the run page, in the [API](api.md), and through MCP. A value is masked when:
 
 - **It's a known secret**: a workspace [secret](workspaces.md#secrets), or a credential's secret field.
-- **It sits under a name that sounds secret**, at any depth: headers such as **Authorization**, **Cookie**, **Set-Cookie**, and **X-Api-Key**, and fields such as `token`, `password`, `secret`, `api_key`, and `client_secret`, or ending in `_token`, `_secret`, or `_password`. Matching ignores case, dashes, and underscores, so `api-key`, `API_KEY`, and `apiKey` all match. The full list is under [**Org settings → General**](administration.md#masked-values), where you can add your own names.
+- **It sits under a name that sounds secret**, at any depth: headers such as **Authorization**, **Cookie**, **Set-Cookie**, and **X-Api-Key**, and fields such as `token`, `password`, `secret`, `api_key`, and `client_secret`, or ending in `_token`, `_secret`, or `_password`. Matching ignores case, dashes, and underscores, so `api-key`, `API_KEY`, and `apiKey` all match. The full list is under [**Org settings → Masking**](administration.md#masking), where you can add your own names.
 - **It looks like a secret**: a JWT, `Bearer …` or `Basic …` credentials, a key with a known prefix such as `ghp_`, `sk-`, `xoxb-`, or `AKIA`, or a password or token in a URL, such as `user:pass@host` or `?access_token=`.
 - **The node says so**, on its [**Masking**](editor.md#masking) tab.
 

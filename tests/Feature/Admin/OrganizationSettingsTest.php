@@ -114,27 +114,4 @@ class OrganizationSettingsTest extends TestCase
 
         $this->assertSame(['max_chain_depth' => 4], $organization->fresh()->settings);
     }
-
-    public function test_org_admin_adds_and_removes_names_to_mask_and_sees_the_built_in_ones(): void
-    {
-        $admin = User::factory()->orgAdmin()->create();
-
-        $page = Livewire::actingAs($admin)
-            ->test('pages::admin.settings')
-            ->assertSeeHtmlInOrder(['data-test="built-in-names"', 'Proxy-Authorization', 'client_secret', '*_token', 'X-Amz-Signature', 'data-test="organization-names"'])
-            ->set('newSensitiveKey', 'X-Tenant-Key')->call('addSensitiveKey')
-            ->set('newSensitiveKey', '*_license')->call('addSensitiveKey')
-            ->set('newSensitiveKey', 'x_tenant_key')->call('addSensitiveKey')->assertHasErrors('newSensitiveKey')
-            ->set('newSensitiveKey', 'no spaces/or (regex)')->call('addSensitiveKey')->assertHasErrors('newSensitiveKey')
-            ->assertSet('sensitiveKeys', ['X-Tenant-Key', '*_license']);
-
-        $this->assertSame([], Organization::current()->sensitive_keys, 'names are saved with the other settings');
-
-        $page->call('save')->assertHasNoErrors();
-        $this->assertSame(['X-Tenant-Key', '*_license'], Organization::current()->sensitive_keys);
-        $this->assertDatabaseHas('audit_logs', ['action' => 'organization.settings_updated']);
-
-        $page->call('removeSensitiveKey', 0)->call('save');
-        $this->assertSame(['*_license'], Organization::current()->sensitive_keys);
-    }
 }

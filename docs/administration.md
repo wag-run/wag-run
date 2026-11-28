@@ -2,7 +2,7 @@
 
 Organization admins look after the whole wag.run install: who has an account, which workspaces exist, how people sign in, and how email is sent. They also act as **Admin** in every workspace.
 
-The first account registered on a new install becomes an organization admin. Admins can make others admins too. Their pages are under **Org settings** in the account menu at the bottom of the sidebar, which only admins see. Each page is a tab: **Workspaces**, **Users**, **Sign-in**, **Email**, and **General**. The **Audit log** link beside the tabs opens the organization's audit log.
+The first account registered on a new install becomes an organization admin. Admins can make others admins too. Their pages are under **Org settings** in the account menu at the bottom of the sidebar, which only admins see. Each page is a tab: **Workspaces**, **Users**, **Sign-in**, **Email**, **Masking**, and **General**. The **Audit log** link beside the tabs opens the organization's audit log.
 
 ## Workspaces
 
@@ -181,6 +181,15 @@ The issuer must use `https`. Plain `http` works only for `localhost`.
 
 When **Send through my SMTP server** is off, email uses the server's own mail configuration. On a fresh install, that writes email to the log instead of sending it. For a Docker install, you can also set email in `.env`; see [Self-hosting](self-hosting.md#settings).
 
+## Masking
+
+**Org settings → Masking** lists what runs mask in their logs, the API, and MCP, in every workspace. See [Secrets in logs](data-and-placeholders.md#secrets-in-logs) for how masking works.
+
+- **Built in** shows the header names, field names, and value patterns masked by default. They can't be removed from this list.
+- **Your organization's names** are header or field names to mask on top of those, such as `X-Tenant-Key`. Type one and click **Add name**, or click × on one to remove it. Each change saves right away. A name uses letters, numbers, dashes, underscores, and dots. Matching ignores case, dashes, and underscores, and a `*` at the start or end stands for any prefix or suffix, as in `*_key`. Names only: patterns aren't supported.
+
+Neither list can be turned off for a whole workflow. To stop a header or field name from masking one value, add that value's path to **Never mask** on the node's [**Masking**](editor.md#masking) tab. That works for built-in names and your organization's names alike. Value patterns, such as a JWT, are always masked.
+
 ## General settings
 
 **Org settings → General** holds organization-wide settings. Workspaces and workflows can override the defaults.
@@ -192,15 +201,6 @@ When **Send through my SMTP server** is off, email uses the server's own mail co
 | **Default execution log retention** | How many days run logs are kept, unless a workspace or workflow sets its own. 30 days by default. Turn on **Keep execution logs forever** to never remove them. |
 | **Maximum chain depth** | How many runs deep a chain of workflows starting other workflows can go. A run past it is cancelled, which stops workflows that start each other in a loop. 10 by default. |
 | **Maximum runs per minute** | How many runs one workflow can start in a minute, unless the workflow sets its own limit. Runs past it are cancelled, which slows down loops through other apps, such as a workflow that fires its own trigger. 60 by default. |
-
-### Masked values
-
-**Masked values** lists what runs mask in their logs, the API, and MCP, in every workspace (see [Secrets in logs](data-and-placeholders.md#secrets-in-logs)).
-
-- **Built in** shows the header names, field names, and value patterns that are always masked. They can't be removed.
-- **Your organization's names** are header or field names to mask on top of those, such as `X-Tenant-Key`. Type one and click **Add name**, click × on one to remove it, then **Save settings**. A name uses letters, numbers, dashes, underscores, and dots. Matching ignores case, dashes, and underscores, and a `*` at the start or end stands for any prefix or suffix, as in `*_key`. Names only: patterns aren't supported.
-
-A name that masks too much for one API can be turned off for that node on its [**Masking**](editor.md#masking) tab, without changing this list.
 
 ## Audit log
 
