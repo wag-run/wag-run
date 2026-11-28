@@ -244,14 +244,14 @@ class WorkflowVariablesTest extends TestCase
     public function test_secrets_are_masked_before_a_variables_value_is_saved(): void
     {
         Secret::factory()->for($this->workspace)->create(['key' => 'api_key', 'value' => 'sk_live_supersecret']);
-        $workflow = $this->workflow(['token' => ['string', '']], [
+        $workflow = $this->workflow(['auth_header' => ['string', '']], [
             'start' => 'start',
-            'leak' => ['core.variable_update', ['variable' => 'token', 'value' => 'Bearer {{ secrets.api_key }}']],
+            'leak' => ['core.variable_update', ['variable' => 'auth_header', 'value' => 'Bearer {{ secrets.api_key }}']],
         ], ['start->leak']);
 
         $execution = $this->runWorkflow($workflow, ['values' => []]);
 
-        $this->assertSame('Bearer '.Redactor::MASK, $this->values($execution)['token']);
+        $this->assertSame('Bearer '.Redactor::MASK, $this->values($execution)['auth_header']);
         $this->assertStringNotContainsString('sk_live_supersecret', json_encode([$execution->variables()->get()->toArray(), $execution->steps()->get()->toArray()]));
     }
 }

@@ -25,6 +25,10 @@ return [
         'not_declared' => 'This workflow has no variable ":name". Add it under Variables in the workflow settings.',
         'unknown_type' => 'Its type ":type" is not one this install knows.',
     ],
+    'masking' => [
+        'path_empty' => 'Enter a path, such as body.token.',
+        'path_invalid' => '":path" isn\'t a path. Join keys with dots, write list positions as [0] or [*] for any, and put a key with a dot in it in quotes, as ["a.b"].',
+    ],
     'values' => [
         'cannot_be_saved' => 'The value can\'t be saved: :error',
         'given_array' => 'an array',

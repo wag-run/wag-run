@@ -9,6 +9,7 @@
             <flux:navbar.item :href="route('admin.users')" :current="request()->routeIs('admin.users')" wire:navigate>{{ __('common.users') }}</flux:navbar.item>
             <flux:navbar.item :href="route('admin.sign-in-providers')" :current="request()->routeIs('admin.sign-in-providers')" wire:navigate>{{ __('admin.sign_in_providers.title') }}</flux:navbar.item>
             <flux:navbar.item :href="route('admin.email')" :current="request()->routeIs('admin.email')" wire:navigate>{{ __('admin.email.title') }}</flux:navbar.item>
+            <flux:navbar.item :href="route('admin.masking')" :current="request()->routeIs('admin.masking')" wire:navigate>{{ __('admin.masking.title') }}</flux:navbar.item>
             <flux:navbar.item :href="route('admin.settings')" :current="request()->routeIs('admin.settings')" wire:navigate>{{ __('admin.settings.title') }}</flux:navbar.item>
 
             <flux:spacer />

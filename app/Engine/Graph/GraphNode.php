@@ -10,6 +10,7 @@ final readonly class GraphNode
      * @param  array{x: float|int, y: float|int}  $position
      * @param  bool  $errorPath  whether the node shows its "on error" output in the editor
      * @param  bool  $waitForAll  whether the node waits for every incoming branch and runs once, as Merge does
+     * @param  array{always?: list<string>, never?: list<string>}  $masking  paths in the node's output to always mask, or never mask by name (see MaskRules)
      */
     public function __construct(
         public string $id,
@@ -20,6 +21,7 @@ final readonly class GraphNode
         public array $position = ['x' => 0, 'y' => 0],
         public bool $errorPath = false,
         public bool $waitForAll = false,
+        public array $masking = [],
     ) {}
 
     /**
@@ -39,6 +41,7 @@ final readonly class GraphNode
             ],
             errorPath: (bool) ($data['error_path'] ?? false),
             waitForAll: (bool) ($data['wait_for_all'] ?? false),
+            masking: self::maskingFrom($data['masking'] ?? null),
         );
     }
 
@@ -56,11 +59,39 @@ final readonly class GraphNode
             'position' => $this->position,
             'error_path' => $this->errorPath ?: null,
             'wait_for_all' => $this->waitForAll ?: null,
+            'masking' => $this->masking ?: null,
         ], fn ($value) => $value !== null);
     }
 
     public function withErrorPath(bool $errorPath): self
     {
-        return new self($this->id, $this->type, $this->name, $this->config, $this->retry, $this->position, $errorPath, $this->waitForAll);
+        return new self($this->id, $this->type, $this->name, $this->config, $this->retry, $this->position, $errorPath, $this->waitForAll, $this->masking);
+    }
+
+    /**
+     * @param  list<string>  $always
+     * @param  list<string>  $never
+     */
+    public function withMasking(array $always, array $never): self
+    {
+        return new self($this->id, $this->type, $this->name, $this->config, $this->retry, $this->position, $this->errorPath, $this->waitForAll, self::maskingFrom(['always' => $always, 'never' => $never]));
+    }
+
+    /**
+     * @return array{always?: list<string>, never?: list<string>}
+     */
+    protected static function maskingFrom(mixed $masking): array
+    {
+        $lists = [];
+
+        foreach (['always', 'never'] as $list) {
+            $paths = is_array($masking[$list] ?? null) ? array_values(array_unique(array_filter($masking[$list], fn ($path) => is_string($path) && $path !== ''))) : [];
+
+            if ($paths !== []) {
+                $lists[$list] = $paths;
+            }
+        }
+
+        return $lists;
     }
 }

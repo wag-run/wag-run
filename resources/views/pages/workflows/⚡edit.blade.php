@@ -13,11 +13,15 @@ use App\Engine\Graph\GraphVariable;
 use App\Engine\Graph\StoreReferenceValidator;
 use App\Engine\Graph\VariableValidator;
 use App\Engine\Graph\WorkflowGraph;
+use App\Engine\Masking\MaskPath;
+use App\Engine\Masking\MaskRules;
 use App\Engine\Node;
 use App\Engine\NodeRegistry;
+use App\Engine\Redactor;
 use App\Enums\ConcurrencyPolicy;
 use App\Enums\NodeKind;
 use App\Enums\ValueType;
+use App\Models\ExecutionStep;
 use App\Models\Organization;
 use App\Models\Workflow;
 use App\Models\WorkflowVersion;
@@ -90,6 +94,14 @@ new class extends Component {
      * Whether the selected node waits for every incoming branch and runs once.
      */
     public bool $waitForAll = false;
+
+    /**
+     * The path being typed for the selected node's "Always mask" and
+     * "Never mask" lists.
+     *
+     * @var array{always: string, never: string}
+     */
+    public array $newMaskPath = ['always' => '', 'never' => ''];
 
     public string $name = '';
 
@@ -599,10 +611,11 @@ new class extends Component {
     /**
      * The inspector's tabs for the selected node, in order. A tab that would
      * be empty is left out: Settings when none of the node's fields shows,
-     * and Behavior on a trigger, which takes no retries, error path, or
-     * waiting for branches (only actions do).
+     * Behavior on a trigger, which takes no retries, error path, or
+     * waiting for branches (only actions do), and Masking on a node with
+     * no outputs.
      *
-     * @return list<'settings'|'behavior'|'outputs'>
+     * @return list<'settings'|'behavior'|'outputs'|'masking'>
      */
     #[Computed]
     public function inspectorTabs(): array
@@ -620,6 +633,7 @@ new class extends Component {
             $hasFields ? 'settings' : null,
             $definition->kind() === NodeKind::Action ? 'behavior' : null,
             'outputs',
+            $definition->outputs($this->selectedNode()?->config ?? []) !== [] ? 'masking' : null,
         ]));
     }
 
@@ -740,7 +754,142 @@ new class extends Component {
         $this->form = $this->definition ? ConfigForm::toForm($this->definition, $node->config) : [];
         $this->editingNodeId = false;
         $this->newNodeId = $nodeId;
+        $this->newMaskPath = ['always' => '', 'never' => ''];
         $this->resetValidation();
+    }
+
+    /**
+     * Add the typed path to the selected node's "Always mask" or "Never
+     * mask" list.
+     */
+    public function addMaskPath(string $list): void
+    {
+        $this->authorize('edit-workflows', $this->workspace);
+        abort_unless(in_array($list, ['always', 'never'], true), 404);
+
+        try {
+            $path = MaskPath::parse($this->newMaskPath[$list] ?? '')->toString();
+        } catch (InvalidArgumentException $e) {
+            throw ValidationException::withMessages(["newMaskPath.{$list}" => $e->getMessage()]);
+        }
+
+        $this->changeMasking($list, $path, adding: true);
+        $this->newMaskPath[$list] = '';
+        $this->resetValidation("newMaskPath.{$list}");
+    }
+
+    public function removeMaskPath(string $list, int $index): void
+    {
+        $this->authorize('edit-workflows', $this->workspace);
+        abort_unless(in_array($list, ['always', 'never'], true), 404);
+
+        $path = $this->selectedNode()?->masking[$list][$index] ?? null;
+
+        if ($path !== null) {
+            $this->changeMasking($list, $path, adding: false);
+        }
+    }
+
+    /**
+     * Stop masking one of the names masked in the last run, at its path,
+     * by adding the path to "Never mask".
+     */
+    public function dontMask(int $index): void
+    {
+        $this->authorize('edit-workflows', $this->workspace);
+        $row = $this->lastRunMasking['rows'][$index] ?? null;
+
+        if ($row !== null && $row['by_name'] && ! $row['never']) {
+            $this->changeMasking('never', $row['path'], adding: true);
+        }
+    }
+
+    /**
+     * What was masked in the selected node's output (a trigger's: the run's
+     * trigger data) the last time it ran, one row per path with list
+     * positions written as [*], and how many of them are masked.
+     *
+     * @return array{ran: bool, rows: list<array{path: string, reason: string, by_name: bool, never: bool}>, count: int}
+     */
+    #[Computed]
+    public function lastRunMasking(): array
+    {
+        $node = $this->selectedNode();
+        $definition = $this->definition;
+        $none = ['ran' => false, 'rows' => [], 'count' => 0];
+
+        if (! $node || ! $definition) {
+            return $none;
+        }
+
+        if ($definition->kind() === NodeKind::Trigger) {
+            $execution = $this->workflow->executions()->where('trigger_node_id', $node->id)->latest()->latest('id')->first();
+            [$ran, $data] = [$execution !== null, $execution?->input];
+        } else {
+            $step = ExecutionStep::query()
+                ->whereIn('execution_id', $this->workflow->executions()->select('id'))
+                ->where('node_id', $node->id)
+                ->whereNotNull('output')
+                ->latest('id')
+                ->first();
+            [$ran, $data] = [$step !== null, $step?->output];
+        }
+
+        if (! $ran) {
+            return $none;
+        }
+
+        $rows = [];
+
+        foreach (Redactor::forWorkspace($this->workspace)->explain($data, MaskRules::for($node)) as $explained) {
+            $path = MaskPath::wildcard($explained['path']);
+            $rows[$path] ??= [
+                'path' => $path,
+                'reason' => match ($explained['reason']) {
+                    'header' => __('workflows.edit.masking.reason_header', ['name' => $explained['detail']]),
+                    'field' => __('workflows.edit.masking.reason_field', ['name' => $explained['detail']]),
+                    'organization' => __('workflows.edit.masking.reason_organization', ['name' => $explained['detail']]),
+                    'always' => __('workflows.edit.masking.reason_always'),
+                    default => __('workflows.edit.masking.reason_value'),
+                },
+                'by_name' => in_array($explained['reason'], ['header', 'field', 'organization'], true),
+                'never' => $explained['never'],
+            ];
+        }
+
+        $rows = array_values($rows);
+
+        return ['ran' => true, 'rows' => $rows, 'count' => count(array_filter($rows, fn (array $row) => ! $row['never']))];
+    }
+
+    /**
+     * Add a path to, or remove it from, one of the selected node's masking
+     * lists, and note it in the workspace's audit log.
+     */
+    protected function changeMasking(string $list, string $path, bool $adding): void
+    {
+        $node = $this->selectedNode();
+
+        if (! $node) {
+            return;
+        }
+
+        $lists = ['always' => $node->masking['always'] ?? [], 'never' => $node->masking['never'] ?? []];
+
+        if ($adding === in_array($path, $lists[$list], true)) {
+            return;
+        }
+
+        $lists[$list] = $adding ? [...$lists[$list], $path] : array_values(array_diff($lists[$list], [$path]));
+
+        $this->save($this->graph->withNode($node->withMasking($lists['always'], $lists['never'])));
+        unset($this->lastRunMasking);
+
+        Audit::record($adding ? 'workflow.masking_added' : 'workflow.masking_removed', $this->workflow, $this->workspace, [
+            'node' => $node->id,
+            'list' => $list,
+            'path' => $path,
+        ]);
     }
 
     public function startEditingNodeId(): void
@@ -843,7 +992,7 @@ new class extends Component {
         $this->save($this->graph->withNode(new GraphNode($node->id, $node->type, $node->name, $node->config, $node->retry, [
             'x' => round((float) ($position['x'] ?? 0)),
             'y' => round((float) ($position['y'] ?? 0)),
-        ], $node->errorPath, $node->waitForAll)));
+        ], $node->errorPath, $node->waitForAll, $node->masking)));
     }
 
     /**
@@ -1031,7 +1180,7 @@ new class extends Component {
             $graph = $graph->withNode(new GraphNode($id, $node->type, $node->name, $node->config, $node->retry, [
                 'x' => $node->position['x'] + $dx,
                 'y' => $node->position['y'] + $dy,
-            ], $node->errorPath, $node->waitForAll));
+            ], $node->errorPath, $node->waitForAll, $node->masking));
         }
 
         foreach ($clipboard['edges'] ?? [] as $edge) {
@@ -1278,7 +1427,7 @@ new class extends Component {
         $oldPorts = $this->definition->ports($node->config);
         $newPorts = $this->definition->ports($config);
         $outputsChanged = $oldPorts !== $newPorts || $errorPath !== $node->errorPath;
-        $updated = new GraphNode($node->id, $node->type, $this->nodeName, $config, $retry, $node->position, $errorPath, $this->waitForAll && $this->definition->kind() === NodeKind::Action && ! $this->definition->joinsBranches());
+        $updated = new GraphNode($node->id, $node->type, $this->nodeName, $config, $retry, $node->position, $errorPath, $this->waitForAll && $this->definition->kind() === NodeKind::Action && ! $this->definition->joinsBranches(), $node->masking);
 
         $graph = $this->graph->withNode($updated);
         $relabelled = app(CanvasMapper::class)->node($node)['data']['ports'] !== app(CanvasMapper::class)->node($updated)['data']['ports'];
@@ -1790,7 +1939,13 @@ new class extends Component {
 
                 {{-- The chosen tab is kept on the panel, so it stays chosen from node to node; a node without it opens on its first tab --}}
                 @php($tabs = $this->inspectorTabs)
-                @php($tabLabels = ['settings' => __('common.settings'), 'behavior' => __('workflows.edit.behavior'), 'outputs' => __('workflows.edit.outputs')])
+                @php($masking = in_array('masking', $tabs) ? $this->lastRunMasking : null)
+                @php($tabLabels = [
+                    'settings' => __('common.settings'),
+                    'behavior' => __('workflows.edit.behavior'),
+                    'outputs' => __('workflows.edit.outputs'),
+                    'masking' => ($masking['count'] ?? 0) > 0 ? __('workflows.edit.masking.tab_with_count', ['count' => $masking['count']]) : __('workflows.edit.masking.tab'),
+                ])
                 <div class="mt-4" wire:key="inspector-tabs-{{ $selected }}-{{ implode('-', $tabs) }}"
                     x-data="{ tabs: @js($tabs), get tab() { return this.tabs.includes(inspectorTab) ? inspectorTab : this.tabs[0] } }">
                     <div class="mb-4 border-b border-zinc-200 dark:border-zinc-700">
@@ -1850,6 +2005,62 @@ new class extends Component {
                             @endforelse
                         </ul>
                     </div>
+
+                    @if ($masking !== null)
+                        <div id="inspector-panel-masking" role="tabpanel" aria-labelledby="inspector-tab-masking" x-show="tab === 'masking'" data-test="inspector-panel-masking">
+                            <fieldset class="min-w-0 space-y-6" @disabled(! $this->canEdit)>
+                                <flux:text class="text-xs">{{ __('workflows.edit.masking.explainer') }}</flux:text>
+
+                                <div class="space-y-2" data-test="masked-last-run">
+                                    <flux:heading size="sm">{{ __('workflows.edit.masking.masked_in_the_last_run') }}</flux:heading>
+                                    @if ($masking['rows'] === [])
+                                        <flux:text class="text-xs">{{ $masking['ran'] ? __('workflows.edit.masking.nothing_masked') : __('workflows.edit.masking.no_run_yet') }}</flux:text>
+                                    @else
+                                        <ul class="divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-700 dark:border-zinc-700">
+                                            @foreach ($masking['rows'] as $index => $row)
+                                                <li class="flex items-center justify-between gap-2 px-3 py-2" wire:key="masked-{{ $selected }}-{{ $row['path'] }}">
+                                                    <div class="min-w-0">
+                                                        <code class="text-xs break-all">{{ $row['path'] }}</code>
+                                                        <flux:text class="text-xs">{{ $row['never'] ? __('workflows.edit.masking.turned_off_by_never_mask') : $row['reason'] }}</flux:text>
+                                                    </div>
+                                                    @if ($row['by_name'] && ! $row['never'] && $this->canEdit)
+                                                        <flux:button size="xs" variant="ghost" wire:click="dontMask({{ $index }})" data-test="dont-mask">{{ __('workflows.edit.masking.dont_mask') }}</flux:button>
+                                                    @endif
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    @endif
+                                </div>
+
+                                @foreach (['always' => __('workflows.edit.masking.always_mask'), 'never' => __('workflows.edit.masking.never_mask')] as $list => $heading)
+                                    <div class="space-y-2" data-test="mask-{{ $list }}">
+                                        <flux:heading size="sm">{{ $heading }}</flux:heading>
+                                        @if ($this->selectedNode()->masking[$list] ?? [])
+                                            <div class="flex flex-wrap gap-1.5">
+                                                @foreach ($this->selectedNode()->masking[$list] as $pathIndex => $path)
+                                                    <flux:badge size="sm" class="font-mono" wire:key="mask-{{ $list }}-{{ $selected }}-{{ $path }}">
+                                                        {{ $path }}
+                                                        @if ($this->canEdit)
+                                                            <flux:badge.close wire:click="removeMaskPath('{{ $list }}', {{ $pathIndex }})" :aria-label="__('workflows.edit.masking.remove_path', ['path' => $path])" />
+                                                        @endif
+                                                    </flux:badge>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                        @if ($this->canEdit)
+                                            <div class="flex items-start gap-2">
+                                                <flux:input class="font-mono" wire:model="newMaskPath.{{ $list }}" wire:keydown.enter.prevent="addMaskPath('{{ $list }}')"
+                                                    :placeholder="$list === 'always' ? 'body.items[*].key' : 'body.next_page_token'" :aria-label="$heading" data-test="mask-{{ $list }}-input" />
+                                                <flux:button wire:click="addMaskPath('{{ $list }}')" data-test="mask-{{ $list }}-add">{{ __('workflows.edit.masking.add') }}</flux:button>
+                                            </div>
+                                            <flux:error name="newMaskPath.{{ $list }}" />
+                                        @endif
+                                        <flux:text class="text-xs">{{ __('workflows.edit.masking.'.$list.'_help') }}</flux:text>
+                                    </div>
+                                @endforeach
+                            </fieldset>
+                        </div>
+                    @endif
                 </div>
             @elseif ($this->selectedNode())
                 <flux:callout variant="danger" icon="exclamation-triangle" class="mt-8">{{ __('workflows.edit.this_node_s_type_is') }}</flux:callout>
