@@ -48,6 +48,7 @@ class SignInOptions
         $domain = OidcDomain::ofEmail($email);
 
         return $domain === null ? null : OidcDomain::query()
+            ->verified()
             ->where('domain', $domain)
             ->whereHas('provider', fn ($query) => $query->where('enabled', true))
             ->oldest()

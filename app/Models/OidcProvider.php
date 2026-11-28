@@ -85,13 +85,25 @@ class OidcProvider extends Model
     }
 
     /**
-     * Whether the provider gives new people an account. It needs email
-     * domains as well as the switch, because only people on its domains can
-     * reach it from the sign-in page, and its sign-in URL is public.
+     * Whether the provider gives new people an account. It needs verified
+     * email domains as well as the switch, because only people on its domains
+     * can reach it from the sign-in page, and its sign-in URL is public.
      */
     public function createsAccounts(): bool
     {
-        return $this->allow_registration && $this->domains()->exists();
+        return $this->allow_registration && $this->domains()->verified()->exists();
+    }
+
+    /**
+     * Whether the email is on one of the provider's verified domains, so the
+     * provider may speak for it: create its account, or link to an existing
+     * one by email. On a self-hosted install every domain counts as verified.
+     */
+    public function ownsEmail(?string $email): bool
+    {
+        $domain = OidcDomain::ofEmail($email);
+
+        return $domain !== null && $this->domains()->verified()->where('domain', $domain)->exists();
     }
 
     /**

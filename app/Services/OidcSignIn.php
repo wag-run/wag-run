@@ -20,6 +20,9 @@ use RuntimeException;
  * 2. Otherwise a user whose email matches is linked, but only when the
  *    provider marks the email verified or is trusted for emails, so nobody
  *    can take over an account by registering its address at the provider.
+ *    On the hosted version the email must also be on one of the provider's
+ *    verified domains, so one organization's provider can't speak for
+ *    another's people.
  * 3. Otherwise, when the provider creates accounts (its switch is on and it has
  *    email domains), a new organization Member is created with no workspace access.
  */
@@ -64,7 +67,7 @@ class OidcSignIn
         $existing = $email ? User::query()->whereRaw('lower(email) = ?', [$email])->first() : null;
 
         if ($existing) {
-            if (! $emailTrusted) {
+            if (! $emailTrusted || (! config('app.self_hosted') && ! $provider->ownsEmail($email))) {
                 throw new RuntimeException(__('oidc.name_has_not_verified_this', ['name' => $provider->name]));
             }
 
@@ -73,7 +76,7 @@ class OidcSignIn
             return $existing;
         }
 
-        if (! $provider->createsAccounts()) {
+        if (! $provider->createsAccounts() || ! $provider->ownsEmail($email)) {
             throw new RuntimeException(__('oidc.there_is_no_account_for'));
         }
 
