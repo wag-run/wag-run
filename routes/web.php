@@ -87,6 +87,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::livewire('settings', 'pages::admin.settings')->name('settings');
             Route::livewire('sign-in-providers', 'pages::admin.sign-in-providers')->name('sign-in-providers');
             Route::livewire('email', 'pages::admin.email')->name('email');
+            Route::livewire('masking', 'pages::admin.masking')->name('masking');
             Route::get('audit', function (Request $request) {
                 $workspaces = $request->user()->accessibleWorkspaces();
                 $workspace = $workspaces->firstWhere('id', $request->user()->current_workspace_id) ?? $workspaces->first();

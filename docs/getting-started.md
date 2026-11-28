@@ -27,7 +27,7 @@ The sidebar shows the current workspace at the top. Use it to switch workspaces.
 
 On a wide screen, drag the sidebar's right edge to make it wider or narrower. Drag it all the way in to shrink it to icons, and drag it back out, or double-click the edge, to open it again. wag.run remembers the width in your browser.
 
-Organization admins also see **Org settings** in the account menu, for workspaces, users, sign-in, email, and organization-wide defaults.
+Organization admins also see **Org settings** in the account menu, for workspaces, users, sign-in, email, masking, and organization-wide defaults.
 
 Your **Inbox** is in the account menu at the bottom of the sidebar. It collects approvals and tasks assigned to you, failed runs of workflows you own, and messages from workflows, across all your workspaces. A red dot on your avatar means something in it is unread.
 

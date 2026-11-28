@@ -102,10 +102,24 @@ return new class extends Migration
 
             $table->unique(['execution_id', 'name']);
         });
+
+        // The real values behind a run's masks, kept only while it runs
+        // (see ExecutionMaskedValue).
+        Schema::create('execution_masked_values', function (Blueprint $table) {
+            $table->id();
+            $table->foreignUuid('execution_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('execution_step_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->string('slot', 20);
+            $table->longText('values');
+            $table->timestamps();
+
+            $table->index(['execution_id', 'execution_step_id', 'slot']);
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('execution_masked_values');
         Schema::dropIfExists('execution_variables');
         Schema::dropIfExists('execution_steps');
         Schema::dropIfExists('executions');
