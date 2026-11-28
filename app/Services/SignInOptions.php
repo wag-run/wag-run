@@ -55,14 +55,36 @@ class SignInOptions
     }
 
     /**
+     * Everything the sign-in page needs for an email: its organization, the
+     * providers it offers, the one claiming the email's domain, and whether a
+     * password is accepted. An email with no organization gets the default:
+     * a password and no providers.
+     *
+     * @return array{organization: ?Organization, providers: Collection<int, OidcProvider>, claimingProvider: ?OidcProvider, passwordAllowed: bool}
+     */
+    public function forEmail(string $email): array
+    {
+        $organization = $this->organizationFor($email);
+        $providers = $this->providersFor($email, $organization);
+        $domain = OidcDomain::ofEmail($email);
+
+        return [
+            'organization' => $organization,
+            'providers' => $providers,
+            'claimingProvider' => $providers->first(fn (OidcProvider $provider) => $this->claims($provider, $domain)),
+            'passwordAllowed' => $organization->password_sign_in ?? true,
+        ];
+    }
+
+    /**
      * The enabled providers of the email's organization that accept it, the one
      * whose domains include it first. None for an email with no organization.
      *
      * @return Collection<int, OidcProvider>
      */
-    public function providersFor(string $email): Collection
+    public function providersFor(string $email, ?Organization $organization = null): Collection
     {
-        $organization = $this->organizationFor($email);
+        $organization ??= $this->organizationFor($email);
 
         if (! $organization) {
             return new Collection;

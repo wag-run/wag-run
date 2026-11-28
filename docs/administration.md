@@ -29,9 +29,30 @@ A deactivated person can't be chosen as an approver, assignee, or notification r
 
 Only the install's first account registers itself. After that, people join by [invitation](#users), or through a sign-in provider that creates accounts for new people.
 
+### Password sign-in
+
+**Password sign-in**, under **Sign-in methods**, is on by default. Turn it off and click **Save settings** to have people sign in only through a [sign-in provider](#sign-in-providers). You need at least one enabled provider first, and while password sign-in is off, the last enabled provider can't be turned off or deleted.
+
+With password sign-in off:
+
+- The sign-in page offers only the providers that accept the person's email. When that's a single provider, it goes straight there.
+- A correct password is refused, unless the person also belongs to another organization that uses passwords.
+- Anyone signed in with a password is signed out at their next click and sent to sign in through the provider.
+- **Security** in **Preferences**, and **Generate password-reset link** under **Users**, are hidden. Two-factor authentication only protects passwords, so it no longer applies.
+
+Existing passwords are kept, so turning password sign-in back on needs no resets.
+
+If a broken provider locks everyone out, turn password sign-in back on from the server:
+
+```bash
+php artisan sign-in:enable-password-login
+```
+
+For a Docker install, run it as `docker compose exec app php artisan sign-in:enable-password-login`.
+
 ### Sign-in providers
 
-**Sign-in providers** let people sign in with an OpenID Connect provider, such as Okta, Microsoft Entra ID, Google Workspace, Keycloak, or Authentik. Email-and-password sign-in stays available alongside it.
+**Sign-in providers** let people sign in with an OpenID Connect provider, such as Okta, Microsoft Entra ID, Google Workspace, Keycloak, or Authentik. Email-and-password sign-in stays available alongside it, unless you turn [password sign-in](#password-sign-in) off.
 
 To add one:
 

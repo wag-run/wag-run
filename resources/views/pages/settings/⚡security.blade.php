@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Organization;
 use App\Concerns\PasswordValidationRules;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
@@ -28,6 +29,8 @@ new class extends Component {
      */
     public function mount(DisableTwoFactorAuthentication $disableTwoFactorAuthentication): void
     {
+        abort_unless(Organization::current()->password_sign_in ?? true, 404);
+
         $this->canManageTwoFactor = Features::canManageTwoFactorAuthentication();
 
         if ($this->canManageTwoFactor) {

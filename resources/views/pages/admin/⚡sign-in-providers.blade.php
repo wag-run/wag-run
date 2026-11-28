@@ -48,6 +48,51 @@ new class extends Component {
 
     public string $newDomain = '';
 
+    public bool $passwordSignIn = true;
+
+    public function mount(): void
+    {
+        $this->passwordSignIn = Organization::current()->password_sign_in;
+    }
+
+    /**
+     * Save the sign-in methods form. Password sign-in can only be turned off
+     * while an enabled provider gives people another way in.
+     */
+    public function saveSignInMethods(): void
+    {
+        $this->authorize('org-admin');
+
+        $organization = Organization::current();
+
+        if (! $this->passwordSignIn && ! $organization->oidcProviders()->where('enabled', true)->exists()) {
+            $this->addError('passwordSignIn', __('admin.sign_in_providers.add_and_enable_a_sign'));
+
+            return;
+        }
+
+        $organization->password_sign_in = $this->passwordSignIn;
+
+        if ($organization->isDirty()) {
+            $changed = $organization->changedFields();
+            $organization->save();
+            Audit::record('organization.settings_updated', $organization, metadata: ['changed' => $changed]);
+        }
+
+        Flux::toast(variant: 'success', text: __('admin.sign_in_providers.sign_in_methods_saved'));
+    }
+
+    /**
+     * Whether turning this provider off, or deleting it, would leave no way in:
+     * password sign-in is off and it's the only enabled provider.
+     */
+    protected function isLastWayIn(OidcProvider $provider): bool
+    {
+        return ! Organization::current()->password_sign_in
+            && $provider->enabled
+            && ! Organization::current()->oidcProviders()->where('enabled', true)->whereKeyNot($provider->id)->exists();
+    }
+
     #[Computed]
     public function providers()
     {
@@ -69,7 +114,7 @@ new class extends Component {
     public function create(): void
     {
         $this->authorize('org-admin');
-        $this->reset();
+        $this->resetExcept('passwordSignIn');
         $this->resetValidation();
         Flux::modal('provider-form')->show();
     }
@@ -132,6 +177,12 @@ new class extends Component {
             return;
         }
 
+        if (! $this->enabled && $this->editingId && $this->isLastWayIn($this->findProvider($this->editingId))) {
+            $this->addError('enabled', __('admin.sign_in_providers.this_is_the_only_way'));
+
+            return;
+        }
+
         $provider = $this->editingId ? $this->findProvider($this->editingId) : $organization->oidcProviders()->make();
 
         $provider->fill([
@@ -158,7 +209,7 @@ new class extends Component {
 
         Flux::modal('provider-form')->close();
         Flux::toast(variant: 'success', text: __('admin.sign_in_providers.sign_in_provider_saved'));
-        $this->reset();
+        $this->resetExcept('passwordSignIn');
     }
 
     public function test(string $id, OidcClient $client): void
@@ -180,6 +231,13 @@ new class extends Component {
         $this->authorize('org-admin');
 
         $provider = $this->findProvider($id);
+
+        if ($this->isLastWayIn($provider)) {
+            Flux::toast(variant: 'danger', text: __('admin.sign_in_providers.this_is_the_only_way'));
+
+            return;
+        }
+
         $provider->delete();
         Audit::record('oidc_provider.deleted', $provider);
 
@@ -261,12 +319,19 @@ new class extends Component {
 
 <section class="w-full">
     <x-pages::admin.layout :heading="__('admin.sign_in_providers.title')" :subheading="__('admin.sign_in_providers.how_people_sign_in')">
+        <form wire:submit="saveSignInMethods" class="mb-10 max-w-2xl space-y-6">
+            <flux:heading>{{ __('admin.sign_in_providers.sign_in_methods') }}</flux:heading>
+            <flux:switch wire:model="passwordSignIn" :label="__('admin.sign_in_providers.password_sign_in')"
+                :description="__('admin.sign_in_providers.people_sign_in_with_their')" data-test="password-sign-in" />
+            <flux:button type="submit" variant="primary" data-test="save-sign-in-methods">{{ __('common.save_settings') }}</flux:button>
+        </form>
+
         <div class="mb-4 flex flex-wrap items-end justify-between gap-4">
             <div>
                 <flux:heading>{{ __('common.sign_in_providers') }}</flux:heading>
                 <flux:text class="mt-1">{{ __('admin.sign_in_providers.let_people_sign_in_with') }}</flux:text>
             </div>
-            <flux:button variant="primary" icon="plus" wire:click="create" data-test="add-provider">{{ __('admin.sign_in_providers.add_provider') }}</flux:button>
+            <flux:button icon="plus" wire:click="create" data-test="add-provider">{{ __('admin.sign_in_providers.add_provider') }}</flux:button>
         </div>
 
         <flux:table>
