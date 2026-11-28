@@ -89,7 +89,7 @@ class RedactorTest extends TestCase
 
         $this->assertSame(
             ['data' => [['license' => self::M, 'id' => 1], ['license' => self::M, 'id' => 2]], 'meta' => ['a' => self::M, 'b' => [self::M]]],
-            (new Redactor)->mask(['data' => [['license' => 'L-1', 'id' => 1], ['license' => 'L-2', 'id' => 2]], 'meta' => ['a' => 'x', 'b' => ['y']]], $rules),
+            (new Redactor)->mask(['data' => [['license' => 'L-1', 'id' => 1], ['license' => 'L-2', 'id' => 2]], 'meta' => ['a' => 'x', 'b' => [7]]], $rules),
         );
     }
 

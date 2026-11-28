@@ -290,6 +290,12 @@ class Redactor
             return $value;
         }
 
+        if ((is_int($value) || is_float($value)) && $rules->alwaysMasks($path)) {
+            $found[] = ['path' => $path, 'value' => $value];
+
+            return self::MASK;
+        }
+
         if (! is_string($value) || $value === '' || $value === self::MASK) {
             return $value;
         }
