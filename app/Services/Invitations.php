@@ -23,8 +23,9 @@ class Invitations
     public function __construct(protected WorkspaceManager $workspaces) {}
 
     /**
-     * Invite someone without an account on the install. Returns the plain
-     * token, which is only ever available here and in the emailed link.
+     * Invite someone who isn't in the organization yet, with or without an
+     * account elsewhere. Returns the plain token, which is only ever available
+     * here and in the emailed link.
      *
      * @return array{0: Invitation, 1: string}
      */
@@ -38,7 +39,7 @@ class Invitations
     ): array {
         $email = Str::lower(trim($email));
 
-        if (User::query()->where('email', $email)->exists()) {
+        if (User::query()->where('email', $email)->whereHas('organizations', fn ($query) => $query->whereKey($organization->id))->exists()) {
             throw ValidationException::withMessages(['email' => __('invitations.that_person_already_has_an')]);
         }
 
@@ -64,7 +65,7 @@ class Invitations
             Audit::record('invitation.sent', $invitation, $workspace, array_filter([
                 'org_role' => $orgRole->value,
                 'workspace_role' => $invitation->workspace_role?->value,
-            ]), $email);
+            ]), $email, organization: $organization);
 
             Notification::route('mail', $email)->notify(new InvitationNotification($invitation, $token));
 
@@ -96,6 +97,16 @@ class Invitations
 
             if ($invitation->workspace) {
                 $this->workspaces->addMember($invitation->workspace, $user, $invitation->workspace_role ?? WorkspaceRole::Viewer);
+            }
+
+            // Accepting takes them into the inviting organization, which checks
+            // its own sign-in rules on their next request.
+            if ($user->isActiveIn($invitation->organization_id)) {
+                $user->forceFill(['current_organization_id' => $invitation->organization_id])->save();
+                $this->workspaces->welcome($user);
+            }
+
+            if ($invitation->workspace) {
                 $user->forceFill(['current_workspace_id' => $invitation->workspace_id])->save();
             }
 

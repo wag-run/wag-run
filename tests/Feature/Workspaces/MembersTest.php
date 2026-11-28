@@ -5,6 +5,7 @@ namespace Tests\Feature\Workspaces;
 use App\Enums\OrgRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Invitation;
+use App\Models\Organization;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Notifications\InvitationNotification;
@@ -58,6 +59,28 @@ class MembersTest extends TestCase
         $this->assertStringStartsWith(url('invitations').'/', $page->get('inviteLink'));
         Notification::assertSentTo(new AnonymousNotifiable, InvitationNotification::class,
             fn ($notification, $channels, $notifiable) => $notifiable->routes['mail'] === 'new@example.com');
+    }
+
+    public function test_someone_with_an_account_in_another_organization_is_invited_not_added(): void
+    {
+        Notification::fake();
+        $workspace = Workspace::factory()->create();
+        $admin = User::factory()->memberOf($workspace, WorkspaceRole::Admin)->create();
+        $stranger = User::factory()->create(['name' => 'Elsewhere Person', 'email' => 'elsewhere@example.com']);
+        $stranger->organizations()->attach(Organization::factory()->create(), ['role' => OrgRole::Admin->value]);
+
+        $page = Livewire::actingAs($admin)
+            ->test('pages::workspaces.members', ['workspace' => $workspace])
+            ->set('email', 'elsewhere@example.com')
+            ->set('role', 'editor')
+            ->call('add')
+            ->assertHasNoErrors();
+
+        $this->assertNull($stranger->roleIn($workspace));
+        $this->assertFalse($stranger->organizations()->whereKey($workspace->organization_id)->exists());
+        $this->assertNotNull($page->get('inviteLink'));
+        $this->assertSame($workspace->id, Invitation::firstWhere('email', 'elsewhere@example.com')->workspace_id);
+        $page->assertDontSee('Elsewhere Person');
     }
 
     public function test_admin_changes_a_role_and_removes_a_member(): void

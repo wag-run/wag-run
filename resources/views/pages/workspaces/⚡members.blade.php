@@ -50,7 +50,13 @@ new class extends Component {
         ]);
 
         $role = WorkspaceRole::from($this->role);
-        $user = User::query()->where('email', $this->email)->first();
+        // Someone already in the organization is added straight away. Anyone
+        // else, with an account elsewhere or none, gets an invitation, so this
+        // never reveals whether an email has an account.
+        $user = User::query()
+            ->where('email', $this->email)
+            ->whereHas('organizations', fn ($query) => $query->whereKey($this->workspace->organization_id))
+            ->first();
 
         if ($user) {
             $workspaces->addMember($this->workspace, $user, $role);
