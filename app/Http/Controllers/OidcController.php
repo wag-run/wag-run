@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\OidcProvider;
-use App\Models\Organization;
 use App\Services\OidcSignIn;
 use App\Support\OidcClient;
 use Illuminate\Http\RedirectResponse;
@@ -61,6 +60,7 @@ class OidcController extends Controller
             return $this->failed($exception->getMessage());
         }
 
+        $user->forceFill(['current_organization_id' => $provider->organization_id])->saveQuietly();
         Auth::login($user);
         $request->session()->regenerate();
 
@@ -69,7 +69,7 @@ class OidcController extends Controller
 
     protected function ensureUsable(OidcProvider $provider): void
     {
-        abort_unless($provider->enabled && $provider->organization_id === Organization::current()?->id, 404);
+        abort_unless($provider->enabled, 404);
     }
 
     protected function callbackUrl(OidcProvider $provider): string

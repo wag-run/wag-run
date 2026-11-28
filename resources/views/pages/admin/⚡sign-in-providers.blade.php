@@ -122,6 +122,10 @@ new class extends Component {
             return;
         }
 
+        if (! $this->editingId && OidcProvider::query()->where('slug', $slug)->exists()) {
+            $slug .= '-'.Str::lower(Str::random(4));
+        }
+
         $provider = $this->editingId ? $this->findProvider($this->editingId) : $organization->oidcProviders()->make();
 
         $provider->fill([

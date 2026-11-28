@@ -4,7 +4,6 @@ namespace Tests\Feature\Admin;
 
 use App\Models\OidcDomain;
 use App\Models\OidcProvider;
-use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -53,7 +52,7 @@ class SignInProvidersTest extends TestCase
     public function test_editing_keeps_the_secret_and_the_redirect_uri_when_left_alone(): void
     {
         $admin = User::factory()->orgAdmin()->create();
-        $provider = OidcProvider::factory()->for(Organization::current())->create(['name' => 'Acme ID', 'slug' => 'acme-id', 'client_secret' => 'original']);
+        $provider = OidcProvider::factory()->for($this->organization())->create(['name' => 'Acme ID', 'slug' => 'acme-id', 'client_secret' => 'original']);
 
         Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')
             ->call('edit', $provider->id)
@@ -78,7 +77,7 @@ class SignInProvidersTest extends TestCase
     public function test_org_admins_add_an_email_domain_from_the_providers_domains_dialog(): void
     {
         $admin = User::factory()->orgAdmin()->create();
-        $provider = OidcProvider::factory()->for(Organization::current())->create(['name' => 'Acme ID']);
+        $provider = OidcProvider::factory()->for($this->organization())->create(['name' => 'Acme ID']);
 
         Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')
             ->assertSeeHtml('data-test="domains-'.$provider->slug.'"')
@@ -98,8 +97,8 @@ class SignInProvidersTest extends TestCase
     public function test_a_domain_belongs_to_one_provider_and_must_look_like_a_domain(): void
     {
         $admin = User::factory()->orgAdmin()->create();
-        $okta = OidcProvider::factory()->for(Organization::current())->create(['name' => 'Okta']);
-        $entra = OidcProvider::factory()->for(Organization::current())->create();
+        $okta = OidcProvider::factory()->for($this->organization())->create(['name' => 'Okta']);
+        $entra = OidcProvider::factory()->for($this->organization())->create();
         OidcDomain::factory()->for($okta, 'provider')->create(['domain' => 'acme.com']);
 
         $component = Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')
@@ -116,7 +115,7 @@ class SignInProvidersTest extends TestCase
     public function test_the_providers_table_shows_the_first_domain_and_how_many_more(): void
     {
         $admin = User::factory()->orgAdmin()->create();
-        $provider = OidcProvider::factory()->for(Organization::current())->create();
+        $provider = OidcProvider::factory()->for($this->organization())->create();
         OidcDomain::factory()->for($provider, 'provider')->create(['domain' => 'beta.example']);
         OidcDomain::factory()->for($provider, 'provider')->create(['domain' => 'alpha.example']);
 
@@ -128,7 +127,7 @@ class SignInProvidersTest extends TestCase
     public function test_org_admins_remove_a_domain(): void
     {
         $admin = User::factory()->orgAdmin()->create();
-        $provider = OidcProvider::factory()->for(Organization::current())->create();
+        $provider = OidcProvider::factory()->for($this->organization())->create();
         $domain = OidcDomain::factory()->for($provider, 'provider')->create(['domain' => 'acme.com']);
 
         Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')
@@ -142,7 +141,7 @@ class SignInProvidersTest extends TestCase
     public function test_deleting_a_provider_deletes_its_domains(): void
     {
         $admin = User::factory()->orgAdmin()->create();
-        $provider = OidcProvider::factory()->for(Organization::current())->create();
+        $provider = OidcProvider::factory()->for($this->organization())->create();
         $domain = OidcDomain::factory()->for($provider, 'provider')->create();
 
         Livewire::actingAs($admin)->test('pages::admin.sign-in-providers')->call('delete', $provider->id);
@@ -153,7 +152,7 @@ class SignInProvidersTest extends TestCase
     public function test_members_cannot_add_email_domains(): void
     {
         $member = User::factory()->orgMember()->create();
-        $provider = OidcProvider::factory()->for(Organization::current())->create();
+        $provider = OidcProvider::factory()->for($this->organization())->create();
 
         Livewire::actingAs($member)->test('pages::admin.sign-in-providers')
             ->call('manageDomains', $provider->id)

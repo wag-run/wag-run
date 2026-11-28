@@ -50,10 +50,11 @@ class EmailFirstSignInTest extends TestCase
         $this->assertNull(session('login.email'));
     }
 
-    public function test_an_email_with_an_account_and_one_without_see_the_same_ways_in(): void
+    public function test_an_email_with_an_account_and_one_without_see_the_same_ways_in_on_a_claimed_domain(): void
     {
         User::factory()->orgMember()->create(['email' => 'ada@example.com']);
-        OidcProvider::factory()->for($this->organization)->create(['name' => 'Acme ID']);
+        $provider = OidcProvider::factory()->for($this->organization)->create(['name' => 'Acme ID']);
+        OidcDomain::factory()->for($provider, 'provider')->create(['domain' => 'example.com']);
 
         $known = $this->withSession(['login.email' => 'ada@example.com'])->get(route('login'))->getContent();
         $unknown = $this->withSession(['login.email' => 'bob@example.com'])->get(route('login'))->getContent();
@@ -76,10 +77,47 @@ class EmailFirstSignInTest extends TestCase
             ->assertSeeInOrder(['data-test="oidc-okta"', 'data-test="oidc-entra-id"'], false)
             ->assertDontSee('data-test="oidc-contractors"', false);
 
+        User::factory()->orgMember()->create(['email' => 'ada@elsewhere.example']);
+
         $this->withSession(['login.email' => 'ada@elsewhere.example'])->get(route('login'))
             ->assertSee('data-test="oidc-entra-id"', false)
             ->assertDontSee('data-test="oidc-okta"', false)
             ->assertDontSee('data-test="oidc-contractors"', false);
+    }
+
+    public function test_an_unknown_email_on_no_claimed_domain_gets_only_the_password(): void
+    {
+        OidcProvider::factory()->for($this->organization)->create(['name' => 'Acme ID', 'slug' => 'acme-id']);
+
+        $this->withSession(['login.email' => 'nobody@elsewhere.example'])->get(route('login'))
+            ->assertSee('data-test="login-button"', false)
+            ->assertDontSee('data-test="oidc-acme-id"', false);
+    }
+
+    public function test_an_email_deactivated_everywhere_gets_the_same_as_an_unknown_one(): void
+    {
+        OidcProvider::factory()->for($this->organization)->create(['name' => 'Acme ID', 'slug' => 'acme-id']);
+        User::factory()->deactivated()->create(['email' => 'gone@elsewhere.example']);
+
+        $this->withSession(['login.email' => 'gone@elsewhere.example'])->get(route('login'))
+            ->assertDontSee('data-test="oidc-acme-id"', false);
+    }
+
+    public function test_an_account_wins_over_a_domain_another_organization_claims(): void
+    {
+        $other = Organization::factory()->create();
+        $claiming = OidcProvider::factory()->for($other)->create(['name' => 'Other SSO', 'slug' => 'other-sso']);
+        OidcDomain::factory()->for($claiming, 'provider')->create(['domain' => 'acme.com']);
+        OidcProvider::factory()->for($this->organization)->create(['name' => 'Acme ID', 'slug' => 'acme-id']);
+        User::factory()->orgMember()->create(['email' => 'ada@acme.com']);
+
+        $this->withSession(['login.email' => 'ada@acme.com'])->get(route('login'))
+            ->assertSee('data-test="oidc-acme-id"', false)
+            ->assertDontSee('data-test="oidc-other-sso"', false);
+
+        $this->withSession(['login.email' => 'bob@acme.com'])->get(route('login'))
+            ->assertSee('data-test="oidc-other-sso"', false)
+            ->assertDontSee('data-test="oidc-acme-id"', false);
     }
 
     public function test_not_you_goes_back_to_the_email_step(): void

@@ -208,6 +208,7 @@ class OidcSignInTest extends TestCase
 
     public function test_disabled_providers_are_not_offered_and_cannot_be_used(): void
     {
+        User::factory()->create(['email' => 'ada@example.com'])->organizations()->attach($this->provider->organization_id, ['role' => 'member']);
         $this->withSession(['login.email' => 'ada@example.com']);
 
         $this->get(route('login'))->assertSee('Sign in with Acme ID');
@@ -248,6 +249,32 @@ class OidcSignInTest extends TestCase
         $this->signInWith()
             ->assertRedirect(route('login'))
             ->assertSessionHasErrors(['email' => "Acme ID doesn't accept this email address. Ask an admin how you should sign in."]);
+
+        $this->assertGuest();
+    }
+
+    public function test_signing_in_through_a_provider_switches_to_the_providers_organization(): void
+    {
+        $other = Organization::factory()->create();
+        $user = User::factory()->create(['email' => 'ada@example.com', 'current_organization_id' => $other->id]);
+        $user->organizations()->attach($other, ['role' => 'member']);
+        $user->organizations()->attach($this->provider->organization_id, ['role' => 'member']);
+        OidcIdentity::create(['oidc_provider_id' => $this->provider->id, 'user_id' => $user->id, 'subject' => 'user-1']);
+
+        $this->signInWith()->assertRedirect(route('dashboard'));
+
+        $this->assertSame($this->provider->organization_id, $user->refresh()->current_organization_id);
+    }
+
+    public function test_someone_deactivated_in_the_providers_organization_is_refused_even_if_active_elsewhere(): void
+    {
+        $other = Organization::factory()->create();
+        $user = User::factory()->create(['email' => 'ada@example.com']);
+        $user->organizations()->attach($other, ['role' => 'member']);
+        $user->organizations()->attach($this->provider->organization_id, ['role' => 'member', 'deactivated_at' => now()]);
+        OidcIdentity::create(['oidc_provider_id' => $this->provider->id, 'user_id' => $user->id, 'subject' => 'user-1']);
+
+        $this->signInWith()->assertRedirect(route('login'))->assertSessionHasErrors('email');
 
         $this->assertGuest();
     }
